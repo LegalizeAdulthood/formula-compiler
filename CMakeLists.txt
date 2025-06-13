@@ -35,5 +35,7 @@ misc_group_sources("Editing" FILES
 misc_group_sources("Git" FILES
     ".gitignore"
     ".gitmodules")
+misc_gruop_sources("GitHub" FILES
+    ".github/workflows/cmake.yml")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
