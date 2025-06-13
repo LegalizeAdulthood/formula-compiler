@@ -93,8 +93,13 @@ class Node
 public:
     virtual ~Node() = default;
 
-    virtual double interpret(const SymbolTable &symbols) const = 0;
+    virtual double interpret(SymbolTable &symbols) = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
+
+    virtual double &lvalue(SymbolTable & /*symbols*/)
+    {
+        throw std::runtime_error("Node does not support lvalue access");
+    }
 };
 
 class NumberNode : public Node
@@ -106,14 +111,14 @@ public:
     }
     ~NumberNode() override = default;
 
-    double interpret(const SymbolTable & /*symbols*/) const override;
+    double interpret(SymbolTable &) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     double m_value{};
 };
 
-double NumberNode::interpret(const SymbolTable &) const
+double NumberNode::interpret(SymbolTable &)
 {
     return m_value;
 }
@@ -136,14 +141,19 @@ public:
     }
     ~IdentifierNode() override = default;
 
-    double interpret(const SymbolTable &symbols) const override;
+    double interpret(SymbolTable &symbols) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+    double &lvalue(SymbolTable &symbols) override
+    {
+        return symbols[m_name];
+    }
 
 private:
     std::string m_name;
 };
 
-double IdentifierNode::interpret(const SymbolTable &symbols) const
+double IdentifierNode::interpret(SymbolTable &symbols)
 {
     if (const auto &it = symbols.find(m_name); it != symbols.end())
     {
@@ -181,7 +191,7 @@ public:
     }
     ~UnaryOpNode() override = default;
 
-    double interpret(const SymbolTable &symbols) const override;
+    double interpret(SymbolTable &symbols) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -189,7 +199,7 @@ private:
     std::shared_ptr<Node> m_operand;
 };
 
-double UnaryOpNode::interpret(const SymbolTable &symbols) const
+double UnaryOpNode::interpret(SymbolTable &symbols)
 {
     if (m_op == '+')
     {
@@ -240,17 +250,27 @@ public:
     }
     ~BinaryOpNode() override = default;
 
-    double interpret(const SymbolTable &symbols) const override;
+    double interpret(SymbolTable &symbols) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    double &lvalue(SymbolTable &symbols) override;
 
 private:
     std::shared_ptr<Node> m_left;
     char m_op;
     std::shared_ptr<Node> m_right;
+    double *m_lvalue{};
 };
 
-double BinaryOpNode::interpret(const SymbolTable &symbols) const
+double BinaryOpNode::interpret(SymbolTable &symbols)
 {
+    if (m_op == '=')
+    {
+        double &left = lvalue(symbols);
+        const double right = m_right->interpret(symbols);
+        left = right; // Assignment operation
+        return right;
+    }
+
     const double left = m_left->interpret(symbols);
     const double right = m_right->interpret(symbols);
     if (m_op == '+')
@@ -315,6 +335,17 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     return false;
 }
 
+double &BinaryOpNode::lvalue(SymbolTable &symbols)
+{
+    if (m_lvalue == nullptr)
+    {
+        double &left = m_left->lvalue(symbols);
+        m_lvalue = &left;
+        return left;
+    }
+    return *m_lvalue;
+}
+
 const auto make_binary_op_seq = [](auto &ctx)
 {
     auto left = std::get<0>(bp::_attr(ctx));
@@ -341,6 +372,7 @@ bp::rule<struct PowerTag, Expr> power = "exponentiation";
 bp::rule<struct TermTag, Expr> term = "multiplicative term";
 bp::rule<struct FactorTag, Expr> factor = "additive factor";
 bp::rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
+bp::rule<struct AssignTag, Expr> assign = "assignment operator";
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
@@ -348,9 +380,10 @@ const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op];
 const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
-const auto expr_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
+const auto assign_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
+const auto expr_def = (assign >> *(bp::char_("=") >> assign))[make_binary_op_seq];
 
-BOOST_PARSER_DEFINE_RULES(number, variable, expr, term, power, factor, unary_op);
+BOOST_PARSER_DEFINE_RULES(number, variable, expr, assign, term, power, factor, unary_op);
 
 using Function = double();
 
@@ -368,6 +401,14 @@ public:
     void set_value(std::string_view name, double value) override
     {
         m_state.symbols[std::string{name}] = value;
+    }
+    double get_value(std::string_view name) const override
+    {
+        if (auto it = m_state.symbols.find(std::string{name}); it != m_state.symbols.end())
+        {
+            return it->second;
+        }
+        return 0.0;
     }
 
     double interpret() override;

@@ -14,6 +14,7 @@ public:
     virtual ~Formula() = default;
 
     virtual void set_value(std::string_view name, double value) = 0;
+    virtual double get_value(std::string_view name) const = 0;
 
     virtual double interpret() = 0;
     virtual bool compile() = 0;

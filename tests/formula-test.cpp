@@ -100,6 +100,11 @@ TEST(TestFormulaParse, chainedPower)
     EXPECT_TRUE(formula::parse("2^2^2"));
 }
 
+TEST(TestFormulaParse, assignment)
+{
+    EXPECT_TRUE(formula::parse("z=4"));
+}
+
 TEST(TestFormulaInterpret, one)
 {
     ASSERT_EQ(1.0, formula::parse("1")->interpret());
@@ -211,6 +216,43 @@ TEST(TestFormulaInterpret, powerPrecedence)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(18.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, getValue)
+{
+    const auto formula{formula::parse("1")};
+    EXPECT_TRUE(formula);
+
+    EXPECT_EQ(std::exp(1.0), formula->get_value("e"));
+    EXPECT_EQ(0.0, formula->get_value("a")); // unknown identifier should return 0.0
+}
+
+TEST(TestFormulaInterpret, assignment)
+{
+    const auto formula{formula::parse("z=4+2")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(6.0, formula->interpret());
+    ASSERT_EQ(6.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, assignmentParens)
+{
+    const auto formula{formula::parse("(z=4)+2")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(6.0, formula->interpret());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, DISABLED_chainedAssignment)
+{
+    const auto formula{formula::parse("z1=z2=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(3.0, formula->interpret());
+    ASSERT_EQ(3.0, formula->get_value("z1"));
+    ASSERT_EQ(3.0, formula->get_value("z2"));
 }
 
 TEST(TestCompiledFormulaRun, one)
