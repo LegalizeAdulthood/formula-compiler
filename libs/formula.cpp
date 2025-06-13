@@ -272,6 +272,10 @@ double BinaryOpNode::interpret(const SymbolTable &symbols) const
     {
         return left / right;
     }
+    if (m_op == '^')
+    {
+        return std::pow(left, right);
+    }
     throw std::runtime_error(std::string{"Invalid binary operator '"} + m_op + "'");
 }
 
@@ -300,6 +304,17 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.divsd(result, right); // xmm0 = xmm0 / xmm1
         return true;
     }
+    if (m_op == '^')
+    {
+        // For exponentiation, we can use the pow intrinsic
+        asmjit::InvokeNode *call;
+        asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(static_cast<double (*)(double, double)>(std::pow)))};
+        comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>());
+        call->setArg(0, result);
+        call->setArg(1, right);
+        call->setRet(0, result);
+        return true;
+    }
     return false;
 }
 
@@ -325,6 +340,7 @@ const auto identifier = bp::lexeme[alpha >> *alnum];
 bp::rule<struct NumberTag, Expr> number = "number";
 bp::rule<struct IdentifierTag, Expr> variable = "variable";
 bp::rule<struct ExprTag, Expr> expr = "expression";
+bp::rule<struct PowerTag, Expr> power = "exponentiation";
 bp::rule<struct TermTag, Expr> term = "multiplicative term";
 bp::rule<struct FactorTag, Expr> factor = "additive factor";
 bp::rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
@@ -333,10 +349,11 @@ const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
 const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op];
 const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
-const auto term_def = (factor >> *(bp::char_("*/") >> factor))[make_binary_op_seq];
+const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
+const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
 const auto expr_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
 
-BOOST_PARSER_DEFINE_RULES(number, variable, expr, term, factor, unary_op);
+BOOST_PARSER_DEFINE_RULES(number, variable, expr, term, power, factor, unary_op);
 
 using Function = double();
 

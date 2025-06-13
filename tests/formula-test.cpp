@@ -90,6 +90,16 @@ TEST(TestFormulaParse, invalidIdentifier)
     EXPECT_FALSE(formula::parse("_a"));
 }
 
+TEST(TestFormulaParse, power)
+{
+    EXPECT_TRUE(formula::parse("2^3"));
+}
+
+TEST(TestFormulaParse, chainedPower)
+{
+    EXPECT_TRUE(formula::parse("2^2^2"));
+}
+
 TEST(TestFormulaInterpret, one)
 {
     ASSERT_EQ(1.0, formula::parse("1")->interpret());
@@ -176,6 +186,31 @@ TEST(TestFormulaInterpret, setSymbolValue)
     formula->set_value("b", 3.0);
 
     ASSERT_NEAR(13.0, formula->interpret(), 1e-5);
+}
+
+TEST(TestFormulaInterpret, power)
+{
+    const auto formula{formula::parse("2^3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(8.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, chainedPower)
+{
+    // TODO: is power operator left associative or right associative?
+    const auto formula{formula::parse("2^3^2")}; // same as (2^3)^2
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(64.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, powerPrecedence)
+{
+    const auto formula{formula::parse("2*3^2")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(18.0, formula->interpret());
 }
 
 TEST(TestCompiledFormulaRun, one)
@@ -293,4 +328,31 @@ TEST(TestCompiledFormulaRun, addMulAdd)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_NEAR(12.76, formula->run(), 1e-6);
+}
+
+TEST(TestCompiledFormulaRun, power)
+{
+    const auto formula{formula::parse("2^3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(8.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, chainedPower)
+{
+    const auto formula{formula::parse("2^3^2")}; // same as (2^3)^2
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(64.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, powerPrecedence)
+{
+    const auto formula{formula::parse("2*3^2")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(18.0, formula->run());
 }
