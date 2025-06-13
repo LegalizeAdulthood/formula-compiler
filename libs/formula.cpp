@@ -40,8 +40,7 @@ struct EmitterState
     DataSection data;
 };
 
-template <typename Emitter>
-asmjit::Label get_constant_label(Emitter &emitter, ConstantLabels &labels, double value)
+asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantLabels &labels, double value)
 {
     if (const auto it = labels.find(value); it != labels.end())
     {
@@ -49,13 +48,12 @@ asmjit::Label get_constant_label(Emitter &emitter, ConstantLabels &labels, doubl
     }
 
     // Create a new label for the constant
-    asmjit::Label label = emitter.newLabel();
+    asmjit::Label label = comp.newLabel();
     labels[value] = label;
     return label;
 }
 
-template <typename Emitter>
-asmjit::Label get_symbol_label(Emitter &emitter, SymbolLabels &labels, std::string name)
+asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolLabels &labels, std::string name)
 {
     if (const auto it = labels.find(name); it != labels.end())
     {
@@ -63,21 +61,20 @@ asmjit::Label get_symbol_label(Emitter &emitter, SymbolLabels &labels, std::stri
     }
 
     // Create a new label for the symbol
-    asmjit::Label label = emitter.newNamedLabel(name.c_str());
+    asmjit::Label label = comp.newNamedLabel(name.c_str());
     labels[name] = label;
     return label;
 }
 
-template <typename Emitter>
-void emit_data_section(Emitter &emitter, EmitterState &state)
+void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
 {
-    emitter.section(state.data.data);
+    comp.section(state.data.data);
     for (const auto &[name, label] : state.data.symbols)
     {
-        emitter.bind(label);
+        comp.bind(label);
         if (const auto it = state.symbols.find(name); it != state.symbols.end())
         {
-            emitter.embedDouble(it->second); // Embed the symbol value in the data section
+            comp.embedDouble(it->second); // Embed the symbol value in the data section
         }
         else
         {
@@ -86,8 +83,8 @@ void emit_data_section(Emitter &emitter, EmitterState &state)
     }
     for (const auto &[value, label] : state.data.constants)
     {
-        emitter.bind(label);
-        emitter.embedDouble(value); // Embed the double value in the data section
+        comp.bind(label);
+        comp.embedDouble(value); // Embed the double value in the data section
     }
 }
 
