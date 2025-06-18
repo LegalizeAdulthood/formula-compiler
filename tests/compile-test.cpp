@@ -342,3 +342,31 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
     ASSERT_EQ(0.0, formula->run());          // 0 is false, so the second part is not evaluated
     ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }
+
+TEST(TestCompiledFormulaRun, logicalOrTrue)
+{
+    const auto formula{formula::parse("1||0")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, logicalOrFalse)
+{
+    const auto formula{formula::parse("0||0")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
+{
+    const auto formula{formula::parse("1||z=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());          // 1 is true, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
+}

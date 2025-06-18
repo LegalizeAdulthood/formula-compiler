@@ -154,3 +154,8 @@ TEST(TestFormulaParse, logicalAnd)
 {
     EXPECT_TRUE(formula::parse("4==3&&5==6"));
 }
+
+TEST(TestFormulaParse, logicalOr)
+{
+    EXPECT_TRUE(formula::parse("4==3||5==6"));
+}

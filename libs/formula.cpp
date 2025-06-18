@@ -320,6 +320,14 @@ double BinaryOpNode::interpret(SymbolTable &symbols)
         }
         return bool_result(m_right->interpret(symbols) != 0.0);
     }
+    if (m_op == "||") // short-circuit OR
+    {
+        if (left != 0.0)
+        {
+            return 1.0;
+        }
+        return bool_result(m_right->interpret(symbols) != 0.0);
+    }
     const double right = m_right->interpret(symbols);
     if (m_op == "+")
     {
@@ -379,12 +387,26 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         asmjit::x86::Xmm zero{comp.newXmm()};
         comp.xorpd(zero, zero);     // xmm = 0.0
         comp.ucomisd(result, zero); // xmm0 <=> 0.0?
-        asmjit::Label success = comp.newLabel();
-        comp.jne(success); // xmm0 != 0.0
+        asmjit::Label eval_right = comp.newLabel();
+        comp.jne(eval_right); // xmm0 != 0.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
         comp.movsd(right, asmjit::x86::ptr(one));
         comp.jmp(skip_right);
-        comp.bind(success);
+        comp.bind(eval_right);
+        comp.movsd(result, asmjit::x86::ptr(one));
+    }
+    if (m_op == "||")
+    {
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        comp.xorpd(zero, zero); // xmm = 0.0
+        comp.ucomisd(result, zero); // result <=> 0.0?
+        asmjit::Label eval_right = comp.newLabel();
+        comp.je(eval_right); // result == 0.0
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(result, asmjit::x86::ptr(one));
+        comp.jmp(skip_right);
+        comp.bind(eval_right);
+        comp.movsd(result, zero);
     }
     m_right->compile(comp, state, right);
     comp.bind(skip_right);
@@ -479,6 +501,24 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.bind(end);
         return true;
     }
+    if (m_op == "||")
+    {
+        asmjit::Label success = comp.newLabel();
+        asmjit::Label end = comp.newLabel();
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        comp.xorpd(zero, zero);     // xmm = 0.0
+        comp.ucomisd(result, zero); // result <=> 0.0?
+        comp.jne(end);              // result != 0.0
+        comp.ucomisd(right, zero);  // right <=> 0.0?
+        comp.jne(success);
+        comp.movsd(result, zero);
+        comp.jmp(end);
+        comp.bind(success);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(result, asmjit::x86::ptr(one));
+        comp.bind(end);
+        return true;
+    }
 
     return false;
 }
@@ -556,8 +596,9 @@ const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
 const auto alnum = alpha | digit | bp::char_('_');
 const auto identifier = bp::lexeme[alpha >> *alnum];
-const auto relop =
+const auto rel_op =
     bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
+const auto logical_op = bp::string("&&") | bp::string("||");
 
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
@@ -582,8 +623,8 @@ const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq]
 const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
 const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
-const auto comparative_def = (expr >> *(relop >> expr))[make_binary_op_seq];
-const auto conjunctive_def = (comparative >> *(bp::string("&&") >> comparative))[make_binary_op_seq];
+const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
+const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
 const auto statement_def = conjunctive;
 
 BOOST_PARSER_DEFINE_RULES(

@@ -323,3 +323,36 @@ TEST(TestFormulaInterpret, logicalAndShortCircuitTrue)
     ASSERT_EQ(0.0, formula->interpret());    // 0 is false, so the second part is not evaluated
     ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }
+
+TEST(TestFormulaInterpret, logicalOrTrue)
+{
+    const auto formula{formula::parse("1||0")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, logicalOrFalse)
+{
+    const auto formula{formula::parse("0||0")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, logicalOrPrecedence)
+{
+    const auto formula{formula::parse("1+2||3+4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // (1+2) || (3+4) is true
+}
+
+TEST(TestFormulaInterpret, logicalOrShortCircuitTrue)
+{
+    const auto formula{formula::parse("1||z=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
+}
