@@ -19,7 +19,7 @@ TEST(TestCompiledFormulaRun, two)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(2.0, formula->interpret());
+    ASSERT_EQ(2.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, identifier)
@@ -186,4 +186,131 @@ TEST(TestCompiledFormulaRun, modulus)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(3.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareLessFalse)
+{
+    const auto formula{formula::parse("4<3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+}
+
+TEST(TestCompiledFormulaRun, compareLessTrue)
+{
+    const auto formula{formula::parse("3<4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+}
+
+TEST(TestCompiledFormulaRun, compareLessPrecedence)
+{
+    const auto formula{formula::parse("3<z=4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
+{
+    const auto formula{formula::parse("3<=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
+{
+    const auto formula{formula::parse("3<=4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareLessEqualFalse)
+{
+    const auto formula{formula::parse("3<=2")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareGreaterFalse)
+{
+    const auto formula{formula::parse("3>4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+}
+
+TEST(TestCompiledFormulaRun, compareGreaterTrue)
+{
+    const auto formula{formula::parse("4>3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+}
+
+TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
+{
+    const auto formula{formula::parse("3>=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
+{
+    const auto formula{formula::parse("4>=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, compareEqualTrue)
+{
+    const auto formula{formula::parse("3==3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+}
+
+TEST(TestCompiledFormulaRun, compareEqualFalse)
+{
+    const auto formula{formula::parse("3==4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+}
+
+TEST(TestCompiledFormulaRun, compareNotEqualTrue)
+{
+    const auto formula{formula::parse("3!=4")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+}
+
+TEST(TestCompiledFormulaRun, compareNotEqualFalse)
+{
+    const auto formula{formula::parse("3!=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run()); // false is 0.0
 }

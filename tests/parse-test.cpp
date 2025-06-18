@@ -109,3 +109,43 @@ TEST(TestFormulaParse, modulus)
 {
     EXPECT_TRUE(formula::parse("|-3.0|"));
 }
+
+TEST(TestFormulaParse, compareLess)
+{
+    EXPECT_TRUE(formula::parse("4<3"));
+}
+
+TEST(TestFormulaParse, compareLessPrecedence)
+{
+    EXPECT_TRUE(formula::parse("3<z=4"));
+}
+
+TEST(TestFormulaParse, compareLessEqual)
+{
+    EXPECT_TRUE(formula::parse("4<=3"));
+}
+
+TEST(TestFormulaParse, compareGreater)
+{
+    EXPECT_TRUE(formula::parse("4>3"));
+}
+
+TEST(TestFormulaParse, compareAssociatesLeft)
+{
+    EXPECT_TRUE(formula::parse("4>3<4")); // This is equivalent to (4 > 3) < 4
+}
+
+TEST(TestFormulaParse, compareGreaterEqual)
+{
+    EXPECT_TRUE(formula::parse("4>=3"));
+}
+
+TEST(TestFormulaParse, compareEqual)
+{
+    EXPECT_TRUE(formula::parse("4==3"));
+}
+
+TEST(TestFormulaParse, compareNotEqual)
+{
+    EXPECT_TRUE(formula::parse("4!=3"));
+}

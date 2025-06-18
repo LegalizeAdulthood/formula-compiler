@@ -274,7 +274,13 @@ public:
     BinaryOpNode() = default;
     BinaryOpNode(Expr left, char op, Expr right) :
         m_left(std::move(left)),
-        m_op(op),
+        m_op(1, op),
+        m_right(std::move(right))
+    {
+    }
+    BinaryOpNode(Expr left, std::string op, Expr right) :
+        m_left(std::move(left)),
+        m_op(std::move(op)),
         m_right(std::move(right))
     {
     }
@@ -286,14 +292,14 @@ public:
 
 private:
     Expr m_left;
-    char m_op;
+    std::string m_op;
     Expr m_right;
     double *m_lvalue{};
 };
 
 double BinaryOpNode::interpret(SymbolTable &symbols)
 {
-    if (m_op == '=')
+    if (m_op == "=")
     {
         double &left = lvalue(symbols);
         const double right = m_right->interpret(symbols);
@@ -303,26 +309,55 @@ double BinaryOpNode::interpret(SymbolTable &symbols)
 
     const double left = m_left->interpret(symbols);
     const double right = m_right->interpret(symbols);
-    if (m_op == '+')
+    if (m_op == "+")
     {
         return left + right;
     }
-    if (m_op == '-')
+    if (m_op == "-")
     {
         return left - right;
     }
-    if (m_op == '*')
+    if (m_op == "*")
     {
         return left * right;
     }
-    if (m_op == '/')
+    if (m_op == "/")
     {
         return left / right;
     }
-    if (m_op == '^')
+    if (m_op == "^")
     {
         return std::pow(left, right);
     }
+    const auto bool_result = [](bool condition)
+    {
+        return condition ? 1.0 : 0.0;
+    };
+    if (m_op == "<")
+    {
+        return bool_result(left < right);
+    }
+    if (m_op == "<=")
+    {
+        return bool_result(left <= right);
+    }
+    if (m_op == ">")
+    {
+        return bool_result(left > right);
+    }
+    if (m_op == ">=")
+    {
+        return bool_result(left >= right);
+    }
+    if (m_op == "==")
+    {
+        return bool_result(left == right);
+    }
+    if (m_op == "!=")
+    {
+        return bool_result(left != right);
+    }
+
     throw std::runtime_error(std::string{"Invalid binary operator '"} + m_op + "'");
 }
 
@@ -331,27 +366,27 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     m_left->compile(comp, state, result);
     asmjit::x86::Xmm right{comp.newXmm()};
     m_right->compile(comp, state, right);
-    if (m_op == '+')
+    if (m_op == "+")
     {
         comp.addsd(result, right);
         return true;
     }
-    if (m_op == '-')
+    if (m_op == "-")
     {
         comp.subsd(result, right); // xmm0 = xmm0 - xmm1
         return true;
     }
-    if (m_op == '*')
+    if (m_op == "*")
     {
         comp.mulsd(result, right); // xmm0 = xmm0 * xmm1
         return true;
     }
-    if (m_op == '/')
+    if (m_op == "/")
     {
         comp.divsd(result, right); // xmm0 = xmm0 / xmm1
         return true;
     }
-    if (m_op == '^')
+    if (m_op == "^")
     {
         // For exponentiation, we can use the pow intrinsic
         asmjit::InvokeNode *call;
@@ -362,6 +397,49 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         call->setRet(0, result);
         return true;
     }
+    if (m_op == "<" || m_op == "<=" || m_op == ">" || m_op == ">=" || m_op == "==" || m_op == "!=")
+    {
+        // Compare left and right, set result to 1.0 on true, else 0.0
+        asmjit::Label success = comp.newLabel();
+        asmjit::Label end = comp.newLabel();
+        comp.ucomisd(result, right); // xmm0 <=> xmm1
+        if (m_op == "<")
+        {
+            comp.jb(success); // xmm0 < xmm1?
+        }
+        else if (m_op == "<=")
+        {
+            comp.jbe(success); // xmm0 <= xmm1?
+        }
+        else if (m_op == ">")
+        {
+            comp.ja(success); // xmm0 > xmm1?
+        }
+        else if (m_op == ">=")
+        {
+            comp.jae(success); // xmm0 >= xmm1?
+        }
+        else if (m_op == "==")
+        {
+            comp.je(success); // xmm0 == xmm1?
+        }
+        else if (m_op == "!=")
+        {
+            comp.jne(success); // xmm0 != xmm1?
+        }
+        else
+        {
+            return false; // Unsupported operator
+        }
+        comp.xorpd(result, result); // result = 0.0
+        comp.jmp(end);
+        comp.bind(success);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(result, asmjit::x86::ptr(one));
+        comp.bind(end);
+        return true;
+    }
+
     return false;
 }
 
@@ -438,6 +516,8 @@ const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
 const auto alnum = alpha | digit | bp::char_('_');
 const auto identifier = bp::lexeme[alpha >> *alnum];
+const auto relop =
+    bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
 
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
@@ -448,7 +528,9 @@ bp::rule<struct PowerTag, Expr> power = "exponentiation";
 bp::rule<struct TermTag, Expr> term = "multiplicative term";
 bp::rule<struct AdditiveTag, Expr> additive = "additive expression";
 bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
+bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ExprTag, Expr> expr = "expression";
+bp::rule<struct StatementTag, Expr> statement = "statement";
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
@@ -457,10 +539,13 @@ const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
 const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
-const auto assignment_def = (+(identifier >> '=') >> expr)[make_assign];
+const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
+const auto comparative_def = (expr >> *(relop >> expr))[make_binary_op_seq];
+const auto statement_def = comparative;
 
-BOOST_PARSER_DEFINE_RULES(number, variable, unary_op, factor, power, term, additive, assignment, expr);
+BOOST_PARSER_DEFINE_RULES(
+    number, variable, unary_op, factor, power, term, additive, assignment, comparative, expr, statement);
 
 using Function = double();
 
@@ -564,7 +649,8 @@ std::shared_ptr<Formula> parse(std::string_view text)
     try
     {
         bool debug{};
-        if (auto success = bp::parse(text, expr, bp::ws, ast, debug ? bp::trace::on : bp::trace::off); success && ast)
+        if (auto success = bp::parse(text, statement, bp::ws, ast, debug ? bp::trace::on : bp::trace::off);
+            success && ast)
         {
             return std::make_shared<ParsedFormula>(ast);
         }

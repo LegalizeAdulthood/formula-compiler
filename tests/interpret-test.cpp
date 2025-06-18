@@ -161,3 +161,132 @@ TEST(TestFormulaInterpret, modulus)
 
     ASSERT_EQ(3.0, formula->interpret());
 }
+
+TEST(TestFormulaInterpret, compareLessFalse)
+{
+    const auto formula{formula::parse("4<3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
+}
+
+TEST(TestFormulaInterpret, compareLessTrue)
+{
+    const auto formula{formula::parse("3<4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // true is 1.0
+}
+
+TEST(TestFormulaInterpret, compareLessPrecedence)
+{
+    const auto formula{formula::parse("3<z=4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, compareLessEqualTrueEquality)
+{
+    const auto formula{formula::parse("3<=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareLessEqualTrueLess)
+{
+    const auto formula{formula::parse("3<=4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareLessEqualFalse)
+{
+    const auto formula{formula::parse("3<=2")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareAssociatesLeft)
+{
+    const auto formula{formula::parse("4<3<4")}; // (4 < 3) < 4
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // (4 < 3) is false (0.0), (0 < 4) is true, so the result is 1.0
+}
+
+TEST(TestFormulaInterpret, compareGreaterFalse)
+{
+    const auto formula{formula::parse("3>4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
+}
+
+TEST(TestFormulaInterpret, compareGreaterTrue)
+{
+    const auto formula{formula::parse("4>3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // true is 1.0
+}
+
+TEST(TestFormulaInterpret, compareGreaterEqualTrueEquality)
+{
+    const auto formula{formula::parse("3>=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareGreaterEqualTrueGreater)
+{
+    const auto formula{formula::parse("4>=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareGreaterEqualFalse)
+{
+    const auto formula{formula::parse("2>=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, compareEqualTrue)
+{
+    const auto formula{formula::parse("3==3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // true is 1.0
+}
+
+TEST(TestFormulaInterpret, compareEqualFalse)
+{
+    const auto formula{formula::parse("3==4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
+}
+
+TEST(TestFormulaInterpret, compareNotEqualTrue)
+{
+    const auto formula{formula::parse("3!=4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // true is 1.0
+}
+
+TEST(TestFormulaInterpret, compareNotEqualFalse)
+{
+    const auto formula{formula::parse("3!=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
+}
