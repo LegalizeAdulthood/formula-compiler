@@ -104,3 +104,8 @@ TEST(TestFormulaParse, assignment)
 {
     EXPECT_TRUE(formula::parse("z=4"));
 }
+
+TEST(TestFormulaParse, modulus)
+{
+    EXPECT_TRUE(formula::parse("|-3.0|"));
+}

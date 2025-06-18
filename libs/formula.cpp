@@ -184,7 +184,10 @@ bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
     return true;
 }
 
-const auto make_identifier = [](auto &ctx) { return std::make_shared<IdentifierNode>(bp::_attr(ctx)); };
+const auto make_identifier = [](auto &ctx)
+{
+    return std::make_shared<IdentifierNode>(bp::_attr(ctx));
+};
 
 class UnaryOpNode : public Node
 {
@@ -214,6 +217,11 @@ double UnaryOpNode::interpret(SymbolTable &symbols)
     {
         return -m_operand->interpret(symbols);
     }
+    if (m_op == '|')
+    {
+        return std::abs(m_operand->interpret(symbols));
+    }
+
     throw std::runtime_error(std::string{"Invalid unary prefix operator '"} + m_op + "'");
 }
 
@@ -236,12 +244,29 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
         comp.movsd(result, tmp);  // xmm0 = xmm1
         return true;
     }
+    if (m_op == '|')
+    {
+        asmjit::x86::Xmm operand{comp.newXmm()};
+        if (!m_operand->compile(comp, state, operand))
+        {
+            return false;
+        }
+        // Use the intrinsic for absolute value
+        asmjit::InvokeNode *call;
+        asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(static_cast<double (*)(double)>(std::abs)))};
+        comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
+        call->setArg(0, operand);
+        call->setRet(0, result);
+        return true;
+    }
 
     return false;
 }
 
 const auto make_unary_op = [](auto &ctx)
-{ return std::make_shared<UnaryOpNode>(std::get<0>(bp::_attr(ctx)), std::get<1>(bp::_attr(ctx))); };
+{
+    return std::make_shared<UnaryOpNode>(std::get<0>(bp::_attr(ctx)), std::get<1>(bp::_attr(ctx)));
+};
 
 class BinaryOpNode : public Node
 {
@@ -427,7 +452,7 @@ bp::rule<struct ExprTag, Expr> expr = "expression";
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
-const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op];
+const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op] | (bp::char_('|') >> expr >> '|')[make_unary_op];
 const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];

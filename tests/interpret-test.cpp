@@ -153,3 +153,11 @@ TEST(TestFormulaInterpret, chainedAssignment)
     ASSERT_EQ(3.0, formula->get_value("z1"));
     ASSERT_EQ(3.0, formula->get_value("z2"));
 }
+
+TEST(TestFormulaInterpret, modulus)
+{
+    const auto formula{formula::parse("|-3.0|")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(3.0, formula->interpret());
+}

@@ -178,3 +178,12 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
     ASSERT_EQ(3.0, formula->get_value("z1"));
     ASSERT_EQ(3.0, formula->get_value("z2"));
 }
+
+TEST(TestCompiledFormulaRun, modulus)
+{
+    const auto formula{formula::parse("|-3.0|")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(3.0, formula->run());
+}
