@@ -90,11 +90,11 @@ void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
 
 void update_symbols(asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolLabels &labels)
 {
-    asmjit::x86::Xmm tmp{comp.newXmm()};
+    asmjit::x86::Gp tmp{comp.newUIntPtr()};
     for (auto &[name, label] : labels)
     {
-        comp.movsd(tmp, asmjit::x86::ptr(label));
-        comp.movsd(asmjit::x86::ptr(std::uintptr_t(&symbols[name])), tmp);
+        comp.mov(tmp, asmjit::x86::ptr(label));
+        comp.mov(asmjit::x86::ptr(std::uintptr_t(&symbols[name])), tmp);
     }
 }
 
