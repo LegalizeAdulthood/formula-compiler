@@ -88,6 +88,16 @@ void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
     }
 }
 
+void update_symbols(asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolLabels &labels)
+{
+    asmjit::x86::Xmm tmp{comp.newXmm()};
+    for (auto &[name, label] : labels)
+    {
+        comp.movsd(tmp, asmjit::x86::ptr(label));
+        comp.movsd(asmjit::x86::ptr(std::uintptr_t(&symbols[name])), tmp);
+    }
+}
+
 class Node
 {
 public:
@@ -101,6 +111,8 @@ public:
         throw std::runtime_error("Node does not support lvalue access");
     }
 };
+
+using Expr = std::shared_ptr<Node>;
 
 class NumberNode : public Node
 {
@@ -130,7 +142,10 @@ bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmji
     return true;
 }
 
-const auto make_number = [](auto &ctx) { return std::make_shared<NumberNode>(bp::_attr(ctx)); };
+const auto make_number = [](auto &ctx)
+{
+    return std::make_shared<NumberNode>(bp::_attr(ctx));
+};
 
 class IdentifierNode : public Node
 {
@@ -162,19 +177,9 @@ double IdentifierNode::interpret(SymbolTable &symbols)
     return 0.0;
 }
 
-template <typename Emitter>
-asmjit::Label get_identifier_label(Emitter &assem, EmitterState &state, const std::string &name)
-{
-    if (const auto &it = state.symbols.find(name); it != state.symbols.end())
-    {
-        return get_symbol_label(assem, state.data.symbols, it->first);
-    }
-    return get_constant_label(assem, state.data.constants, 0.0);
-}
-
 bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    asmjit::Label label{get_identifier_label(comp, state, m_name)};
+    asmjit::Label label{get_symbol_label(comp, state.data.symbols, m_name)};
     comp.movq(result, asmjit::x86::ptr(label));
     return true;
 }
@@ -184,7 +189,7 @@ const auto make_identifier = [](auto &ctx) { return std::make_shared<IdentifierN
 class UnaryOpNode : public Node
 {
 public:
-    UnaryOpNode(char op, std::shared_ptr<Node> operand) :
+    UnaryOpNode(char op, Expr operand) :
         m_op(op),
         m_operand(std::move(operand))
     {
@@ -196,7 +201,7 @@ public:
 
 private:
     char m_op;
-    std::shared_ptr<Node> m_operand;
+    Expr m_operand;
 };
 
 double UnaryOpNode::interpret(SymbolTable &symbols)
@@ -242,7 +247,7 @@ class BinaryOpNode : public Node
 {
 public:
     BinaryOpNode() = default;
-    BinaryOpNode(std::shared_ptr<Node> left, char op, std::shared_ptr<Node> right) :
+    BinaryOpNode(Expr left, char op, Expr right) :
         m_left(std::move(left)),
         m_op(op),
         m_right(std::move(right))
@@ -255,9 +260,9 @@ public:
     double &lvalue(SymbolTable &symbols) override;
 
 private:
-    std::shared_ptr<Node> m_left;
+    Expr m_left;
     char m_op;
-    std::shared_ptr<Node> m_right;
+    Expr m_right;
     double *m_lvalue{};
 };
 
@@ -356,7 +361,52 @@ const auto make_binary_op_seq = [](auto &ctx)
     return left;
 };
 
-using Expr = std::shared_ptr<Node>;
+class AssignmentNode : public Node
+{
+public:
+    AssignmentNode(std::string variable, Expr expression) :
+        m_variable(std::move(variable)),
+        m_expression(std::move(expression))
+    {
+    }
+    ~AssignmentNode() override = default;
+
+    double interpret(SymbolTable &symbols) override;
+    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+private:
+    std::string m_variable;
+    Expr m_expression;
+};
+
+double AssignmentNode::interpret(SymbolTable &symbols)
+{
+    double value = m_expression->interpret(symbols);
+    symbols[m_variable] = value;
+    return value;
+}
+
+bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+{
+    asmjit::Label label = get_symbol_label(comp, state.data.symbols, m_variable);
+    if (!m_expression->compile(comp, state, result))
+    {
+        return false;
+    }
+    comp.movsd(asmjit::x86::ptr(label), result);
+    return true;
+}
+
+auto make_assign = [](auto &ctx)
+{
+    auto variable_seq = std::get<0>(bp::_attr(ctx));
+    auto rhs = std::get<1>(bp::_attr(ctx));
+    for (const auto &variable : variable_seq)
+    {
+        rhs = std::make_shared<AssignmentNode>(variable, rhs);
+    }
+    return rhs;
+};
 
 // Terminal parsers
 const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
@@ -367,12 +417,13 @@ const auto identifier = bp::lexeme[alpha >> *alnum];
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
 bp::rule<struct IdentifierTag, Expr> variable = "variable";
-bp::rule<struct ExprTag, Expr> expr = "expression";
+bp::rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
+bp::rule<struct FactorTag, Expr> factor = "additive factor";
 bp::rule<struct PowerTag, Expr> power = "exponentiation";
 bp::rule<struct TermTag, Expr> term = "multiplicative term";
-bp::rule<struct FactorTag, Expr> factor = "additive factor";
-bp::rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
-bp::rule<struct AssignTag, Expr> assign = "assignment operator";
+bp::rule<struct AdditiveTag, Expr> additive = "additive expression";
+bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
+bp::rule<struct ExprTag, Expr> expr = "expression";
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
@@ -380,17 +431,18 @@ const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op];
 const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
-const auto assign_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
-const auto expr_def = (assign >> *(bp::char_("=") >> assign))[make_binary_op_seq];
+const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
+const auto assignment_def = (+(identifier >> '=') >> expr)[make_assign];
+const auto expr_def = assignment | additive;
 
-BOOST_PARSER_DEFINE_RULES(number, variable, expr, assign, term, power, factor, unary_op);
+BOOST_PARSER_DEFINE_RULES(number, variable, unary_op, factor, power, term, additive, assignment, expr);
 
 using Function = double();
 
 class ParsedFormula : public Formula
 {
 public:
-    ParsedFormula(std::shared_ptr<Node> ast) :
+    ParsedFormula(Expr ast) :
         m_ast(ast)
     {
         m_state.symbols["e"] = std::exp(1.0);
@@ -419,7 +471,7 @@ private:
     bool init_code_holder(asmjit::CodeHolder &code);
 
     EmitterState m_state;
-    std::shared_ptr<Node> m_ast;
+    Expr m_ast;
     Function *m_function{};
     asmjit::JitRuntime m_runtime;
     asmjit::FileLogger m_logger{stdout};
@@ -458,6 +510,7 @@ bool ParsedFormula::compile()
         std::cerr << "Failed to compile AST\n";
         return false;
     }
+    update_symbols(comp, m_state.symbols, m_state.data.symbols);
     comp.ret(result);
     comp.endFunc();
     emit_data_section(comp, m_state);
@@ -485,7 +538,8 @@ std::shared_ptr<Formula> parse(std::string_view text)
 
     try
     {
-        if (auto success = bp::parse(text, expr, bp::ws, ast /*, bp::trace::on*/); success && ast)
+        bool debug{};
+        if (auto success = bp::parse(text, expr, bp::ws, ast, debug ? bp::trace::on : bp::trace::off); success && ast)
         {
             return std::make_shared<ParsedFormula>(ast);
         }

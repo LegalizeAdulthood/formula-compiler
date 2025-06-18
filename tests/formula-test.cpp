@@ -245,7 +245,7 @@ TEST(TestFormulaInterpret, assignmentParens)
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
-TEST(TestFormulaInterpret, DISABLED_chainedAssignment)
+TEST(TestFormulaInterpret, chainedAssignment)
 {
     const auto formula{formula::parse("z1=z2=3")};
     ASSERT_TRUE(formula);
@@ -397,4 +397,35 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(18.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, assignment)
+{
+    const auto formula{formula::parse("z=4+2")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(6.0, formula->run());
+    ASSERT_EQ(6.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, assignmentParens)
+{
+    const auto formula{formula::parse("(z=4)+2")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(6.0, formula->run());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, chainedAssignment)
+{
+    const auto formula{formula::parse("z1=z2=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(3.0, formula->run());
+    ASSERT_EQ(3.0, formula->get_value("z1"));
+    ASSERT_EQ(3.0, formula->get_value("z2"));
 }
