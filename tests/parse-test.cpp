@@ -149,3 +149,8 @@ TEST(TestFormulaParse, compareNotEqual)
 {
     EXPECT_TRUE(formula::parse("4!=3"));
 }
+
+TEST(TestFormulaParse, logicalAnd)
+{
+    EXPECT_TRUE(formula::parse("4==3&&5==6"));
+}

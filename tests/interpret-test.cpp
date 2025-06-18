@@ -290,3 +290,36 @@ TEST(TestFormulaInterpret, compareNotEqualFalse)
 
     ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
 }
+
+TEST(TestFormulaInterpret, logicalAndTrue)
+{
+    const auto formula{formula::parse("1&&1")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // true is 1.0
+}
+
+TEST(TestFormulaInterpret, logicalAndFalse)
+{
+    const auto formula{formula::parse("1&&0")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret()); // false is 0.0
+}
+
+TEST(TestFormulaInterpret, logicalAndPrecedence)
+{
+    const auto formula{formula::parse("1+2&&3+4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret()); // (1+2) && (3+4) is true
+}
+
+TEST(TestFormulaInterpret, logicalAndShortCircuitTrue)
+{
+    const auto formula{formula::parse("0&&z=3")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret());    // 0 is false, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
+}

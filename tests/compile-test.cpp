@@ -249,7 +249,7 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+    ASSERT_EQ(0.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterTrue)
@@ -258,7 +258,7 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+    ASSERT_EQ(1.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
@@ -285,7 +285,7 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+    ASSERT_EQ(1.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, compareEqualFalse)
@@ -294,7 +294,7 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+    ASSERT_EQ(0.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualTrue)
@@ -303,7 +303,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+    ASSERT_EQ(1.0, formula->run());
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualFalse)
@@ -312,5 +312,33 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+    ASSERT_EQ(0.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, logicalAndTrue)
+{
+    const auto formula{formula::parse("1&&1")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(1.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, logicalAndFalse)
+{
+    const auto formula{formula::parse("1&&0")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
+{
+    const auto formula{formula::parse("0&&z=3")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run());          // 0 is false, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }

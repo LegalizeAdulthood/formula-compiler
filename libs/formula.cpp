@@ -308,6 +308,18 @@ double BinaryOpNode::interpret(SymbolTable &symbols)
     }
 
     const double left = m_left->interpret(symbols);
+    const auto bool_result = [](bool condition)
+    {
+        return condition ? 1.0 : 0.0;
+    };
+    if (m_op == "&&") // short-circuit AND
+    {
+        if (left == 0.0)
+        {
+            return 0.0;
+        }
+        return bool_result(m_right->interpret(symbols) != 0.0);
+    }
     const double right = m_right->interpret(symbols);
     if (m_op == "+")
     {
@@ -329,10 +341,6 @@ double BinaryOpNode::interpret(SymbolTable &symbols)
     {
         return std::pow(left, right);
     }
-    const auto bool_result = [](bool condition)
-    {
-        return condition ? 1.0 : 0.0;
-    };
     if (m_op == "<")
     {
         return bool_result(left < right);
@@ -364,8 +372,22 @@ double BinaryOpNode::interpret(SymbolTable &symbols)
 bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     m_left->compile(comp, state, result);
+    asmjit::Label skip_right = comp.newLabel();
     asmjit::x86::Xmm right{comp.newXmm()};
+    if (m_op == "&&")
+    {
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        comp.xorpd(zero, zero);     // xmm = 0.0
+        comp.ucomisd(result, zero); // xmm0 <=> 0.0?
+        asmjit::Label success = comp.newLabel();
+        comp.jne(success); // xmm0 != 0.0
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(right, asmjit::x86::ptr(one));
+        comp.jmp(skip_right);
+        comp.bind(success);
+    }
     m_right->compile(comp, state, right);
+    comp.bind(skip_right);
     if (m_op == "+")
     {
         comp.addsd(result, right);
@@ -432,6 +454,24 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
             return false; // Unsupported operator
         }
         comp.xorpd(result, result); // result = 0.0
+        comp.jmp(end);
+        comp.bind(success);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(result, asmjit::x86::ptr(one));
+        comp.bind(end);
+        return true;
+    }
+    if (m_op == "&&")
+    {
+        asmjit::Label success = comp.newLabel();
+        asmjit::Label end = comp.newLabel();
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        comp.xorpd(zero, zero);     // xmm = 0.0
+        comp.ucomisd(result, zero); // result <=> 0.0?
+        comp.je(end);               // result == 0.0?
+        comp.ucomisd(right, zero);  // right <=> 0.0?
+        comp.jne(success);
+        comp.movsd(result, zero);
         comp.jmp(end);
         comp.bind(success);
         asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
@@ -528,8 +568,9 @@ bp::rule<struct PowerTag, Expr> power = "exponentiation";
 bp::rule<struct TermTag, Expr> term = "multiplicative term";
 bp::rule<struct AdditiveTag, Expr> additive = "additive expression";
 bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
-bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ExprTag, Expr> expr = "expression";
+bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
+bp::rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
 bp::rule<struct StatementTag, Expr> statement = "statement";
 
 const auto number_def = bp::double_[make_number];
@@ -542,10 +583,11 @@ const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_se
 const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(relop >> expr))[make_binary_op_seq];
-const auto statement_def = comparative;
+const auto conjunctive_def = (comparative >> *(bp::string("&&") >> comparative))[make_binary_op_seq];
+const auto statement_def = conjunctive;
 
 BOOST_PARSER_DEFINE_RULES(
-    number, variable, unary_op, factor, power, term, additive, assignment, comparative, expr, statement);
+    number, variable, unary_op, factor, power, term, additive, assignment, expr, comparative, conjunctive, statement);
 
 using Function = double();
 
