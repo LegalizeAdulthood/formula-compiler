@@ -159,3 +159,18 @@ TEST(TestFormulaParse, logicalOr)
 {
     EXPECT_TRUE(formula::parse("4==3||5==6"));
 }
+
+TEST(TestFormulaParse, ignoreComments)
+{
+    EXPECT_TRUE(formula::parse("3; z=6 oh toodlee doo"));
+}
+
+TEST(TestFormulaParse, ignoreCommentsLF)
+{
+    EXPECT_TRUE(formula::parse("3; z=6 oh toodlee doo\n"));
+}
+
+TEST(TestFormulaParse, ignoreCommentsCRLF)
+{
+    EXPECT_TRUE(formula::parse("3; z=6 oh toodlee doo\r\n"));
+}

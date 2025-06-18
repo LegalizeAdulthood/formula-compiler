@@ -732,7 +732,8 @@ std::shared_ptr<Formula> parse(std::string_view text)
     try
     {
         bool debug{};
-        if (auto success = bp::parse(text, statement, bp::ws, ast, debug ? bp::trace::on : bp::trace::off);
+        const auto skipper = bp::ws | (bp::char_(';') >> *(bp::char_ - bp::eol));
+        if (auto success = bp::parse(text, statement, skipper, ast, debug ? bp::trace::on : bp::trace::off);
             success && ast)
         {
             return std::make_shared<ParsedFormula>(ast);
