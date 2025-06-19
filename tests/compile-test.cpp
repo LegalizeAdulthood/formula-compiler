@@ -370,3 +370,24 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
     ASSERT_EQ(1.0, formula->run());          // 1 is true, so the second part is not evaluated
     ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }
+
+TEST(TestCompiledFormulaRun, statements)
+{
+    const auto formula{formula::parse("3\n"
+                                      "4\n")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(4.0, formula->run());
+}
+
+TEST(TestCompiledFormulaRun, assignmentStatements)
+{
+    const auto formula{formula::parse("z=3\n"
+                                      "z=4\n")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(4.0, formula->run());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}

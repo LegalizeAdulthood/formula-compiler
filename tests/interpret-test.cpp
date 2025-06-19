@@ -356,3 +356,22 @@ TEST(TestFormulaInterpret, logicalOrShortCircuitTrue)
     ASSERT_EQ(1.0, formula->interpret());
     ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }
+
+TEST(TestFormulaInterpret, statements)
+{
+    const auto formula{formula::parse("3\n"
+                                      "4\n")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(4.0, formula->interpret());
+}
+
+TEST(TestFormulaInterpret, assignmentStatements)
+{
+    const auto formula{formula::parse("z=3\n"
+                                      "z=4\n")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(4.0, formula->interpret());
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}

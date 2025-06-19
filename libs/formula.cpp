@@ -591,6 +591,37 @@ const auto make_assign = [](auto &ctx)
     return rhs;
 };
 
+class StatementSeqNode : public Node
+{
+public:
+    StatementSeqNode(std::vector<Expr> statements) :
+        m_statements(std::move(statements))
+    {
+    }
+    ~StatementSeqNode() override = default;
+
+    double interpret(SymbolTable &symbols) override;
+    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+private:
+    std::vector<Expr> m_statements;
+};
+
+double StatementSeqNode::interpret(SymbolTable &symbols)
+{
+    return m_statements.back()->interpret(symbols);
+}
+
+bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+{
+    return m_statements.back()->compile(comp, state, result);
+}
+
+const auto make_statement_seq = [](auto &ctx)
+{
+    return std::make_shared<StatementSeqNode>(bp::_attr(ctx));
+};
+
 // Terminal parsers
 const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
@@ -599,6 +630,7 @@ const auto identifier = bp::lexeme[alpha >> *alnum];
 const auto rel_op =
     bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
 const auto logical_op = bp::string("&&") | bp::string("||");
+const auto skipper = (bp::ws - bp::eol) | (bp::char_(';') >> *(bp::char_ - bp::eol));
 
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
@@ -625,7 +657,7 @@ const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
-const auto statement_def = conjunctive;
+const auto statement_def = (conjunctive % +bp::eol)[make_statement_seq] >> *bp::eol;
 
 BOOST_PARSER_DEFINE_RULES(
     number, variable, unary_op, factor, power, term, additive, assignment, expr, comparative, conjunctive, statement);
@@ -732,7 +764,6 @@ std::shared_ptr<Formula> parse(std::string_view text)
     try
     {
         bool debug{};
-        const auto skipper = bp::ws | (bp::char_(';') >> *(bp::char_ - bp::eol));
         if (auto success = bp::parse(text, statement, skipper, ast, debug ? bp::trace::on : bp::trace::off);
             success && ast)
         {

@@ -174,3 +174,29 @@ TEST(TestFormulaParse, ignoreCommentsCRLF)
 {
     EXPECT_TRUE(formula::parse("3; z=6 oh toodlee doo\r\n"));
 }
+
+TEST(TestFormulaParser, statements)
+{
+    EXPECT_TRUE(formula::parse("3\n"
+                               "4\n"));
+}
+
+TEST(TestFormulaParser, assignmentStatements)
+{
+    EXPECT_TRUE(formula::parse("z=3\n"
+                               "z=4\n"));
+}
+
+TEST(TestFormulaParser, assignmentWithComments)
+{
+    EXPECT_TRUE(formula::parse("z=3; comment\n"
+                               "z=4; another comment\n"));
+}
+
+TEST(TestFormulaParser, assignmentWithBlankLines)
+{
+    EXPECT_TRUE(formula::parse("z=3; comment\n"
+                               "\r\n"
+                               "\n"
+                               "z=4; another comment\n"));
+}
