@@ -619,6 +619,12 @@ const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
 const auto alnum = alpha | digit | bp::char_('_');
 const auto identifier = bp::lexeme[alpha >> *alnum];
+const auto reserved_variable =                                                                            //
+    bp::lit("p1") | bp::lit("p2") | bp::lit("p3") | bp::lit("p4") | bp::lit("p5") |                       //
+    bp::lit("pixel") | bp::lit("lastsqr") | bp::lit("rand") | bp::lit("pi") | bp::lit("e") |              //
+    bp::lit("maxit") | bp::lit("scrnmax") | bp::lit("scrnpix") | bp::lit("whitesq") | bp::lit("ismand") | //
+    bp::lit("center") | bp::lit("magxmag") | bp::lit("rotskew");
+const auto user_variable = identifier - reserved_variable;
 const auto rel_op =
     bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
 const auto logical_op = bp::string("&&") | bp::string("||");
@@ -646,7 +652,7 @@ const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
 const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
-const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
+const auto assignment_def = (+(user_variable >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];

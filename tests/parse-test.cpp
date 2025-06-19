@@ -3,6 +3,10 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <string>
+#include <vector>
+
+using namespace testing;
 
 TEST(TestFormulaParse, constant)
 {
@@ -205,3 +209,21 @@ TEST(TestFormulaParser, initializeIterateBailout)
 {
     EXPECT_TRUE(formula::parse("z=pixel:z=z*z+pixel,|z|>4"));
 }
+
+static std::vector<std::string> s_read_only_vars{
+    "p1", "p2", "p3", "p4", "p5",                       //
+    "pixel", "lastsqr", "rand", "pi", "e",              //
+    "maxit", "scrnmax", "scrnpix", "whitesq", "ismand", //
+    "center", "magxmag", "rotskew",                     //
+};
+
+class ReadOnlyVariables : public TestWithParam<std::string>
+{
+};
+
+TEST_P(ReadOnlyVariables, notAssignable)
+{
+    ASSERT_FALSE(formula::parse(GetParam() + "=1"));
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaParser, ReadOnlyVariables, ValuesIn(s_read_only_vars));
