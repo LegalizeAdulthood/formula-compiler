@@ -227,3 +227,30 @@ TEST_P(ReadOnlyVariables, notAssignable)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParser, ReadOnlyVariables, ValuesIn(s_read_only_vars));
+
+static std::vector<std::string> s_functions{
+    "sin", "cos", "sinh", "cosh", "cosxx",      //
+    "tan", "cotan", "tanh", "cotanh", "sqr",    //
+    "log", "exp", "abs", "conj", "real",        //
+    "imag", "flip", "fn1", "fn2", "fn3",        //
+    "fn4", "srand", "asin", "acos", "asinh",    //
+    "acosh", "atan", "atanh", "sqrt", "cabs",   //
+    "floor", "ceil", "trunc", "round", "ident", //
+    "one", "zero",                              //
+};
+
+class Functions : public TestWithParam<std::string>
+{
+};
+
+TEST_P(Functions, notAssignable)
+{
+    ASSERT_FALSE(formula::parse(GetParam() + "=1"));
+}
+
+TEST_P(Functions, functionOne)
+{
+    ASSERT_TRUE(formula::parse(GetParam() + "(1)"));
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaParser, Functions, ValuesIn(s_functions));

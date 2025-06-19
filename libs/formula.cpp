@@ -119,7 +119,7 @@ class Node
 public:
     virtual ~Node() = default;
 
-    virtual double interpret(SymbolTable &symbols) = 0;
+    virtual double interpret(SymbolTable &symbols) const = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
 };
 
@@ -134,14 +134,14 @@ public:
     }
     ~NumberNode() override = default;
 
-    double interpret(SymbolTable &) override;
+    double interpret(SymbolTable &) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     double m_value{};
 };
 
-double NumberNode::interpret(SymbolTable &)
+double NumberNode::interpret(SymbolTable &) const
 {
     return m_value;
 }
@@ -167,14 +167,14 @@ public:
     }
     ~IdentifierNode() override = default;
 
-    double interpret(SymbolTable &symbols) override;
+    double interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     std::string m_name;
 };
 
-double IdentifierNode::interpret(SymbolTable &symbols)
+double IdentifierNode::interpret(SymbolTable &symbols) const
 {
     if (const auto &it = symbols.find(m_name); it != symbols.end())
     {
@@ -195,6 +195,40 @@ const auto make_identifier = [](auto &ctx)
     return std::make_shared<IdentifierNode>(bp::_attr(ctx));
 };
 
+class FunctionCallNode : public Node
+{
+public:
+    FunctionCallNode(std::string name, Expr arg) :
+        m_name(std::move(name)),
+        m_arg(std::move(arg))
+    {
+    }
+    ~FunctionCallNode() override = default;
+
+    double interpret(SymbolTable &symbols) const override;
+    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+private:
+    std::string m_name;
+    Expr m_arg;
+};
+
+double FunctionCallNode::interpret(SymbolTable &symbols) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+{
+    throw std::runtime_error("not implemented");
+}
+
+const auto make_function_call = [](auto &ctx)
+{
+    const auto &attr{bp::_attr(ctx)};
+    return std::make_shared<FunctionCallNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
 class UnaryOpNode : public Node
 {
 public:
@@ -205,7 +239,7 @@ public:
     }
     ~UnaryOpNode() override = default;
 
-    double interpret(SymbolTable &symbols) override;
+    double interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -213,7 +247,7 @@ private:
     Expr m_operand;
 };
 
-double UnaryOpNode::interpret(SymbolTable &symbols)
+double UnaryOpNode::interpret(SymbolTable &symbols) const
 {
     if (m_op == '+')
     {
@@ -292,7 +326,7 @@ public:
     }
     ~BinaryOpNode() override = default;
 
-    double interpret(SymbolTable &symbols) override;
+    double interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -301,7 +335,7 @@ private:
     Expr m_right;
 };
 
-double BinaryOpNode::interpret(SymbolTable &symbols)
+double BinaryOpNode::interpret(SymbolTable &symbols) const
 {
     const double left = m_left->interpret(symbols);
     const auto bool_result = [](bool condition)
@@ -539,7 +573,7 @@ public:
     }
     ~AssignmentNode() override = default;
 
-    double interpret(SymbolTable &symbols) override;
+    double interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -547,7 +581,7 @@ private:
     Expr m_expression;
 };
 
-double AssignmentNode::interpret(SymbolTable &symbols)
+double AssignmentNode::interpret(SymbolTable &symbols) const
 {
     double value = m_expression->interpret(symbols);
     symbols[m_variable] = value;
@@ -585,14 +619,14 @@ public:
     }
     ~StatementSeqNode() override = default;
 
-    double interpret(SymbolTable &symbols) override;
+    double interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     std::vector<Expr> m_statements;
 };
 
-double StatementSeqNode::interpret(SymbolTable &symbols)
+double StatementSeqNode::interpret(SymbolTable &symbols) const
 {
     return m_statements.back()->interpret(symbols);
 }
@@ -624,7 +658,16 @@ const auto reserved_variable =                                                  
     bp::lit("pixel") | bp::lit("lastsqr") | bp::lit("rand") | bp::lit("pi") | bp::lit("e") |              //
     bp::lit("maxit") | bp::lit("scrnmax") | bp::lit("scrnpix") | bp::lit("whitesq") | bp::lit("ismand") | //
     bp::lit("center") | bp::lit("magxmag") | bp::lit("rotskew");
-const auto user_variable = identifier - reserved_variable;
+const auto reserved_function =                                                                                   //
+    bp::string("sinh") | bp::string("cosh") | bp::string("cosxx") | bp::string("sin") | bp::string("cos") |      //
+    bp::string("cotanh") | bp::string("cotan") | bp::string("tanh") | bp::string("tan") | bp::string("sqrt") |   //
+    bp::string("log") | bp::string("exp") | bp::string("abs") | bp::string("conj") | bp::string("real") |        //
+    bp::string("imag") | bp::string("flip") | bp::string("fn1") | bp::string("fn2") | bp::string("fn3") |        //
+    bp::string("fn4") | bp::string("srand") | bp::string("asinh") | bp::string("acosh") | bp::string("asin") |   //
+    bp::string("acos") | bp::string("atanh") | bp::string("atan") | bp::string("cabs") | bp::string("sqr") |     //
+    bp::string("floor") | bp::string("ceil") | bp::string("trunc") | bp::string("round") | bp::string("ident") | //
+    bp::string("one") | bp::string("zero");                                                                      //
+const auto user_variable = identifier - reserved_variable - reserved_function;
 const auto rel_op =
     bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
 const auto logical_op = bp::string("&&") | bp::string("||");
@@ -633,6 +676,7 @@ const auto skipper = (bp::ws - bp::eol) | (bp::char_(';') >> *(bp::char_ - bp::e
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
 bp::rule<struct IdentifierTag, Expr> variable = "variable";
+bp::rule<struct FunctionCallTag, Expr> function_call = "function call";
 bp::rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
 bp::rule<struct FactorTag, Expr> factor = "additive factor";
 bp::rule<struct PowerTag, Expr> power = "exponentiation";
@@ -647,8 +691,9 @@ bp::rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula defi
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
+const auto function_call_def = (reserved_function >> '(' >> expr >> ')')[make_function_call];
 const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op] | (bp::char_('|') >> expr >> '|')[make_unary_op];
-const auto factor_def = number | variable | '(' >> expr >> ')' | unary_op;
+const auto factor_def = number | function_call | variable | '(' >> expr >> ')' | unary_op;
 const auto power_def = (factor >> *(bp::char_('^') >> factor))[make_binary_op_seq];
 const auto term_def = (power >> *(bp::char_("*/") >> power))[make_binary_op_seq];
 const auto additive_def = (term >> *(bp::char_("+-") >> term))[make_binary_op_seq];
@@ -660,7 +705,7 @@ const auto statement_seq_def = (conjunctive % +bp::eol)[make_statement_seq] >> *
 const auto formula_def = (statement_seq >> ':' >> statement_seq >> ',' >> statement_seq) //
     | (bp::attr<Expr>(nullptr) >> statement_seq >> bp::attr<Expr>(nullptr));
 
-BOOST_PARSER_DEFINE_RULES(number, variable, unary_op,                          //
+BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
     statement_seq, formula);
 
@@ -824,7 +869,7 @@ std::shared_ptr<Formula> parse(std::string_view text)
 
     try
     {
-        bool debug{};
+        bool debug{false};
         if (auto success = bp::parse(text, formula, skipper, ast, debug ? bp::trace::on : bp::trace::off);
             success && ast.iterate)
         {
