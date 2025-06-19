@@ -410,3 +410,14 @@ TEST(TestFormulaInterpret, formulaBailoutFalse)
     ASSERT_EQ(0.0, formula->interpret(formula::BAILOUT));
     ASSERT_EQ(2.0, formula->get_value("z"));
 }
+
+TEST(TestFormulaInterpret, formulaBailoutTrue)
+{
+    const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
+    ASSERT_TRUE(formula);
+    formula->set_value("pixel", 4.4);
+    formula->set_value("z", 8.0);
+
+    ASSERT_EQ(1.0, formula->interpret(formula::BAILOUT));
+    ASSERT_EQ(8.0, formula->get_value("z"));
+}
