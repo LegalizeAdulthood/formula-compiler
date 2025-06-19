@@ -200,3 +200,8 @@ TEST(TestFormulaParser, assignmentWithBlankLines)
                                "\n"
                                "z=4; another comment\n"));
 }
+
+TEST(TestFormulaParser, initializeIterateBailout)
+{
+    EXPECT_TRUE(formula::parse("z=pixel:z=z*z+pixel,|z|>4"));
+}

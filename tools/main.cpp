@@ -52,7 +52,7 @@ int main(const std::vector<std::string_view> &args)
         return 1;
     }
 
-    std::cout << "Evaluated: " << (compile ? formula->run() : formula->interpret()) << '\n';
+    std::cout << "Evaluated: " << (compile ? formula->run(formula::ITERATE) : formula->interpret(formula::ITERATE)) << '\n';
     return 0;
 }
 

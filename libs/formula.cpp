@@ -23,15 +23,21 @@ namespace formula
 namespace
 {
 
+struct LabelBinding
+{
+    asmjit::Label label;
+    bool bound;
+};
+
 using SymbolTable = std::map<std::string, double>;
-using ConstantLabels = std::map<double, asmjit::Label>;
-using SymbolLabels = std::map<std::string, asmjit::Label>;
+using ConstantBindings = std::map<double, LabelBinding>;
+using SymbolBindings = std::map<std::string, LabelBinding>;
 
 struct DataSection
 {
-    asmjit::Section *data{};  // Section for data storage
-    ConstantLabels constants; // Map of constants to labels
-    SymbolLabels symbols;     // Map of symbols to labels
+    asmjit::Section *data{};    // Section for data storage
+    ConstantBindings constants; // Map of constants to labels
+    SymbolBindings symbols;     // Map of symbols to labels
 };
 
 struct EmitterState
@@ -40,38 +46,43 @@ struct EmitterState
     DataSection data;
 };
 
-asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantLabels &labels, double value)
+asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantBindings &labels, double value)
 {
     if (const auto it = labels.find(value); it != labels.end())
     {
-        return it->second;
+        return it->second.label;
     }
 
     // Create a new label for the constant
     asmjit::Label label = comp.newLabel();
-    labels[value] = label;
+    labels[value] = LabelBinding{label, false};
     return label;
 }
 
-asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolLabels &labels, std::string name)
+asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBindings &labels, std::string name)
 {
     if (const auto it = labels.find(name); it != labels.end())
     {
-        return it->second;
+        return it->second.label;
     }
 
     // Create a new label for the symbol
     asmjit::Label label = comp.newNamedLabel(name.c_str());
-    labels[name] = label;
+    labels[name] = LabelBinding{label, false};
     return label;
 }
 
 void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
 {
     comp.section(state.data.data);
-    for (const auto &[name, label] : state.data.symbols)
+    for (auto &[name, binding] : state.data.symbols)
     {
-        comp.bind(label);
+        if (binding.bound)
+        {
+            continue;
+        }
+        binding.bound = true;
+        comp.bind(binding.label);
         if (const auto it = state.symbols.find(name); it != state.symbols.end())
         {
             comp.embedDouble(it->second); // Embed the symbol value in the data section
@@ -81,19 +92,24 @@ void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
             throw std::runtime_error("Symbol not found: " + name);
         }
     }
-    for (const auto &[value, label] : state.data.constants)
+    for (auto &[value, binding] : state.data.constants)
     {
-        comp.bind(label);
+        if (binding.bound)
+        {
+            continue;
+        }
+        binding.bound = true;
+        comp.bind(binding.label);
         comp.embedDouble(value); // Embed the double value in the data section
     }
 }
 
-void update_symbols(asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolLabels &labels)
+void update_symbols(asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolBindings &bindings)
 {
     asmjit::x86::Gp tmp{comp.newUIntPtr()};
-    for (auto &[name, label] : labels)
+    for (auto &[name, binding] : bindings)
     {
-        comp.mov(tmp, asmjit::x86::ptr(label));
+        comp.mov(tmp, asmjit::x86::ptr(binding.label));
         comp.mov(asmjit::x86::ptr(std::uintptr_t(&symbols[name])), tmp);
     }
 }
@@ -378,7 +394,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     if (m_op == "||")
     {
         asmjit::x86::Xmm zero{comp.newXmm()};
-        comp.xorpd(zero, zero); // xmm = 0.0
+        comp.xorpd(zero, zero);     // xmm = 0.0
         comp.ucomisd(result, zero); // result <=> 0.0?
         asmjit::Label eval_right = comp.newLabel();
         comp.je(eval_right); // result == 0.0
@@ -591,6 +607,13 @@ const auto make_statement_seq = [](auto &ctx)
     return std::make_shared<StatementSeqNode>(bp::_attr(ctx));
 };
 
+struct FormulaDefinition
+{
+    Expr initialize;
+    Expr iterate;
+    Expr bailout;
+};
+
 // Terminal parsers
 const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
@@ -613,7 +636,8 @@ bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
 bp::rule<struct ExprTag, Expr> expr = "expression";
 bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
-bp::rule<struct StatementTag, Expr> statement = "statement";
+bp::rule<struct StatementTag, Expr> statement_seq = "statement sequence";
+bp::rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
 
 const auto number_def = bp::double_[make_number];
 const auto variable_def = identifier[make_identifier];
@@ -626,17 +650,20 @@ const auto assignment_def = (+(identifier >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
-const auto statement_def = (conjunctive % +bp::eol)[make_statement_seq] >> *bp::eol;
+const auto statement_seq_def = (conjunctive % +bp::eol)[make_statement_seq] >> *bp::eol;
+const auto formula_def = (statement_seq >> ':' >> statement_seq >> ',' >> statement_seq) //
+    | (bp::attr<Expr>(nullptr) >> statement_seq >> bp::attr<Expr>(nullptr));
 
-BOOST_PARSER_DEFINE_RULES(
-    number, variable, unary_op, factor, power, term, additive, assignment, expr, comparative, conjunctive, statement);
+BOOST_PARSER_DEFINE_RULES(number, variable, unary_op,                          //
+    factor, power, term, additive, assignment, expr, comparative, conjunctive, //
+    statement_seq, formula);
 
 using Function = double();
 
 class ParsedFormula : public Formula
 {
 public:
-    ParsedFormula(Expr ast) :
+    ParsedFormula(FormulaDefinition ast) :
         m_ast(ast)
     {
         m_state.symbols["e"] = std::exp(1.0);
@@ -657,23 +684,35 @@ public:
         return 0.0;
     }
 
-    double interpret() override;
+    double interpret(Part part) override;
     bool compile() override;
-    double run() override;
+    double run(Part part) override;
 
 private:
     bool init_code_holder(asmjit::CodeHolder &code);
+    bool compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label);
 
     EmitterState m_state;
-    Expr m_ast;
-    Function *m_function{};
+    FormulaDefinition m_ast;
+    Function *m_initialize{};
+    Function *m_iterate{};
+    Function *m_bailout{};
     asmjit::JitRuntime m_runtime;
     asmjit::FileLogger m_logger{stdout};
 };
 
-double ParsedFormula::interpret()
+double ParsedFormula::interpret(Part part)
 {
-    return m_ast->interpret(m_state.symbols);
+    switch (part)
+    {
+    case INITIALIZE:
+        return m_ast.initialize->interpret(m_state.symbols);
+    case ITERATE:
+        return m_ast.iterate->interpret(m_state.symbols);
+    case BAILOUT:
+        return m_ast.bailout->interpret(m_state.symbols);
+    }
+    throw std::runtime_error("Invalid part for interpreter");
 }
 
 bool ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
@@ -689,6 +728,37 @@ bool ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
     return true;
 }
 
+bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label)
+{
+    if (!node)
+    {
+        return true; // Nothing to compile
+    }
+
+    label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
+    asmjit::x86::Xmm result = comp.newXmmSd();
+    if (!node->compile(comp, m_state, result))
+    {
+        std::cerr << "Failed to compile AST\n";
+        return false;
+    }
+    update_symbols(comp, m_state.symbols, m_state.data.symbols);
+    comp.ret(result);
+    comp.endFunc();
+    return true;
+}
+
+template <typename FunctionPtr>
+FunctionPtr function_cast(const asmjit::CodeHolder &code, char *module, const asmjit::Label label)
+{
+    if (!label.isValid())
+    {
+        return nullptr;
+    }
+    const size_t offset{code.labelOffsetFromBase(label)};
+    return reinterpret_cast<FunctionPtr>(module + offset);
+}
+
 bool ParsedFormula::compile()
 {
     asmjit::CodeHolder code;
@@ -697,44 +767,60 @@ bool ParsedFormula::compile()
         return false;
     }
     asmjit::x86::Compiler comp(&code);
-    comp.addFunc(asmjit::FuncSignature::build<double>());
-    asmjit::x86::Xmm result = comp.newXmmSd();
-    if (!m_ast->compile(comp, m_state, result))
+
+    asmjit::Label init_label{};
+    asmjit::Label iterate_label{};
+    asmjit::Label bailout_label{};
+    const bool result =                                     //
+        compile_part(comp, m_ast.initialize, init_label)    //
+        && compile_part(comp, m_ast.iterate, iterate_label) //
+        && compile_part(comp, m_ast.bailout, bailout_label);
+    if (!result)
     {
-        std::cerr << "Failed to compile AST\n";
+        std::cerr << "Failed to compile parts\n";
         return false;
     }
-    update_symbols(comp, m_state.symbols, m_state.data.symbols);
-    comp.ret(result);
-    comp.endFunc();
     emit_data_section(comp, m_state);
     comp.finalize();
 
-    if (const asmjit::Error err = m_runtime.add(&m_function, &code); err || !m_function)
+    char *module{};
+    if (const asmjit::Error err = m_runtime.add(&module, &code); err || !module)
     {
         std::cerr << "Failed to compile formula: " << asmjit::DebugUtils::errorAsString(err) << '\n';
         return false;
     }
+    m_initialize = function_cast<Function *>(code, module, init_label);
+    m_iterate = function_cast<Function *>(code, module, iterate_label);
+    m_bailout = function_cast<Function *>(code, module, bailout_label);
 
     return true;
 }
 
-double ParsedFormula::run()
+double ParsedFormula::run(Part part)
 {
-    return m_function ? m_function() : 0.0;
+    switch (part)
+    {
+    case INITIALIZE:
+        return m_initialize ? m_initialize() : 0.0;
+    case ITERATE:
+        return m_iterate ? m_iterate() : 0.0;
+    case BAILOUT:
+        return m_bailout ? m_bailout() : 0.0;
+    }
+    throw std::runtime_error("Invalid part for run");
 }
 
 } // namespace
 
 std::shared_ptr<Formula> parse(std::string_view text)
 {
-    Expr ast;
+    FormulaDefinition ast;
 
     try
     {
         bool debug{};
-        if (auto success = bp::parse(text, statement, skipper, ast, debug ? bp::trace::on : bp::trace::off);
-            success && ast)
+        if (auto success = bp::parse(text, formula, skipper, ast, debug ? bp::trace::on : bp::trace::off);
+            success && ast.iterate)
         {
             return std::make_shared<ParsedFormula>(ast);
         }

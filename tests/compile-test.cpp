@@ -10,7 +10,7 @@ TEST(TestCompiledFormulaRun, one)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, two)
@@ -19,7 +19,7 @@ TEST(TestCompiledFormulaRun, two)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(2.0, formula->run());
+    ASSERT_EQ(2.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, identifier)
@@ -28,7 +28,7 @@ TEST(TestCompiledFormulaRun, identifier)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(std::exp(1.0), formula->run(), 1e-6);
+    ASSERT_NEAR(std::exp(1.0), formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
@@ -37,7 +37,7 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, add)
@@ -46,7 +46,7 @@ TEST(TestCompiledFormulaRun, add)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(2.4, formula->run(), 1e-6);
+    ASSERT_NEAR(2.4, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, subtract)
@@ -55,7 +55,7 @@ TEST(TestCompiledFormulaRun, subtract)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(-0.7, formula->run(), 1e-6);
+    ASSERT_NEAR(-0.7, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, multiply)
@@ -64,7 +64,7 @@ TEST(TestCompiledFormulaRun, multiply)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(6.82, formula->run(), 1e-6);
+    ASSERT_NEAR(6.82, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, divide)
@@ -73,7 +73,7 @@ TEST(TestCompiledFormulaRun, divide)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(3.2, formula->run(), 1e-6);
+    ASSERT_NEAR(3.2, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
@@ -82,7 +82,7 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(3.01e23, formula->run(), 1e-6);
+    ASSERT_NEAR(3.01e23, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, unaryNegate)
@@ -91,7 +91,7 @@ TEST(TestCompiledFormulaRun, unaryNegate)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(1.6, formula->run(), 1e-6);
+    ASSERT_NEAR(1.6, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, addAddadd)
@@ -100,7 +100,7 @@ TEST(TestCompiledFormulaRun, addAddadd)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(6.6, formula->run(), 1e-6);
+    ASSERT_NEAR(6.6, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, mulMulMul)
@@ -109,7 +109,7 @@ TEST(TestCompiledFormulaRun, mulMulMul)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(10.648, formula->run(), 1e-6);
+    ASSERT_NEAR(10.648, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, addMulAdd)
@@ -118,7 +118,7 @@ TEST(TestCompiledFormulaRun, addMulAdd)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(12.76, formula->run(), 1e-6);
+    ASSERT_NEAR(12.76, formula->run(formula::ITERATE), 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, power)
@@ -127,7 +127,7 @@ TEST(TestCompiledFormulaRun, power)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(8.0, formula->run());
+    ASSERT_EQ(8.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, chainedPower)
@@ -136,7 +136,7 @@ TEST(TestCompiledFormulaRun, chainedPower)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(64.0, formula->run());
+    ASSERT_EQ(64.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, powerPrecedence)
@@ -145,7 +145,7 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(18.0, formula->run());
+    ASSERT_EQ(18.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, assignment)
@@ -154,7 +154,7 @@ TEST(TestCompiledFormulaRun, assignment)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(6.0, formula->run());
+    ASSERT_EQ(6.0, formula->run(formula::ITERATE));
     ASSERT_EQ(6.0, formula->get_value("z"));
 }
 
@@ -164,7 +164,7 @@ TEST(TestCompiledFormulaRun, assignmentParens)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(6.0, formula->run());
+    ASSERT_EQ(6.0, formula->run(formula::ITERATE));
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -174,7 +174,7 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(3.0, formula->run());
+    ASSERT_EQ(3.0, formula->run(formula::ITERATE));
     ASSERT_EQ(3.0, formula->get_value("z1"));
     ASSERT_EQ(3.0, formula->get_value("z2"));
 }
@@ -185,7 +185,7 @@ TEST(TestCompiledFormulaRun, modulus)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(3.0, formula->run());
+    ASSERT_EQ(3.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareLessFalse)
@@ -194,7 +194,7 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run()); // false is 0.0
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE)); // false is 0.0
 }
 
 TEST(TestCompiledFormulaRun, compareLessTrue)
@@ -203,7 +203,7 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run()); // true is 1.0
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE)); // true is 1.0
 }
 
 TEST(TestCompiledFormulaRun, compareLessPrecedence)
@@ -212,7 +212,7 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -222,7 +222,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
@@ -231,7 +231,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualFalse)
@@ -240,7 +240,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterFalse)
@@ -249,7 +249,7 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterTrue)
@@ -258,7 +258,7 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
@@ -267,7 +267,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
@@ -276,7 +276,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareEqualTrue)
@@ -285,7 +285,7 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareEqualFalse)
@@ -294,7 +294,7 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualTrue)
@@ -303,7 +303,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualFalse)
@@ -312,7 +312,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, logicalAndTrue)
@@ -321,7 +321,7 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, logicalAndFalse)
@@ -330,7 +330,7 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
@@ -339,8 +339,8 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());          // 0 is false, so the second part is not evaluated
-    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE)); // 0 is false, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z"));        // z should not be set
 }
 
 TEST(TestCompiledFormulaRun, logicalOrTrue)
@@ -349,7 +349,7 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, logicalOrFalse)
@@ -358,7 +358,7 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run());
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
@@ -367,8 +367,8 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run());          // 1 is true, so the second part is not evaluated
-    ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
+    ASSERT_EQ(1.0, formula->run(formula::ITERATE)); // 1 is true, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z"));        // z should not be set
 }
 
 TEST(TestCompiledFormulaRun, statements)
@@ -378,7 +378,7 @@ TEST(TestCompiledFormulaRun, statements)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run());
+    ASSERT_EQ(4.0, formula->run(formula::ITERATE));
 }
 
 TEST(TestCompiledFormulaRun, assignmentStatements)
@@ -388,6 +388,43 @@ TEST(TestCompiledFormulaRun, assignmentStatements)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run());
+    ASSERT_EQ(4.0, formula->run(formula::ITERATE));
     ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, formulaInitialize)
+{
+    const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
+    ASSERT_TRUE(formula);
+    formula->set_value("pixel", 4.4);
+    formula->set_value("z", 100.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(4.4, formula->run(formula::INITIALIZE));
+    ASSERT_EQ(4.4, formula->get_value("pixel"));
+    ASSERT_EQ(4.4, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, formulaIterate)
+{
+    const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
+    ASSERT_TRUE(formula);
+    formula->set_value("pixel", 4.4);
+    formula->set_value("z", 2.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(8.4, formula->run(formula::ITERATE));
+    ASSERT_EQ(4.4, formula->get_value("pixel"));
+    ASSERT_EQ(8.4, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, formulaBailoutFalse)
+{
+    const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 2.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run(formula::BAILOUT));
+    ASSERT_EQ(2.0, formula->get_value("z"));
 }
