@@ -580,7 +580,7 @@ bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
     return true;
 }
 
-auto make_assign = [](auto &ctx)
+const auto make_assign = [](auto &ctx)
 {
     auto variable_seq = std::get<0>(bp::_attr(ctx));
     auto rhs = std::get<1>(bp::_attr(ctx));
