@@ -105,11 +105,6 @@ public:
 
     virtual double interpret(SymbolTable &symbols) = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
-
-    virtual double &lvalue(SymbolTable & /*symbols*/)
-    {
-        throw std::runtime_error("Node does not support lvalue access");
-    }
 };
 
 using Expr = std::shared_ptr<Node>;
@@ -158,11 +153,6 @@ public:
 
     double interpret(SymbolTable &symbols) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-    double &lvalue(SymbolTable &symbols) override
-    {
-        return symbols[m_name];
-    }
 
 private:
     std::string m_name;
@@ -288,25 +278,15 @@ public:
 
     double interpret(SymbolTable &symbols) override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-    double &lvalue(SymbolTable &symbols) override;
 
 private:
     Expr m_left;
     std::string m_op;
     Expr m_right;
-    double *m_lvalue{};
 };
 
 double BinaryOpNode::interpret(SymbolTable &symbols)
 {
-    if (m_op == "=")
-    {
-        double &left = lvalue(symbols);
-        const double right = m_right->interpret(symbols);
-        left = right; // Assignment operation
-        return right;
-    }
-
     const double left = m_left->interpret(symbols);
     const auto bool_result = [](bool condition)
     {
@@ -521,17 +501,6 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     }
 
     return false;
-}
-
-double &BinaryOpNode::lvalue(SymbolTable &symbols)
-{
-    if (m_lvalue == nullptr)
-    {
-        double &left = m_left->lvalue(symbols);
-        m_lvalue = &left;
-        return left;
-    }
-    return *m_lvalue;
 }
 
 const auto make_binary_op_seq = [](auto &ctx)
