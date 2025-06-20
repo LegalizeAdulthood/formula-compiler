@@ -811,6 +811,40 @@ const auto make_statement_seq = [](auto &ctx)
     return std::make_shared<StatementSeqNode>(bp::_attr(ctx));
 };
 
+class IfStatementNode : public Node
+{
+public:
+    IfStatementNode(Expr condition, Expr then) :
+        m_condition(condition),
+        m_then(then)
+    {
+    }
+    ~IfStatementNode() override = default;
+
+    double interpret(SymbolTable &symbols) const override;
+    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+private:
+    Expr m_condition;
+    Expr m_then;
+};
+
+double IfStatementNode::interpret(SymbolTable &symbols) const
+{
+    return m_condition->interpret(symbols) != 0.0 ? 1.0 : 0.0;
+}
+
+bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+{
+    return false;
+}
+
+const auto make_if_statement = [](auto &ctx)
+{
+    const auto &attr{bp::_attr(ctx)};
+    return std::make_shared<IfStatementNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
 struct FormulaDefinition
 {
     Expr initialize;
@@ -837,7 +871,8 @@ const auto reserved_function =                                                  
     bp::string("acos") | bp::string("atanh") | bp::string("atan") | bp::string("cabs") | bp::string("sqr") |     //
     bp::string("floor") | bp::string("ceil") | bp::string("trunc") | bp::string("round") | bp::string("ident") | //
     bp::string("one") | bp::string("zero");                                                                      //
-const auto user_variable = identifier - reserved_variable - reserved_function;
+const auto reserved_word = bp::lit("if") | bp::lit("endif");
+const auto user_variable = identifier - reserved_variable - reserved_function - reserved_word;
 const auto rel_op =
     bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
 const auto logical_op = bp::string("&&") | bp::string("||");
@@ -856,7 +891,9 @@ bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
 bp::rule<struct ExprTag, Expr> expr = "expression";
 bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
-bp::rule<struct StatementTag, Expr> statement_seq = "statement sequence";
+bp::rule<struct IfStatementTag, Expr> if_statement = "if statement";
+bp::rule<struct StatementTag, Expr> statement = "statement";
+bp::rule<struct StatementSequenceTag, Expr> statement_seq = "statement sequence";
 bp::rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
 
 const auto number_def = bp::double_[make_number];
@@ -871,13 +908,17 @@ const auto assignment_def = (+(user_variable >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
-const auto statement_seq_def = (conjunctive % +bp::eol)[make_statement_seq] >> *bp::eol;
+const auto if_statement_def = (bp::lit("if") >> '(' >> expr >> ')' >> +bp::eol //
+    >> statement_seq >> +bp::eol                                               //
+    >> "endif")[make_if_statement];
+const auto statement_def = if_statement | conjunctive;
+const auto statement_seq_def = (statement % +bp::eol)[make_statement_seq] >> *bp::eol;
 const auto formula_def = (statement_seq >> ':' >> statement_seq >> ',' >> statement_seq) //
     | (bp::attr<Expr>(nullptr) >> statement_seq >> bp::attr<Expr>(nullptr));
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    statement_seq, formula);
+    if_statement, statement, statement_seq, formula);
 
 using Function = double();
 
