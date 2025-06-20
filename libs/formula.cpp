@@ -843,7 +843,28 @@ double IfStatementNode::interpret(SymbolTable &symbols) const
 
 bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    return false;
+    asmjit::Label condition_label = comp.newLabel();
+    asmjit::Label end_label = comp.newLabel();
+    m_condition->compile(comp, state, result);
+    asmjit::x86::Xmm zero{comp.newXmm()};
+    comp.xorpd(zero, zero);     // xmm = 0.0
+    comp.ucomisd(result, zero); // result <=> 0.0?
+    comp.jz(end_label);         // if result == 0.0, jump to end block
+    if (m_then)
+    {
+        if (!m_then->compile(comp, state, result))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        // If no then block, just set result to 1.0
+        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        comp.movsd(result, asmjit::x86::ptr(one));
+    }
+    comp.bind(end_label);
+    return true;
 }
 
 const auto make_if_statement = [](auto &ctx)

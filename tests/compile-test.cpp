@@ -465,3 +465,48 @@ TEST_P(RunFunctionCall, run)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(s_calls));
+
+TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
+{
+    const auto formula{formula::parse("if(5)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
+{
+    const auto formula{formula::parse("if(5<4)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
+}
+
+TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
+{
+    const auto formula{formula::parse("if(5)\n"
+                                      "z=3\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 0.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(3.0, formula->run(formula::ITERATE));
+    ASSERT_EQ(3.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
+{
+    const auto formula{formula::parse("if(5<4)\n"
+                                      "z=3\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 5.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(0.0, formula->run(formula::ITERATE));
+    ASSERT_EQ(5.0, formula->get_value("z"));
+}
