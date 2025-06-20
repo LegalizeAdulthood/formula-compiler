@@ -179,25 +179,25 @@ TEST(TestFormulaParse, ignoreCommentsCRLF)
     EXPECT_TRUE(formula::parse("3; z=6 oh toodlee doo\r\n"));
 }
 
-TEST(TestFormulaParser, statements)
+TEST(TestFormulaParse, statements)
 {
     EXPECT_TRUE(formula::parse("3\n"
                                "4\n"));
 }
 
-TEST(TestFormulaParser, assignmentStatements)
+TEST(TestFormulaParse, assignmentStatements)
 {
     EXPECT_TRUE(formula::parse("z=3\n"
                                "z=4\n"));
 }
 
-TEST(TestFormulaParser, assignmentWithComments)
+TEST(TestFormulaParse, assignmentWithComments)
 {
     EXPECT_TRUE(formula::parse("z=3; comment\n"
                                "z=4; another comment\n"));
 }
 
-TEST(TestFormulaParser, assignmentWithBlankLines)
+TEST(TestFormulaParse, assignmentWithBlankLines)
 {
     EXPECT_TRUE(formula::parse("z=3; comment\n"
                                "\r\n"
@@ -205,7 +205,7 @@ TEST(TestFormulaParser, assignmentWithBlankLines)
                                "z=4; another comment\n"));
 }
 
-TEST(TestFormulaParser, initializeIterateBailout)
+TEST(TestFormulaParse, initializeIterateBailout)
 {
     EXPECT_TRUE(formula::parse("z=pixel:z=z*z+pixel,|z|>4"));
 }
@@ -226,7 +226,7 @@ TEST_P(ReadOnlyVariables, notAssignable)
     ASSERT_FALSE(formula::parse(GetParam() + "=1"));
 }
 
-INSTANTIATE_TEST_SUITE_P(TestFormulaParser, ReadOnlyVariables, ValuesIn(s_read_only_vars));
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReadOnlyVariables, ValuesIn(s_read_only_vars));
 
 static std::vector<std::string> s_functions{
     "sin", "cos", "sinh", "cosh", "cosxx",      //
@@ -253,4 +253,4 @@ TEST_P(Functions, functionOne)
     ASSERT_TRUE(formula::parse(GetParam() + "(1)"));
 }
 
-INSTANTIATE_TEST_SUITE_P(TestFormulaParser, Functions, ValuesIn(s_functions));
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));

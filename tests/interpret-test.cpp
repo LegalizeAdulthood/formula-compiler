@@ -3,6 +3,10 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <iostream>
+#include <iterator>
+
+using namespace testing;
 
 TEST(TestFormulaInterpret, one)
 {
@@ -421,3 +425,74 @@ TEST(TestFormulaInterpret, formulaBailoutTrue)
     ASSERT_EQ(1.0, formula->interpret(formula::BAILOUT));
     ASSERT_EQ(8.0, formula->get_value("z"));
 }
+
+namespace
+{
+
+struct FunctionCallParam
+{
+    std::string_view expr;
+    double result;
+};
+
+std::ostream &operator<<(std::ostream &str, const FunctionCallParam &value)
+{
+    return str << value.expr << '=' << value.result;
+}
+
+class FunctionCall : public TestWithParam<FunctionCallParam>
+{
+};
+
+} // namespace
+
+static FunctionCallParam s_calls[]{
+    FunctionCallParam{"abs(-1.0)", 1.0},
+    FunctionCallParam{"acos(-1.0)", 3.1415926535897931},
+    FunctionCallParam{"acosh(10.0)", 2.9932228461263808},
+    FunctionCallParam{"asin(1.0)", 1.5707963267948966},
+    FunctionCallParam{"asinh(1.0)", 0.88137358701954305},
+    FunctionCallParam{"atan(1.0)", 0.78539816339744828},
+    FunctionCallParam{"atanh(0.9)", 1.4722194895832204},
+    FunctionCallParam{"cabs(-1.0)", 1.0},
+    FunctionCallParam{"ceil(1.1)", 2.0},
+    FunctionCallParam{"conj(1.0)", -1.0},
+    FunctionCallParam{"cos(pi)", -1.0},
+    FunctionCallParam{"cosh(1)", 1.5430806348152437},
+    FunctionCallParam{"cosxx(1)", 0.83373002513114913},
+    FunctionCallParam{"cotan(1.0)", 0.64209261593433076},
+    FunctionCallParam{"cotanh(1.0)", 1.3130352854993312},
+    FunctionCallParam{"exp(1.0)", 2.7182818284590451},
+    FunctionCallParam{"flip(1.0)", -1.0},
+    FunctionCallParam{"floor(2.1)", 2.0},
+    FunctionCallParam{"fn1(1.0)", 1.0},
+    FunctionCallParam{"fn2(1.0)", 1.0},
+    FunctionCallParam{"fn3(1.0)", 1.0},
+    FunctionCallParam{"fn4(1.0)", 1.0},
+    FunctionCallParam{"ident(1.0)", 1.0},
+    FunctionCallParam{"imag(1.0)", -1.0},
+    FunctionCallParam{"log(e)", 1.0},
+    FunctionCallParam{"one(0.0)", 1.0},
+    FunctionCallParam{"real(1.0)", 1.0},
+    FunctionCallParam{"round(1.6)", 2.0},
+    FunctionCallParam{"sin(pi/2)", 1.0},
+    FunctionCallParam{"sinh(1)", 1.1752011936438014},
+    FunctionCallParam{"sqr(2.0)", 4.0},
+    FunctionCallParam{"sqrt(4.0)", 2.0},
+    FunctionCallParam{"srand(1.0)", 0.0},
+    FunctionCallParam{"tan(pi/4)", 1.0},
+    FunctionCallParam{"tanh(1.0)", 0.76159415595576485},
+    FunctionCallParam{"trunc(1.6)", 1.0},
+    FunctionCallParam{"zero(1.0)", 0.0},
+};
+
+TEST_P(FunctionCall, call)
+{
+    const FunctionCallParam &param{GetParam()};
+    const auto formula{formula::parse(param.expr)};
+    ASSERT_TRUE(formula);
+
+    ASSERT_NEAR(param.result, formula->interpret(formula::ITERATE), 1e-8);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaInterpret, FunctionCall, ValuesIn(s_calls));
