@@ -1,7 +1,5 @@
 #pragma once
 
-#include <gtest/gtest.h>
-
 #include <array>
 #include <iostream>
 
@@ -15,9 +13,5 @@ inline std::ostream &operator<<(std::ostream &str, const FunctionCallParam &valu
 {
     return str << value.expr << '=' << value.result;
 }
-
-class FunctionCall : public testing::TestWithParam<FunctionCallParam>
-{
-};
 
 extern std::array<FunctionCallParam, 37> s_calls;

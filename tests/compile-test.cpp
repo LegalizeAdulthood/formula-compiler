@@ -1,8 +1,12 @@
 #include <formula/formula.h>
 
+#include "function-call.h"
+
 #include <gtest/gtest.h>
 
 #include <cmath>
+
+using namespace testing;
 
 TEST(TestCompiledFormulaRun, one)
 {
@@ -440,3 +444,24 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
     ASSERT_EQ(1.0, formula->run(formula::BAILOUT));
     ASSERT_EQ(8.0, formula->get_value("z"));
 }
+
+namespace
+{
+
+class RunFunctionCall : public TestWithParam<FunctionCallParam>
+{
+};
+
+} // namespace
+
+TEST_P(RunFunctionCall, run)
+{
+    const FunctionCallParam &param{GetParam()};
+    const auto formula{formula::parse(param.expr)};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_NEAR(param.result, formula->run(formula::ITERATE), 1e-8);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(s_calls));

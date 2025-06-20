@@ -364,9 +364,28 @@ double FunctionCallNode::interpret(SymbolTable &symbols) const
     throw std::runtime_error("function '" + m_name + "' not found");
 }
 
+bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
+{
+    // For exponentiation, we can use the pow intrinsic
+    asmjit::InvokeNode *call;
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
+    comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
+    call->setArg(0, result);
+    call->setRet(0, result);
+    return true;
+}
+
 bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    throw std::runtime_error("not implemented");
+    const auto end = std::end(s_standard_functions);
+    auto it = std::lower_bound(std::begin(s_standard_functions), end, m_name);
+    if (it == end)
+    {
+        return false;
+    }
+
+    m_arg->compile(comp, state, result);
+    return call(comp, it->fn, result);
 }
 
 const auto make_function_call = [](auto &ctx)
@@ -553,6 +572,18 @@ double BinaryOpNode::interpret(SymbolTable &symbols) const
     throw std::runtime_error(std::string{"Invalid binary operator '"} + m_op + "'");
 }
 
+bool call(asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+{
+    // For exponentiation, we can use the pow intrinsic
+    asmjit::InvokeNode *call;
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
+    comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>());
+    call->setArg(0, result);
+    call->setArg(1, right);
+    call->setRet(0, result);
+    return true;
+}
+
 bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     m_left->compile(comp, state, result);
@@ -608,14 +639,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     }
     if (m_op == "^")
     {
-        // For exponentiation, we can use the pow intrinsic
-        asmjit::InvokeNode *call;
-        asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(static_cast<double (*)(double, double)>(std::pow)))};
-        comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>());
-        call->setArg(0, result);
-        call->setArg(1, right);
-        call->setRet(0, result);
-        return true;
+        return call(comp, std::pow, result, right);
     }
     if (m_op == "<" || m_op == "<=" || m_op == ">" || m_op == ">=" || m_op == "==" || m_op == "!=")
     {

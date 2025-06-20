@@ -429,7 +429,16 @@ TEST(TestFormulaInterpret, formulaBailoutTrue)
     ASSERT_EQ(8.0, formula->get_value("z"));
 }
 
-TEST_P(FunctionCall, interpret)
+namespace
+{
+
+class InterpretFunctionCall : public TestWithParam<FunctionCallParam>
+{
+};
+
+} // namespace
+
+TEST_P(InterpretFunctionCall, interpret)
 {
     const FunctionCallParam &param{GetParam()};
     const auto formula{formula::parse(param.expr)};
@@ -438,4 +447,4 @@ TEST_P(FunctionCall, interpret)
     ASSERT_NEAR(param.result, formula->interpret(formula::ITERATE), 1e-8);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestFormulaInterpret, FunctionCall, ValuesIn(s_calls));
+INSTANTIATE_TEST_SUITE_P(TestFormula, InterpretFunctionCall, ValuesIn(s_calls));
