@@ -833,7 +833,12 @@ private:
 
 double IfStatementNode::interpret(SymbolTable &symbols) const
 {
-    return m_condition->interpret(symbols) != 0.0 ? 1.0 : 0.0;
+    if (m_condition->interpret(symbols) != 0.0)
+    {
+        return m_then ? m_then->interpret(symbols) : 1.0;
+    }
+
+    return 0.0;
 }
 
 bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const

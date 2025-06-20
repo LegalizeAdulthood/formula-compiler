@@ -448,3 +448,45 @@ TEST_P(InterpretFunctionCall, interpret)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, InterpretFunctionCall, ValuesIn(s_calls));
+
+TEST(TestFormulaInterpret, ifStatementEmptyBodyTrue)
+{
+    const auto formula{formula::parse("if(5)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestFormulaInterpret, ifStatementEmptyBodyFalse)
+{
+    const auto formula{formula::parse("if(5<4)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestFormulaInterpret, ifStatementBodyTrue)
+{
+    const auto formula{formula::parse("if(5)\n"
+                                      "z=3\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 0.0);
+
+    ASSERT_EQ(3.0, formula->interpret(formula::ITERATE));
+    ASSERT_EQ(3.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, ifStatementBodyFalse)
+{
+    const auto formula{formula::parse("if(5<4)\n"
+                                      "z=3\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 5.0);
+
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE));
+    ASSERT_EQ(5.0, formula->get_value("z"));
+}
