@@ -17,6 +17,8 @@
 
 namespace bp = boost::parser;
 
+using namespace boost::parser::literals; // for _l, _attr, etc.
+
 namespace formula
 {
 
@@ -811,6 +813,40 @@ const auto make_statement_seq = [](auto &ctx)
     return std::make_shared<StatementSeqNode>(bp::_attr(ctx));
 };
 
+class IfStatementNode : public Node
+{
+public:
+    IfStatementNode(Expr condition, Expr then) :
+        m_condition(condition),
+        m_then(then)
+    {
+    }
+    ~IfStatementNode() override = default;
+
+    double interpret(SymbolTable &symbols) const override;
+    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+
+private:
+    Expr m_condition;
+    Expr m_then;
+};
+
+double IfStatementNode::interpret(SymbolTable &symbols) const
+{
+    return m_condition->interpret(symbols) != 0.0 ? 1.0 : 0.0;
+}
+
+bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+{
+    return false;
+}
+
+const auto make_if_statement = [](auto &ctx)
+{
+    const auto &attr{bp::_attr(ctx)};
+    return std::make_shared<IfStatementNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
 struct FormulaDefinition
 {
     Expr initialize;
@@ -823,25 +859,25 @@ const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
 const auto alnum = alpha | digit | bp::char_('_');
 const auto identifier = bp::lexeme[alpha >> *alnum];
-const auto reserved_variable =                                                                            //
-    bp::lit("p1") | bp::lit("p2") | bp::lit("p3") | bp::lit("p4") | bp::lit("p5") |                       //
-    bp::lit("pixel") | bp::lit("lastsqr") | bp::lit("rand") | bp::lit("pi") | bp::lit("e") |              //
-    bp::lit("maxit") | bp::lit("scrnmax") | bp::lit("scrnpix") | bp::lit("whitesq") | bp::lit("ismand") | //
-    bp::lit("center") | bp::lit("magxmag") | bp::lit("rotskew");
-const auto reserved_function =                                                                                   //
-    bp::string("sinh") | bp::string("cosh") | bp::string("cosxx") | bp::string("sin") | bp::string("cos") |      //
-    bp::string("cotanh") | bp::string("cotan") | bp::string("tanh") | bp::string("tan") | bp::string("sqrt") |   //
-    bp::string("log") | bp::string("exp") | bp::string("abs") | bp::string("conj") | bp::string("real") |        //
-    bp::string("imag") | bp::string("flip") | bp::string("fn1") | bp::string("fn2") | bp::string("fn3") |        //
-    bp::string("fn4") | bp::string("srand") | bp::string("asinh") | bp::string("acosh") | bp::string("asin") |   //
-    bp::string("acos") | bp::string("atanh") | bp::string("atan") | bp::string("cabs") | bp::string("sqr") |     //
-    bp::string("floor") | bp::string("ceil") | bp::string("trunc") | bp::string("round") | bp::string("ident") | //
-    bp::string("one") | bp::string("zero");                                                                      //
-const auto user_variable = identifier - reserved_variable - reserved_function;
-const auto rel_op =
-    bp::string("<=") | bp::string(">=") | bp::string("<") | bp::string(">") | bp::string("==") | bp::string("!=");
-const auto logical_op = bp::string("&&") | bp::string("||");
-const auto skipper = (bp::ws - bp::eol) | (bp::char_(';') >> *(bp::char_ - bp::eol));
+const auto reserved_variable =                                         //
+    "p1"_l | "p2"_l | "p3"_l | "p4"_l | "p5"_l |                       //
+    "pixel"_l | "lastsqr"_l | "rand"_l | "pi"_l | "e"_l |              //
+    "maxit"_l | "scrnmax"_l | "scrnpix"_l | "whitesq"_l | "ismand"_l | //
+    "center"_l | "magxmag"_l | "rotskew"_l;
+const auto reserved_function =                                 //
+    "sinh"_p | "cosh"_p | "cosxx"_p | "sin"_p | "cos"_p |      //
+    "cotanh"_p | "cotan"_p | "tanh"_p | "tan"_p | "sqrt"_p |   //
+    "log"_p | "exp"_p | "abs"_p | "conj"_p | "real"_p |        //
+    "imag"_p | "flip"_p | "fn1"_p | "fn2"_p | "fn3"_p |        //
+    "fn4"_p | "srand"_p | "asinh"_p | "acosh"_p | "asin"_p |   //
+    "acos"_p | "atanh"_p | "atan"_p | "cabs"_p | "sqr"_p |     //
+    "floor"_p | "ceil"_p | "trunc"_p | "round"_p | "ident"_p | //
+    "one"_p | "zero"_p;                                        //
+const auto reserved_word = "if"_l | "endif"_l;
+const auto user_variable = identifier - reserved_variable - reserved_function - reserved_word;
+const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
+const auto logical_op = "&&"_p | "||"_p;
+const auto skipper = bp::blank | (bp::char_(';') >> *(bp::char_ - bp::eol));
 
 // Grammar rules
 bp::rule<struct NumberTag, Expr> number = "number";
@@ -856,11 +892,13 @@ bp::rule<struct AssignmentTag, Expr> assignment = "assignment statement";
 bp::rule<struct ExprTag, Expr> expr = "expression";
 bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
-bp::rule<struct StatementTag, Expr> statement_seq = "statement sequence";
+bp::rule<struct IfStatementTag, Expr> if_statement = "if statement";
+bp::rule<struct StatementTag, Expr> statement = "statement";
+bp::rule<struct StatementSequenceTag, Expr> statement_seq = "statement sequence";
 bp::rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
 
 const auto number_def = bp::double_[make_number];
-const auto variable_def = identifier[make_identifier];
+const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
 const auto function_call_def = (reserved_function >> '(' >> expr >> ')')[make_function_call];
 const auto unary_op_def = (bp::char_("-+") >> factor)[make_unary_op] | (bp::char_('|') >> expr >> '|')[make_unary_op];
 const auto factor_def = number | function_call | variable | '(' >> expr >> ')' | unary_op;
@@ -871,13 +909,17 @@ const auto assignment_def = (+(user_variable >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
-const auto statement_seq_def = (conjunctive % +bp::eol)[make_statement_seq] >> *bp::eol;
-const auto formula_def = (statement_seq >> ':' >> statement_seq >> ',' >> statement_seq) //
+const auto empty_body = bp::attr<Expr>(nullptr);
+const auto if_condition = "if"_l >> '(' >> conjunctive >> ')' >> +bp::eol;
+const auto if_statement_def = (if_condition >> (statement_seq | empty_body) >> "endif")[make_if_statement];
+const auto statement_def = if_statement | conjunctive;
+const auto statement_seq_def = (statement % +bp::eol)[make_statement_seq] >> *bp::eol;
+const auto formula_def = (statement_seq >> bp::lit(':') >> statement_seq >> bp::lit(',') >> statement_seq) //
     | (bp::attr<Expr>(nullptr) >> statement_seq >> bp::attr<Expr>(nullptr));
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    statement_seq, formula);
+    if_statement, statement, statement_seq, formula);
 
 using Function = double();
 
@@ -1039,7 +1081,7 @@ std::shared_ptr<Formula> parse(std::string_view text)
 
     try
     {
-        bool debug{false};
+        bool debug{};
         if (auto success = bp::parse(text, formula, skipper, ast, debug ? bp::trace::on : bp::trace::off);
             success && ast.iterate)
         {

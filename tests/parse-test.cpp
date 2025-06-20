@@ -254,3 +254,46 @@ TEST_P(Functions, functionOne)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
+
+TEST(TestFormulaParse, reservedWordsNotAssignable)
+{
+    EXPECT_FALSE(formula::parse("if=1"));
+    EXPECT_FALSE(formula::parse("endif=1"));
+}
+
+TEST(TestFormulaParse, ifWithoutEndIf)
+{
+    EXPECT_FALSE(formula::parse("if(1)"));
+}
+
+TEST(TestFormulaParse, ifEmptyBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifBlankLinesBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "1\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifComparisonCondition)
+{
+    EXPECT_TRUE(formula::parse("if(1<2)\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifConjunctiveCondition)
+{
+    EXPECT_TRUE(formula::parse("if(1&&2)\n"
+                               "endif"));
+}
