@@ -514,7 +514,7 @@ TEST(TestFormulaInterpret, ifThenElseComplexBodyConditionFalse)
                                       "z=3\n"
                                       "q=4\n"
                                       "endif")};
-    EXPECT_TRUE(formula);
+    ASSERT_TRUE(formula);
     formula->set_value("x", 0.0);
     formula->set_value("y", 0.0);
     formula->set_value("z", 0.0);
@@ -537,7 +537,7 @@ TEST(TestFormulaInterpret, ifThenElseComplexBodyConditionTrue)
                                       "z=3\n"
                                       "q=4\n"
                                       "endif")};
-    EXPECT_TRUE(formula);
+    ASSERT_TRUE(formula);
     formula->set_value("x", 0.0);
     formula->set_value("y", 0.0);
     formula->set_value("z", 0.0);

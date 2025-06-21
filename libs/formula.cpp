@@ -810,7 +810,8 @@ double StatementSeqNode::interpret(SymbolTable &symbols) const
 
 bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    return m_statements.back()->compile(comp, state, result);
+    return std::all_of(m_statements.begin(), m_statements.end(),
+        [&comp, &state, &result](const Expr &statement) { return statement->compile(comp, state, result); });
 }
 
 const auto make_statement_seq = [](auto &ctx)
@@ -854,13 +855,13 @@ double IfStatementNode::interpret(SymbolTable &symbols) const
 
 bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    asmjit::Label condition_label = comp.newLabel();
+    asmjit::Label else_label = comp.newLabel();
     asmjit::Label end_label = comp.newLabel();
     m_condition->compile(comp, state, result);
     asmjit::x86::Xmm zero{comp.newXmm()};
     comp.xorpd(zero, zero);     // xmm = 0.0
     comp.ucomisd(result, zero); // result <=> 0.0?
-    comp.jz(end_label);         // if result == 0.0, jump to end block
+    comp.jz(else_label);        // if result == 0.0, jump to else block
     if (m_then_block)
     {
         if (!m_then_block->compile(comp, state, result))
@@ -873,6 +874,20 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
         // If no then block, just set result to 1.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
         comp.movsd(result, asmjit::x86::ptr(one));
+    }
+    comp.jmp(end_label); // Jump over else block
+    comp.bind(else_label);
+    if (m_else_block)
+    {
+        if (!m_else_block->compile(comp, state, result))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        // If no else block, set result to 0.0
+        comp.movsd(result, zero);
     }
     comp.bind(end_label);
     return true;

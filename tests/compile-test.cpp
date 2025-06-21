@@ -159,6 +159,7 @@ TEST(TestCompiledFormulaRun, assignment)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(6.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(6.0, formula->get_value("z"));
 }
 
@@ -169,6 +170,7 @@ TEST(TestCompiledFormulaRun, assignmentParens)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(6.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -179,6 +181,7 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(3.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(3.0, formula->get_value("z1"));
     ASSERT_EQ(3.0, formula->get_value("z2"));
 }
@@ -217,6 +220,7 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(1.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -344,6 +348,7 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(0.0, formula->run(formula::ITERATE)); // 0 is false, so the second part is not evaluated
+
     ASSERT_EQ(0.0, formula->get_value("z"));        // z should not be set
 }
 
@@ -372,6 +377,7 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(1.0, formula->run(formula::ITERATE)); // 1 is true, so the second part is not evaluated
+
     ASSERT_EQ(0.0, formula->get_value("z"));        // z should not be set
 }
 
@@ -387,12 +393,14 @@ TEST(TestCompiledFormulaRun, statements)
 
 TEST(TestCompiledFormulaRun, assignmentStatements)
 {
-    const auto formula{formula::parse("z=3\n"
+    const auto formula{formula::parse("q=3\n"
                                       "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(4.0, formula->run(formula::ITERATE));
+
+    ASSERT_EQ(3.0, formula->get_value("q"));
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -405,6 +413,7 @@ TEST(TestCompiledFormulaRun, formulaInitialize)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(4.4, formula->run(formula::INITIALIZE));
+
     ASSERT_EQ(4.4, formula->get_value("pixel"));
     ASSERT_EQ(4.4, formula->get_value("z"));
 }
@@ -418,6 +427,7 @@ TEST(TestCompiledFormulaRun, formulaIterate)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(8.4, formula->run(formula::ITERATE));
+
     ASSERT_EQ(4.4, formula->get_value("pixel"));
     ASSERT_EQ(8.4, formula->get_value("z"));
 }
@@ -430,6 +440,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(0.0, formula->run(formula::BAILOUT));
+
     ASSERT_EQ(2.0, formula->get_value("z"));
 }
 
@@ -442,6 +453,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(1.0, formula->run(formula::BAILOUT));
+
     ASSERT_EQ(8.0, formula->get_value("z"));
 }
 
@@ -495,6 +507,7 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(3.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(3.0, formula->get_value("z"));
 }
 
@@ -508,5 +521,54 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
     ASSERT_TRUE(formula->compile());
 
     ASSERT_EQ(0.0, formula->run(formula::ITERATE));
+
     ASSERT_EQ(5.0, formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "x=1\n"
+                                      "y=2\n"
+                                      "else\n"
+                                      "z=3\n"
+                                      "q=4\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("x", 0.0);
+    formula->set_value("y", 0.0);
+    formula->set_value("z", 0.0);
+    formula->set_value("q", 0.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(4.0, formula->run(formula::ITERATE));
+
+    ASSERT_EQ(0.0, formula->get_value("x"));
+    ASSERT_EQ(0.0, formula->get_value("y"));
+    ASSERT_EQ(3.0, formula->get_value("z"));
+    ASSERT_EQ(4.0, formula->get_value("q"));
+}
+
+TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
+{
+    const auto formula{formula::parse("if(1)\n"
+                                      "x=1\n"
+                                      "y=2\n"
+                                      "else\n"
+                                      "z=3\n"
+                                      "q=4\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("x", 0.0);
+    formula->set_value("y", 0.0);
+    formula->set_value("z", 0.0);
+    formula->set_value("q", 0.0);
+    ASSERT_TRUE(formula->compile());
+
+    ASSERT_EQ(2.0, formula->run(formula::ITERATE));
+
+    ASSERT_EQ(1.0, formula->get_value("x"));
+    ASSERT_EQ(2.0, formula->get_value("y"));
+    ASSERT_EQ(0.0, formula->get_value("z"));
+    ASSERT_EQ(0.0, formula->get_value("q"));
 }
