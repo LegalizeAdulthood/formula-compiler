@@ -885,22 +885,24 @@ const auto alpha = bp::char_('a', 'z') | bp::char_('A', 'Z');
 const auto digit = bp::char_('0', '9');
 const auto alnum = alpha | digit | bp::char_('_');
 const auto identifier = bp::lexeme[alpha >> *alnum];
-const auto reserved_variable =                                         //
-    "p1"_l | "p2"_l | "p3"_l | "p4"_l | "p5"_l |                       //
-    "pixel"_l | "lastsqr"_l | "rand"_l | "pi"_l | "e"_l |              //
-    "maxit"_l | "scrnmax"_l | "scrnpix"_l | "whitesq"_l | "ismand"_l | //
-    "center"_l | "magxmag"_l | "rotskew"_l;
-const auto reserved_function =                                 //
-    "sinh"_p | "cosh"_p | "cosxx"_p | "sin"_p | "cos"_p |      //
-    "cotanh"_p | "cotan"_p | "tanh"_p | "tan"_p | "sqrt"_p |   //
-    "log"_p | "exp"_p | "abs"_p | "conj"_p | "real"_p |        //
-    "imag"_p | "flip"_p | "fn1"_p | "fn2"_p | "fn3"_p |        //
-    "fn4"_p | "srand"_p | "asinh"_p | "acosh"_p | "asin"_p |   //
-    "acos"_p | "atanh"_p | "atan"_p | "cabs"_p | "sqr"_p |     //
-    "floor"_p | "ceil"_p | "trunc"_p | "round"_p | "ident"_p | //
-    "one"_p | "zero"_p;                                        //
-const auto reserved_word = "if"_l | "endif"_l;
-const auto user_variable = identifier - reserved_variable - reserved_function - reserved_word;
+const auto reserved_variable = bp::lexeme[                                 //
+    ("p1"_l | "p2"_l | "p3"_l | "p4"_l | "p5"_l |                          //
+        "pixel"_l | "lastsqr"_l | "rand"_l | "pi"_l | "e"_l |              //
+        "maxit"_l | "scrnmax"_l | "scrnpix"_l | "whitesq"_l | "ismand"_l | //
+        "center"_l | "magxmag"_l | "rotskew"_l)                            //
+    >> !alnum];                                                            //
+const auto reserved_function = bp::lexeme[                                 //
+    ("sinh"_p | "cosh"_p | "cosxx"_p | "sin"_p | "cos"_p |                 //
+        "cotanh"_p | "cotan"_p | "tanh"_p | "tan"_p | "sqrt"_p |           //
+        "log"_p | "exp"_p | "abs"_p | "conj"_p | "real"_p |                //
+        "imag"_p | "flip"_p | "fn1"_p | "fn2"_p | "fn3"_p |                //
+        "fn4"_p | "srand"_p | "asinh"_p | "acosh"_p | "asin"_p |           //
+        "acos"_p | "atanh"_p | "atan"_p | "cabs"_p | "sqr"_p |             //
+        "floor"_p | "ceil"_p | "trunc"_p | "round"_p | "ident"_p |         //
+        "one"_p | "zero"_p)                                                //
+    >> !alnum];                                                            //
+const auto reserved_word = bp::lexeme[("if"_l | "endif"_l) >> !alnum];
+const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
 const auto skipper = bp::blank | (bp::char_(';') >> *(bp::char_ - bp::eol));

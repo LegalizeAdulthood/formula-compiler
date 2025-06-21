@@ -109,6 +109,11 @@ TEST(TestFormulaParse, assignment)
     EXPECT_TRUE(formula::parse("z=4"));
 }
 
+TEST(TestFormulaParse, assignmentLongVariable)
+{
+    EXPECT_TRUE(formula::parse("this_is_another4_variable_name2=4"));
+}
+
 TEST(TestFormulaParse, modulus)
 {
     EXPECT_TRUE(formula::parse("|-3.0|"));
@@ -255,10 +260,36 @@ TEST_P(Functions, functionOne)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
 
-TEST(TestFormulaParse, reservedWordsNotAssignable)
+class ReservedWords : public TestWithParam<std::string>
 {
-    EXPECT_FALSE(formula::parse("if=1"));
-    EXPECT_FALSE(formula::parse("endif=1"));
+};
+
+TEST_P(ReservedWords, notAssignable)
+{
+    ASSERT_FALSE(formula::parse(GetParam() + "=1"));
+    //ASSERT_TRUE(formula::parse(GetParam() + "2=1"));
+}
+
+static std::string s_reserved_words[]{
+    "if",
+    "endif",
+};
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
+
+TEST(TestFormulaParse, reservedVariablePrefixToUserVariable)
+{
+    EXPECT_TRUE(formula::parse("e2=1"));
+}
+
+TEST(TestFormulaParse, reservedFunctionPrefixToUserVariable)
+{
+    EXPECT_TRUE(formula::parse("sine=1"));
+}
+
+TEST(TestFormulaParse, reservedKeywordPrefixToUserVariable)
+{
+    EXPECT_TRUE(formula::parse("if1=1"));
 }
 
 TEST(TestFormulaParse, ifWithoutEndIf)
