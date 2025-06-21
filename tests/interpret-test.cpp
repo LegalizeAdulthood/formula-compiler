@@ -139,6 +139,7 @@ TEST(TestFormulaInterpret, assignment)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(6.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(6.0, formula->get_value("z"));
 }
 
@@ -148,6 +149,7 @@ TEST(TestFormulaInterpret, assignmentParens)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(6.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -157,6 +159,7 @@ TEST(TestFormulaInterpret, chainedAssignment)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(3.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(3.0, formula->get_value("z1"));
     ASSERT_EQ(3.0, formula->get_value("z2"));
 }
@@ -191,6 +194,7 @@ TEST(TestFormulaInterpret, compareLessPrecedence)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(1.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -329,6 +333,7 @@ TEST(TestFormulaInterpret, logicalAndShortCircuitTrue)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(0.0, formula->interpret(formula::ITERATE)); // 0 is false, so the second part is not evaluated
+
     ASSERT_EQ(0.0, formula->get_value("z"));              // z should not be set
 }
 
@@ -362,6 +367,7 @@ TEST(TestFormulaInterpret, logicalOrShortCircuitTrue)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(1.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(0.0, formula->get_value("z")); // z should not be set
 }
 
@@ -376,11 +382,13 @@ TEST(TestFormulaInterpret, statements)
 
 TEST(TestFormulaInterpret, assignmentStatements)
 {
-    const auto formula{formula::parse("z=3\n"
+    const auto formula{formula::parse("q=3\n"
                                       "z=4\n")};
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(4.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(3.0, formula->get_value("q"));
     ASSERT_EQ(4.0, formula->get_value("z"));
 }
 
@@ -392,6 +400,7 @@ TEST(TestFormulaInterpret, formulaInitialize)
     formula->set_value("z", 100.0);
 
     ASSERT_EQ(4.4, formula->interpret(formula::INITIALIZE));
+
     ASSERT_EQ(4.4, formula->get_value("pixel"));
     ASSERT_EQ(4.4, formula->get_value("z"));
 }
@@ -404,6 +413,7 @@ TEST(TestFormulaInterpret, formulaIterate)
     formula->set_value("z", 2.0);
 
     ASSERT_EQ(8.4, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(4.4, formula->get_value("pixel"));
     ASSERT_EQ(8.4, formula->get_value("z"));
 }
@@ -415,6 +425,7 @@ TEST(TestFormulaInterpret, formulaBailoutFalse)
     formula->set_value("z", 2.0);
 
     ASSERT_EQ(0.0, formula->interpret(formula::BAILOUT));
+
     ASSERT_EQ(2.0, formula->get_value("z"));
 }
 
@@ -426,6 +437,7 @@ TEST(TestFormulaInterpret, formulaBailoutTrue)
     formula->set_value("z", 8.0);
 
     ASSERT_EQ(1.0, formula->interpret(formula::BAILOUT));
+
     ASSERT_EQ(8.0, formula->get_value("z"));
 }
 
@@ -476,6 +488,7 @@ TEST(TestFormulaInterpret, ifStatementBodyTrue)
     formula->set_value("z", 0.0);
 
     ASSERT_EQ(3.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(3.0, formula->get_value("z"));
 }
 
@@ -488,5 +501,52 @@ TEST(TestFormulaInterpret, ifStatementBodyFalse)
     formula->set_value("z", 5.0);
 
     ASSERT_EQ(0.0, formula->interpret(formula::ITERATE));
+
     ASSERT_EQ(5.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, ifThenElseComplexBodyConditionFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "x=1\n"
+                                      "y=2\n"
+                                      "else\n"
+                                      "z=3\n"
+                                      "q=4\n"
+                                      "endif")};
+    EXPECT_TRUE(formula);
+    formula->set_value("x", 0.0);
+    formula->set_value("y", 0.0);
+    formula->set_value("z", 0.0);
+    formula->set_value("q", 0.0);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(0.0, formula->get_value("x"));
+    ASSERT_EQ(0.0, formula->get_value("y"));
+    ASSERT_EQ(3.0, formula->get_value("z"));
+    ASSERT_EQ(4.0, formula->get_value("q"));
+}
+
+TEST(TestFormulaInterpret, ifThenElseComplexBodyConditionTrue)
+{
+    const auto formula{formula::parse("if(1)\n"
+                                      "x=1\n"
+                                      "y=2\n"
+                                      "else\n"
+                                      "z=3\n"
+                                      "q=4\n"
+                                      "endif")};
+    EXPECT_TRUE(formula);
+    formula->set_value("x", 0.0);
+    formula->set_value("y", 0.0);
+    formula->set_value("z", 0.0);
+    formula->set_value("q", 0.0);
+
+    ASSERT_EQ(2.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(1.0, formula->get_value("x"));
+    ASSERT_EQ(2.0, formula->get_value("y"));
+    ASSERT_EQ(0.0, formula->get_value("z"));
+    ASSERT_EQ(0.0, formula->get_value("q"));
 }

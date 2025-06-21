@@ -800,7 +800,12 @@ private:
 
 double StatementSeqNode::interpret(SymbolTable &symbols) const
 {
-    return m_statements.back()->interpret(symbols);
+    double value{};
+    for (const auto &statement : m_statements)
+    {
+        value = statement->interpret(symbols);
+    }
+    return value;
 }
 
 bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
@@ -838,6 +843,10 @@ double IfStatementNode::interpret(SymbolTable &symbols) const
     if (m_condition->interpret(symbols) != 0.0)
     {
         return m_then_block ? m_then_block->interpret(symbols) : 1.0;
+    }
+    if (m_else_block)
+    {
+        return m_else_block->interpret(symbols);
     }
 
     return 0.0;
