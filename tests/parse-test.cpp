@@ -267,12 +267,13 @@ class ReservedWords : public TestWithParam<std::string>
 TEST_P(ReservedWords, notAssignable)
 {
     ASSERT_FALSE(formula::parse(GetParam() + "=1"));
-    //ASSERT_TRUE(formula::parse(GetParam() + "2=1"));
+    ASSERT_TRUE(formula::parse(GetParam() + "2=1"));
 }
 
 static std::string s_reserved_words[]{
     "if",
     "else",
+    "elseif",
     "endif",
 };
 
@@ -382,6 +383,74 @@ TEST(TestFormulaParse, ifThenElseComplexBody)
                                "x=1\n"
                                "y=2\n"
                                "else\n"
+                               "z=3\n"
+                               "q=4\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifElseIfWithoutEndIf)
+{
+    EXPECT_FALSE(formula::parse("if(1)\n"
+                                "elseif(0)"));
+}
+
+TEST(TestFormulaParse, ifElseIfElseWithoutEndIf)
+{
+    EXPECT_FALSE(formula::parse("if(1)\n"
+                                "elseif(0)\n"
+                                "else"));
+}
+
+TEST(TestFormulaParse, ifElseIfEmptyBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "elseif(1)\n"
+                               "else\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, DISABLED_ifMultipleElseIfEmptyBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "elseif(0)\n"
+                               "elseif(0)\n"
+                               "else\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifElseIfBlankLinesBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "\n"
+                               "elseif(0)\n"
+                               "\n"
+                               "else\n"
+                               "\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenElseIfBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "elseif(0)\n"
+                               "1\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenBodyElseIf)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "1\n"
+                               "elseif(0)\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenElseIfComplexBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "x=1\n"
+                               "y=2\n"
+                               "elseif(1)\n"
                                "z=3\n"
                                "q=4\n"
                                "endif"));

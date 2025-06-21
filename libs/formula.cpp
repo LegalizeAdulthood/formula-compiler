@@ -927,7 +927,7 @@ const auto reserved_function = bp::lexeme[                                 //
         "floor"_p | "ceil"_p | "trunc"_p | "round"_p | "ident"_p |         //
         "one"_p | "zero"_p)                                                //
     >> !alnum];                                                            //
-const auto reserved_word = bp::lexeme[("if"_l | "else"_l | "endif"_l) >> !alnum];
+const auto reserved_word = bp::lexeme[("if"_l | "elseif"_l | "else"_l | "endif"_l) >> !alnum];
 const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
@@ -947,6 +947,7 @@ bp::rule<struct ExprTag, Expr> expr = "expression";
 bp::rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 bp::rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
 bp::rule<struct IfStatementTag, Expr> if_statement = "if statement";
+bp::rule<struct ElseIfStatementTag, Expr> elseif_statement = "elseif statement";
 bp::rule<struct StatementTag, Expr> statement = "statement";
 bp::rule<struct StatementSequenceTag, Expr> statement_seq = "statement sequence";
 bp::rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
@@ -963,18 +964,21 @@ const auto assignment_def = (+(user_variable >> '=') >> additive)[make_assign];
 const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
+const auto condition = '('_l >> conjunctive >> ')' >> +bp::eol;
 const auto empty_body = bp::attr<Expr>(nullptr);
-const auto if_condition = "if"_l >> '(' >> conjunctive >> ')' >> +bp::eol;
-const auto if_then_statement = (if_condition //
-    >> (statement_seq | empty_body)          //
-    >> empty_body                            //
-    >> "endif")[make_if_statement];
-const auto if_then_else_statement = (if_condition //
-    >> (statement_seq | empty_body)               //
-    >> "else" >> +bp::eol                         //
-    >> (statement_seq | empty_body)               //
-    >> "endif")[make_if_statement];
-const auto if_statement_def = if_then_else_statement | if_then_statement;
+const auto else_statement =                                 //
+    "else"_l >> +bp::eol                                    //
+    >> (statement_seq | empty_body);                        //
+const auto elseif_statement_def =                           //
+    ("elseif"_l >> condition                                //
+        >> (statement_seq | empty_body)                     //
+        >> (else_statement | empty_body)                    //
+        )[make_if_statement];                               //
+const auto if_statement_def =                               //
+    ("if"_l >> condition                                    //
+        >> (statement_seq | empty_body)                     //
+        >> (elseif_statement | else_statement | empty_body) //
+        >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % +bp::eol)[make_statement_seq] >> *bp::eol;
 const auto formula_def = (statement_seq >> bp::lit(':') >> statement_seq >> bp::lit(',') >> statement_seq) //
@@ -982,7 +986,7 @@ const auto formula_def = (statement_seq >> bp::lit(':') >> statement_seq >> bp::
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    if_statement, statement, statement_seq, formula);
+    elseif_statement, if_statement, statement, statement_seq, formula);
 
 using Function = double();
 
