@@ -272,6 +272,7 @@ TEST_P(ReservedWords, notAssignable)
 
 static std::string s_reserved_words[]{
     "if",
+    "else",
     "endif",
 };
 
@@ -317,6 +318,14 @@ TEST(TestFormulaParse, ifThenBody)
                                "endif"));
 }
 
+TEST(TestFormulaParse, ifThenComplexBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "x=1\n"
+                               "y=2\n"
+                               "endif"));
+}
+
 TEST(TestFormulaParse, ifComparisonCondition)
 {
     EXPECT_TRUE(formula::parse("if(1<2)\n"
@@ -326,5 +335,54 @@ TEST(TestFormulaParse, ifComparisonCondition)
 TEST(TestFormulaParse, ifConjunctiveCondition)
 {
     EXPECT_TRUE(formula::parse("if(1&&2)\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifElseWithoutEndIf)
+{
+    EXPECT_FALSE(formula::parse("if(1)\n"
+                                "else"));
+}
+
+TEST(TestFormulaParse, ifElseEmptyBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "else\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifElseBlankLinesBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "\n"
+                               "else\n"
+                               "\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenElseBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "else\n"
+                               "1\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenBodyElse)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "1\n"
+                               "else\n"
+                               "endif"));
+}
+
+TEST(TestFormulaParse, ifThenElseComplexBody)
+{
+    EXPECT_TRUE(formula::parse("if(0)\n"
+                               "x=1\n"
+                               "y=2\n"
+                               "else\n"
+                               "z=3\n"
+                               "q=4\n"
                                "endif"));
 }

@@ -816,9 +816,10 @@ const auto make_statement_seq = [](auto &ctx)
 class IfStatementNode : public Node
 {
 public:
-    IfStatementNode(Expr condition, Expr then) :
+    IfStatementNode(Expr condition, Expr then_block, Expr else_block) :
         m_condition(condition),
-        m_then(then)
+        m_then_block(then_block),
+        m_else_block(else_block)
     {
     }
     ~IfStatementNode() override = default;
@@ -828,14 +829,15 @@ public:
 
 private:
     Expr m_condition;
-    Expr m_then;
+    Expr m_then_block;
+    Expr m_else_block;
 };
 
 double IfStatementNode::interpret(SymbolTable &symbols) const
 {
     if (m_condition->interpret(symbols) != 0.0)
     {
-        return m_then ? m_then->interpret(symbols) : 1.0;
+        return m_then_block ? m_then_block->interpret(symbols) : 1.0;
     }
 
     return 0.0;
@@ -850,9 +852,9 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
     comp.xorpd(zero, zero);     // xmm = 0.0
     comp.ucomisd(result, zero); // result <=> 0.0?
     comp.jz(end_label);         // if result == 0.0, jump to end block
-    if (m_then)
+    if (m_then_block)
     {
-        if (!m_then->compile(comp, state, result))
+        if (!m_then_block->compile(comp, state, result))
         {
             return false;
         }
@@ -870,7 +872,7 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
 const auto make_if_statement = [](auto &ctx)
 {
     const auto &attr{bp::_attr(ctx)};
-    return std::make_shared<IfStatementNode>(std::get<0>(attr), std::get<1>(attr));
+    return std::make_shared<IfStatementNode>(std::get<0>(attr), std::get<1>(attr), std::get<2>(attr));
 };
 
 struct FormulaDefinition
@@ -901,7 +903,7 @@ const auto reserved_function = bp::lexeme[                                 //
         "floor"_p | "ceil"_p | "trunc"_p | "round"_p | "ident"_p |         //
         "one"_p | "zero"_p)                                                //
     >> !alnum];                                                            //
-const auto reserved_word = bp::lexeme[("if"_l | "endif"_l) >> !alnum];
+const auto reserved_word = bp::lexeme[("if"_l | "else"_l | "endif"_l) >> !alnum];
 const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
@@ -939,7 +941,16 @@ const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
 const auto empty_body = bp::attr<Expr>(nullptr);
 const auto if_condition = "if"_l >> '(' >> conjunctive >> ')' >> +bp::eol;
-const auto if_statement_def = (if_condition >> (statement_seq | empty_body) >> "endif")[make_if_statement];
+const auto if_then_statement = (if_condition //
+    >> (statement_seq | empty_body)          //
+    >> empty_body                            //
+    >> "endif")[make_if_statement];
+const auto if_then_else_statement = (if_condition //
+    >> (statement_seq | empty_body)               //
+    >> "else" >> +bp::eol                         //
+    >> (statement_seq | empty_body)               //
+    >> "endif")[make_if_statement];
+const auto if_statement_def = if_then_else_statement | if_then_statement;
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % +bp::eol)[make_statement_seq] >> *bp::eol;
 const auto formula_def = (statement_seq >> bp::lit(':') >> statement_seq >> bp::lit(',') >> statement_seq) //
