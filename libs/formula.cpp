@@ -120,7 +120,7 @@ class Node
 public:
     virtual ~Node() = default;
 
-    virtual double interpret(SymbolTable &symbols) const = 0;
+    virtual Complex interpret(SymbolTable &symbols) const = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
 };
 
@@ -135,16 +135,16 @@ public:
     }
     ~NumberNode() override = default;
 
-    double interpret(SymbolTable &) const override;
+    Complex interpret(SymbolTable &) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     double m_value{};
 };
 
-double NumberNode::interpret(SymbolTable &) const
+Complex NumberNode::interpret(SymbolTable &) const
 {
-    return m_value;
+    return {m_value, 0.0};
 }
 
 bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
@@ -168,20 +168,20 @@ public:
     }
     ~IdentifierNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     std::string m_name;
 };
 
-double IdentifierNode::interpret(SymbolTable &symbols) const
+Complex IdentifierNode::interpret(SymbolTable &symbols) const
 {
     if (const auto &it = symbols.find(m_name); it != symbols.end())
     {
-        return it->second.re;
+        return it->second;
     }
-    return 0.0;
+    return {};
 }
 
 bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
@@ -206,7 +206,7 @@ public:
     }
     ~FunctionCallNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -355,12 +355,12 @@ const FunctionMap s_standard_functions[]{
     {"zero", zero},        //
 };
 
-double FunctionCallNode::interpret(SymbolTable &symbols) const
+Complex FunctionCallNode::interpret(SymbolTable &symbols) const
 {
     if (auto end = std::end(s_standard_functions), it = std::lower_bound(std::begin(s_standard_functions), end, m_name);
         it != end)
     {
-        return it->fn(m_arg->interpret(symbols));
+        return {it->fn(m_arg->interpret(symbols).re), 0.0};
     }
     throw std::runtime_error("function '" + m_name + "' not found");
 }
@@ -405,7 +405,7 @@ public:
     }
     ~UnaryOpNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -413,7 +413,7 @@ private:
     Expr m_operand;
 };
 
-double UnaryOpNode::interpret(SymbolTable &symbols) const
+Complex UnaryOpNode::interpret(SymbolTable &symbols) const
 {
     if (m_op == '+')
     {
@@ -421,11 +421,11 @@ double UnaryOpNode::interpret(SymbolTable &symbols) const
     }
     if (m_op == '-')
     {
-        return -m_operand->interpret(symbols);
+        return {-m_operand->interpret(symbols).re, 0.0};
     }
     if (m_op == '|')
     {
-        return std::abs(m_operand->interpret(symbols));
+        return {std::abs(m_operand->interpret(symbols).re), 0.0};
     }
 
     throw std::runtime_error(std::string{"Invalid unary prefix operator '"} + m_op + "'");
@@ -492,7 +492,7 @@ public:
     }
     ~BinaryOpNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -501,30 +501,30 @@ private:
     Expr m_right;
 };
 
-double BinaryOpNode::interpret(SymbolTable &symbols) const
+Complex BinaryOpNode::interpret(SymbolTable &symbols) const
 {
-    const double left = m_left->interpret(symbols);
+    const Complex left = m_left->interpret(symbols);
     const auto bool_result = [](bool condition)
     {
-        return condition ? 1.0 : 0.0;
+        return Complex{condition ? 1.0 : 0.0, 0.0};
     };
     if (m_op == "&&") // short-circuit AND
     {
-        if (left == 0.0)
+        if (left == Complex{0.0, 0.0})
         {
-            return 0.0;
+            return {0.0, 0.0};
         }
-        return bool_result(m_right->interpret(symbols) != 0.0);
+        return bool_result(m_right->interpret(symbols) != Complex{0.0, 0.0});
     }
     if (m_op == "||") // short-circuit OR
     {
-        if (left != 0.0)
+        if (left != Complex{0.0, 0.0})
         {
-            return 1.0;
+            return {1.0, 0.0};
         }
-        return bool_result(m_right->interpret(symbols) != 0.0);
+        return bool_result(m_right->interpret(symbols) != Complex{0.0, 0.0});
     }
-    const double right = m_right->interpret(symbols);
+    const Complex right = m_right->interpret(symbols);
     if (m_op == "+")
     {
         return left + right;
@@ -543,23 +543,23 @@ double BinaryOpNode::interpret(SymbolTable &symbols) const
     }
     if (m_op == "^")
     {
-        return std::pow(left, right);
+        return {std::pow(left.re, right.re), 0.0};
     }
     if (m_op == "<")
     {
-        return bool_result(left < right);
+        return bool_result(left.re < right.re);
     }
     if (m_op == "<=")
     {
-        return bool_result(left <= right);
+        return bool_result(left.re <= right.re);
     }
     if (m_op == ">")
     {
-        return bool_result(left > right);
+        return bool_result(left.re > right.re);
     }
     if (m_op == ">=")
     {
-        return bool_result(left >= right);
+        return bool_result(left.re >= right.re);
     }
     if (m_op == "==")
     {
@@ -744,7 +744,7 @@ public:
     }
     ~AssignmentNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -752,10 +752,10 @@ private:
     Expr m_expression;
 };
 
-double AssignmentNode::interpret(SymbolTable &symbols) const
+Complex AssignmentNode::interpret(SymbolTable &symbols) const
 {
-    double value = m_expression->interpret(symbols);
-    symbols[m_variable] = {value, 0.0};
+    Complex value = m_expression->interpret(symbols);
+    symbols[m_variable] = value;
     return value;
 }
 
@@ -790,16 +790,16 @@ public:
     }
     ~StatementSeqNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
     std::vector<Expr> m_statements;
 };
 
-double StatementSeqNode::interpret(SymbolTable &symbols) const
+Complex StatementSeqNode::interpret(SymbolTable &symbols) const
 {
-    double value{};
+    Complex value{};
     for (const auto &statement : m_statements)
     {
         value = statement->interpret(symbols);
@@ -829,7 +829,7 @@ public:
     }
     ~IfStatementNode() override = default;
 
-    double interpret(SymbolTable &symbols) const override;
+    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
 
 private:
@@ -838,18 +838,18 @@ private:
     Expr m_else_block;
 };
 
-double IfStatementNode::interpret(SymbolTable &symbols) const
+Complex IfStatementNode::interpret(SymbolTable &symbols) const
 {
-    if (m_condition->interpret(symbols) != 0.0)
+    if (m_condition->interpret(symbols) != Complex{0.0, 0.0})
     {
-        return m_then_block ? m_then_block->interpret(symbols) : 1.0;
+        return m_then_block ? m_then_block->interpret(symbols) : Complex{1.0, 0.0};
     }
     if (m_else_block)
     {
         return m_else_block->interpret(symbols);
     }
 
-    return 0.0;
+    return {0.0, 0.0};
 }
 
 bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
@@ -1039,11 +1039,11 @@ Complex ParsedFormula::interpret(Part part)
     switch (part)
     {
     case INITIALIZE:
-        return {m_ast.initialize->interpret(m_state.symbols), 0.0};
+        return m_ast.initialize->interpret(m_state.symbols);
     case ITERATE:
-        return {m_ast.iterate->interpret(m_state.symbols), 0.0};
+        return m_ast.iterate->interpret(m_state.symbols);
     case BAILOUT:
-        return {m_ast.bailout->interpret(m_state.symbols), 0.0};
+        return m_ast.bailout->interpret(m_state.symbols);
     }
     throw std::runtime_error("Invalid part for interpreter");
 }
