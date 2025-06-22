@@ -43,7 +43,7 @@ int main(const std::vector<std::string_view> &args)
     }
     for (const auto &[name, value] : values)
     {
-        formula->set_value(name, value);
+        formula->set_value(name, {value, 0.0});
     }
 
     if (compile && !formula->compile())
@@ -52,7 +52,7 @@ int main(const std::vector<std::string_view> &args)
         return 1;
     }
 
-    std::cout << "Evaluated: " << (compile ? formula->run(formula::ITERATE) : formula->interpret(formula::ITERATE)) << '\n';
+    std::cout << "Evaluated: " << (compile ? formula->run(formula::ITERATE).re : formula->interpret(formula::ITERATE).re) << '\n';
     return 0;
 }
 

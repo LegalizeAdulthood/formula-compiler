@@ -1004,22 +1004,22 @@ public:
     }
     ~ParsedFormula() override = default;
 
-    void set_value(std::string_view name, double value) override
+    void set_value(std::string_view name, Complex value) override
     {
-        m_state.symbols[std::string{name}] = value;
+        m_state.symbols[std::string{name}] = value.re;
     }
-    double get_value(std::string_view name) const override
+    Complex get_value(std::string_view name) const override
     {
         if (auto it = m_state.symbols.find(std::string{name}); it != m_state.symbols.end())
         {
-            return it->second;
+            return {it->second, 0.0};
         }
-        return 0.0;
+        return {};
     }
 
-    double interpret(Part part) override;
+    Complex interpret(Part part) override;
     bool compile() override;
-    double run(Part part) override;
+    Complex run(Part part) override;
 
 private:
     bool init_code_holder(asmjit::CodeHolder &code);
@@ -1034,16 +1034,16 @@ private:
     asmjit::FileLogger m_logger{stdout};
 };
 
-double ParsedFormula::interpret(Part part)
+Complex ParsedFormula::interpret(Part part)
 {
     switch (part)
     {
     case INITIALIZE:
-        return m_ast.initialize->interpret(m_state.symbols);
+        return {m_ast.initialize->interpret(m_state.symbols), 0.0};
     case ITERATE:
-        return m_ast.iterate->interpret(m_state.symbols);
+        return {m_ast.iterate->interpret(m_state.symbols), 0.0};
     case BAILOUT:
-        return m_ast.bailout->interpret(m_state.symbols);
+        return {m_ast.bailout->interpret(m_state.symbols), 0.0};
     }
     throw std::runtime_error("Invalid part for interpreter");
 }
@@ -1129,16 +1129,16 @@ bool ParsedFormula::compile()
     return true;
 }
 
-double ParsedFormula::run(Part part)
+Complex ParsedFormula::run(Part part)
 {
     switch (part)
     {
     case INITIALIZE:
-        return m_initialize ? m_initialize() : 0.0;
+        return {m_initialize ? m_initialize() : 0.0, 0.0};
     case ITERATE:
-        return m_iterate ? m_iterate() : 0.0;
+        return {m_iterate ? m_iterate() : 0.0, 0.0};
     case BAILOUT:
-        return m_bailout ? m_bailout() : 0.0;
+        return {m_bailout ? m_bailout() : 0.0, 0.0};
     }
     throw std::runtime_error("Invalid part for run");
 }
