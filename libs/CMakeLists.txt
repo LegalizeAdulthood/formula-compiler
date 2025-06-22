@@ -2,7 +2,7 @@ find_package(asmjit CONFIG REQUIRED)
 find_package(boost_parser CONFIG REQUIRED)
 
 add_library(formula
-    ast.h
+    ast.h ast.cpp
     include/formula/Complex.h
     include/formula/formula.h
     formula.cpp

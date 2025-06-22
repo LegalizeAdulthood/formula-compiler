@@ -13,8 +13,29 @@
 namespace formula::ast
 {
 
-struct EmitterState;
 using SymbolTable = std::map<std::string, Complex>;
+
+struct LabelBinding
+{
+    asmjit::Label label;
+    bool bound;
+};
+
+using ConstantBindings = std::map<double, LabelBinding>;
+using SymbolBindings = std::map<std::string, LabelBinding>;
+
+struct DataSection
+{
+    asmjit::Section *data{};    // Section for data storage
+    ConstantBindings constants; // Map of constants to labels
+    SymbolBindings symbols;     // Map of symbols to labels
+};
+
+struct EmitterState
+{
+    SymbolTable symbols;
+    DataSection data;
+};
 
 class Node
 {
@@ -174,6 +195,13 @@ private:
     Expr m_condition;
     Expr m_then_block;
     Expr m_else_block;
+};
+
+struct FormulaDefinition
+{
+    Expr initialize;
+    Expr iterate;
+    Expr bailout;
 };
 
 } // namespace formula
