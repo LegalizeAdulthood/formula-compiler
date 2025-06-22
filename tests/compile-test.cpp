@@ -14,7 +14,9 @@ TEST(TestCompiledFormulaRun, one)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, two)
@@ -23,7 +25,9 @@ TEST(TestCompiledFormulaRun, two)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(2.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(2.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, identifier)
@@ -32,7 +36,9 @@ TEST(TestCompiledFormulaRun, identifier)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(std::exp(1.0), formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(std::exp(1.0), result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
@@ -41,7 +47,9 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, add)
@@ -50,7 +58,9 @@ TEST(TestCompiledFormulaRun, add)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(2.4, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(2.4, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, subtract)
@@ -59,7 +69,9 @@ TEST(TestCompiledFormulaRun, subtract)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(-0.7, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(-0.7, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, multiply)
@@ -68,7 +80,9 @@ TEST(TestCompiledFormulaRun, multiply)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(6.82, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(6.82, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, divide)
@@ -77,7 +91,9 @@ TEST(TestCompiledFormulaRun, divide)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(3.2, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(3.2, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
@@ -86,7 +102,9 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(3.01e23, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(3.01e23, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, unaryNegate)
@@ -95,7 +113,9 @@ TEST(TestCompiledFormulaRun, unaryNegate)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(1.6, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(1.6, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, addAddadd)
@@ -104,7 +124,9 @@ TEST(TestCompiledFormulaRun, addAddadd)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(6.6, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(6.6, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, mulMulMul)
@@ -113,7 +135,9 @@ TEST(TestCompiledFormulaRun, mulMulMul)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(10.648, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(10.648, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, addMulAdd)
@@ -122,7 +146,9 @@ TEST(TestCompiledFormulaRun, addMulAdd)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(12.76, formula->run(formula::ITERATE).re, 1e-6);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(12.76, result.re, 1e-6);
 }
 
 TEST(TestCompiledFormulaRun, power)
@@ -131,7 +157,9 @@ TEST(TestCompiledFormulaRun, power)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(8.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(8.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, chainedPower)
@@ -140,7 +168,9 @@ TEST(TestCompiledFormulaRun, chainedPower)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(64.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(64.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, powerPrecedence)
@@ -149,7 +179,9 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(18.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(18.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, assignment)
@@ -158,7 +190,9 @@ TEST(TestCompiledFormulaRun, assignment)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(6.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(6.0, result.re);
 
     ASSERT_EQ(6.0, formula->get_value("z").re);
 }
@@ -169,8 +203,9 @@ TEST(TestCompiledFormulaRun, assignmentParens)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(6.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(6.0, result.re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
 
@@ -180,8 +215,9 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(3.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(3.0, result.re);
     ASSERT_EQ(3.0, formula->get_value("z1").re);
     ASSERT_EQ(3.0, formula->get_value("z2").re);
 }
@@ -192,7 +228,9 @@ TEST(TestCompiledFormulaRun, modulus)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(3.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(3.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareLessFalse)
@@ -201,7 +239,9 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re); // false is 0.0
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re); // false is 0.0
 }
 
 TEST(TestCompiledFormulaRun, compareLessTrue)
@@ -210,7 +250,9 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re); // true is 1.0
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re); // true is 1.0
 }
 
 TEST(TestCompiledFormulaRun, compareLessPrecedence)
@@ -219,7 +261,9 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -230,7 +274,9 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
@@ -239,7 +285,9 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualFalse)
@@ -248,7 +296,9 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterFalse)
@@ -257,7 +307,9 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterTrue)
@@ -266,7 +318,9 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
@@ -275,7 +329,9 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
@@ -284,7 +340,9 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareEqualTrue)
@@ -293,7 +351,9 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareEqualFalse)
@@ -302,7 +362,9 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualTrue)
@@ -311,7 +373,9 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualFalse)
@@ -320,7 +384,9 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndTrue)
@@ -329,7 +395,9 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndFalse)
@@ -338,7 +406,9 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
@@ -347,9 +417,10 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re); // 0 is false, so the second part is not evaluated
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, formula->get_value("z").re);        // z should not be set
+    ASSERT_EQ(0.0, result.re);                  // 0 is false, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
 }
 
 TEST(TestCompiledFormulaRun, logicalOrTrue)
@@ -358,7 +429,9 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, logicalOrFalse)
@@ -367,7 +440,9 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
@@ -376,9 +451,10 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re); // 1 is true, so the second part is not evaluated
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, formula->get_value("z").re);        // z should not be set
+    ASSERT_EQ(1.0, result.re);                  // 1 is true, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
 }
 
 TEST(TestCompiledFormulaRun, statements)
@@ -388,7 +464,9 @@ TEST(TestCompiledFormulaRun, statements)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(4.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, assignmentStatements)
@@ -398,8 +476,9 @@ TEST(TestCompiledFormulaRun, assignmentStatements)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(4.0, result.re);
     ASSERT_EQ(3.0, formula->get_value("q").re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -426,8 +505,9 @@ TEST(TestCompiledFormulaRun, formulaIterate)
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(8.4, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(8.4, result.re);
     ASSERT_EQ(4.4, formula->get_value("pixel").re);
     ASSERT_EQ(8.4, formula->get_value("z").re);
 }
@@ -439,8 +519,9 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::BAILOUT).re);
+    const formula::Complex result{formula->run(formula::BAILOUT)};
 
+    ASSERT_EQ(0.0, result.re);
     ASSERT_EQ(2.0, formula->get_value("z").re);
 }
 
@@ -452,8 +533,9 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
     formula->set_value("z", {8.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::BAILOUT).re);
+    const formula::Complex result{formula->run(formula::BAILOUT)};
 
+    ASSERT_EQ(1.0, result.re);
     ASSERT_EQ(8.0, formula->get_value("z").re);
 }
 
@@ -473,7 +555,9 @@ TEST_P(RunFunctionCall, run)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(param.real, formula->run(formula::ITERATE).re, 1e-8);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_NEAR(param.real, result.re, 1e-8);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
@@ -485,7 +569,9 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
@@ -495,7 +581,9 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
@@ -507,8 +595,9 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(3.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(3.0, result.re);
     ASSERT_EQ(3.0, formula->get_value("z").re);
 }
 
@@ -521,8 +610,9 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
     formula->set_value("z", {5.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(0.0, result.re);
     ASSERT_EQ(5.0, formula->get_value("z").re);
 }
 
@@ -542,8 +632,9 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
     formula->set_value("q", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(4.0, result.re);
     ASSERT_EQ(0.0, formula->get_value("x").re);
     ASSERT_EQ(0.0, formula->get_value("y").re);
     ASSERT_EQ(3.0, formula->get_value("z").re);
@@ -566,8 +657,9 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
     formula->set_value("q", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(2.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(2.0, result.re);
     ASSERT_EQ(1.0, formula->get_value("x").re);
     ASSERT_EQ(2.0, formula->get_value("y").re);
     ASSERT_EQ(0.0, formula->get_value("z").re);
@@ -582,7 +674,9 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyTrue)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(1.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(1.0, result.re);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
@@ -593,7 +687,9 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
@@ -605,7 +701,9 @@ TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(0.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(0.0, result.re);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
@@ -619,8 +717,9 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(4.0, result.re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
 
@@ -637,8 +736,9 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyFalse)
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(4.0, result.re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
 
@@ -657,7 +757,8 @@ TEST(TestCompileFormulaRun, ifMultipleElseIfStatementBodyFalse)
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.0, formula->run(formula::ITERATE).re);
+    const formula::Complex result{formula->run(formula::ITERATE)};
 
+    ASSERT_EQ(4.0, result.re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
