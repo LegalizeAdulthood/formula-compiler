@@ -455,3 +455,10 @@ TEST(TestFormulaParse, ifThenElseIfComplexBody)
                                "q=4\n"
                                "endif"));
 }
+
+TEST(TestFormulaParse, backslashContinuesStatement)
+{
+    EXPECT_TRUE(formula::parse("if(\\\n"
+                               "0)\n"
+                               "endif"));
+}

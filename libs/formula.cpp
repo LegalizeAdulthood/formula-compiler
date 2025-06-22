@@ -930,7 +930,7 @@ const auto reserved_word = lexeme[("if"_l | "elseif"_l | "else"_l | "endif"_l) >
 const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
-const auto skipper = blank | (char_(';') >> *(char_ - eol));
+const auto skipper = blank | char_(';') >> *(char_ - eol) | char_('\\') >> eol;
 
 // Grammar rules
 rule<struct NumberTag, Expr> number = "number";
