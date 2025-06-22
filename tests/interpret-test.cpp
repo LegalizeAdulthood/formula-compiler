@@ -550,3 +550,85 @@ TEST(TestFormulaInterpret, ifThenElseComplexBodyConditionTrue)
     ASSERT_EQ(0.0, formula->get_value("z"));
     ASSERT_EQ(0.0, formula->get_value("q"));
 }
+
+TEST(TestFormulaInterpret, ifElseIfStatementEmptyBodyTrue)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "elseif(1)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestFormulaInterpret, ifElseIfStatementEmptyBodyFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "elseif(0)\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestFormulaInterpret, ifElseIfElseStatementEmptyBodyFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "elseif(0)\n"
+                                      "else\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE));
+}
+
+TEST(TestFormulaInterpret, ifElseIfStatementBodyTrue)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "z=1\n"
+                                      "elseif(1)\n"
+                                      "z=4\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 0.0);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, ifElseIfStatementBodyFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "z=1\n"
+                                      "elseif(0)\n"
+                                      "z=3\n"
+                                      "else\n"
+                                      "z=4\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 0.0);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}
+
+TEST(TestFormulaInterpret, ifMultipleElseIfStatementBodyFalse)
+{
+    const auto formula{formula::parse("if(0)\n"
+                                      "z=1\n"
+                                      "elseif(0)\n"
+                                      "z=3\n"
+                                      "elseif(1)\n"
+                                      "z=4\n"
+                                      "else\n"
+                                      "z=5\n"
+                                      "endif")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", 0.0);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE));
+
+    ASSERT_EQ(4.0, formula->get_value("z"));
+}

@@ -947,6 +947,7 @@ rule<struct ComparativeTag, Expr> comparative = "comparative expression";
 rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
 rule<struct IfStatementTag, Expr> if_statement = "if statement";
 rule<struct ElseIfStatementTag, Expr> elseif_statement = "elseif statement";
+rule<struct ElseBlockTag, Expr> else_block = "else block";
 rule<struct StatementTag, Expr> statement = "statement";
 rule<struct StatementSequenceTag, Expr> statement_seq = "statement sequence";
 rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
@@ -964,19 +965,21 @@ const auto expr_def = assignment | additive;
 const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
 const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
 const auto condition = '('_l >> conjunctive >> ')' >> +eol;
-const auto empty_body = attr<Expr>(nullptr);
-const auto else_statement =                                 //
-    "else"_l >> +eol                                        //
-    >> (statement_seq | empty_body);                        //
-const auto elseif_statement_def =                           //
-    ("elseif"_l >> condition                                //
-        >> (statement_seq | empty_body)                     //
-        >> (else_statement | empty_body)                    //
-        )[make_if_statement];                               //
-const auto if_statement_def =                               //
-    ("if"_l >> condition                                    //
-        >> (statement_seq | empty_body)                     //
-        >> (elseif_statement | else_statement | empty_body) //
+const auto empty_block = attr<Expr>(nullptr);
+const auto block = statement_seq | empty_block;
+const auto else_statement =                                                  //
+    "else"_l >> +eol                                                         //
+    >> block;                                                                //
+const auto else_block_def = elseif_statement | else_statement | empty_block; //
+const auto elseif_statement_def =                                            //
+    ("elseif"_l >> condition                                                 //
+        >> block                                                             //
+        >> else_block                                                        //
+        )[make_if_statement];                                                //
+const auto if_statement_def =                                                //
+    ("if"_l >> condition                                                     //
+        >> block                                                             //
+        >> else_block                                                        //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -985,7 +988,8 @@ const auto formula_def = (statement_seq >> lit(':') >> statement_seq >> lit(',')
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    elseif_statement, if_statement, statement, statement_seq, formula);
+    else_block, elseif_statement, if_statement, statement, statement_seq,      //
+    formula);
 
 using Function = double();
 

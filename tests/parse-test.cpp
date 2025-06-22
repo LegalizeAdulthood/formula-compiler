@@ -409,7 +409,7 @@ TEST(TestFormulaParse, ifElseIfEmptyBody)
                                "endif"));
 }
 
-TEST(TestFormulaParse, DISABLED_ifMultipleElseIfEmptyBody)
+TEST(TestFormulaParse, ifMultipleElseIfEmptyBody)
 {
     EXPECT_TRUE(formula::parse("if(0)\n"
                                "elseif(0)\n"
