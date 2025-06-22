@@ -473,10 +473,10 @@ TEST_P(RunFunctionCall, run)
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_NEAR(param.result, formula->run(formula::ITERATE).re, 1e-8);
+    ASSERT_NEAR(param.real, formula->run(formula::ITERATE).re, 1e-8);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(s_calls));
+INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
 
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 {

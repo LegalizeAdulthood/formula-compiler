@@ -1,17 +1,20 @@
 #pragma once
 
+#include <formula/Complex.h>
+
 #include <array>
 #include <iostream>
 
 struct FunctionCallParam
 {
     std::string_view expr;
-    double result;
+    double real;
+    formula::Complex result;
 };
 
 inline std::ostream &operator<<(std::ostream &str, const FunctionCallParam &value)
 {
-    return str << value.expr << '=' << value.result;
+    return str << value.expr << '=' << value.real << '/' << value.result;
 }
 
-extern std::array<FunctionCallParam, 37> s_calls;
+extern std::array<FunctionCallParam, 37> g_calls;

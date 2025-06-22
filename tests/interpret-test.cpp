@@ -468,10 +468,13 @@ TEST_P(InterpretFunctionCall, interpret)
     const auto formula{formula::parse(param.expr)};
     ASSERT_TRUE(formula);
 
-    ASSERT_NEAR(param.result, formula->interpret(formula::ITERATE).re, 1e-8);
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    ASSERT_NEAR(param.result.re, result.re, 1e-8);
+    ASSERT_NEAR(param.result.im, result.im, 1e-8);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestFormula, InterpretFunctionCall, ValuesIn(s_calls));
+INSTANTIATE_TEST_SUITE_P(TestFormula, InterpretFunctionCall, ValuesIn(g_calls));
 
 TEST(TestFormulaInterpret, ifStatementEmptyBodyTrue)
 {
@@ -643,4 +646,15 @@ TEST(TestFormulaInterpret, ifMultipleElseIfStatementBodyFalse)
     ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
+}
+
+TEST(TestFormulaInterpret, flip)
+{
+    const auto formula{formula::parse("flip(1)")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(1.0, result.im); // flip(1) should return 0 + i
 }

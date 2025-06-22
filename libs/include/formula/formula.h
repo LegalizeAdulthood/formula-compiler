@@ -1,53 +1,13 @@
 #pragma once
 
+#include <formula/Complex.h>
+
 #include <iostream>
 #include <memory>
 #include <string_view>
 
 namespace formula
 {
-
-struct Complex
-{
-    double re;
-    double im;
-};
-
-inline bool operator==(const Complex &lhs, const Complex &rhs)
-{
-    return lhs.re == rhs.re && lhs.im == rhs.im;
-}
-inline bool operator!=(const Complex &lhs, const Complex &rhs)
-{
-    return !(lhs == rhs);
-}
-
-inline std::ostream &operator<<(std::ostream &str, const Complex &value)
-{
-    return str << '(' << value.re << ',' << value.im << ')';
-}
-
-inline Complex operator+(const Complex &lhs, const Complex &rhs)
-{
-    return {lhs.re + rhs.re, lhs.im + rhs.im};
-}
-
-inline Complex operator-(const Complex &lhs, const Complex &rhs)
-{
-    return {lhs.re - rhs.re, lhs.im - rhs.im};
-}
-
-inline Complex operator*(const Complex &lhs, const Complex &rhs)
-{
-    return {lhs.re * rhs.re - lhs.im * rhs.im, lhs.re * rhs.im + lhs.im * rhs.re};
-}
-
-inline Complex operator/(const Complex &lhs, const Complex &rhs)
-{
-    const double denom = rhs.re * rhs.re + rhs.im * rhs.im;
-    return {(lhs.re * rhs.re + lhs.im * rhs.im) / denom,
-            (lhs.im * rhs.re - lhs.re * rhs.im) / denom};
-}
 
 enum Part
 {
@@ -71,4 +31,4 @@ public:
 
 std::shared_ptr<Formula> parse(std::string_view text);
 
-}
+} // namespace formula

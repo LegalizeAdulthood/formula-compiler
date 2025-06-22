@@ -2,8 +2,10 @@ find_package(asmjit CONFIG REQUIRED)
 find_package(boost_parser CONFIG REQUIRED)
 
 add_library(formula
+    include/formula/Complex.h
     include/formula/formula.h
     formula.cpp
+    functions.h functions.cpp
 )
 target_compile_options(formula PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
