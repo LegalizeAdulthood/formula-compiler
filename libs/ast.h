@@ -21,7 +21,7 @@ struct LabelBinding
     bool bound;
 };
 
-using ConstantBindings = std::map<double, LabelBinding>;
+using ConstantBindings = std::map<Complex, LabelBinding>;
 using SymbolBindings = std::map<std::string, LabelBinding>;
 
 struct DataSection

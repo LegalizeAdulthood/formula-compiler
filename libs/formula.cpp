@@ -305,7 +305,7 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
         }
         binding.bound = true;
         comp.bind(binding.label);
-        comp.embedDouble(value); // Embed the double value in the data section
+        comp.embedDouble(value.re); // Embed the double value in the data section
     }
 }
 

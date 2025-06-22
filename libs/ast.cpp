@@ -7,7 +7,7 @@
 namespace formula::ast
 {
 
-asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantBindings &labels, double value)
+asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantBindings &labels, const Complex &value)
 {
     if (const auto it = labels.find(value); it != labels.end())
     {
@@ -33,14 +33,14 @@ asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBindings &labe
     return label;
 }
 
-Complex NumberNode::interpret(SymbolTable &) const
+Complex NumberNode::interpret(SymbolTable & /*symbols*/) const
 {
     return {m_value, 0.0};
 }
 
 bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    asmjit::Label label = get_constant_label(comp, state.data.constants, m_value);
+    asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
     comp.movq(result, asmjit::x86::ptr(label));
     return true;
 }
@@ -241,7 +241,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.ucomisd(result, zero); // xmm0 <=> 0.0?
         asmjit::Label eval_right = comp.newLabel();
         comp.jne(eval_right); // xmm0 != 0.0
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(right, asmjit::x86::ptr(one));
         comp.jmp(skip_right);
         comp.bind(eval_right);
@@ -254,7 +254,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.ucomisd(result, zero); // result <=> 0.0?
         asmjit::Label eval_right = comp.newLabel();
         comp.je(eval_right); // result == 0.0
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.jmp(skip_right);
         comp.bind(eval_right);
@@ -323,7 +323,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.xorpd(result, result); // result = 0.0
         comp.jmp(end);
         comp.bind(success);
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
         return true;
@@ -341,7 +341,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.movsd(result, zero);
         comp.jmp(end);
         comp.bind(success);
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
         return true;
@@ -359,7 +359,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.movsd(result, zero);
         comp.jmp(end);
         comp.bind(success);
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
         return true;
@@ -435,7 +435,7 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
     else
     {
         // If no then block, just set result to 1.0
-        asmjit::Label one = get_constant_label(comp, state.data.constants, 1.0);
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
     }
     comp.jmp(end_label); // Jump over else block

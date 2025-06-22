@@ -21,6 +21,11 @@ inline bool operator!=(const Complex &lhs, const Complex &rhs)
     return !(lhs == rhs);
 }
 
+inline bool operator<(const Complex &lhs, const Complex &rhs)
+{
+    return lhs.re < rhs.re || (lhs.re == rhs.re && lhs.im < rhs.im);
+}
+
 inline std::ostream &operator<<(std::ostream &str, const Complex &value)
 {
     return str << '(' << value.re << ',' << value.im << ')';
