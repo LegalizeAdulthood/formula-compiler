@@ -658,3 +658,58 @@ TEST(TestFormulaInterpret, flip)
     EXPECT_EQ(0.0, result.re);
     EXPECT_EQ(1.0, result.im); // flip(1) should return 0 + i
 }
+
+TEST(TestFormulaInterpret, complexAdd)
+{
+    const auto formula{formula::parse("1+flip(1)")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.im);
+}
+
+TEST(TestFormulaInterpret, complexSubtract)
+{
+    const auto formula{formula::parse("1-flip(1)")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(-1.0, result.im);
+}
+
+TEST(TestFormulaInterpret, complexMultiply)
+{
+    const auto formula{formula::parse("flip(1)*flip(1)")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(-1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpret, complexDivideScalar)
+{
+    const auto formula{formula::parse("(1+flip(1))/2")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(0.5, result.re);
+    EXPECT_EQ(0.5, result.im);
+}
+
+TEST(TestFormulaInterpret, complexDivide)
+{
+    const auto formula{formula::parse("(1+flip(1))/(2+flip(2))")};
+    ASSERT_TRUE(formula);
+
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    EXPECT_EQ(0.5, result.re);
+    EXPECT_EQ(0.0, result.im); // (1+i)/(2+2i) = 0.5 + 0.0i
+}
