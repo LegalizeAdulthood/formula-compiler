@@ -6,8 +6,6 @@
 namespace formula
 {
 
-class Node;
-
 enum Part
 {
     INITIALIZE = 0,
