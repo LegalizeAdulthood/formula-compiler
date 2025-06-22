@@ -4,6 +4,13 @@
 
 #include <algorithm>
 
+//
+// An Xmm register is 128 bits wide, holding two 64-bit doubles,
+// bit enough to hold a complex double.
+//
+// The formula compiler stores the real part in the low 64-bits
+// and the imaginary part in the high 64-bits.
+//
 namespace formula::ast
 {
 
@@ -42,6 +49,7 @@ bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmji
 {
     asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
     comp.movq(result, asmjit::x86::ptr(label));
+    comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
     return true;
 }
 

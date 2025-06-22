@@ -241,8 +241,15 @@ void update_symbols(asmjit::x86::Compiler &comp, ast::SymbolTable &symbols, ast:
     asmjit::x86::Gp tmp{comp.newUIntPtr()};
     for (auto &[name, binding] : bindings)
     {
-        comp.mov(tmp, asmjit::x86::ptr(binding.label));
-        comp.mov(asmjit::x86::ptr(std::uintptr_t(&symbols[name])), tmp);
+        auto src = asmjit::x86::ptr(binding.label);
+        double *real{&symbols[name].re};
+        auto dest = asmjit::x86::ptr(std::uintptr_t(real));
+        comp.mov(tmp, src);
+        comp.mov(dest, tmp);
+        src = asmjit::x86::ptr(binding.label, sizeof(double));
+        dest = asmjit::x86::ptr(std::uintptr_t(real + 1));
+        comp.mov(tmp, src);
+        comp.mov(dest, tmp);
     }
 }
 
@@ -290,7 +297,8 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
         comp.bind(binding.label);
         if (const auto it = state.symbols.find(name); it != state.symbols.end())
         {
-            comp.embedDouble(it->second.re); // Embed the symbol value in the data section
+            comp.embedDouble(it->second.re);
+            comp.embedDouble(it->second.im);
         }
         else
         {
@@ -305,7 +313,8 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
         }
         binding.bound = true;
         comp.bind(binding.label);
-        comp.embedDouble(value.re); // Embed the double value in the data section
+        comp.embedDouble(value.re);
+        comp.embedDouble(value.im);
     }
 }
 
