@@ -1,5 +1,6 @@
 #include "formula/formula.h"
 
+#include "ast.h"
 #include "functions.h"
 
 #include <asmjit/core.h>
@@ -23,7 +24,7 @@ using namespace boost::parser::literals; // for operator""_l, _attr, etc.
 namespace formula
 {
 
-namespace
+namespace ast
 {
 
 struct LabelBinding
@@ -32,7 +33,6 @@ struct LabelBinding
     bool bound;
 };
 
-using SymbolTable = std::map<std::string, Complex>;
 using ConstantBindings = std::map<double, LabelBinding>;
 using SymbolBindings = std::map<std::string, LabelBinding>;
 
@@ -117,33 +117,6 @@ void update_symbols(asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolBin
     }
 }
 
-class Node
-{
-public:
-    virtual ~Node() = default;
-
-    virtual Complex interpret(SymbolTable &symbols) const = 0;
-    virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
-};
-
-using Expr = std::shared_ptr<Node>;
-
-class NumberNode : public Node
-{
-public:
-    NumberNode(double value) :
-        m_value(value)
-    {
-    }
-    ~NumberNode() override = default;
-
-    Complex interpret(SymbolTable &) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    double m_value{};
-};
-
 Complex NumberNode::interpret(SymbolTable &) const
 {
     return {m_value, 0.0};
@@ -159,22 +132,6 @@ bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmji
 const auto make_number = [](auto &ctx)
 {
     return std::make_shared<NumberNode>(_attr(ctx));
-};
-
-class IdentifierNode : public Node
-{
-public:
-    IdentifierNode(std::string value) :
-        m_name(std::move(value))
-    {
-    }
-    ~IdentifierNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    std::string m_name;
 };
 
 Complex IdentifierNode::interpret(SymbolTable &symbols) const
@@ -196,24 +153,6 @@ bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
 const auto make_identifier = [](auto &ctx)
 {
     return std::make_shared<IdentifierNode>(_attr(ctx));
-};
-
-class FunctionCallNode : public Node
-{
-public:
-    FunctionCallNode(std::string name, Expr arg) :
-        m_name(std::move(name)),
-        m_arg(std::move(arg))
-    {
-    }
-    ~FunctionCallNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    std::string m_name;
-    Expr m_arg;
 };
 
 Complex FunctionCallNode::interpret(SymbolTable &symbols) const
@@ -248,24 +187,6 @@ const auto make_function_call = [](auto &ctx)
 {
     const auto &attr{_attr(ctx)};
     return std::make_shared<FunctionCallNode>(std::get<0>(attr), std::get<1>(attr));
-};
-
-class UnaryOpNode : public Node
-{
-public:
-    UnaryOpNode(char op, Expr operand) :
-        m_op(op),
-        m_operand(std::move(operand))
-    {
-    }
-    ~UnaryOpNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    char m_op;
-    Expr m_operand;
 };
 
 Complex UnaryOpNode::interpret(SymbolTable &symbols) const
@@ -327,33 +248,6 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
 const auto make_unary_op = [](auto &ctx)
 {
     return std::make_shared<UnaryOpNode>(std::get<0>(_attr(ctx)), std::get<1>(_attr(ctx)));
-};
-
-class BinaryOpNode : public Node
-{
-public:
-    BinaryOpNode() = default;
-    BinaryOpNode(Expr left, char op, Expr right) :
-        m_left(std::move(left)),
-        m_op(1, op),
-        m_right(std::move(right))
-    {
-    }
-    BinaryOpNode(Expr left, std::string op, Expr right) :
-        m_left(std::move(left)),
-        m_op(std::move(op)),
-        m_right(std::move(right))
-    {
-    }
-    ~BinaryOpNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    Expr m_left;
-    std::string m_op;
-    Expr m_right;
 };
 
 Complex BinaryOpNode::interpret(SymbolTable &symbols) const
@@ -589,24 +483,6 @@ const auto make_binary_op_seq = [](auto &ctx)
     return left;
 };
 
-class AssignmentNode : public Node
-{
-public:
-    AssignmentNode(std::string variable, Expr expression) :
-        m_variable(std::move(variable)),
-        m_expression(std::move(expression))
-    {
-    }
-    ~AssignmentNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    std::string m_variable;
-    Expr m_expression;
-};
-
 Complex AssignmentNode::interpret(SymbolTable &symbols) const
 {
     Complex value = m_expression->interpret(symbols);
@@ -636,22 +512,6 @@ const auto make_assign = [](auto &ctx)
     return rhs;
 };
 
-class StatementSeqNode : public Node
-{
-public:
-    StatementSeqNode(std::vector<Expr> statements) :
-        m_statements(std::move(statements))
-    {
-    }
-    ~StatementSeqNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    std::vector<Expr> m_statements;
-};
-
 Complex StatementSeqNode::interpret(SymbolTable &symbols) const
 {
     Complex value{};
@@ -671,26 +531,6 @@ bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
 const auto make_statement_seq = [](auto &ctx)
 {
     return std::make_shared<StatementSeqNode>(_attr(ctx));
-};
-
-class IfStatementNode : public Node
-{
-public:
-    IfStatementNode(Expr condition, Expr then_block, Expr else_block) :
-        m_condition(condition),
-        m_then_block(then_block),
-        m_else_block(else_block)
-    {
-    }
-    ~IfStatementNode() override = default;
-
-    Complex interpret(SymbolTable &symbols) const override;
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
-
-private:
-    Expr m_condition;
-    Expr m_then_block;
-    Expr m_else_block;
 };
 
 Complex IfStatementNode::interpret(SymbolTable &symbols) const
@@ -753,11 +593,16 @@ const auto make_if_statement = [](auto &ctx)
     return std::make_shared<IfStatementNode>(std::get<0>(attr), std::get<1>(attr), std::get<2>(attr));
 };
 
+} // namespace ast
+
+namespace
+{
+
 struct FormulaDefinition
 {
-    Expr initialize;
-    Expr iterate;
-    Expr bailout;
+    ast::Expr initialize;
+    ast::Expr iterate;
+    ast::Expr bailout;
 };
 
 // Terminal parsers
@@ -788,39 +633,39 @@ const auto logical_op = "&&"_p | "||"_p;
 const auto skipper = blank | char_(';') >> *(char_ - eol) | char_('\\') >> eol;
 
 // Grammar rules
-rule<struct NumberTag, Expr> number = "number";
-rule<struct IdentifierTag, Expr> variable = "variable";
-rule<struct FunctionCallTag, Expr> function_call = "function call";
-rule<struct UnaryOpTag, Expr> unary_op = "unary operator";
-rule<struct FactorTag, Expr> factor = "additive factor";
-rule<struct PowerTag, Expr> power = "exponentiation";
-rule<struct TermTag, Expr> term = "multiplicative term";
-rule<struct AdditiveTag, Expr> additive = "additive expression";
-rule<struct AssignmentTag, Expr> assignment = "assignment statement";
-rule<struct ExprTag, Expr> expr = "expression";
-rule<struct ComparativeTag, Expr> comparative = "comparative expression";
-rule<struct ConjunctiveTag, Expr> conjunctive = "conjunctive expression";
-rule<struct IfStatementTag, Expr> if_statement = "if statement";
-rule<struct ElseIfStatementTag, Expr> elseif_statement = "elseif statement";
-rule<struct ElseBlockTag, Expr> else_block = "else block";
-rule<struct StatementTag, Expr> statement = "statement";
-rule<struct StatementSequenceTag, Expr> statement_seq = "statement sequence";
+rule<struct NumberTag, ast::Expr> number = "number";
+rule<struct IdentifierTag, ast::Expr> variable = "variable";
+rule<struct FunctionCallTag, ast::Expr> function_call = "function call";
+rule<struct UnaryOpTag, ast::Expr> unary_op = "unary operator";
+rule<struct FactorTag, ast::Expr> factor = "additive factor";
+rule<struct PowerTag, ast::Expr> power = "exponentiation";
+rule<struct TermTag, ast::Expr> term = "multiplicative term";
+rule<struct AdditiveTag, ast::Expr> additive = "additive expression";
+rule<struct AssignmentTag, ast::Expr> assignment = "assignment statement";
+rule<struct ExprTag, ast::Expr> expr = "expression";
+rule<struct ComparativeTag, ast::Expr> comparative = "comparative expression";
+rule<struct ConjunctiveTag, ast::Expr> conjunctive = "conjunctive expression";
+rule<struct IfStatementTag, ast::Expr> if_statement = "if statement";
+rule<struct ElseIfStatementTag, ast::Expr> elseif_statement = "elseif statement";
+rule<struct ElseBlockTag, ast::Expr> else_block = "else block";
+rule<struct StatementTag, ast::Expr> statement = "statement";
+rule<struct StatementSequenceTag, ast::Expr> statement_seq = "statement sequence";
 rule<struct FormulaDefinitionTag, FormulaDefinition> formula = "formula definition";
 
-const auto number_def = double_[make_number];
-const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
-const auto function_call_def = (reserved_function >> '(' >> expr >> ')')[make_function_call];
-const auto unary_op_def = (char_("-+") >> factor)[make_unary_op] | (char_('|') >> expr >> '|')[make_unary_op];
+const auto number_def = double_[ast::make_number];
+const auto variable_def = (identifier - reserved_function - reserved_word)[ast::make_identifier];
+const auto function_call_def = (reserved_function >> '(' >> expr >> ')')[ast::make_function_call];
+const auto unary_op_def = (char_("-+") >> factor)[ast::make_unary_op] | (char_('|') >> expr >> '|')[ast::make_unary_op];
 const auto factor_def = number | function_call | variable | '(' >> expr >> ')' | unary_op;
-const auto power_def = (factor >> *(char_('^') >> factor))[make_binary_op_seq];
-const auto term_def = (power >> *(char_("*/") >> power))[make_binary_op_seq];
-const auto additive_def = (term >> *(char_("+-") >> term))[make_binary_op_seq];
-const auto assignment_def = (+(user_variable >> '=') >> additive)[make_assign];
+const auto power_def = (factor >> *(char_('^') >> factor))[ast::make_binary_op_seq];
+const auto term_def = (power >> *(char_("*/") >> power))[ast::make_binary_op_seq];
+const auto additive_def = (term >> *(char_("+-") >> term))[ast::make_binary_op_seq];
+const auto assignment_def = (+(user_variable >> '=') >> additive)[ast::make_assign];
 const auto expr_def = assignment | additive;
-const auto comparative_def = (expr >> *(rel_op >> expr))[make_binary_op_seq];
-const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[make_binary_op_seq];
+const auto comparative_def = (expr >> *(rel_op >> expr))[ast::make_binary_op_seq];
+const auto conjunctive_def = (comparative >> *(logical_op >> comparative))[ast::make_binary_op_seq];
 const auto condition = '('_l >> conjunctive >> ')' >> +eol;
-const auto empty_block = attr<Expr>(nullptr);
+const auto empty_block = attr<ast::Expr>(nullptr);
 const auto block = statement_seq | empty_block;
 const auto else_statement =                                                  //
     "else"_l >> +eol                                                         //
@@ -830,16 +675,16 @@ const auto elseif_statement_def =                                            //
     ("elseif"_l >> condition                                                 //
         >> block                                                             //
         >> else_block                                                        //
-        )[make_if_statement];                                                //
+        )[ast::make_if_statement];                                                //
 const auto if_statement_def =                                                //
     ("if"_l >> condition                                                     //
         >> block                                                             //
         >> else_block                                                        //
-        >> "endif")[make_if_statement];
+        >> "endif")[ast::make_if_statement];
 const auto statement_def = if_statement | conjunctive;
-const auto statement_seq_def = (statement % +eol)[make_statement_seq] >> *eol;
+const auto statement_seq_def = (statement % +eol)[ast::make_statement_seq] >> *eol;
 const auto formula_def = (statement_seq >> lit(':') >> statement_seq >> lit(',') >> statement_seq) //
-    | (attr<Expr>(nullptr) >> statement_seq >> attr<Expr>(nullptr));
+    | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr));
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
@@ -878,9 +723,9 @@ public:
 
 private:
     bool init_code_holder(asmjit::CodeHolder &code);
-    bool compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label);
+    bool compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
 
-    EmitterState m_state;
+    ast::EmitterState m_state;
     FormulaDefinition m_ast;
     Function *m_initialize{};
     Function *m_iterate{};
@@ -916,7 +761,7 @@ bool ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
     return true;
 }
 
-bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label)
+bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
 {
     if (!node)
     {
