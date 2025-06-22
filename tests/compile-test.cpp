@@ -16,7 +16,8 @@ TEST(TestCompiledFormulaRun, one)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, two)
@@ -27,7 +28,8 @@ TEST(TestCompiledFormulaRun, two)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(2.0, result.re);
+    EXPECT_EQ(2.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, identifier)
@@ -38,7 +40,8 @@ TEST(TestCompiledFormulaRun, identifier)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(std::exp(1.0), result.re, 1e-6);
+    EXPECT_NEAR(std::exp(1.0), result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
@@ -49,7 +52,8 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, add)
@@ -60,7 +64,8 @@ TEST(TestCompiledFormulaRun, add)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(2.4, result.re, 1e-6);
+    EXPECT_NEAR(2.4, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, subtract)
@@ -71,7 +76,8 @@ TEST(TestCompiledFormulaRun, subtract)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(-0.7, result.re, 1e-6);
+    EXPECT_NEAR(-0.7, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, multiply)
@@ -82,7 +88,8 @@ TEST(TestCompiledFormulaRun, multiply)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(6.82, result.re, 1e-6);
+    EXPECT_NEAR(6.82, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, divide)
@@ -93,7 +100,8 @@ TEST(TestCompiledFormulaRun, divide)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(3.2, result.re, 1e-6);
+    EXPECT_NEAR(3.2, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
@@ -104,7 +112,8 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(3.01e23, result.re, 1e-6);
+    EXPECT_NEAR(3.01e23, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, unaryNegate)
@@ -115,7 +124,8 @@ TEST(TestCompiledFormulaRun, unaryNegate)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(1.6, result.re, 1e-6);
+    EXPECT_NEAR(1.6, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, addAddadd)
@@ -126,7 +136,8 @@ TEST(TestCompiledFormulaRun, addAddadd)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(6.6, result.re, 1e-6);
+    EXPECT_NEAR(6.6, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, mulMulMul)
@@ -137,7 +148,8 @@ TEST(TestCompiledFormulaRun, mulMulMul)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(10.648, result.re, 1e-6);
+    EXPECT_NEAR(10.648, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, addMulAdd)
@@ -148,7 +160,8 @@ TEST(TestCompiledFormulaRun, addMulAdd)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(12.76, result.re, 1e-6);
+    EXPECT_NEAR(12.76, result.re, 1e-6);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, power)
@@ -159,7 +172,8 @@ TEST(TestCompiledFormulaRun, power)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(8.0, result.re);
+    EXPECT_EQ(8.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, chainedPower)
@@ -170,7 +184,8 @@ TEST(TestCompiledFormulaRun, chainedPower)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(64.0, result.re);
+    EXPECT_EQ(64.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, powerPrecedence)
@@ -181,7 +196,8 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(18.0, result.re);
+    EXPECT_EQ(18.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, assignment)
@@ -192,9 +208,11 @@ TEST(TestCompiledFormulaRun, assignment)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(6.0, result.re);
-
-    ASSERT_EQ(6.0, formula->get_value("z").re);
+    EXPECT_EQ(6.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(6.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, assignmentParens)
@@ -205,8 +223,11 @@ TEST(TestCompiledFormulaRun, assignmentParens)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(6.0, result.re);
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(6.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, chainedAssignment)
@@ -217,9 +238,14 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(3.0, result.re);
-    ASSERT_EQ(3.0, formula->get_value("z1").re);
-    ASSERT_EQ(3.0, formula->get_value("z2").re);
+    EXPECT_EQ(3.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z1{formula->get_value("z1")};
+    EXPECT_EQ(3.0, z1.re);
+    EXPECT_EQ(0.0, z1.im);
+    const formula::Complex z2{formula->get_value("z2")};
+    EXPECT_EQ(3.0, z2.re);
+    EXPECT_EQ(0.0, z2.im);
 }
 
 TEST(TestCompiledFormulaRun, modulus)
@@ -230,7 +256,8 @@ TEST(TestCompiledFormulaRun, modulus)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(3.0, result.re);
+    EXPECT_EQ(3.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessFalse)
@@ -241,7 +268,8 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re); // false is 0.0
+    EXPECT_EQ(0.0, result.re); // false is 0.0
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessTrue)
@@ -252,7 +280,8 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re); // true is 1.0
+    EXPECT_EQ(1.0, result.re); // true is 1.0
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessPrecedence)
@@ -263,9 +292,11 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
-
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
@@ -276,7 +307,8 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
@@ -287,7 +319,8 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareLessEqualFalse)
@@ -298,7 +331,8 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterFalse)
@@ -309,7 +343,8 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterTrue)
@@ -320,7 +355,8 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
@@ -331,7 +367,8 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
@@ -342,7 +379,8 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareEqualTrue)
@@ -353,7 +391,8 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareEqualFalse)
@@ -364,7 +403,8 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualTrue)
@@ -375,7 +415,8 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, compareNotEqualFalse)
@@ -386,7 +427,8 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndTrue)
@@ -397,7 +439,8 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndFalse)
@@ -408,7 +451,8 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
@@ -419,8 +463,11 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);                  // 0 is false, so the second part is not evaluated
-    ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
+    EXPECT_EQ(0.0, result.re);                         // 0 is false, so the second part is not evaluated
+    EXPECT_EQ(0.0, result.im);                         //
+    const formula::Complex z{formula->get_value("z")}; //
+    EXPECT_EQ(0.0, z.re);                              // z should not be set
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalOrTrue)
@@ -431,7 +478,8 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalOrFalse)
@@ -442,7 +490,8 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
@@ -453,8 +502,11 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);                  // 1 is true, so the second part is not evaluated
-    ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
+    EXPECT_EQ(1.0, result.re);                         // 1 is true, so the second part is not evaluated
+    EXPECT_EQ(0.0, result.im);                         //
+    const formula::Complex z{formula->get_value("z")}; //
+    EXPECT_EQ(0.0, z.re);                              // z should not be set
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, statements)
@@ -466,7 +518,8 @@ TEST(TestCompiledFormulaRun, statements)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, assignmentStatements)
@@ -478,9 +531,14 @@ TEST(TestCompiledFormulaRun, assignmentStatements)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
-    ASSERT_EQ(3.0, formula->get_value("q").re);
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(3.0, q.re);
+    EXPECT_EQ(0.0, q.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, formulaInitialize)
@@ -491,10 +549,16 @@ TEST(TestCompiledFormulaRun, formulaInitialize)
     formula->set_value("z", {100.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
-    ASSERT_EQ(4.4, formula->run(formula::INITIALIZE).re);
+    const formula::Complex result{formula->run(formula::INITIALIZE)};
 
-    ASSERT_EQ(4.4, formula->get_value("pixel").re);
-    ASSERT_EQ(4.4, formula->get_value("z").re);
+    EXPECT_EQ(4.4, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex pixel{formula->get_value("pixel")};
+    EXPECT_EQ(4.4, pixel.re);
+    EXPECT_EQ(0.0, pixel.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.4, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, formulaIterate)
@@ -507,9 +571,14 @@ TEST(TestCompiledFormulaRun, formulaIterate)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(8.4, result.re);
-    ASSERT_EQ(4.4, formula->get_value("pixel").re);
-    ASSERT_EQ(8.4, formula->get_value("z").re);
+    EXPECT_EQ(8.4, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex pixel{formula->get_value("pixel")};
+    EXPECT_EQ(4.4, pixel.re);
+    EXPECT_EQ(0.0, pixel.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(8.4, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, formulaBailoutFalse)
@@ -521,8 +590,11 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 
     const formula::Complex result{formula->run(formula::BAILOUT)};
 
-    ASSERT_EQ(0.0, result.re);
-    ASSERT_EQ(2.0, formula->get_value("z").re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(2.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, formulaBailoutTrue)
@@ -535,8 +607,11 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
 
     const formula::Complex result{formula->run(formula::BAILOUT)};
 
-    ASSERT_EQ(1.0, result.re);
-    ASSERT_EQ(8.0, formula->get_value("z").re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(8.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 namespace
@@ -557,7 +632,8 @@ TEST_P(RunFunctionCall, run)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_NEAR(param.real, result.re, 1e-8);
+    EXPECT_NEAR(param.real, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
@@ -571,7 +647,8 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
@@ -583,7 +660,8 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
@@ -597,8 +675,11 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(3.0, result.re);
-    ASSERT_EQ(3.0, formula->get_value("z").re);
+    EXPECT_EQ(3.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(3.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
@@ -612,8 +693,11 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
-    ASSERT_EQ(5.0, formula->get_value("z").re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(5.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
@@ -634,11 +718,20 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
-    ASSERT_EQ(0.0, formula->get_value("x").re);
-    ASSERT_EQ(0.0, formula->get_value("y").re);
-    ASSERT_EQ(3.0, formula->get_value("z").re);
-    ASSERT_EQ(4.0, formula->get_value("q").re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex x{formula->get_value("x")};
+    EXPECT_EQ(0.0, x.re);
+    EXPECT_EQ(0.0, x.im);
+    const formula::Complex y{formula->get_value("y")};
+    EXPECT_EQ(0.0, y.re);
+    EXPECT_EQ(0.0, y.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(3.0, z.re);
+    EXPECT_EQ(0.0, z.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(4.0, q.re);
+    EXPECT_EQ(0.0, q.im);
 }
 
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
@@ -659,11 +752,20 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(2.0, result.re);
-    ASSERT_EQ(1.0, formula->get_value("x").re);
-    ASSERT_EQ(2.0, formula->get_value("y").re);
-    ASSERT_EQ(0.0, formula->get_value("z").re);
-    ASSERT_EQ(0.0, formula->get_value("q").re);
+    EXPECT_EQ(2.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex x{formula->get_value("x")};
+    EXPECT_EQ(1.0, x.re);
+    EXPECT_EQ(0.0, x.im);
+    const formula::Complex y{formula->get_value("y")};
+    EXPECT_EQ(2.0, y.re);
+    EXPECT_EQ(0.0, y.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(0.0, z.re);
+    EXPECT_EQ(0.0, z.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(0.0, q.re);
+    EXPECT_EQ(0.0, q.im);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyTrue)
@@ -676,7 +778,8 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(1.0, result.re);
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
@@ -689,7 +792,8 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
@@ -703,7 +807,8 @@ TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
@@ -719,8 +824,11 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompileFormulaRun, ifElseIfStatementBodyFalse)
@@ -738,8 +846,11 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompileFormulaRun, ifMultipleElseIfStatementBodyFalse)
@@ -759,6 +870,9 @@ TEST(TestCompileFormulaRun, ifMultipleElseIfStatementBodyFalse)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    ASSERT_EQ(4.0, result.re);
-    ASSERT_EQ(4.0, formula->get_value("z").re);
+    EXPECT_EQ(4.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
