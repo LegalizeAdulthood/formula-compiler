@@ -89,6 +89,18 @@ TEST(TestFormulaInterpret, unknownIdentifierIsZero)
     ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
+TEST(TestFormulaInterpret, setComplexValue)
+{
+    const auto formula{formula::parse("0")};
+    ASSERT_TRUE(formula);
+    formula->set_value("a", {1.0, 2.0});
+
+    const formula::Complex result{formula->get_value("a")};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(2.0, result.im);
+}
+
 TEST(TestFormulaInterpret, setSymbolValue)
 {
     const auto formula{formula::parse("a*a + b*b")};

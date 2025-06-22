@@ -30,7 +30,7 @@ struct LabelBinding
     bool bound;
 };
 
-using SymbolTable = std::map<std::string, double>;
+using SymbolTable = std::map<std::string, Complex>;
 using ConstantBindings = std::map<double, LabelBinding>;
 using SymbolBindings = std::map<std::string, LabelBinding>;
 
@@ -86,7 +86,7 @@ void emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
         comp.bind(binding.label);
         if (const auto it = state.symbols.find(name); it != state.symbols.end())
         {
-            comp.embedDouble(it->second); // Embed the symbol value in the data section
+            comp.embedDouble(it->second.re); // Embed the symbol value in the data section
         }
         else
         {
@@ -179,7 +179,7 @@ double IdentifierNode::interpret(SymbolTable &symbols) const
 {
     if (const auto &it = symbols.find(m_name); it != symbols.end())
     {
-        return it->second;
+        return it->second.re;
     }
     return 0.0;
 }
@@ -755,7 +755,7 @@ private:
 double AssignmentNode::interpret(SymbolTable &symbols) const
 {
     double value = m_expression->interpret(symbols);
-    symbols[m_variable] = value;
+    symbols[m_variable] = {value, 0.0};
     return value;
 }
 
@@ -999,20 +999,20 @@ public:
     ParsedFormula(FormulaDefinition ast) :
         m_ast(ast)
     {
-        m_state.symbols["e"] = std::exp(1.0);
-        m_state.symbols["pi"] = std::atan2(0.0, -1.0);
+        m_state.symbols["e"] = {std::exp(1.0), 0.0};
+        m_state.symbols["pi"] = {std::atan2(0.0, -1.0), 0.0};
     }
     ~ParsedFormula() override = default;
 
     void set_value(std::string_view name, Complex value) override
     {
-        m_state.symbols[std::string{name}] = value.re;
+        m_state.symbols[std::string{name}] = value;
     }
     Complex get_value(std::string_view name) const override
     {
         if (auto it = m_state.symbols.find(std::string{name}); it != m_state.symbols.end())
         {
-            return {it->second, 0.0};
+            return it->second;
         }
         return {};
     }

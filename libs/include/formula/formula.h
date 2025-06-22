@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <string_view>
 
@@ -11,6 +12,11 @@ struct Complex
     double re;
     double im;
 };
+
+inline std::ostream &operator<<(std::ostream &str, const Complex &value)
+{
+    return str << '(' << value.re << ',' << value.im << ')';
+}
 
 enum Part
 {

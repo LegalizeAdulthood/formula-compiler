@@ -12,7 +12,7 @@ namespace
 int main(const std::vector<std::string_view> &args)
 {
     bool compile{};
-    std::map<std::string, double> values;
+    std::map<std::string, formula::Complex> values;
     for (size_t i = 1; i < args.size(); ++i)
     {
         if (args[i] == "--compile")
@@ -21,9 +21,15 @@ int main(const std::vector<std::string_view> &args)
         }
         else if (auto pos = args[i].find('='); pos != std::string_view::npos)
         {
-            std::string name{args[i].substr(0, pos)};
-            std::string value{args[i].substr(pos + 1)};
-            values[name] = std::stod(value);
+            const std::string name{args[i].substr(0, pos)};
+            const std::string value{args[i].substr(pos + 1)};
+            double re{std::stod(value)};
+            double im{};
+            if (const auto comma = value.find(','); comma != std::string_view::npos)
+            {
+                im = std::stod(value.substr(comma + 1));
+            }
+            values[name] = {re, im};
         }
         else
         {
@@ -43,7 +49,7 @@ int main(const std::vector<std::string_view> &args)
     }
     for (const auto &[name, value] : values)
     {
-        formula->set_value(name, {value, 0.0});
+        formula->set_value(name, value);
     }
 
     if (compile && !formula->compile())
@@ -52,7 +58,7 @@ int main(const std::vector<std::string_view> &args)
         return 1;
     }
 
-    std::cout << "Evaluated: " << (compile ? formula->run(formula::ITERATE).re : formula->interpret(formula::ITERATE).re) << '\n';
+    std::cout << "Evaluated: " << (compile ? formula->run(formula::ITERATE) : formula->interpret(formula::ITERATE)) << '\n';
     return 0;
 }
 
