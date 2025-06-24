@@ -244,9 +244,12 @@ void update_symbols(
     {
         double *_result{&symbols["_result"].re};
         auto dest = asmjit::x86::ptr(std::uintptr_t(_result));
-        comp.movsd(dest, result);
+        comp.movq(tmp, result);
+        comp.mov(dest, tmp);
         dest = asmjit::x86::ptr(std::uintptr_t(_result + 1));
-        comp.movhpd(dest, result);
+        comp.shufpd(result, result, 1); // result = result.yx
+        comp.movq(tmp,result);
+        comp.mov(dest, tmp);
     }
     for (auto &[name, binding] : bindings)
     {
