@@ -367,13 +367,14 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
 
 TEST(TestCompiledFormulaRun, modulus)
 {
-    const auto formula{formula::parse("|-3.0|")};
+    const auto formula{formula::parse("|z|")};
     ASSERT_TRUE(formula);
+    formula->set_value("z", {-3.0, -2.0});
     ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    EXPECT_EQ(3.0, result.re);
+    EXPECT_EQ(13.0, result.re);
     EXPECT_EQ(0.0, result.im);
 }
 
@@ -885,7 +886,7 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
     EXPECT_EQ(0.0, q.im);
 }
 
-TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyTrue)
+TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "elseif(1)\n"
@@ -899,7 +900,7 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyTrue)
     EXPECT_EQ(0.0, result.im);
 }
 
-TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
+TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "elseif(0)\n"
@@ -913,7 +914,7 @@ TEST(TestCompileFormulaRun, ifElseIfStatementEmptyBodyFalse)
     EXPECT_EQ(0.0, result.im);
 }
 
-TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
+TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "elseif(0)\n"
@@ -928,7 +929,7 @@ TEST(TestCompileFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
     EXPECT_EQ(0.0, result.im);
 }
 
-TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
+TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "z=1\n"
@@ -948,7 +949,7 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyTrue)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestCompileFormulaRun, ifElseIfStatementBodyFalse)
+TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "z=1\n"
@@ -970,7 +971,7 @@ TEST(TestCompileFormulaRun, ifElseIfStatementBodyFalse)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestCompileFormulaRun, ifMultipleElseIfStatementBodyFalse)
+TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
 {
     const auto formula{formula::parse("if(0)\n"
                                       "z=1\n"

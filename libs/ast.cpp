@@ -113,7 +113,8 @@ Complex UnaryOpNode::interpret(SymbolTable &symbols) const
     }
     if (m_op == '|')
     {
-        return {std::abs(m_operand->interpret(symbols).re), 0.0};
+        Complex value = m_operand->interpret(symbols);
+        return {value.re * value.re + value.im * value.im, 0.0};
     }
 
     throw std::runtime_error(std::string{"Invalid unary prefix operator '"} + m_op + "'");
@@ -138,19 +139,18 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
         comp.movapd(result, tmp); // xmm0 = xmm1
         return true;
     }
-    if (m_op == '|')
+    if (m_op == '|') // modulus operator |x + yi| returns x^2 + y^2
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
         if (!m_operand->compile(comp, state, operand))
         {
             return false;
         }
-        // Use the intrinsic for absolute value
-        asmjit::InvokeNode *call;
-        asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(static_cast<double (*)(double)>(std::abs)))};
-        comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
-        call->setArg(0, operand);
-        call->setRet(0, result);
+        comp.mulpd(operand, operand);     // op *= op       [x^2, y^2]
+        comp.xorpd(result, result);       // result = 0
+        comp.movsd(result, operand);      // result = op.x
+        comp.shufpd(operand, operand, 1); // op = op.yx     [y^2, y^2]
+        comp.addsd(result, operand);      // result += op.x [x^2 + y^2, 0.0]
         return true;
     }
 

@@ -178,10 +178,13 @@ TEST(TestFormulaInterpret, chainedAssignment)
 
 TEST(TestFormulaInterpret, modulus)
 {
-    const auto formula{formula::parse("|-3.0|")};
+    const auto formula{formula::parse("|-3.0 + flip(-2)|")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(3.0, formula->interpret(formula::ITERATE).re);
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
+
+    ASSERT_EQ(13.0, result.re);
+    ASSERT_EQ(0.0, result.im);
 }
 
 TEST(TestFormulaInterpret, compareLessFalse)
