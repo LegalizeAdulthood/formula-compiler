@@ -106,6 +106,11 @@ double one(double /*arg*/)
     return 1.0;
 }
 
+Complex one(const Complex & /*arg*/)
+{
+    return {1.0, 0.0};
+}
+
 double real(double arg)
 {
     return arg;
@@ -119,6 +124,11 @@ double sqr(double arg)
 double zero(double /*arg*/)
 {
     return 0.0;
+}
+
+Complex zero(const Complex & /*arg*/)
+{
+    return {0.0, 0.0};
 }
 
 double set_rand(double arg)
@@ -153,7 +163,7 @@ const FunctionMap s_standard_functions[]{
     {"ident", ident, ident}, //
     {"imag", imag},          //
     {"log", std::log},       //
-    {"one", one},            //
+    {"one", one, one},       //
     {"real", real},          //
     {"round", std::round},   //
     {"sin", std::sin},       //
@@ -164,7 +174,7 @@ const FunctionMap s_standard_functions[]{
     {"tan", std::tan},       //
     {"tanh", std::tanh},     //
     {"trunc", std::trunc},   //
-    {"zero", zero},          //
+    {"zero", zero, zero},    //
 };
 
 } // namespace
