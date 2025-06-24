@@ -378,6 +378,19 @@ TEST(TestCompiledFormulaRun, modulus)
     EXPECT_EQ(0.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, conjugate)
+{
+    const auto formula{formula::parse("conj(z)")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {3.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    ASSERT_EQ(3.0, result.re);
+    ASSERT_EQ(-4.0, result.im);
+}
+
 TEST(TestCompiledFormulaRun, compareLessFalse)
 {
     const auto formula{formula::parse("4<3")};

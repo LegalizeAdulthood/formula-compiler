@@ -41,6 +41,11 @@ double conj(double arg)
     return -arg;
 }
 
+Complex conj(const Complex &arg)
+{
+    return {arg.re, -arg.im};
+}
+
 double cotan(double arg)
 {
     return std::cos(arg) / std::sin(arg);
@@ -127,7 +132,7 @@ const FunctionMap s_standard_functions[]{
     {"atanh", std::atanh},  //
     {"cabs", cabs},         //
     {"ceil", std::ceil},    //
-    {"conj", conj},         //
+    {"conj", conj, conj},   //
     {"cos", std::cos},      //
     {"cosh", std::cosh},    //
     {"cosxx", cosxx},       //

@@ -87,12 +87,20 @@ bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm re
 
 bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
+    if (!m_arg->compile(comp, state, result))
+    {
+        return false;
+    }
+    if (m_name == "conj")
+    {
+        asmjit::x86::Xmm xmm1{comp.newXmm()};
+        comp.xorpd(xmm1, xmm1);       // xmm1 = 0.0
+        comp.subpd(xmm1, result);     // xmm1 -= result       [-re, -im]
+        comp.shufpd(result, xmm1, 2); // result.y = xmm1.y    [re, -im]
+        return true;
+    }
     if (m_name == "flip")
     {
-        if (!m_arg->compile(comp, state, result))
-        {
-            return false;
-        }
         comp.shufpd(result, result, 1); // result = result.yx
         return true;
     }
@@ -103,10 +111,6 @@ bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
     //}
     if (RealFunction *fn = lookup_real(m_name))
     {
-        if (!m_arg->compile(comp, state, result))
-        {
-            return false;
-        }
         return call(comp, fn, result);
     }
     return false;

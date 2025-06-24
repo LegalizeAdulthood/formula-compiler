@@ -10,7 +10,7 @@ std::array<FunctionCallParam, 37> g_calls{
     FunctionCallParam{"atanh(0.9)", 1.4722194895832204, {1.4722194895832204, 0.0}},
     FunctionCallParam{"cabs(-1.0)", 1.0, {1.0, 0.0}},
     FunctionCallParam{"ceil(1.1)", 2.0, {2.0, 0.0}},
-    FunctionCallParam{"conj(1.0)", -1.0, {-1.0, 0.0}},
+    FunctionCallParam{"conj(1.0)", -1.0, {1.0, 0.0}},
     FunctionCallParam{"cos(pi)", -1.0, {-1.0, 0.0}},
     FunctionCallParam{"cosh(1)", 1.5430806348152437, {1.5430806348152437, 0.0}},
     FunctionCallParam{"cosxx(1)", 0.83373002513114913, {0.83373002513114913, 0.0}},
