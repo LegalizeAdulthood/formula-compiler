@@ -91,6 +91,11 @@ double ident(double arg)
     return arg;
 }
 
+Complex ident(const Complex &arg)
+{
+    return arg;
+}
+
 double imag(double arg)
 {
     return -arg;
@@ -123,43 +128,43 @@ double set_rand(double arg)
 }
 
 const FunctionMap s_standard_functions[]{
-    {"abs", std::abs, abs}, //
-    {"acos", std::acos},    //
-    {"acosh", std::acosh},  //
-    {"asin", std::asin},    //
-    {"asinh", std::asinh},  //
-    {"atan", std::atan},    //
-    {"atanh", std::atanh},  //
-    {"cabs", cabs},         //
-    {"ceil", std::ceil},    //
-    {"conj", conj, conj},   //
-    {"cos", std::cos},      //
-    {"cosh", std::cosh},    //
-    {"cosxx", cosxx},       //
-    {"cotan", cotan},       //
-    {"cotanh", cotanh},     //
-    {"exp", std::exp},      //
-    {"flip", flip, flip},   //
-    {"floor", std::floor},  //
-    {"fn1", fn1},           //
-    {"fn2", fn2},           //
-    {"fn3", fn3},           //
-    {"fn4", fn4},           //
-    {"ident", ident},       //
-    {"imag", imag},         //
-    {"log", std::log},      //
-    {"one", one},           //
-    {"real", real},         //
-    {"round", std::round},  //
-    {"sin", std::sin},      //
-    {"sinh", std::sinh},    //
-    {"sqr", sqr},           //
-    {"sqrt", std::sqrt},    //
-    {"srand", set_rand},    //
-    {"tan", std::tan},      //
-    {"tanh", std::tanh},    //
-    {"trunc", std::trunc},  //
-    {"zero", zero},         //
+    {"abs", std::abs, abs},  //
+    {"acos", std::acos},     //
+    {"acosh", std::acosh},   //
+    {"asin", std::asin},     //
+    {"asinh", std::asinh},   //
+    {"atan", std::atan},     //
+    {"atanh", std::atanh},   //
+    {"cabs", cabs},          //
+    {"ceil", std::ceil},     //
+    {"conj", conj, conj},    //
+    {"cos", std::cos},       //
+    {"cosh", std::cosh},     //
+    {"cosxx", cosxx},        //
+    {"cotan", cotan},        //
+    {"cotanh", cotanh},      //
+    {"exp", std::exp},       //
+    {"flip", flip, flip},    //
+    {"floor", std::floor},   //
+    {"fn1", fn1},            //
+    {"fn2", fn2},            //
+    {"fn3", fn3},            //
+    {"fn4", fn4},            //
+    {"ident", ident, ident}, //
+    {"imag", imag},          //
+    {"log", std::log},       //
+    {"one", one},            //
+    {"real", real},          //
+    {"round", std::round},   //
+    {"sin", std::sin},       //
+    {"sinh", std::sinh},     //
+    {"sqr", sqr},            //
+    {"sqrt", std::sqrt},     //
+    {"srand", set_rand},     //
+    {"tan", std::tan},       //
+    {"tanh", std::tanh},     //
+    {"trunc", std::trunc},   //
+    {"zero", zero},          //
 };
 
 } // namespace

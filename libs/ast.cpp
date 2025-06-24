@@ -104,6 +104,11 @@ bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
         comp.shufpd(result, result, 1); // result = result.yx
         return true;
     }
+    if (m_name == "ident")
+    {
+        // identity does nothing
+        return true;
+    }
     //if (ComplexFunction *fn = lookup_complex(m_name))
     //{
     //    m_arg->compile(comp, state, result);
