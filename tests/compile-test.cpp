@@ -750,8 +750,8 @@ TEST_P(RunFunctionCall, run)
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
-    EXPECT_NEAR(param.real, result.re, 1e-8);
-    EXPECT_EQ(0.0, result.im);
+    EXPECT_NEAR(param.result.re, result.re, 1e-8);
+    EXPECT_NEAR(param.result.im, result.im, 1e-8);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));

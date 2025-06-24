@@ -77,7 +77,6 @@ Complex FunctionCallNode::interpret(SymbolTable &symbols) const
 
 bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
 {
-    // For exponentiation, we can use the pow intrinsic
     asmjit::InvokeNode *call;
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
     comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
@@ -88,6 +87,15 @@ bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm re
 
 bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
+    if (m_name == "flip")
+    {
+        if (!m_arg->compile(comp, state, result))
+        {
+            return false;
+        }
+        comp.shufpd(result, result, 1); // result = result.yx
+        return true;
+    }
     //if (ComplexFunction *fn = lookup_complex(m_name))
     //{
     //    m_arg->compile(comp, state, result);
@@ -95,7 +103,10 @@ bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
     //}
     if (RealFunction *fn = lookup_real(m_name))
     {
-        m_arg->compile(comp, state, result);
+        if (!m_arg->compile(comp, state, result))
+        {
+            return false;
+        }
         return call(comp, fn, result);
     }
     return false;
@@ -348,6 +359,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     }
     if (m_op == "^")
     {
+        // For exponentiation, we can use the pow intrinsic
         return call(comp, std::pow, result, right);
     }
     if (m_op == "<" || m_op == "<=" || m_op == ">" || m_op == ">=" || m_op == "==" || m_op == "!=")
