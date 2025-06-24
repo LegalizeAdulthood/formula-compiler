@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <complex>
 
 using namespace testing;
 
@@ -44,6 +45,23 @@ TEST(TestCompiledFormulaRun, identifier)
     EXPECT_EQ(0.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, identifierComplex)
+{
+    const auto formula{formula::parse("z")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {1.0, 2.0});
+    ASSERT_TRUE(formula->compile());
+    formula->set_value("z", {2.0, 4.0});
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(2.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(1.0, z.re);
+    EXPECT_EQ(2.0, z.im);
+}
+
 TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 {
     const auto formula{formula::parse("a")};
@@ -68,6 +86,26 @@ TEST(TestCompiledFormulaRun, add)
     EXPECT_EQ(0.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, addComplex)
+{
+    const auto formula{formula::parse("z+q")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {1.0, 2.0});
+    formula->set_value("q", {2.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    EXPECT_EQ(3.0, result.re);
+    EXPECT_EQ(6.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(1.0, z.re);
+    EXPECT_EQ(2.0, z.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(2.0, q.re);
+    EXPECT_EQ(4.0, q.im);
+}
+
 TEST(TestCompiledFormulaRun, subtract)
 {
     const auto formula{formula::parse("1.5-2.2")};
@@ -78,6 +116,26 @@ TEST(TestCompiledFormulaRun, subtract)
 
     EXPECT_NEAR(-0.7, result.re, 1e-6);
     EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, subtractComplex)
+{
+    const auto formula{formula::parse("z-q")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {1.0, 2.0});
+    formula->set_value("q", {2.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    EXPECT_EQ(-1.0, result.re);
+    EXPECT_EQ(-2.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(1.0, z.re);
+    EXPECT_EQ(2.0, z.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(2.0, q.re);
+    EXPECT_EQ(4.0, q.im);
 }
 
 TEST(TestCompiledFormulaRun, multiply)
@@ -92,6 +150,28 @@ TEST(TestCompiledFormulaRun, multiply)
     EXPECT_EQ(0.0, result.im);
 }
 
+// (a + bi)(c + di) = (ac - bd) + (ad + bc)i
+TEST(TestCompiledFormulaRun, multiplyComplex)
+{
+    const auto formula{formula::parse("z*q")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {1.0, 2.0});
+    formula->set_value("q", {3.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    const std::complex<double> expected{std::complex<double>{1.0, 2.0} * std::complex<double>{3.0, 4.0}};
+    EXPECT_EQ(expected.real(), result.re);
+    EXPECT_EQ(expected.imag(), result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(1.0, z.re);
+    EXPECT_EQ(2.0, z.im);
+    const formula::Complex q{formula->get_value("q")};
+    EXPECT_EQ(3.0, q.re);
+    EXPECT_EQ(4.0, q.im);
+}
+
 TEST(TestCompiledFormulaRun, divide)
 {
     const auto formula{formula::parse("13.76/4.3")};
@@ -102,6 +182,27 @@ TEST(TestCompiledFormulaRun, divide)
 
     EXPECT_NEAR(3.2, result.re, 1e-6);
     EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, divideComplex)
+{
+    const auto formula{formula::parse("w/z")};
+    ASSERT_TRUE(formula);
+    formula->set_value("w", {1.0, 2.0});
+    formula->set_value("z", {3.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    const std::complex<double> expected{std::complex<double>{1.0, 2.0} / std::complex<double>{3.0, 4.0}};
+    EXPECT_EQ(expected.real(), result.re);
+    EXPECT_EQ(expected.imag(), result.im);
+    const formula::Complex w{formula->get_value("w")};
+    EXPECT_EQ(1.0, w.re);
+    EXPECT_EQ(2.0, w.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(3.0, z.re);
+    EXPECT_EQ(4.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
@@ -126,6 +227,22 @@ TEST(TestCompiledFormulaRun, unaryNegate)
 
     EXPECT_NEAR(1.6, result.re, 1e-6);
     EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, unaryNegateComplex)
+{
+    const auto formula{formula::parse("-z")};
+    ASSERT_TRUE(formula);
+    formula->set_value("z", {1.0, 2.0});
+    ASSERT_TRUE(formula->compile());
+
+    const formula::Complex result{formula->run(formula::ITERATE)};
+
+    EXPECT_EQ(-1.0, result.re);
+    EXPECT_EQ(-2.0, result.im);
+    const formula::Complex z{formula->get_value("z")};
+    EXPECT_EQ(1.0, z.re);
+    EXPECT_EQ(2.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, addAddadd)

@@ -176,6 +176,7 @@ public:
     {
         m_state.symbols["e"] = {std::exp(1.0), 0.0};
         m_state.symbols["pi"] = {std::atan2(0.0, -1.0), 0.0};
+        m_state.symbols["_result"] = {0.0, 0.0};
     }
     ~ParsedFormula() override = default;
 
@@ -236,9 +237,17 @@ bool ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
     return true;
 }
 
-void update_symbols(asmjit::x86::Compiler &comp, ast::SymbolTable &symbols, ast::SymbolBindings &bindings)
+void update_symbols(
+    asmjit::x86::Compiler &comp, ast::SymbolTable &symbols, ast::SymbolBindings &bindings, asmjit::x86::Xmm result)
 {
     asmjit::x86::Gp tmp{comp.newUIntPtr()};
+    {
+        double *_result{&symbols["_result"].re};
+        auto dest = asmjit::x86::ptr(std::uintptr_t(_result));
+        comp.movsd(dest, result);
+        dest = asmjit::x86::ptr(std::uintptr_t(_result + 1));
+        comp.movhpd(dest, result);
+    }
     for (auto &[name, binding] : bindings)
     {
         auto src = asmjit::x86::ptr(binding.label);
@@ -267,7 +276,7 @@ bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::Expr node, as
         std::cerr << "Failed to compile AST\n";
         return false;
     }
-    update_symbols(comp, m_state.symbols, m_state.data.symbols);
+    update_symbols(comp, m_state.symbols, m_state.data.symbols, result);
     comp.ret(result);
     comp.endFunc();
     return true;
@@ -357,14 +366,23 @@ bool ParsedFormula::compile()
 
 Complex ParsedFormula::run(Part part)
 {
+    auto result = [this](Function *fn)
+    {
+        if (fn == nullptr)
+        {
+            return Complex{0.0, 0.0};
+        }
+        fn();
+        return m_state.symbols["_result"];
+    };
     switch (part)
     {
     case INITIALIZE:
-        return {m_initialize ? m_initialize() : 0.0, 0.0};
+        return result(m_initialize);
     case ITERATE:
-        return {m_iterate ? m_iterate() : 0.0, 0.0};
+        return result(m_iterate);
     case BAILOUT:
-        return {m_bailout ? m_bailout() : 0.0, 0.0};
+        return result(m_bailout);
     }
     throw std::runtime_error("Invalid part for run");
 }

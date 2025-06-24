@@ -48,7 +48,7 @@ Complex NumberNode::interpret(SymbolTable & /*symbols*/) const
 bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
-    comp.movq(result, asmjit::x86::ptr(label));
+    comp.movlpd(result, asmjit::x86::ptr(label));
     comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
     return true;
 }
@@ -65,7 +65,8 @@ Complex IdentifierNode::interpret(SymbolTable &symbols) const
 bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label{get_symbol_label(comp, state.data.symbols, m_name)};
-    comp.movq(result, asmjit::x86::ptr(label));
+    comp.movlpd(result, asmjit::x86::ptr(label));
+    comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
     return true;
 }
 
@@ -87,14 +88,17 @@ bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm re
 
 bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    auto fn = lookup_real(m_name);
-    if (fn == nullptr)
+    //if (ComplexFunction *fn = lookup_complex(m_name))
+    //{
+    //    m_arg->compile(comp, state, result);
+    //    return call(comp, fn, result);
+    //}
+    if (RealFunction *fn = lookup_real(m_name))
     {
-        return false;
+        m_arg->compile(comp, state, result);
+        return call(comp, fn, result);
     }
-
-    m_arg->compile(comp, state, result);
-    return call(comp, fn, result);
+    return false;
 }
 
 Complex UnaryOpNode::interpret(SymbolTable &symbols) const
@@ -130,8 +134,8 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
         }
         asmjit::x86::Xmm tmp = comp.newXmm();
         comp.xorpd(tmp, tmp);     // xmm1 = 0.0
-        comp.subsd(tmp, operand); // xmm1 = 0.0 - xmm0
-        comp.movsd(result, tmp);  // xmm0 = xmm1
+        comp.subpd(tmp, operand); // xmm1 -= xmm0
+        comp.movapd(result, tmp); // xmm0 = xmm1
         return true;
     }
     if (m_op == '|')
@@ -272,22 +276,74 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     comp.bind(skip_right);
     if (m_op == "+")
     {
-        comp.addsd(result, right);
+        comp.addpd(result, right); // result += right
         return true;
     }
     if (m_op == "-")
     {
-        comp.subsd(result, right); // xmm0 = xmm0 - xmm1
+        comp.subpd(result, right); // result -= right
         return true;
     }
     if (m_op == "*")
     {
-        comp.mulsd(result, right); // xmm0 = xmm0 * xmm1
+        // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
+        asmjit::x86::Xmm xmm0{result};        // xmm0 = [a, b]
+        asmjit::x86::Xmm xmm1{right};         // xmm1 = [c, d]
+        asmjit::x86::Xmm xmm2{comp.newXmm()}; //
+        asmjit::x86::Xmm xmm3{comp.newXmm()}; //
+        comp.movapd(xmm2, xmm0);              // xmm2 = xmm0            [a, b]
+        comp.mulpd(xmm2, xmm1);               // xmm2 *= xmm1           [ac, bd]
+        comp.movapd(xmm3, xmm1);              // xmm3 = xmm1            [c, d]
+        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm3.yx         [d, c]
+        comp.mulpd(xmm3, xmm0);               // xmm3 *= xmm0           [ad, bc]
+        comp.movapd(xmm0, xmm2);              // xmm0 = xmm2            [ac, bd]
+        comp.shufpd(xmm2, xmm2, 1);           // xmm2 = xmm2.yx         [bd, ac]
+        comp.subsd(xmm0, xmm2);               // xmm0.x -= xmm2.x       [ac - bd, bd]
+        comp.movapd(xmm1, xmm3);              // xmm1 = xmm3            [ad, bc]
+        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm3.yx         [bc, ad]
+        comp.addsd(xmm1, xmm3);               // xmm1.x += xmm3.x       [ad + bc, ad]
+        comp.unpcklpd(xmm0, xmm1);            // xmm0 = xmm0.x, xmm1.x  [ac - bd, ad + bc]
         return true;
     }
     if (m_op == "/")
     {
-        comp.divsd(result, right); // xmm0 = xmm0 / xmm1
+        // (u + vi) / (x + yi) = ((ux + vy) + (vx - uy)i) / (x^2 + y^2)
+        // (1 + 2i) / (3 + 4i) = ((1*3 + 2*4) + (2*3 - 1*4)i) / (3^2 + 4^2)
+        //                     = ((3 + 8) + (6 - 4)i) / (9 + 16)
+        //                     = (11 + 2i) / 25
+        asmjit::x86::Xmm xmm0{result};        // xmm0 = [u, v]
+        asmjit::x86::Xmm xmm1{right};         // xmm1 = [x, y]
+        asmjit::x86::Xmm xmm2{comp.newXmm()}; //
+        asmjit::x86::Xmm xmm3{comp.newXmm()}; //
+        asmjit::x86::Xmm xmm4{comp.newXmm()}; //
+        comp.movapd(xmm2, xmm1);              // xmm2 = [x, y]
+        comp.mulpd(xmm2, xmm2);               // xmm2 *= xmm1      [x^2, y^2]              squares
+        comp.movapd(xmm3, xmm2);              // xmm3 = xmm2       [x^2, y^2]
+        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm2.yx    [y^2, x^2]              swap lanes
+        comp.addpd(xmm2, xmm3);               // xmm2 += xmm3      [x^2 + y^2, x^2 + y^2]  denominator in both lanes
+        comp.movapd(xmm3, xmm0);              // xmm3 = xmm0       [u, v]
+        comp.mulpd(xmm3, xmm1);               // xmm3 *= xmm1      [ux, vy]              real part products
+        comp.shufpd(xmm0, xmm0, 1);           // xmm0 = xmm0.yx    [v, u]                  swap lanes
+        comp.movapd(xmm4, xmm1);              // xmm4 = xmm1       [x, y]
+        comp.mulpd(xmm4, xmm0);               // xmm4 *= xmm0      [vx, uy]              imaginary part products
+                                              //
+                                              // at this point:
+                                              //   xmm0 = [v, u]
+                                              //   xmm1 = [x, y]
+                                              //   xmm2 = [x^2 + y^2, x^2 + y^2]           real, imaginary denominator
+                                              //   xmm3 = [ux, vy]                         real part products
+                                              //   xmm4 = [vx, uy]                         imaginary part products
+                                              //
+        comp.movapd(xmm0, xmm3);              // xmm0 = xmm3       [ux, vy]
+        comp.shufpd(xmm0, xmm0, 1);           // xmm0 = xmm0.yx    [vy, ux]                swap lanes
+        comp.addsd(xmm0, xmm3);               // xmm0.x += xmm3.x  [ux + vy, vy]           add real parts
+                                              //                                           xmm0.x is real part of numerator
+        comp.movapd(xmm1, xmm4);              // xmm1 = xmm4       [vx, uy]
+        comp.shufpd(xmm1, xmm1, 1);           // xmm1 = xmm1.yx    [uy, vx]                swap lanes
+        comp.movapd(xmm3, xmm4);              // xmm3 = xmm4       [vx, uy]
+        comp.subsd(xmm4, xmm1);               // xmm4.x -= xmm1.x  [vx - uy, uy]           xmm4.x is imaginary part of numerator
+        comp.unpcklpd(xmm0, xmm4);            // xmm0.y = xmm4.x   [ux + vy, vx - uy]      swizzle lanes
+        comp.divpd(xmm0, xmm2);               // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
         return true;
     }
     if (m_op == "^")
