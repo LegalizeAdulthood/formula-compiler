@@ -154,9 +154,9 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
             return false;
         }
         asmjit::x86::Xmm tmp = comp.newXmm();
-        comp.xorpd(tmp, tmp);     // xmm1 = 0.0
-        comp.subpd(tmp, operand); // xmm1 -= xmm0
-        comp.movapd(result, tmp); // xmm0 = xmm1
+        comp.xorpd(tmp, tmp);     // tmp = 0.0          [0.0, 0.0]
+        comp.subpd(tmp, operand); // tmp -= operand     [-re, -im]      negate operand
+        comp.movapd(result, tmp); // result = tmp       [-re, -im]
         return true;
     }
     if (m_op == '|') // modulus operator |x + yi| returns x^2 + y^2
@@ -166,11 +166,11 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
         {
             return false;
         }
-        comp.mulpd(operand, operand);     // op *= op       [x^2, y^2]
-        comp.xorpd(result, result);       // result = 0
-        comp.movsd(result, operand);      // result = op.x
-        comp.shufpd(operand, operand, 1); // op = op.yx     [y^2, y^2]
-        comp.addsd(result, operand);      // result += op.x [x^2 + y^2, 0.0]
+        comp.mulpd(operand, operand);     // op *= op           [x^2, y^2]
+        comp.xorpd(result, result);       // result = 0         [0.0, 0.0]
+        comp.movsd(result, operand);      // result.x = op.x    [x^2, 0.0]
+        comp.shufpd(operand, operand, 1); // op = op.yx         [y^2, x^2]
+        comp.addsd(result, operand);      // result.x += op.x   [x^2 + y^2, 0.0]
         return true;
     }
 
