@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Copyright 2025 Richard Thomson
+#
 cmake_minimum_required(VERSION 3.23...3.31)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -36,6 +40,8 @@ misc_group_sources("Git" FILES
     ".gitignore"
     ".gitmodules")
 misc_group_sources("GitHub" FILES
-    ".github/workflows/cmake.yml")
+    ".github/workflows/cmake.yml"
+    "LICENSE.txt"
+    "ReadMe.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")

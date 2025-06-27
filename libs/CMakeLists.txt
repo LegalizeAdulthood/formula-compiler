@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Copyright 2025 Richard Thomson
+#
 find_package(asmjit CONFIG REQUIRED)
 find_package(boost_parser CONFIG REQUIRED)
 
