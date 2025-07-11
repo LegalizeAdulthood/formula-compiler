@@ -161,7 +161,7 @@ const auto if_statement_def =                                                //
         >> else_block                                                        //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
-const auto statement_seq_def = (statement % (','_l | +eol))[make_statement_seq] >> *eol;
+const auto statement_seq_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto formula_def = (statement_seq >> lit(':') >> statement_seq >> lit(',') >> statement_seq) //
     | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr));
 

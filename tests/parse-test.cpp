@@ -466,8 +466,3 @@ TEST(TestFormulaParse, backslashContinuesStatement)
                                "0)\n"
                                "endif"));
 }
-
-TEST(TestFormulaParse, commaSeparatesStatements)
-{
-    EXPECT_TRUE(formula::parse("z=4,q=6"));
-}

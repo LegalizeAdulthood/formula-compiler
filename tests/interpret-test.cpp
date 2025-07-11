@@ -744,17 +744,3 @@ TEST(TestFormulaInterpret, complexDivide)
     EXPECT_EQ(0.5, result.re);
     EXPECT_EQ(0.0, result.im); // (1+i)/(2+2i) = 0.5 + 0.0i
 }
-
-TEST(TestFormulaInterpret, commaSequencesStatements)
-{
-    const auto formula{formula::parse("z=4,z=6+flip(3)")};
-    ASSERT_TRUE(formula);
-
-    const formula::Complex result{formula->interpret(formula::ITERATE)};
-
-    EXPECT_EQ(6.0, result.re);
-    EXPECT_EQ(3.0, result.im);
-    const formula::Complex z{formula->get_value("z")};
-    EXPECT_EQ(6.0, z.re);
-    EXPECT_EQ(3.0, z.im);
-}

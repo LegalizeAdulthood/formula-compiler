@@ -1024,19 +1024,3 @@ TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
     EXPECT_EQ(4.0, z.re);
     EXPECT_EQ(0.0, z.im);
 }
-
-TEST(TestCompiledFormulaRun, commaSequencesStatements)
-{
-    const auto formula{formula::parse("z=4,z=6+flip(3)")};
-    ASSERT_TRUE(formula);
-    formula->set_value("z", {1.0, 2.0});
-    ASSERT_TRUE(formula->compile());
-
-    const formula::Complex result{formula->run(formula::ITERATE)};
-
-    EXPECT_EQ(6.0, result.re);
-    EXPECT_EQ(3.0, result.im);
-    const formula::Complex z{formula->get_value("z")};
-    EXPECT_EQ(6.0, z.re);
-    // EXPECT_EQ(3.0, z.im); TODO: support complex values fully in compile path
-}
