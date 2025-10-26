@@ -7,6 +7,7 @@
 #include <formula/Complex.h>
 
 #include <map>
+#include <memory>
 #include <string>
 
 namespace formula::ast
