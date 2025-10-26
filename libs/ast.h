@@ -9,6 +9,7 @@
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
 
+#include <cassert>
 #include <map>
 #include <memory>
 #include <string>
@@ -68,6 +69,11 @@ public:
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
+    double value() const
+    {
+        return m_value;
+    }
+
 private:
     double m_value{};
 };
@@ -84,6 +90,11 @@ public:
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
+
+    const std::string &name() const
+    {
+        return m_name;
+    }
 
 private:
     std::string m_name;
@@ -103,6 +114,15 @@ public:
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
+    const std::string &name() const
+    {
+        return m_name;
+    }
+    const Node &arg() const
+    {
+        return *m_arg;
+    }
+
 private:
     std::string m_name;
     Expr m_arg;
@@ -121,6 +141,15 @@ public:
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
+
+    char op() const
+    {
+        return m_op;
+    }
+    const Node &operand() const
+    {
+        return *m_operand;
+    }
 
 private:
     char m_op;
@@ -149,6 +178,19 @@ public:
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
+    const Node &left() const
+    {
+        return *m_left;
+    }
+    const std::string &op() const
+    {
+        return m_op;
+    }
+    const Node &right() const
+    {
+        return *m_right;
+    }
+
 private:
     Expr m_left;
     std::string m_op;
@@ -169,6 +211,15 @@ public:
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
+    const std::string &variable() const
+    {
+        return m_variable;
+    }
+    const Node &expression() const
+    {
+        return *m_expression;
+    }
+
 private:
     std::string m_variable;
     Expr m_expression;
@@ -186,6 +237,11 @@ public:
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
+
+    const std::vector<Expr> &statements() const
+    {
+        return m_statements;
+    }
 
 private:
     std::vector<Expr> m_statements;
@@ -205,6 +261,29 @@ public:
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
+
+    const Node &condition() const
+    {
+        return *m_condition;
+    }
+    bool has_then_block() const
+    {
+        return static_cast<bool>(m_then_block);
+    }
+    const Node &then_block() const
+    {
+        assert(m_then_block);
+        return *m_then_block;
+    }
+    bool has_else_block() const
+    {
+        return static_cast<bool>(m_else_block);
+    }
+    const Node &else_block() const
+    {
+        assert(m_else_block);
+        return *m_else_block;
+    }
 
 private:
     Expr m_condition;

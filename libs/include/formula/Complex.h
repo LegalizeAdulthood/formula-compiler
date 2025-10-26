@@ -40,9 +40,21 @@ inline Complex operator+(const Complex &lhs, const Complex &rhs)
     return {lhs.re + rhs.re, lhs.im + rhs.im};
 }
 
+inline Complex &operator+=(Complex &lhs, const Complex &rhs)
+{
+    lhs = lhs + rhs;
+    return lhs;
+}
+
 inline Complex operator-(const Complex &lhs, const Complex &rhs)
 {
     return {lhs.re - rhs.re, lhs.im - rhs.im};
+}
+
+inline Complex &operator-=(Complex &lhs, const Complex &rhs)
+{
+    lhs = lhs - rhs;
+    return lhs;
 }
 
 inline Complex operator*(const Complex &lhs, const Complex &rhs)
@@ -50,10 +62,22 @@ inline Complex operator*(const Complex &lhs, const Complex &rhs)
     return {lhs.re * rhs.re - lhs.im * rhs.im, lhs.re * rhs.im + lhs.im * rhs.re};
 }
 
+inline Complex &operator*=(Complex &lhs, const Complex &rhs)
+{
+    lhs = lhs * rhs;
+    return lhs;
+}
+
 inline Complex operator/(const Complex &lhs, const Complex &rhs)
 {
     const double denom = rhs.re * rhs.re + rhs.im * rhs.im;
     return {(lhs.re * rhs.re + lhs.im * rhs.im) / denom, (lhs.im * rhs.re - lhs.re * rhs.im) / denom};
+}
+
+inline Complex &operator/=(Complex &lhs, const Complex &rhs)
+{
+    lhs = lhs / rhs;
+ return lhs;
 }
 
 inline Complex abs(const Complex &value)
