@@ -10,6 +10,7 @@ add_executable("test-formula"
     "function-call.h" "function-call.cpp"
     "parse-test.cpp"
     "interpret-test.cpp"
+    "interpreter-test.cpp"
     "compile-test.cpp"
 )
 target_link_libraries(test-formula PUBLIC formula GTest::gtest_main)

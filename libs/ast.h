@@ -17,6 +17,8 @@
 namespace formula::ast
 {
 
+class Visitor;
+
 using SymbolTable = std::map<std::string, Complex>;
 
 struct LabelBinding
@@ -48,6 +50,7 @@ public:
 
     virtual Complex interpret(SymbolTable &symbols) const = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
+    virtual void visit(Visitor &visitor) const = 0;
 };
 
 using Expr = std::shared_ptr<Node>;
@@ -63,6 +66,7 @@ public:
 
     Complex interpret(SymbolTable &) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     double m_value{};
@@ -79,6 +83,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     std::string m_name;
@@ -96,6 +101,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     std::string m_name;
@@ -114,6 +120,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     char m_op;
@@ -140,6 +147,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     Expr m_left;
@@ -159,6 +167,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     std::string m_variable;
@@ -176,6 +185,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     std::vector<Expr> m_statements;
@@ -194,6 +204,7 @@ public:
 
     Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    void visit(Visitor &visitor) const override;
 
 private:
     Expr m_condition;
@@ -208,4 +219,4 @@ struct FormulaDefinition
     Expr bailout;
 };
 
-} // namespace formula
+} // namespace formula::ast

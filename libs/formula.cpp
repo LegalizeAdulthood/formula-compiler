@@ -6,6 +6,7 @@
 
 #include "ast.h"
 #include "functions.h"
+#include "Visitor.h"
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
@@ -198,6 +199,7 @@ public:
     }
 
     Complex interpret(Part part) override;
+    Complex interpreter(Part part) override;
     bool compile() override;
     Complex run(Part part) override;
 
@@ -215,6 +217,20 @@ private:
 };
 
 Complex ParsedFormula::interpret(Part part)
+{
+    switch (part)
+    {
+    case INITIALIZE:
+        return m_ast.initialize->interpret(m_state.symbols);
+    case ITERATE:
+        return m_ast.iterate->interpret(m_state.symbols);
+    case BAILOUT:
+        return m_ast.bailout->interpret(m_state.symbols);
+    }
+    throw std::runtime_error("Invalid part for interpreter");
+}
+
+Complex ParsedFormula::interpreter(Part part)
 {
     switch (part)
     {

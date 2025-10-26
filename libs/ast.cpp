@@ -5,6 +5,7 @@
 #include "ast.h"
 
 #include "functions.h"
+#include "Visitor.h"
 
 #include <algorithm>
 
@@ -57,6 +58,11 @@ bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmji
     return true;
 }
 
+void NumberNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 Complex IdentifierNode::interpret(SymbolTable &symbols) const
 {
     if (const auto &it = symbols.find(m_name); it != symbols.end())
@@ -72,6 +78,11 @@ bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
     comp.movlpd(result, asmjit::x86::ptr(label));
     comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
     return true;
+}
+
+void IdentifierNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
 
 Complex FunctionCallNode::interpret(SymbolTable &symbols) const
@@ -113,16 +124,21 @@ bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
         // identity does nothing
         return true;
     }
-    //if (ComplexFunction *fn = lookup_complex(m_name))
+    // if (ComplexFunction *fn = lookup_complex(m_name))
     //{
-    //    m_arg->compile(comp, state, result);
-    //    return call(comp, fn, result);
-    //}
+    //     m_arg->compile(comp, state, result);
+    //     return call(comp, fn, result);
+    // }
     if (RealFunction *fn = lookup_real(m_name))
     {
         return call(comp, fn, result);
     }
     return false;
+}
+
+void FunctionCallNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
 
 Complex UnaryOpNode::interpret(SymbolTable &symbols) const
@@ -179,6 +195,11 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
     }
 
     return false;
+}
+
+void UnaryOpNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
 
 Complex BinaryOpNode::interpret(SymbolTable &symbols) const
@@ -361,13 +382,13 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.movapd(xmm0, xmm3);              // xmm0 = xmm3       [ux, vy]
         comp.shufpd(xmm0, xmm0, 1);           // xmm0 = xmm0.yx    [vy, ux]                swap lanes
         comp.addsd(xmm0, xmm3);               // xmm0.x += xmm3.x  [ux + vy, vy]           add real parts
-                                              //                                           xmm0.x is real part of numerator
-        comp.movapd(xmm1, xmm4);              // xmm1 = xmm4       [vx, uy]
-        comp.shufpd(xmm1, xmm1, 1);           // xmm1 = xmm1.yx    [uy, vx]                swap lanes
-        comp.movapd(xmm3, xmm4);              // xmm3 = xmm4       [vx, uy]
-        comp.subsd(xmm4, xmm1);               // xmm4.x -= xmm1.x  [vx - uy, uy]           xmm4.x is imaginary part of numerator
-        comp.unpcklpd(xmm0, xmm4);            // xmm0.y = xmm4.x   [ux + vy, vx - uy]      swizzle lanes
-        comp.divpd(xmm0, xmm2);               // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
+                                //                                           xmm0.x is real part of numerator
+        comp.movapd(xmm1, xmm4);    // xmm1 = xmm4       [vx, uy]
+        comp.shufpd(xmm1, xmm1, 1); // xmm1 = xmm1.yx    [uy, vx]                swap lanes
+        comp.movapd(xmm3, xmm4);    // xmm3 = xmm4       [vx, uy]
+        comp.subsd(xmm4, xmm1);     // xmm4.x -= xmm1.x  [vx - uy, uy]           xmm4.x is imaginary part of numerator
+        comp.unpcklpd(xmm0, xmm4);  // xmm0.y = xmm4.x   [ux + vy, vx - uy]      swizzle lanes
+        comp.divpd(xmm0, xmm2);     // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
         return true;
     }
     if (m_op == "^")
@@ -457,6 +478,11 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
     return false;
 }
 
+void BinaryOpNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 Complex AssignmentNode::interpret(SymbolTable &symbols) const
 {
     Complex value = m_expression->interpret(symbols);
@@ -475,6 +501,11 @@ bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
     return true;
 }
 
+void AssignmentNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 Complex StatementSeqNode::interpret(SymbolTable &symbols) const
 {
     Complex value{};
@@ -489,6 +520,11 @@ bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
 {
     return std::all_of(m_statements.begin(), m_statements.end(),
         [&comp, &state, &result](const Expr &statement) { return statement->compile(comp, state, result); });
+}
+
+void StatementSeqNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
 
 Complex IfStatementNode::interpret(SymbolTable &symbols) const
@@ -543,6 +579,11 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
     }
     comp.bind(end_label);
     return true;
+}
+
+void IfStatementNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
 
 } // namespace formula::ast

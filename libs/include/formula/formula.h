@@ -29,6 +29,7 @@ public:
     virtual Complex get_value(std::string_view name) const = 0;
 
     virtual Complex interpret(Part part) = 0;
+    virtual Complex interpreter(Part part) = 0;
     virtual bool compile() = 0;
     virtual Complex run(Part part) = 0;
 };
