@@ -2,10 +2,11 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "Visitor.h"
+#include "Interpreter.h"
 
 #include "ast.h"
 #include "functions.h"
+#include "Visitor.h"
 
 #include <map>
 #include <string>
@@ -13,8 +14,6 @@
 
 namespace formula::ast
 {
-
-using Dictionary = std::map<std::string, Complex>;
 
 namespace
 {

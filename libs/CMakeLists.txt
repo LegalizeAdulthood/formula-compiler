@@ -11,7 +11,8 @@ add_library(formula
     include/formula/formula.h
     formula.cpp
     functions.h functions.cpp
-    Visitor.h Visitor.cpp
+    Interpreter.h Interpreter.cpp
+    Visitor.h
 )
 target_compile_options(formula PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
