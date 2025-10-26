@@ -4,9 +4,10 @@
 //
 #include "formula/formula.h"
 
+#include "Compiler.h"
+#include "Interpreter.h"
 #include "ast.h"
 #include "functions.h"
-#include "Visitor.h"
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
@@ -199,12 +200,12 @@ public:
     }
 
     Complex interpret(Part part) override;
-    bool compile() override;
+    bool compile(bool use_visitor) override;
     Complex run(Part part) override;
 
 private:
     bool init_code_holder(asmjit::CodeHolder &code);
-    bool compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
+    bool compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
 
     ast::EmitterState m_state;
     ast::FormulaDefinition m_ast;
@@ -270,7 +271,7 @@ void update_symbols(
     }
 }
 
-bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
+bool ParsedFormula::compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
 {
     if (!node)
     {
@@ -279,10 +280,21 @@ bool ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::Expr node, as
 
     label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
     asmjit::x86::Xmm result = comp.newXmmSd();
-    if (!node->compile(comp, m_state, result))
+    if (use_visitor)
     {
-        std::cerr << "Failed to compile AST\n";
-        return false;
+        if (!ast::compile(node, comp, m_state, result))
+        {
+            std::cerr << "Failed to compile AST\n";
+            return false;
+        }
+    }
+    else
+    {
+        if (!node->compile(comp, m_state, result))
+        {
+            std::cerr << "Failed to compile AST\n";
+            return false;
+        }
     }
     update_symbols(comp, m_state.symbols, m_state.data.symbols, result);
     comp.ret(result);
@@ -335,7 +347,7 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
     }
 }
 
-bool ParsedFormula::compile()
+bool ParsedFormula::compile(bool use_visitor)
 {
     asmjit::CodeHolder code;
     if (!init_code_holder(code))
@@ -347,10 +359,10 @@ bool ParsedFormula::compile()
     asmjit::Label init_label{};
     asmjit::Label iterate_label{};
     asmjit::Label bailout_label{};
-    const bool result =                                     //
-        compile_part(comp, m_ast.initialize, init_label)    //
-        && compile_part(comp, m_ast.iterate, iterate_label) //
-        && compile_part(comp, m_ast.bailout, bailout_label);
+    const bool result =                                                  //
+        compile_part(use_visitor, comp, m_ast.initialize, init_label)    //
+        && compile_part(use_visitor, comp, m_ast.iterate, iterate_label) //
+        && compile_part(use_visitor, comp, m_ast.bailout, bailout_label);
     if (!result)
     {
         std::cerr << "Failed to compile parts\n";

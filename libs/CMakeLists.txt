@@ -11,6 +11,7 @@ add_library(formula
     include/formula/formula.h
     formula.cpp
     functions.h functions.cpp
+    Compiler.h Compiler.cpp
     Interpreter.h Interpreter.cpp
     Visitor.h
 )

@@ -2,8 +2,9 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "ast.h"
+#include "Compiler.h"
 
+#include "ast.h"
 #include "functions.h"
 #include "Visitor.h"
 
@@ -45,123 +46,137 @@ static asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBinding
     return label;
 }
 
-bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+class Compiler : public Visitor
 {
-    asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
+public:
+    Compiler(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) :
+        comp(comp),
+        state(state),
+        result(result)
+    {
+    }
+    ~Compiler() override = default;
+
+    void visit(const AssignmentNode &node) override;
+    void visit(const BinaryOpNode &node) override;
+    void visit(const FunctionCallNode &node) override;
+    void visit(const IdentifierNode &node) override;
+    void visit(const IfStatementNode &node) override;
+    void visit(const NumberNode &node) override;
+    void visit(const StatementSeqNode &node) override;
+    void visit(const UnaryOpNode &node) override;
+
+    bool success() const
+    {
+        return m_success;
+    }
+
+private:
+    asmjit::x86::Compiler &comp;
+    EmitterState &state;
+    asmjit::x86::Xmm result;
+    bool m_success{true};
+};
+
+void Compiler::visit(const NumberNode &node)
+{
+    asmjit::Label label = get_constant_label(comp, state.data.constants, {node.value(), 0.0});
     comp.movlpd(result, asmjit::x86::ptr(label));
     comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
-    return true;
 }
 
-void NumberNode::visit(Visitor &visitor) const
+void Compiler::visit(const IdentifierNode &node)
 {
-    visitor.visit(*this);
-}
-
-bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
-{
-    asmjit::Label label{get_symbol_label(comp, state.data.symbols, m_name)};
+    asmjit::Label label{get_symbol_label(comp, state.data.symbols, node.name())};
     comp.movlpd(result, asmjit::x86::ptr(label));
     comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
-    return true;
 }
 
-void IdentifierNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
-static bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
+static void call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
 {
     asmjit::InvokeNode *call;
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
     comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
     call->setArg(0, result);
     call->setRet(0, result);
-    return true;
 }
 
-bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+void Compiler::visit(const FunctionCallNode &node)
 {
-    if (!m_arg->compile(comp, state, result))
+    node.arg().visit(*this);
+    if (!success())
     {
-        return false;
+        return;
     }
-    if (m_name == "conj")
+    m_success = true;
+    const std::string &name{node.name()};
+    if (name == "conj")
     {
         asmjit::x86::Xmm xmm1{comp.newXmm()};
         comp.xorpd(xmm1, xmm1);       // xmm1 = 0.0
         comp.subpd(xmm1, result);     // xmm1 -= result       [-re, -im]
         comp.shufpd(result, xmm1, 2); // result.y = xmm1.y    [re, -im]
-        return true;
+        return;
     }
-    if (m_name == "flip")
+    if (name == "flip")
     {
         comp.shufpd(result, result, 1); // result = result.yx
-        return true;
+        return;
     }
-    if (m_name == "ident")
+    if (name == "ident")
     {
         // identity does nothing
-        return true;
+        return;
     }
     // if (ComplexFunction *fn = lookup_complex(m_name))
     //{
     //     m_arg->compile(comp, state, result);
     //     return call(comp, fn, result);
     // }
-    if (RealFunction *fn = lookup_real(m_name))
+    if (RealFunction *fn = lookup_real(name))
     {
-        return call(comp, fn, result);
+        call(comp, fn, result);
     }
-    return false;
 }
 
-void FunctionCallNode::visit(Visitor &visitor) const
+void Compiler::visit(const UnaryOpNode &node)
 {
-    visitor.visit(*this);
-}
-
-bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
-{
-    if (m_op == '+')
+    const char op{node.op()};
+    if (op == '+')
     {
-        return m_operand->compile(comp, state, result);
+        node.operand().visit(*this);
     }
-    if (m_op == '-')
+    else if (op == '-')
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        if (!m_operand->compile(comp, state, operand))
+        node.operand().visit(*this);
+        if (!success())
         {
-            return false;
+            return;
         }
         asmjit::x86::Xmm tmp = comp.newXmm();
         comp.xorpd(tmp, tmp);     // tmp = 0.0          [0.0, 0.0]
         comp.subpd(tmp, operand); // tmp -= operand     [-re, -im]      negate operand
         comp.movapd(result, tmp); // result = tmp       [-re, -im]
-        return true;
     }
-    if (m_op == '|') // modulus operator |x + yi| returns x^2 + y^2
+    else if (op == '|') // modulus operator |x + yi| returns x^2 + y^2
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        if (!m_operand->compile(comp, state, operand))
+        node.operand().visit(*this);
+        if (!success())
         {
-            return false;
+            return;
         }
         comp.mulpd(operand, operand);     // op *= op           [x^2, y^2]
         comp.xorpd(result, result);       // result = 0         [0.0, 0.0]
         comp.movsd(result, operand);      // result.x = op.x    [x^2, 0.0]
         comp.shufpd(operand, operand, 1); // op = op.yx         [y^2, x^2]
         comp.addsd(result, operand);      // result.x += op.x   [x^2 + y^2, 0.0]
-        return true;
     }
-
-    return false;
-}
-
-void UnaryOpNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
+    else
+    {
+        m_success = false;
+    }
 }
 
 static bool call(asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
@@ -176,12 +191,13 @@ static bool call(asmjit::x86::Compiler &comp, double (*fn)(double, double), asmj
     return true;
 }
 
-bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+void Compiler::visit(const BinaryOpNode &node)
 {
-    m_left->compile(comp, state, result);
+    node.left().visit(*this);
     asmjit::Label skip_right = comp.newLabel();
     asmjit::x86::Xmm right{comp.newXmm()};
-    if (m_op == "&&")
+    const std::string &op{node.op()};
+    if (op == "&&")
     {
         asmjit::x86::Xmm zero{comp.newXmm()};
         comp.xorpd(zero, zero);     // xmm = 0.0
@@ -194,7 +210,7 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.bind(eval_right);
         comp.movsd(result, asmjit::x86::ptr(one));
     }
-    if (m_op == "||")
+    if (op == "||")
     {
         asmjit::x86::Xmm zero{comp.newXmm()};
         comp.xorpd(zero, zero);     // xmm = 0.0
@@ -207,19 +223,19 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.bind(eval_right);
         comp.movsd(result, zero);
     }
-    m_right->compile(comp, state, right);
+    node.right().visit(*this);
     comp.bind(skip_right);
-    if (m_op == "+")
+    if (op == "+")
     {
         comp.addpd(result, right); // result += right
-        return true;
+        return;
     }
-    if (m_op == "-")
+    if (op == "-")
     {
         comp.subpd(result, right); // result -= right
-        return true;
+        return;
     }
-    if (m_op == "*")
+    if (op == "*")
     {
         // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
         asmjit::x86::Xmm xmm0{result};        // xmm0 = [a, b]
@@ -238,9 +254,9 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm3.yx         [bc, ad]
         comp.addsd(xmm1, xmm3);               // xmm1.x += xmm3.x       [ad + bc, ad]
         comp.unpcklpd(xmm0, xmm1);            // xmm0 = xmm0.x, xmm1.x  [ac - bd, ad + bc]
-        return true;
+        return;
     }
-    if (m_op == "/")
+    if (op == "/")
     {
         // (u + vi) / (x + yi) = ((ux + vy) + (vx - uy)i) / (x^2 + y^2)
         // (1 + 2i) / (3 + 4i) = ((1*3 + 2*4) + (2*3 - 1*4)i) / (3^2 + 4^2)
@@ -279,46 +295,48 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         comp.subsd(xmm4, xmm1);     // xmm4.x -= xmm1.x  [vx - uy, uy]           xmm4.x is imaginary part of numerator
         comp.unpcklpd(xmm0, xmm4);  // xmm0.y = xmm4.x   [ux + vy, vx - uy]      swizzle lanes
         comp.divpd(xmm0, xmm2);     // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
-        return true;
+        return;
     }
-    if (m_op == "^")
+    if (op == "^")
     {
         // For exponentiation, we can use the pow intrinsic
-        return call(comp, std::pow, result, right);
+        call(comp, std::pow, result, right);
+        return;
     }
-    if (m_op == "<" || m_op == "<=" || m_op == ">" || m_op == ">=" || m_op == "==" || m_op == "!=")
+    if (op == "<" || op == "<=" || op == ">" || op == ">=" || op == "==" || op == "!=")
     {
         // Compare left and right, set result to 1.0 on true, else 0.0
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
         comp.ucomisd(result, right); // xmm0 <=> xmm1
-        if (m_op == "<")
+        if (op == "<")
         {
             comp.jb(success); // xmm0 < xmm1?
         }
-        else if (m_op == "<=")
+        else if (op == "<=")
         {
             comp.jbe(success); // xmm0 <= xmm1?
         }
-        else if (m_op == ">")
+        else if (op == ">")
         {
             comp.ja(success); // xmm0 > xmm1?
         }
-        else if (m_op == ">=")
+        else if (op == ">=")
         {
             comp.jae(success); // xmm0 >= xmm1?
         }
-        else if (m_op == "==")
+        else if (op == "==")
         {
             comp.je(success); // xmm0 == xmm1?
         }
-        else if (m_op == "!=")
+        else if (op == "!=")
         {
             comp.jne(success); // xmm0 != xmm1?
         }
         else
         {
-            return false; // Unsupported operator
+            m_success = false; // Unsupported operator
+            return;
         }
         comp.xorpd(result, result); // result = 0.0
         comp.jmp(end);
@@ -326,9 +344,9 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
-        return true;
+        return;
     }
-    if (m_op == "&&")
+    if (op == "&&")
     {
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
@@ -344,9 +362,9 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
-        return true;
+        return;
     }
-    if (m_op == "||")
+    if (op == "||")
     {
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
@@ -362,58 +380,50 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         comp.movsd(result, asmjit::x86::ptr(one));
         comp.bind(end);
-        return true;
+        return;
     }
 
-    return false;
+    m_success = false;
 }
 
-void BinaryOpNode::visit(Visitor &visitor) const
+void Compiler::visit(const AssignmentNode &node)
 {
-    visitor.visit(*this);
-}
-
-bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
-{
-    asmjit::Label label = get_symbol_label(comp, state.data.symbols, m_variable);
-    if (!m_expression->compile(comp, state, result))
+    asmjit::Label label = get_symbol_label(comp, state.data.symbols, node.variable());
+    node.expression().visit(*this);
+    if (!success())
     {
-        return false;
+        return;
     }
     comp.movsd(asmjit::x86::ptr(label), result);
-    return true;
 }
 
-void AssignmentNode::visit(Visitor &visitor) const
+void Compiler::visit(const StatementSeqNode &node)
 {
-    visitor.visit(*this);
+    for (const Expr &statement : node.statements())
+    {
+        statement->visit(*this);
+        if (!success())
+        {
+            return;
+        }
+    }
 }
 
-bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
-{
-    return std::all_of(m_statements.begin(), m_statements.end(),
-        [&comp, &state, &result](const Expr &statement) { return statement->compile(comp, state, result); });
-}
-
-void StatementSeqNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
-bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+void Compiler::visit(const IfStatementNode &node)
 {
     asmjit::Label else_label = comp.newLabel();
     asmjit::Label end_label = comp.newLabel();
-    m_condition->compile(comp, state, result);
+    node.condition().visit(*this);
     asmjit::x86::Xmm zero{comp.newXmm()};
     comp.xorpd(zero, zero);     // xmm = 0.0
     comp.ucomisd(result, zero); // result <=> 0.0?
     comp.jz(else_label);        // if result == 0.0, jump to else block
-    if (m_then_block)
+    if (node.has_then_block())
     {
-        if (!m_then_block->compile(comp, state, result))
+        node.then_block().visit(*this);
+        if (!success())
         {
-            return false;
+            return;
         }
     }
     else
@@ -424,11 +434,12 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
     }
     comp.jmp(end_label); // Jump over else block
     comp.bind(else_label);
-    if (m_else_block)
+    if (node.has_else_block())
     {
-        if (!m_else_block->compile(comp, state, result))
+        node.else_block().visit(*this);
+        if (!success())
         {
-            return false;
+            return;
         }
     }
     else
@@ -437,12 +448,14 @@ bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, 
         comp.movsd(result, zero);
     }
     comp.bind(end_label);
-    return true;
 }
 
-void IfStatementNode::visit(Visitor &visitor) const
+bool compile(
+    const std::shared_ptr<Node> &expr, asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result)
 {
-    visitor.visit(*this);
+    Compiler compiler(comp, state, result);
+    expr->visit(compiler);
+    return compiler.success();
 }
 
 } // namespace formula::ast

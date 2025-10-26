@@ -27,7 +27,6 @@ public:
     }
     ~Interpreter() override = default;
 
-    void visit(const FormulaDefinition &definition) override;
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;
     void visit(const FunctionCallNode &node) override;
@@ -62,10 +61,6 @@ private:
     std::vector<Complex> m_result{1};
     Dictionary m_symbols;
 };
-
-void Interpreter::visit(const FormulaDefinition &definition)
-{
-}
 
 void Interpreter::visit(const AssignmentNode &node)
 {
