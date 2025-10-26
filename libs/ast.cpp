@@ -45,11 +45,6 @@ asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBindings &labe
     return label;
 }
 
-Complex NumberNode::interpret(SymbolTable & /*symbols*/) const
-{
-    return {m_value, 0.0};
-}
-
 bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
@@ -63,15 +58,6 @@ void NumberNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-Complex IdentifierNode::interpret(SymbolTable &symbols) const
-{
-    if (const auto &it = symbols.find(m_name); it != symbols.end())
-    {
-        return it->second;
-    }
-    return {};
-}
-
 bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label{get_symbol_label(comp, state.data.symbols, m_name)};
@@ -83,11 +69,6 @@ bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, a
 void IdentifierNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
-}
-
-Complex FunctionCallNode::interpret(SymbolTable &symbols) const
-{
-    return evaluate(m_name, m_arg->interpret(symbols));
 }
 
 bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
@@ -141,25 +122,6 @@ void FunctionCallNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-Complex UnaryOpNode::interpret(SymbolTable &symbols) const
-{
-    if (m_op == '+')
-    {
-        return m_operand->interpret(symbols);
-    }
-    if (m_op == '-')
-    {
-        return {-m_operand->interpret(symbols).re, 0.0};
-    }
-    if (m_op == '|')
-    {
-        Complex value = m_operand->interpret(symbols);
-        return {value.re * value.re + value.im * value.im, 0.0};
-    }
-
-    throw std::runtime_error(std::string{"Invalid unary prefix operator '"} + m_op + "'");
-}
-
 bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     if (m_op == '+')
@@ -200,78 +162,6 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
 void UnaryOpNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
-}
-
-Complex BinaryOpNode::interpret(SymbolTable &symbols) const
-{
-    const Complex left = m_left->interpret(symbols);
-    const auto bool_result = [](bool condition)
-    {
-        return Complex{condition ? 1.0 : 0.0, 0.0};
-    };
-    if (m_op == "&&") // short-circuit AND
-    {
-        if (left == Complex{0.0, 0.0})
-        {
-            return {0.0, 0.0};
-        }
-        return bool_result(m_right->interpret(symbols) != Complex{0.0, 0.0});
-    }
-    if (m_op == "||") // short-circuit OR
-    {
-        if (left != Complex{0.0, 0.0})
-        {
-            return {1.0, 0.0};
-        }
-        return bool_result(m_right->interpret(symbols) != Complex{0.0, 0.0});
-    }
-    const Complex right = m_right->interpret(symbols);
-    if (m_op == "+")
-    {
-        return left + right;
-    }
-    if (m_op == "-")
-    {
-        return left - right;
-    }
-    if (m_op == "*")
-    {
-        return left * right;
-    }
-    if (m_op == "/")
-    {
-        return left / right;
-    }
-    if (m_op == "^")
-    {
-        return {std::pow(left.re, right.re), 0.0};
-    }
-    if (m_op == "<")
-    {
-        return bool_result(left.re < right.re);
-    }
-    if (m_op == "<=")
-    {
-        return bool_result(left.re <= right.re);
-    }
-    if (m_op == ">")
-    {
-        return bool_result(left.re > right.re);
-    }
-    if (m_op == ">=")
-    {
-        return bool_result(left.re >= right.re);
-    }
-    if (m_op == "==")
-    {
-        return bool_result(left == right);
-    }
-    if (m_op == "!=")
-    {
-        return bool_result(left != right);
-    }
-
-    throw std::runtime_error(std::string{"Invalid binary operator '"} + m_op + "'");
 }
 
 bool call(asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
@@ -483,13 +373,6 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-Complex AssignmentNode::interpret(SymbolTable &symbols) const
-{
-    Complex value = m_expression->interpret(symbols);
-    symbols[m_variable] = value;
-    return value;
-}
-
 bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label = get_symbol_label(comp, state.data.symbols, m_variable);
@@ -506,16 +389,6 @@ void AssignmentNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-Complex StatementSeqNode::interpret(SymbolTable &symbols) const
-{
-    Complex value{};
-    for (const auto &statement : m_statements)
-    {
-        value = statement->interpret(symbols);
-    }
-    return value;
-}
-
 bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     return std::all_of(m_statements.begin(), m_statements.end(),
@@ -525,20 +398,6 @@ bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
 void StatementSeqNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
-}
-
-Complex IfStatementNode::interpret(SymbolTable &symbols) const
-{
-    if (m_condition->interpret(symbols) != Complex{0.0, 0.0})
-    {
-        return m_then_block ? m_then_block->interpret(symbols) : Complex{1.0, 0.0};
-    }
-    if (m_else_block)
-    {
-        return m_else_block->interpret(symbols);
-    }
-
-    return {0.0, 0.0};
 }
 
 bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const

@@ -49,7 +49,6 @@ class Node
 public:
     virtual ~Node() = default;
 
-    virtual Complex interpret(SymbolTable &symbols) const = 0;
     virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
     virtual void visit(Visitor &visitor) const = 0;
 };
@@ -65,7 +64,6 @@ public:
     }
     ~NumberNode() override = default;
 
-    Complex interpret(SymbolTable &) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -87,7 +85,6 @@ public:
     }
     ~IdentifierNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -110,7 +107,6 @@ public:
     }
     ~FunctionCallNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -138,7 +134,6 @@ public:
     }
     ~UnaryOpNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -174,7 +169,6 @@ public:
     }
     ~BinaryOpNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -207,7 +201,6 @@ public:
     }
     ~AssignmentNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -234,7 +227,6 @@ public:
     }
     ~StatementSeqNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
@@ -258,7 +250,6 @@ public:
     }
     ~IfStatementNode() override = default;
 
-    Complex interpret(SymbolTable &symbols) const override;
     bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 

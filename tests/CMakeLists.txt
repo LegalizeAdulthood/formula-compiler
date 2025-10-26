@@ -9,7 +9,6 @@ find_package(GTest CONFIG REQUIRED)
 add_executable("test-formula"
     "function-call.h" "function-call.cpp"
     "parse-test.cpp"
-    "interpret-test.cpp"
     "interpreter-test.cpp"
     "compile-test.cpp"
 )

@@ -17,32 +17,32 @@ using namespace testing;
 
 TEST(TestFormulaInterpreter, one)
 {
-    ASSERT_EQ(1.0, formula::parse("1")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula::parse("1")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, two)
 {
-    ASSERT_EQ(2.0, formula::parse("2")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(2.0, formula::parse("2")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, add)
 {
-    ASSERT_EQ(2.0, formula::parse("1+1")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(2.0, formula::parse("1+1")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, unaryMinusNegativeOne)
 {
-    ASSERT_EQ(1.0, formula::parse("--1")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula::parse("--1")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, multiply)
 {
-    ASSERT_EQ(6.0, formula::parse("2*3")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(6.0, formula::parse("2*3")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, divide)
 {
-    ASSERT_EQ(3.0, formula::parse("6/2")->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(3.0, formula::parse("6/2")->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, addMultiply)
@@ -50,7 +50,7 @@ TEST(TestFormulaInterpreter, addMultiply)
     const auto formula{formula::parse("1+3*2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(7.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(7.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, multiplyAdd)
@@ -58,7 +58,7 @@ TEST(TestFormulaInterpreter, multiplyAdd)
     const auto formula{formula::parse("3*2+1")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(7.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(7.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, addAddAdd)
@@ -66,7 +66,7 @@ TEST(TestFormulaInterpreter, addAddAdd)
     const auto formula{formula::parse("1+1+1")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(3.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(3.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, mulMulMul)
@@ -74,7 +74,7 @@ TEST(TestFormulaInterpreter, mulMulMul)
     const auto formula{formula::parse("2*2*2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(8.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(8.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, twoPi)
@@ -82,7 +82,7 @@ TEST(TestFormulaInterpreter, twoPi)
     const auto formula{formula::parse("2*pi")};
     ASSERT_TRUE(formula);
 
-    ASSERT_NEAR(6.28318, formula->interpreter(formula::ITERATE).re, 1e-5);
+    ASSERT_NEAR(6.28318, formula->interpret(formula::ITERATE).re, 1e-5);
 }
 
 TEST(TestFormulaInterpreter, unknownIdentifierIsZero)
@@ -90,7 +90,7 @@ TEST(TestFormulaInterpreter, unknownIdentifierIsZero)
     const auto formula{formula::parse("a")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, setComplexValue)
@@ -112,7 +112,7 @@ TEST(TestFormulaInterpreter, setSymbolValue)
     formula->set_value("a", {2.0, 0.0});
     formula->set_value("b", {3.0, 0.0});
 
-    ASSERT_NEAR(13.0, formula->interpreter(formula::ITERATE).re, 1e-5);
+    ASSERT_NEAR(13.0, formula->interpret(formula::ITERATE).re, 1e-5);
 }
 
 TEST(TestFormulaInterpreter, power)
@@ -120,7 +120,7 @@ TEST(TestFormulaInterpreter, power)
     const auto formula{formula::parse("2^3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(8.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(8.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, chainedPower)
@@ -129,7 +129,7 @@ TEST(TestFormulaInterpreter, chainedPower)
     const auto formula{formula::parse("2^3^2")}; // same as (2^3)^2
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(64.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(64.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, powerPrecedence)
@@ -137,7 +137,7 @@ TEST(TestFormulaInterpreter, powerPrecedence)
     const auto formula{formula::parse("2*3^2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(18.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(18.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, getValue)
@@ -154,7 +154,7 @@ TEST(TestFormulaInterpreter, assignment)
     const auto formula{formula::parse("z=4+2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(6.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(6.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(6.0, formula->get_value("z").re);
 }
@@ -164,7 +164,7 @@ TEST(TestFormulaInterpreter, assignmentParens)
     const auto formula{formula::parse("(z=4)+2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(6.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(6.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -174,7 +174,7 @@ TEST(TestFormulaInterpreter, chainedAssignment)
     const auto formula{formula::parse("z1=z2=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(3.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(3.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(3.0, formula->get_value("z1").re);
     ASSERT_EQ(3.0, formula->get_value("z2").re);
@@ -185,7 +185,7 @@ TEST(TestFormulaInterpreter, modulus)
     const auto formula{formula::parse("|-3.0 + flip(-2)|")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     ASSERT_EQ(13.0, result.re);
     ASSERT_EQ(0.0, result.im);
@@ -197,7 +197,7 @@ TEST(TestFormulaInterpreter, conjugate)
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     ASSERT_EQ(3.0, result.re);
     ASSERT_EQ(-4.0, result.im);
@@ -209,7 +209,7 @@ TEST(TestFormulaInterpreter, identity)
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     ASSERT_EQ(3.0, result.re);
     ASSERT_EQ(4.0, result.im);
@@ -220,7 +220,7 @@ TEST(TestFormulaInterpreter, compareLessFalse)
     const auto formula{formula::parse("4<3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // false is 0.0
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // false is 0.0
 }
 
 TEST(TestFormulaInterpreter, compareLessTrue)
@@ -228,7 +228,7 @@ TEST(TestFormulaInterpreter, compareLessTrue)
     const auto formula{formula::parse("3<4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // true is 1.0
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // true is 1.0
 }
 
 TEST(TestFormulaInterpreter, compareLessPrecedence)
@@ -236,7 +236,7 @@ TEST(TestFormulaInterpreter, compareLessPrecedence)
     const auto formula{formula::parse("3<z=4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -246,7 +246,7 @@ TEST(TestFormulaInterpreter, compareLessEqualTrueEquality)
     const auto formula{formula::parse("3<=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareLessEqualTrueLess)
@@ -254,7 +254,7 @@ TEST(TestFormulaInterpreter, compareLessEqualTrueLess)
     const auto formula{formula::parse("3<=4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareLessEqualFalse)
@@ -262,7 +262,7 @@ TEST(TestFormulaInterpreter, compareLessEqualFalse)
     const auto formula{formula::parse("3<=2")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareAssociatesLeft)
@@ -271,7 +271,7 @@ TEST(TestFormulaInterpreter, compareAssociatesLeft)
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(
-        1.0, formula->interpreter(formula::ITERATE).re); // (4 < 3) is false (0.0), (0 < 4) is true, so the result is 1.0
+        1.0, formula->interpret(formula::ITERATE).re); // (4 < 3) is false (0.0), (0 < 4) is true, so the result is 1.0
 }
 
 TEST(TestFormulaInterpreter, compareGreaterFalse)
@@ -279,7 +279,7 @@ TEST(TestFormulaInterpreter, compareGreaterFalse)
     const auto formula{formula::parse("3>4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // false is 0.0
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // false is 0.0
 }
 
 TEST(TestFormulaInterpreter, compareGreaterTrue)
@@ -287,7 +287,7 @@ TEST(TestFormulaInterpreter, compareGreaterTrue)
     const auto formula{formula::parse("4>3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // true is 1.0
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // true is 1.0
 }
 
 TEST(TestFormulaInterpreter, compareGreaterEqualTrueEquality)
@@ -295,7 +295,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualTrueEquality)
     const auto formula{formula::parse("3>=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareGreaterEqualTrueGreater)
@@ -303,7 +303,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualTrueGreater)
     const auto formula{formula::parse("4>=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareGreaterEqualFalse)
@@ -311,7 +311,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualFalse)
     const auto formula{formula::parse("2>=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, compareEqualTrue)
@@ -319,7 +319,7 @@ TEST(TestFormulaInterpreter, compareEqualTrue)
     const auto formula{formula::parse("3==3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // true is 1.0
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // true is 1.0
 }
 
 TEST(TestFormulaInterpreter, compareEqualFalse)
@@ -327,7 +327,7 @@ TEST(TestFormulaInterpreter, compareEqualFalse)
     const auto formula{formula::parse("3==4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // false is 0.0
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // false is 0.0
 }
 
 TEST(TestFormulaInterpreter, compareNotEqualTrue)
@@ -335,7 +335,7 @@ TEST(TestFormulaInterpreter, compareNotEqualTrue)
     const auto formula{formula::parse("3!=4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // true is 1.0
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // true is 1.0
 }
 
 TEST(TestFormulaInterpreter, compareNotEqualFalse)
@@ -343,7 +343,7 @@ TEST(TestFormulaInterpreter, compareNotEqualFalse)
     const auto formula{formula::parse("3!=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // false is 0.0
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // false is 0.0
 }
 
 TEST(TestFormulaInterpreter, logicalAndTrue)
@@ -351,7 +351,7 @@ TEST(TestFormulaInterpreter, logicalAndTrue)
     const auto formula{formula::parse("1&&1")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // true is 1.0
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // true is 1.0
 }
 
 TEST(TestFormulaInterpreter, logicalAndFalse)
@@ -359,7 +359,7 @@ TEST(TestFormulaInterpreter, logicalAndFalse)
     const auto formula{formula::parse("1&&0")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // false is 0.0
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // false is 0.0
 }
 
 TEST(TestFormulaInterpreter, logicalAndPrecedence)
@@ -367,7 +367,7 @@ TEST(TestFormulaInterpreter, logicalAndPrecedence)
     const auto formula{formula::parse("1+2&&3+4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // (1+2) && (3+4) is true
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // (1+2) && (3+4) is true
 }
 
 TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
@@ -375,7 +375,7 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
     const auto formula{formula::parse("0&&z=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re); // 0 is false, so the second part is not evaluated
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // 0 is false, so the second part is not evaluated
 
     ASSERT_EQ(0.0, formula->get_value("z").re);              // z should not be set
 }
@@ -385,7 +385,7 @@ TEST(TestFormulaInterpreter, logicalOrTrue)
     const auto formula{formula::parse("1||0")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, logicalOrFalse)
@@ -393,7 +393,7 @@ TEST(TestFormulaInterpreter, logicalOrFalse)
     const auto formula{formula::parse("0||0")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, logicalOrPrecedence)
@@ -401,7 +401,7 @@ TEST(TestFormulaInterpreter, logicalOrPrecedence)
     const auto formula{formula::parse("1+2||3+4")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re); // (1+2) || (3+4) is true
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re); // (1+2) || (3+4) is true
 }
 
 TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
@@ -409,7 +409,7 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
     const auto formula{formula::parse("1||z=3")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
 }
@@ -420,7 +420,7 @@ TEST(TestFormulaInterpreter, statements)
                                       "4\n")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, assignmentStatements)
@@ -429,7 +429,7 @@ TEST(TestFormulaInterpreter, assignmentStatements)
                                       "z=4\n")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(3.0, formula->get_value("q").re);
     ASSERT_EQ(4.0, formula->get_value("z").re);
@@ -442,7 +442,7 @@ TEST(TestFormulaInterpreter, formulaInitialize)
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {100.0, 0.0});
 
-    ASSERT_EQ(4.4, formula->interpreter(formula::INITIALIZE).re);
+    ASSERT_EQ(4.4, formula->interpret(formula::INITIALIZE).re);
 
     ASSERT_EQ(4.4, formula->get_value("pixel").re);
     ASSERT_EQ(4.4, formula->get_value("z").re);
@@ -455,7 +455,7 @@ TEST(TestFormulaInterpreter, formulaIterate)
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
 
-    ASSERT_EQ(8.4, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(8.4, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.4, formula->get_value("pixel").re);
     ASSERT_EQ(8.4, formula->get_value("z").re);
@@ -467,7 +467,7 @@ TEST(TestFormulaInterpreter, formulaBailoutFalse)
     ASSERT_TRUE(formula);
     formula->set_value("z", {2.0, 0.0});
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::BAILOUT).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::BAILOUT).re);
 
     ASSERT_EQ(2.0, formula->get_value("z").re);
 }
@@ -479,7 +479,7 @@ TEST(TestFormulaInterpreter, formulaBailoutTrue)
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::BAILOUT).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::BAILOUT).re);
 
     ASSERT_EQ(8.0, formula->get_value("z").re);
 }
@@ -499,7 +499,7 @@ TEST_P(InterpreterFunctionCall, interpret)
     const auto formula{formula::parse(param.expr)};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     ASSERT_NEAR(param.result.re, result.re, 1e-8);
     ASSERT_NEAR(param.result.im, result.im, 1e-8);
@@ -513,7 +513,7 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
                                       "endif")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
@@ -522,7 +522,7 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, ifStatementBodyTrue)
@@ -533,7 +533,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyTrue)
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
-    ASSERT_EQ(3.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(3.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(3.0, formula->get_value("z").re);
 }
@@ -546,7 +546,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyFalse)
     ASSERT_TRUE(formula);
     formula->set_value("z", {5.0, 0.0});
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(5.0, formula->get_value("z").re);
 }
@@ -566,7 +566,7 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
     formula->set_value("z", {0.0, 0.0});
     formula->set_value("q", {0.0, 0.0});
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(0.0, formula->get_value("x").re);
     ASSERT_EQ(0.0, formula->get_value("y").re);
@@ -589,7 +589,7 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
     formula->set_value("z", {0.0, 0.0});
     formula->set_value("q", {0.0, 0.0});
 
-    ASSERT_EQ(2.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(2.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(1.0, formula->get_value("x").re);
     ASSERT_EQ(2.0, formula->get_value("y").re);
@@ -604,7 +604,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
                                       "endif")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(1.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(1.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
@@ -614,7 +614,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
@@ -625,7 +625,7 @@ TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
 
-    ASSERT_EQ(0.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re);
 }
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
@@ -638,7 +638,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -655,7 +655,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -674,7 +674,7 @@ TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
-    ASSERT_EQ(4.0, formula->interpreter(formula::ITERATE).re);
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 
     ASSERT_EQ(4.0, formula->get_value("z").re);
 }
@@ -684,7 +684,7 @@ TEST(TestFormulaInterpreter, flip)
     const auto formula{formula::parse("flip(1)")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(0.0, result.re);
     EXPECT_EQ(1.0, result.im); // flip(1) should return 0 + i
@@ -695,7 +695,7 @@ TEST(TestFormulaInterpreter, complexAdd)
     const auto formula{formula::parse("1+flip(1)")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(1.0, result.re);
     EXPECT_EQ(1.0, result.im);
@@ -706,7 +706,7 @@ TEST(TestFormulaInterpreter, complexSubtract)
     const auto formula{formula::parse("1-flip(1)")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(1.0, result.re);
     EXPECT_EQ(-1.0, result.im);
@@ -717,7 +717,7 @@ TEST(TestFormulaInterpreter, complexMultiply)
     const auto formula{formula::parse("flip(1)*flip(1)")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(-1.0, result.re);
     EXPECT_EQ(0.0, result.im);
@@ -728,7 +728,7 @@ TEST(TestFormulaInterpreter, complexDivideScalar)
     const auto formula{formula::parse("(1+flip(1))/2")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(0.5, result.re);
     EXPECT_EQ(0.5, result.im);
@@ -739,7 +739,7 @@ TEST(TestFormulaInterpreter, complexDivide)
     const auto formula{formula::parse("(1+flip(1))/(2+flip(2))")};
     ASSERT_TRUE(formula);
 
-    const formula::Complex result{formula->interpreter(formula::ITERATE)};
+    const formula::Complex result{formula->interpret(formula::ITERATE)};
 
     EXPECT_EQ(0.5, result.re);
     EXPECT_EQ(0.0, result.im); // (1+i)/(2+2i) = 0.5 + 0.0i
