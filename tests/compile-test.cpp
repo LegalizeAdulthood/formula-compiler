@@ -17,7 +17,7 @@ TEST(TestCompiledFormulaRun, one)
 {
     const auto formula{formula::parse("1")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -29,7 +29,7 @@ TEST(TestCompiledFormulaRun, two)
 {
     const auto formula{formula::parse("2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -41,7 +41,7 @@ TEST(TestCompiledFormulaRun, identifier)
 {
     const auto formula{formula::parse("e")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -54,7 +54,7 @@ TEST(TestCompiledFormulaRun, identifierComplex)
     const auto formula{formula::parse("z")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
     formula->set_value("z", {2.0, 4.0});
 
     const formula::Complex result{formula->run(formula::ITERATE)};
@@ -70,7 +70,7 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 {
     const auto formula{formula::parse("a")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -662,7 +662,7 @@ TEST(TestCompiledFormulaRun, statements)
     const auto formula{formula::parse("3\n"
                                       "4\n")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile(true));
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
