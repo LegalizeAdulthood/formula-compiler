@@ -11,6 +11,7 @@
 #include <asmjit/x86/x86compiler.h>
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 

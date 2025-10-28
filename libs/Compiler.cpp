@@ -11,8 +11,6 @@
 
 #include <cassert>
 #include <cmath>
-#include <memory>
-#include <string>
 #include <vector>
 
 #define ASMJIT_STORE(expr_)                       \
