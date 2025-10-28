@@ -22,11 +22,15 @@ namespace
 class Interpreter : public Visitor
 {
 public:
-    Interpreter(Dictionary &symbols) :
-        m_symbols(symbols)
+    explicit Interpreter(Dictionary symbols) :
+        m_symbols(std::move(symbols))
     {
     }
+    Interpreter(const Interpreter &rhs) = delete;
+    Interpreter(Interpreter &&) = delete;
     ~Interpreter() override = default;
+    Interpreter &operator=(const Interpreter &rhs) = delete;
+    Interpreter &operator=(Interpreter &&) = delete;
 
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;

@@ -70,7 +70,11 @@ public:
     {
         m_result.push_back(result);
     }
+    Compiler(const Compiler &rhs) = delete;
+    Compiler(Compiler &&rhs) = delete;
     ~Compiler() override = default;
+    Compiler &operator=(const Compiler &rhs) = delete;
+    Compiler &operator=(Compiler &&rhs) = delete;
 
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;
@@ -92,7 +96,7 @@ private:
     asmjit::x86::Compiler &comp;
     EmitterState &state;
     std::vector<asmjit::x86::Xmm> m_result;
-    CompileError m_err;
+    CompileError &m_err;
 };
 
 void Compiler::visit(const NumberNode &node)
