@@ -4,10 +4,7 @@
 //
 #include "ast.h"
 
-#include "functions.h"
-#include "Visitor.h"
-
-#include <algorithm>
+#include <formula/Visitor.h>
 
 //
 // An Xmm register is 128 bits wide, holding two 64-bit doubles,

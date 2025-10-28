@@ -2,11 +2,12 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "Interpreter.h"
+#include <formula/Interpreter.h>
+
+#include <formula/Visitor.h>
 
 #include "ast.h"
 #include "functions.h"
-#include "Visitor.h"
 
 #include <map>
 #include <string>

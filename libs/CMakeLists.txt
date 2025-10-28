@@ -7,13 +7,12 @@ find_package(boost_parser CONFIG REQUIRED)
 
 add_library(formula
     ast.h ast.cpp
+    include/formula/Compiler.h Compiler.cpp
     include/formula/Complex.h
-    include/formula/formula.h
-    formula.cpp
+    include/formula/Formula.h Formula.cpp
     functions.h functions.cpp
-    Compiler.h Compiler.cpp
-    Interpreter.h Interpreter.cpp
-    Visitor.h
+    include/formula/Interpreter.h Interpreter.cpp
+    include/formula/Visitor.h
 )
 target_compile_options(formula PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/bigobj>

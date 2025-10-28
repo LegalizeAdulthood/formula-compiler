@@ -2,11 +2,12 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "Compiler.h"
+#include <formula/Compiler.h>
+
+#include <formula/Visitor.h>
 
 #include "ast.h"
 #include "functions.h"
-#include "Visitor.h"
 
 #include <cassert>
 #include <cmath>

@@ -2,12 +2,13 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "formula/formula.h"
+#include <formula/formula.h>
+
+#include <formula/Compiler.h>
+#include <formula/Interpreter.h>
 
 #include "ast.h"
-#include "Compiler.h"
 #include "functions.h"
-#include "Interpreter.h"
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
