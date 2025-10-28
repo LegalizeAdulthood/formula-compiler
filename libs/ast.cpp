@@ -4,8 +4,8 @@
 //
 #include "ast.h"
 
-#include "functions.h"
 #include "Visitor.h"
+#include "functions.h"
 
 #include <algorithm>
 
@@ -45,12 +45,12 @@ static asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBinding
     return label;
 }
 
-bool NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError NumberNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label = get_constant_label(comp, state.data.constants, {m_value, 0.0});
-    comp.movlpd(result, asmjit::x86::ptr(label));
-    comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
-    return true;
+    ASMJIT_CHECK(comp.movlpd(result, asmjit::x86::ptr(label)));
+    ASMJIT_CHECK(comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double))));
+    return {};
 }
 
 void NumberNode::visit(Visitor &visitor) const
@@ -58,12 +58,12 @@ void NumberNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-bool IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError IdentifierNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label{get_symbol_label(comp, state.data.symbols, m_name)};
-    comp.movlpd(result, asmjit::x86::ptr(label));
-    comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double)));
-    return true;
+    ASMJIT_CHECK(comp.movlpd(result, asmjit::x86::ptr(label)));
+    ASMJIT_CHECK(comp.movhpd(result, asmjit::x86::ptr(label, sizeof(double))));
+    return {};
 }
 
 void IdentifierNode::visit(Visitor &visitor) const
@@ -71,39 +71,39 @@ void IdentifierNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-static bool call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
+static CompileError call(asmjit::x86::Compiler &comp, double (*fn)(double), asmjit::x86::Xmm result)
 {
     asmjit::InvokeNode *call;
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-    comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>());
+    ASMJIT_CHECK(comp.invoke(&call, target, asmjit::FuncSignature::build<double, double>()));
     call->setArg(0, result);
     call->setRet(0, result);
-    return true;
+    return {};
 }
 
-bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    if (!m_arg->compile(comp, state, result))
+    if (const CompileError err = m_arg->compile(comp, state, result); err)
     {
-        return false;
+        return err;
     }
     if (m_name == "conj")
     {
         asmjit::x86::Xmm xmm1{comp.newXmm()};
-        comp.xorpd(xmm1, xmm1);       // xmm1 = 0.0
-        comp.subpd(xmm1, result);     // xmm1 -= result       [-re, -im]
-        comp.shufpd(result, xmm1, 2); // result.y = xmm1.y    [re, -im]
-        return true;
+        ASMJIT_CHECK(comp.xorpd(xmm1, xmm1));       // xmm1 = 0.0
+        ASMJIT_CHECK(comp.subpd(xmm1, result));     // xmm1 -= result       [-re, -im]
+        ASMJIT_CHECK(comp.shufpd(result, xmm1, 2)); // result.y = xmm1.y    [re, -im]
+        return {};
     }
     if (m_name == "flip")
     {
-        comp.shufpd(result, result, 1); // result = result.yx
-        return true;
+        ASMJIT_CHECK(comp.shufpd(result, result, 1)); // result = result.yx
+        return {};
     }
     if (m_name == "ident")
     {
         // identity does nothing
-        return true;
+        return {};
     }
     // if (ComplexFunction *fn = lookup_complex(m_name))
     //{
@@ -114,7 +114,7 @@ bool FunctionCallNode::compile(asmjit::x86::Compiler &comp, EmitterState &state,
     {
         return call(comp, fn, result);
     }
-    return false;
+    return asmjit::kErrorInvalidArgument;
 }
 
 void FunctionCallNode::visit(Visitor &visitor) const
@@ -122,7 +122,7 @@ void FunctionCallNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     if (m_op == '+')
     {
@@ -131,32 +131,32 @@ bool UnaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmj
     if (m_op == '-')
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        if (!m_operand->compile(comp, state, operand))
+        if (const CompileError err = m_operand->compile(comp, state, operand); err)
         {
-            return false;
+            return err;
         }
         asmjit::x86::Xmm tmp = comp.newXmm();
-        comp.xorpd(tmp, tmp);     // tmp = 0.0          [0.0, 0.0]
-        comp.subpd(tmp, operand); // tmp -= operand     [-re, -im]      negate operand
-        comp.movapd(result, tmp); // result = tmp       [-re, -im]
-        return true;
+        ASMJIT_CHECK(comp.xorpd(tmp, tmp));     // tmp = 0.0          [0.0, 0.0]
+        ASMJIT_CHECK(comp.subpd(tmp, operand)); // tmp -= operand     [-re, -im]      negate operand
+        ASMJIT_CHECK(comp.movapd(result, tmp)); // result = tmp       [-re, -im]
+        return {};
     }
     if (m_op == '|') // modulus operator |x + yi| returns x^2 + y^2
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        if (!m_operand->compile(comp, state, operand))
+        if (const CompileError err = m_operand->compile(comp, state, operand); err)
         {
-            return false;
+            return err;
         }
-        comp.mulpd(operand, operand);     // op *= op           [x^2, y^2]
-        comp.xorpd(result, result);       // result = 0         [0.0, 0.0]
-        comp.movsd(result, operand);      // result.x = op.x    [x^2, 0.0]
-        comp.shufpd(operand, operand, 1); // op = op.yx         [y^2, x^2]
-        comp.addsd(result, operand);      // result.x += op.x   [x^2 + y^2, 0.0]
-        return true;
+        ASMJIT_CHECK(comp.mulpd(operand, operand));     // op *= op           [x^2, y^2]
+        ASMJIT_CHECK(comp.xorpd(result, result));       // result = 0         [0.0, 0.0]
+        ASMJIT_CHECK(comp.movsd(result, operand));      // result.x = op.x    [x^2, 0.0]
+        ASMJIT_CHECK(comp.shufpd(operand, operand, 1)); // op = op.yx         [y^2, x^2]
+        ASMJIT_CHECK(comp.addsd(result, operand));      // result.x += op.x   [x^2 + y^2, 0.0]
+        return {};
     }
 
-    return false;
+    return asmjit::kErrorInvalidArgument;
 }
 
 void UnaryOpNode::visit(Visitor &visitor) const
@@ -164,81 +164,88 @@ void UnaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-static bool call(asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+static CompileError call(
+    asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
 {
     // For exponentiation, we can use the pow intrinsic
     asmjit::InvokeNode *call;
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-    comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>());
+    ASMJIT_CHECK(comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>()));
     call->setArg(0, result);
     call->setArg(1, right);
     call->setRet(0, result);
-    return true;
+    return {};
 }
 
-bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    m_left->compile(comp, state, result);
+    if (const CompileError err = m_left->compile(comp, state, result); err)
+    {
+        return err;
+    }
     asmjit::Label skip_right = comp.newLabel();
     asmjit::x86::Xmm right{comp.newXmm()};
     if (m_op == "&&")
     {
         asmjit::x86::Xmm zero{comp.newXmm()};
-        comp.xorpd(zero, zero);     // xmm = 0.0
-        comp.ucomisd(result, zero); // xmm0 <=> 0.0?
-        asmjit::Label eval_right = comp.newLabel();
-        comp.jne(eval_right); // xmm0 != 0.0
+        ASMJIT_CHECK(comp.xorpd(zero, zero));       // xmm = 0.0
+        ASMJIT_CHECK(comp.ucomisd(result, zero));   // xmm0 <=> 0.0?
+        asmjit::Label eval_right = comp.newLabel(); //
+        ASMJIT_CHECK(comp.jne(eval_right));         // xmm0 != 0.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(right, asmjit::x86::ptr(one));
-        comp.jmp(skip_right);
-        comp.bind(eval_right);
-        comp.movsd(result, asmjit::x86::ptr(one));
+        ASMJIT_CHECK(comp.movsd(right, asmjit::x86::ptr(one)));
+        ASMJIT_CHECK(comp.jmp(skip_right));
+        ASMJIT_CHECK(comp.bind(eval_right));
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
     }
     if (m_op == "||")
     {
         asmjit::x86::Xmm zero{comp.newXmm()};
-        comp.xorpd(zero, zero);     // xmm = 0.0
-        comp.ucomisd(result, zero); // result <=> 0.0?
-        asmjit::Label eval_right = comp.newLabel();
-        comp.je(eval_right); // result == 0.0
+        ASMJIT_CHECK(comp.xorpd(zero, zero));       // xmm = 0.0
+        ASMJIT_CHECK(comp.ucomisd(result, zero));   // result <=> 0.0?
+        asmjit::Label eval_right = comp.newLabel(); //
+        ASMJIT_CHECK(comp.je(eval_right));          // result == 0.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(result, asmjit::x86::ptr(one));
-        comp.jmp(skip_right);
-        comp.bind(eval_right);
-        comp.movsd(result, zero);
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
+        ASMJIT_CHECK(comp.jmp(skip_right));
+        ASMJIT_CHECK(comp.bind(eval_right));
+        ASMJIT_CHECK(comp.movsd(result, zero));
     }
-    m_right->compile(comp, state, right);
-    comp.bind(skip_right);
+    if (const auto err = m_right->compile(comp, state, right); err)
+    {
+        return err;
+    }
+    ASMJIT_CHECK(comp.bind(skip_right));
     if (m_op == "+")
     {
-        comp.addpd(result, right); // result += right
-        return true;
+        ASMJIT_CHECK(comp.addpd(result, right)); // result += right
+        return {};
     }
     if (m_op == "-")
     {
-        comp.subpd(result, right); // result -= right
-        return true;
+        ASMJIT_CHECK(comp.subpd(result, right)); // result -= right
+        return {};
     }
     if (m_op == "*")
     {
         // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
-        asmjit::x86::Xmm xmm0{result};        // xmm0 = [a, b]
-        asmjit::x86::Xmm xmm1{right};         // xmm1 = [c, d]
-        asmjit::x86::Xmm xmm2{comp.newXmm()}; //
-        asmjit::x86::Xmm xmm3{comp.newXmm()}; //
-        comp.movapd(xmm2, xmm0);              // xmm2 = xmm0            [a, b]
-        comp.mulpd(xmm2, xmm1);               // xmm2 *= xmm1           [ac, bd]
-        comp.movapd(xmm3, xmm1);              // xmm3 = xmm1            [c, d]
-        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm3.yx         [d, c]
-        comp.mulpd(xmm3, xmm0);               // xmm3 *= xmm0           [ad, bc]
-        comp.movapd(xmm0, xmm2);              // xmm0 = xmm2            [ac, bd]
-        comp.shufpd(xmm2, xmm2, 1);           // xmm2 = xmm2.yx         [bd, ac]
-        comp.subsd(xmm0, xmm2);               // xmm0.x -= xmm2.x       [ac - bd, bd]
-        comp.movapd(xmm1, xmm3);              // xmm1 = xmm3            [ad, bc]
-        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm3.yx         [bc, ad]
-        comp.addsd(xmm1, xmm3);               // xmm1.x += xmm3.x       [ad + bc, ad]
-        comp.unpcklpd(xmm0, xmm1);            // xmm0 = xmm0.x, xmm1.x  [ac - bd, ad + bc]
-        return true;
+        asmjit::x86::Xmm xmm0{result};            // xmm0 = [a, b]
+        asmjit::x86::Xmm xmm1{right};             // xmm1 = [c, d]
+        asmjit::x86::Xmm xmm2{comp.newXmm()};     //
+        asmjit::x86::Xmm xmm3{comp.newXmm()};     //
+        ASMJIT_CHECK(comp.movapd(xmm2, xmm0));    // xmm2 = xmm0            [a, b]
+        ASMJIT_CHECK(comp.mulpd(xmm2, xmm1));     // xmm2 *= xmm1           [ac, bd]
+        ASMJIT_CHECK(comp.movapd(xmm3, xmm1));    // xmm3 = xmm1            [c, d]
+        ASMJIT_CHECK(comp.shufpd(xmm3, xmm3, 1)); // xmm3 = xmm3.yx         [d, c]
+        ASMJIT_CHECK(comp.mulpd(xmm3, xmm0));     // xmm3 *= xmm0           [ad, bc]
+        ASMJIT_CHECK(comp.movapd(xmm0, xmm2));    // xmm0 = xmm2            [ac, bd]
+        ASMJIT_CHECK(comp.shufpd(xmm2, xmm2, 1)); // xmm2 = xmm2.yx         [bd, ac]
+        ASMJIT_CHECK(comp.subsd(xmm0, xmm2));     // xmm0.x -= xmm2.x       [ac - bd, bd]
+        ASMJIT_CHECK(comp.movapd(xmm1, xmm3));    // xmm1 = xmm3            [ad, bc]
+        ASMJIT_CHECK(comp.shufpd(xmm3, xmm3, 1)); // xmm3 = xmm3.yx         [bc, ad]
+        ASMJIT_CHECK(comp.addsd(xmm1, xmm3));     // xmm1.x += xmm3.x       [ad + bc, ad]
+        ASMJIT_CHECK(comp.unpcklpd(xmm0, xmm1));  // xmm0 = xmm0.x, xmm1.x  [ac - bd, ad + bc]
+        return {};
     }
     if (m_op == "/")
     {
@@ -246,40 +253,40 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         // (1 + 2i) / (3 + 4i) = ((1*3 + 2*4) + (2*3 - 1*4)i) / (3^2 + 4^2)
         //                     = ((3 + 8) + (6 - 4)i) / (9 + 16)
         //                     = (11 + 2i) / 25
-        asmjit::x86::Xmm xmm0{result};        // xmm0 = [u, v]
-        asmjit::x86::Xmm xmm1{right};         // xmm1 = [x, y]
-        asmjit::x86::Xmm xmm2{comp.newXmm()}; //
-        asmjit::x86::Xmm xmm3{comp.newXmm()}; //
-        asmjit::x86::Xmm xmm4{comp.newXmm()}; //
-        comp.movapd(xmm2, xmm1);              // xmm2 = [x, y]
-        comp.mulpd(xmm2, xmm2);               // xmm2 *= xmm1      [x^2, y^2]              squares
-        comp.movapd(xmm3, xmm2);              // xmm3 = xmm2       [x^2, y^2]
-        comp.shufpd(xmm3, xmm3, 1);           // xmm3 = xmm2.yx    [y^2, x^2]              swap lanes
-        comp.addpd(xmm2, xmm3);               // xmm2 += xmm3      [x^2 + y^2, x^2 + y^2]  denominator in both lanes
-        comp.movapd(xmm3, xmm0);              // xmm3 = xmm0       [u, v]
-        comp.mulpd(xmm3, xmm1);               // xmm3 *= xmm1      [ux, vy]              real part products
-        comp.shufpd(xmm0, xmm0, 1);           // xmm0 = xmm0.yx    [v, u]                  swap lanes
-        comp.movapd(xmm4, xmm1);              // xmm4 = xmm1       [x, y]
-        comp.mulpd(xmm4, xmm0);               // xmm4 *= xmm0      [vx, uy]              imaginary part products
-                                              //
-                                              // at this point:
-                                              //   xmm0 = [v, u]
-                                              //   xmm1 = [x, y]
-                                              //   xmm2 = [x^2 + y^2, x^2 + y^2]           real, imaginary denominator
-                                              //   xmm3 = [ux, vy]                         real part products
-                                              //   xmm4 = [vx, uy]                         imaginary part products
-                                              //
-        comp.movapd(xmm0, xmm3);              // xmm0 = xmm3       [ux, vy]
-        comp.shufpd(xmm0, xmm0, 1);           // xmm0 = xmm0.yx    [vy, ux]                swap lanes
-        comp.addsd(xmm0, xmm3);               // xmm0.x += xmm3.x  [ux + vy, vy]           add real parts
-                                //                                           xmm0.x is real part of numerator
-        comp.movapd(xmm1, xmm4);    // xmm1 = xmm4       [vx, uy]
-        comp.shufpd(xmm1, xmm1, 1); // xmm1 = xmm1.yx    [uy, vx]                swap lanes
-        comp.movapd(xmm3, xmm4);    // xmm3 = xmm4       [vx, uy]
-        comp.subsd(xmm4, xmm1);     // xmm4.x -= xmm1.x  [vx - uy, uy]           xmm4.x is imaginary part of numerator
-        comp.unpcklpd(xmm0, xmm4);  // xmm0.y = xmm4.x   [ux + vy, vx - uy]      swizzle lanes
-        comp.divpd(xmm0, xmm2);     // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
-        return true;
+        asmjit::x86::Xmm xmm0{result};            // xmm0 = [u, v]
+        asmjit::x86::Xmm xmm1{right};             // xmm1 = [x, y]
+        asmjit::x86::Xmm xmm2{comp.newXmm()};     //
+        asmjit::x86::Xmm xmm3{comp.newXmm()};     //
+        asmjit::x86::Xmm xmm4{comp.newXmm()};     //
+        ASMJIT_CHECK(comp.movapd(xmm2, xmm1));    // xmm2 = [x, y]
+        ASMJIT_CHECK(comp.mulpd(xmm2, xmm2));     // xmm2 *= xmm1      [x^2, y^2]              squares
+        ASMJIT_CHECK(comp.movapd(xmm3, xmm2));    // xmm3 = xmm2       [x^2, y^2]
+        ASMJIT_CHECK(comp.shufpd(xmm3, xmm3, 1)); // xmm3 = xmm2.yx    [y^2, x^2]              swap lanes
+        ASMJIT_CHECK(comp.addpd(xmm2, xmm3));     // xmm2 += xmm3      [x^2 + y^2, x^2 + y^2]  denominator in both lanes
+        ASMJIT_CHECK(comp.movapd(xmm3, xmm0));    // xmm3 = xmm0       [u, v]
+        ASMJIT_CHECK(comp.mulpd(xmm3, xmm1));     // xmm3 *= xmm1      [ux, vy]         real part products
+        ASMJIT_CHECK(comp.shufpd(xmm0, xmm0, 1)); // xmm0 = xmm0.yx    [v, u]           swap lanes
+        ASMJIT_CHECK(comp.movapd(xmm4, xmm1));    // xmm4 = xmm1       [x, y]
+        ASMJIT_CHECK(comp.mulpd(xmm4, xmm0));     // xmm4 *= xmm0      [vx, uy]         imaginary part products
+                                                  //
+                                                  // at this point:
+                                                  //   xmm0 = [v, u]
+                                                  //   xmm1 = [x, y]
+                                                  //   xmm2 = [x^2 + y^2, x^2 + y^2]        real, imaginary denominator
+                                                  //   xmm3 = [ux, vy]                      real part products
+                                                  //   xmm4 = [vx, uy]                      imaginary part products
+                                                  //
+        ASMJIT_CHECK(comp.movapd(xmm0, xmm3));    // xmm0 = xmm3       [ux, vy]
+        ASMJIT_CHECK(comp.shufpd(xmm0, xmm0, 1)); // xmm0 = xmm0.yx    [vy, ux]         swap lanes
+        ASMJIT_CHECK(comp.addsd(xmm0, xmm3));     // xmm0.x += xmm3.x  [ux + vy, vy]    add real parts
+                                                  //                                    xmm0.x is real part of numerator
+        ASMJIT_CHECK(comp.movapd(xmm1, xmm4));    // xmm1 = xmm4       [vx, uy]
+        ASMJIT_CHECK(comp.shufpd(xmm1, xmm1, 1)); // xmm1 = xmm1.yx    [uy, vx]         swap lanes
+        ASMJIT_CHECK(comp.movapd(xmm3, xmm4));    // xmm3 = xmm4       [vx, uy]
+        ASMJIT_CHECK(comp.subsd(xmm4, xmm1));    // xmm4.x -= xmm1.x  [vx - uy, uy]        xmm4.x is numerator imaginary
+        ASMJIT_CHECK(comp.unpcklpd(xmm0, xmm4)); // xmm0.y = xmm4.x   [ux + vy, vx - uy] swizzle lanes
+        ASMJIT_CHECK(comp.divpd(xmm0, xmm2));    // xmm0 /= xmm2      [ux + vy, vx - uy]/(x^2 + y^2)
+        return {};
     }
     if (m_op == "^")
     {
@@ -291,81 +298,81 @@ bool BinaryOpNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asm
         // Compare left and right, set result to 1.0 on true, else 0.0
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
-        comp.ucomisd(result, right); // xmm0 <=> xmm1
+        ASMJIT_CHECK(comp.ucomisd(result, right)); // xmm0 <=> xmm1
         if (m_op == "<")
         {
-            comp.jb(success); // xmm0 < xmm1?
+            ASMJIT_CHECK(comp.jb(success)); // xmm0 < xmm1?
         }
         else if (m_op == "<=")
         {
-            comp.jbe(success); // xmm0 <= xmm1?
+            ASMJIT_CHECK(comp.jbe(success)); // xmm0 <= xmm1?
         }
         else if (m_op == ">")
         {
-            comp.ja(success); // xmm0 > xmm1?
+            ASMJIT_CHECK(comp.ja(success)); // xmm0 > xmm1?
         }
         else if (m_op == ">=")
         {
-            comp.jae(success); // xmm0 >= xmm1?
+            ASMJIT_CHECK(comp.jae(success)); // xmm0 >= xmm1?
         }
         else if (m_op == "==")
         {
-            comp.je(success); // xmm0 == xmm1?
+            ASMJIT_CHECK(comp.je(success)); // xmm0 == xmm1?
         }
         else if (m_op == "!=")
         {
-            comp.jne(success); // xmm0 != xmm1?
+            ASMJIT_CHECK(comp.jne(success)); // xmm0 != xmm1?
         }
         else
         {
-            return false; // Unsupported operator
+            return asmjit::kErrorInvalidArgument; // Unsupported operator
         }
-        comp.xorpd(result, result); // result = 0.0
-        comp.jmp(end);
-        comp.bind(success);
+        ASMJIT_CHECK(comp.xorpd(result, result)); // result = 0.0
+        ASMJIT_CHECK(comp.jmp(end));
+        ASMJIT_CHECK(comp.bind(success));
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(result, asmjit::x86::ptr(one));
-        comp.bind(end);
-        return true;
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
+        ASMJIT_CHECK(comp.bind(end));
+        return {};
     }
     if (m_op == "&&")
     {
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
         asmjit::x86::Xmm zero{comp.newXmm()};
-        comp.xorpd(zero, zero);     // xmm = 0.0
-        comp.ucomisd(result, zero); // result <=> 0.0?
-        comp.je(end);               // result == 0.0?
-        comp.ucomisd(right, zero);  // right <=> 0.0?
-        comp.jne(success);
-        comp.movsd(result, zero);
-        comp.jmp(end);
-        comp.bind(success);
+        ASMJIT_CHECK(comp.xorpd(zero, zero));     // xmm = 0.0
+        ASMJIT_CHECK(comp.ucomisd(result, zero)); // result <=> 0.0?
+        ASMJIT_CHECK(comp.je(end));               // result == 0.0?
+        ASMJIT_CHECK(comp.ucomisd(right, zero));  // right <=> 0.0?
+        ASMJIT_CHECK(comp.jne(success));
+        ASMJIT_CHECK(comp.movsd(result, zero));
+        ASMJIT_CHECK(comp.jmp(end));
+        ASMJIT_CHECK(comp.bind(success));
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(result, asmjit::x86::ptr(one));
-        comp.bind(end);
-        return true;
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
+        ASMJIT_CHECK(comp.bind(end));
+        return {};
     }
     if (m_op == "||")
     {
         asmjit::Label success = comp.newLabel();
         asmjit::Label end = comp.newLabel();
         asmjit::x86::Xmm zero{comp.newXmm()};
-        comp.xorpd(zero, zero);     // xmm = 0.0
-        comp.ucomisd(result, zero); // result <=> 0.0?
-        comp.jne(end);              // result != 0.0
-        comp.ucomisd(right, zero);  // right <=> 0.0?
-        comp.jne(success);
-        comp.movsd(result, zero);
-        comp.jmp(end);
-        comp.bind(success);
+        ASMJIT_CHECK(comp.xorpd(zero, zero));     // xmm = 0.0
+        ASMJIT_CHECK(comp.ucomisd(result, zero)); // result <=> 0.0?
+        ASMJIT_CHECK(comp.jne(end));              // result != 0.0
+        ASMJIT_CHECK(comp.ucomisd(right, zero));  // right <=> 0.0?
+        ASMJIT_CHECK(comp.jne(success));
+        ASMJIT_CHECK(comp.movsd(result, zero));
+        ASMJIT_CHECK(comp.jmp(end));
+        ASMJIT_CHECK(comp.bind(success));
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(result, asmjit::x86::ptr(one));
-        comp.bind(end);
-        return true;
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
+        ASMJIT_CHECK(comp.bind(end));
+        return {};
     }
 
-    return false;
+    return asmjit::kErrorInvalidArgument;
 }
 
 void BinaryOpNode::visit(Visitor &visitor) const
@@ -373,15 +380,15 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-bool AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError AssignmentNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label label = get_symbol_label(comp, state.data.symbols, m_variable);
-    if (!m_expression->compile(comp, state, result))
+    if (const CompileError err = m_expression->compile(comp, state, result); err)
     {
-        return false;
+        return err;
     }
-    comp.movsd(asmjit::x86::ptr(label), result);
-    return true;
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(label), result));
+    return {};
 }
 
 void AssignmentNode::visit(Visitor &visitor) const
@@ -389,10 +396,16 @@ void AssignmentNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-bool StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError StatementSeqNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
-    return std::all_of(m_statements.begin(), m_statements.end(),
-        [&comp, &state, &result](const Expr &statement) { return statement->compile(comp, state, result); });
+    CompileError err;
+    const auto it = std::find_if(m_statements.begin(), m_statements.end(),
+        [&comp, &state, &result, &err](const Expr &statement)
+        {
+            err = statement->compile(comp, state, result);
+            return err;
+        });
+    return err;
 }
 
 void StatementSeqNode::visit(Visitor &visitor) const
@@ -400,44 +413,47 @@ void StatementSeqNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-bool IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
+CompileError IfStatementNode::compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const
 {
     asmjit::Label else_label = comp.newLabel();
     asmjit::Label end_label = comp.newLabel();
-    m_condition->compile(comp, state, result);
+    if (const CompileError err = m_condition->compile(comp, state, result); err)
+    {
+        return err;
+    }
     asmjit::x86::Xmm zero{comp.newXmm()};
-    comp.xorpd(zero, zero);     // xmm = 0.0
-    comp.ucomisd(result, zero); // result <=> 0.0?
-    comp.jz(else_label);        // if result == 0.0, jump to else block
+    ASMJIT_CHECK(comp.xorpd(zero, zero));     // xmm = 0.0
+    ASMJIT_CHECK(comp.ucomisd(result, zero)); // result <=> 0.0?
+    ASMJIT_CHECK(comp.jz(else_label));        // if result == 0.0, jump to else block
     if (m_then_block)
     {
-        if (!m_then_block->compile(comp, state, result))
+        if (const CompileError err = m_then_block->compile(comp, state, result); err)
         {
-            return false;
+            return err;
         }
     }
     else
     {
         // If no then block, just set result to 1.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        comp.movsd(result, asmjit::x86::ptr(one));
+        ASMJIT_CHECK(comp.movsd(result, asmjit::x86::ptr(one)));
     }
-    comp.jmp(end_label); // Jump over else block
-    comp.bind(else_label);
+    ASMJIT_CHECK(comp.jmp(end_label)); // Jump over else block
+    ASMJIT_CHECK(comp.bind(else_label));
     if (m_else_block)
     {
-        if (!m_else_block->compile(comp, state, result))
+        if (const CompileError err = m_else_block->compile(comp, state, result); err)
         {
-            return false;
+            return err;
         }
     }
     else
     {
         // If no else block, set result to 0.0
-        comp.movsd(result, zero);
+        ASMJIT_CHECK(comp.movsd(result, zero));
     }
-    comp.bind(end_label);
-    return true;
+    ASMJIT_CHECK(comp.bind(end_label));
+    return {};
 }
 
 void IfStatementNode::visit(Visitor &visitor) const

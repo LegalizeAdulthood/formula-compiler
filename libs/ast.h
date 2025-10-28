@@ -12,8 +12,18 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
+
+#define ASMJIT_CHECK(expr_)                       \
+    do                                            \
+    {                                             \
+        if (const asmjit::Error err = expr_; err) \
+        {                                         \
+            return err;                           \
+        }                                         \
+    } while (false)
 
 namespace formula::ast
 {
@@ -44,12 +54,14 @@ struct EmitterState
     DataSection data;
 };
 
+using CompileError = std::optional<asmjit::Error>;
+
 class Node
 {
 public:
     virtual ~Node() = default;
 
-    virtual bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
+    virtual CompileError compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const = 0;
     virtual void visit(Visitor &visitor) const = 0;
 };
 
@@ -64,7 +76,8 @@ public:
     }
     ~NumberNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     double value() const
@@ -85,7 +98,8 @@ public:
     }
     ~IdentifierNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const std::string &name() const
@@ -107,7 +121,8 @@ public:
     }
     ~FunctionCallNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const std::string &name() const
@@ -134,7 +149,8 @@ public:
     }
     ~UnaryOpNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     char op() const
@@ -169,7 +185,8 @@ public:
     }
     ~BinaryOpNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const Node &left() const
@@ -201,7 +218,8 @@ public:
     }
     ~AssignmentNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const std::string &variable() const
@@ -227,7 +245,8 @@ public:
     }
     ~StatementSeqNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const std::vector<Expr> &statements() const
@@ -250,7 +269,8 @@ public:
     }
     ~IfStatementNode() override = default;
 
-    bool compile(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
+    std::optional<asmjit::Error> compile(
+        asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result) const override;
     void visit(Visitor &visitor) const override;
 
     const Node &condition() const

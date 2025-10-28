@@ -204,8 +204,8 @@ public:
     Complex run(Part part) override;
 
 private:
-    bool init_code_holder(asmjit::CodeHolder &code);
-    bool compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
+    ast::CompileError init_code_holder(asmjit::CodeHolder &code);
+    ast::CompileError compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
 
     ast::EmitterState m_state;
     ast::FormulaDefinition m_ast;
@@ -230,76 +230,82 @@ Complex ParsedFormula::interpret(Part part)
     throw std::runtime_error("Invalid part for interpreter");
 }
 
-bool ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
+ast::CompileError ParsedFormula::init_code_holder(asmjit::CodeHolder &code)
 {
-    code.init(m_runtime.environment(), m_runtime.cpuFeatures());
+    ASMJIT_CHECK(code.init(m_runtime.environment(), m_runtime.cpuFeatures()));
     code.setLogger(&m_logger);
     if (asmjit::Error err =
             code.newSection(&m_state.data.data, ".data", SIZE_MAX, asmjit::SectionFlags::kNone, sizeof(double), 0))
     {
         std::cerr << "Failed to create data section: " << asmjit::DebugUtils::errorAsString(err) << '\n';
-        return false;
+        return err;
     }
-    return true;
+    return {};
 }
 
-void update_symbols(
+ast::CompileError update_symbols(
     asmjit::x86::Compiler &comp, ast::SymbolTable &symbols, ast::SymbolBindings &bindings, asmjit::x86::Xmm result)
 {
     asmjit::x86::Gp tmp{comp.newUIntPtr()};
     {
         double *_result{&symbols["_result"].re};
         auto dest = asmjit::x86::ptr(std::uintptr_t(_result));
-        comp.movq(tmp, result);
-        comp.mov(dest, tmp);
+        ASMJIT_CHECK(comp.movq(tmp, result));
+        ASMJIT_CHECK(comp.mov(dest, tmp));
         dest = asmjit::x86::ptr(std::uintptr_t(_result + 1));
-        comp.shufpd(result, result, 1); // result = result.yx
-        comp.movq(tmp,result);
-        comp.mov(dest, tmp);
+        ASMJIT_CHECK(comp.shufpd(result, result, 1)); // result = result.yx
+        ASMJIT_CHECK(comp.movq(tmp, result));
+        ASMJIT_CHECK(comp.mov(dest, tmp));
     }
     for (auto &[name, binding] : bindings)
     {
         auto src = asmjit::x86::ptr(binding.label);
         double *real{&symbols[name].re};
         auto dest = asmjit::x86::ptr(std::uintptr_t(real));
-        comp.mov(tmp, src);
-        comp.mov(dest, tmp);
+        ASMJIT_CHECK(comp.mov(tmp, src));
+        ASMJIT_CHECK(comp.mov(dest, tmp));
         src = asmjit::x86::ptr(binding.label, sizeof(double));
         dest = asmjit::x86::ptr(std::uintptr_t(real + 1));
-        comp.mov(tmp, src);
-        comp.mov(dest, tmp);
+        ASMJIT_CHECK(comp.mov(tmp, src));
+        ASMJIT_CHECK(comp.mov(dest, tmp));
     }
+    return {};
 }
 
-bool ParsedFormula::compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
+ast::CompileError ParsedFormula::compile_part(
+    bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
 {
     if (!node)
     {
-        return true; // Nothing to compile
+        return {}; // Nothing to compile
     }
 
     label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
     asmjit::x86::Xmm result = comp.newXmmSd();
     if (use_visitor)
     {
-        if (!ast::compile(node, comp, m_state, result))
+        if (const ast::CompileError err  = ast::compile(node, comp, m_state, result); err)
         {
-            std::cerr << "Failed to compile AST\n";
-            return false;
+            std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';;
+            return err;
         }
     }
     else
     {
-        if (!node->compile(comp, m_state, result))
+        if (const ast::CompileError err = node->compile(comp, m_state, result);err)
         {
-            std::cerr << "Failed to compile AST\n";
-            return false;
+            std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
+            ;
+            return err;
         }
     }
-    update_symbols(comp, m_state.symbols, m_state.data.symbols, result);
-    comp.ret(result);
-    comp.endFunc();
-    return true;
+    if (const ast::CompileError err = update_symbols(comp, m_state.symbols, m_state.data.symbols, result); err)
+    {
+        return err;
+    }
+    ASMJIT_CHECK(comp.ret(result));
+    ASMJIT_CHECK(comp.endFunc());
+    return {};
 }
 
 template <typename FunctionPtr>
@@ -313,9 +319,9 @@ FunctionPtr function_cast(const asmjit::CodeHolder &code, char *module, const as
     return reinterpret_cast<FunctionPtr>(module + offset);
 }
 
-void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
+ast::CompileError emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
 {
-    comp.section(state.data.data);
+    ASMJIT_CHECK(comp.section(state.data.data));
     for (auto &[name, binding] : state.data.symbols)
     {
         if (binding.bound)
@@ -323,11 +329,11 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
             continue;
         }
         binding.bound = true;
-        comp.bind(binding.label);
+        ASMJIT_CHECK(comp.bind(binding.label));
         if (const auto it = state.symbols.find(name); it != state.symbols.end())
         {
-            comp.embedDouble(it->second.re);
-            comp.embedDouble(it->second.im);
+            ASMJIT_CHECK(comp.embedDouble(it->second.re));
+            ASMJIT_CHECK(comp.embedDouble(it->second.im));
         }
         else
         {
@@ -341,17 +347,19 @@ void emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterState &state)
             continue;
         }
         binding.bound = true;
-        comp.bind(binding.label);
-        comp.embedDouble(value.re);
-        comp.embedDouble(value.im);
+        ASMJIT_CHECK(comp.bind(binding.label));
+        ASMJIT_CHECK(comp.embedDouble(value.re));
+        ASMJIT_CHECK(comp.embedDouble(value.im));
     }
+    return {};
 }
 
 bool ParsedFormula::compile(bool use_visitor)
 {
     asmjit::CodeHolder code;
-    if (!init_code_holder(code))
+    if (const ast::CompileError err =init_code_holder(code); err)
     {
+        std::cerr << "Failed to initialize code holder:\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
         return false;
     }
     asmjit::x86::Compiler comp(&code);
@@ -359,22 +367,33 @@ bool ParsedFormula::compile(bool use_visitor)
     asmjit::Label init_label{};
     asmjit::Label iterate_label{};
     asmjit::Label bailout_label{};
-    const bool result =                                                  //
-        compile_part(use_visitor, comp, m_ast.initialize, init_label)    //
-        && compile_part(use_visitor, comp, m_ast.iterate, iterate_label) //
-        && compile_part(use_visitor, comp, m_ast.bailout, bailout_label);
-    if (!result)
+    const auto do_part = [&, this](const char *name, ast::Expr part, asmjit::Label &label)
     {
-        std::cerr << "Failed to compile parts\n";
+        if (const ast::CompileError err = compile_part(use_visitor, comp, part, label); err)
+        {
+            std::cerr << "Failed to compile part " << name << ":\n"
+                      << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
+            return false;
+        }
+        return true;
+    };
+    if (!do_part("initialize", m_ast.initialize, init_label) //
+        || !do_part("iterate", m_ast.iterate, iterate_label) //
+        || !do_part("bailout", m_ast.bailout, bailout_label))
+    {
         return false;
     }
-    emit_data_section(comp, m_state);
-    comp.finalize();
+    if (const ast::CompileError err = emit_data_section(comp, m_state); err)
+    {
+        std::cerr << "Failed to emit data section:\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
+        return false;
+    }
+    ASMJIT_CHECK(comp.finalize());
 
     char *module{};
     if (const asmjit::Error err = m_runtime.add(&module, &code); err || !module)
     {
-        std::cerr << "Failed to compile formula: " << asmjit::DebugUtils::errorAsString(err) << '\n';
+        std::cerr << "Failed to add formula:\n" << asmjit::DebugUtils::errorAsString(err) << '\n';
         return false;
     }
     m_initialize = function_cast<Function *>(code, module, init_label);

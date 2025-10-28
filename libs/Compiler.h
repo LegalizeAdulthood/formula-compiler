@@ -13,7 +13,7 @@ namespace formula::ast
 
 class Node;
 
-bool compile(
+CompileError compile(
     const std::shared_ptr<Node> &expr, asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result);
 
 } // namespace formula::ast
