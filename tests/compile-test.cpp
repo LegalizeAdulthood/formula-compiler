@@ -17,7 +17,7 @@ TEST(TestCompiledFormulaRun, one)
 {
     const auto formula{formula::parse("1")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -29,7 +29,7 @@ TEST(TestCompiledFormulaRun, two)
 {
     const auto formula{formula::parse("2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -41,7 +41,7 @@ TEST(TestCompiledFormulaRun, identifier)
 {
     const auto formula{formula::parse("e")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -54,7 +54,7 @@ TEST(TestCompiledFormulaRun, identifierComplex)
     const auto formula{formula::parse("z")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
     formula->set_value("z", {2.0, 4.0});
 
     const formula::Complex result{formula->run(formula::ITERATE)};
@@ -70,7 +70,7 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 {
     const auto formula{formula::parse("a")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -82,7 +82,7 @@ TEST(TestCompiledFormulaRun, add)
 {
     const auto formula{formula::parse("1.2+1.2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -96,7 +96,7 @@ TEST(TestCompiledFormulaRun, addComplex)
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -114,7 +114,7 @@ TEST(TestCompiledFormulaRun, subtract)
 {
     const auto formula{formula::parse("1.5-2.2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -128,7 +128,7 @@ TEST(TestCompiledFormulaRun, subtractComplex)
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -146,7 +146,7 @@ TEST(TestCompiledFormulaRun, multiply)
 {
     const auto formula{formula::parse("2.2*3.1")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -161,7 +161,7 @@ TEST(TestCompiledFormulaRun, multiplyComplex)
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {3.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -180,7 +180,7 @@ TEST(TestCompiledFormulaRun, divide)
 {
     const auto formula{formula::parse("13.76/4.3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -194,7 +194,7 @@ TEST(TestCompiledFormulaRun, divideComplex)
     ASSERT_TRUE(formula);
     formula->set_value("w", {1.0, 2.0});
     formula->set_value("z", {3.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -213,7 +213,7 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
 {
     const auto formula{formula::parse("6.02e23/2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -225,7 +225,7 @@ TEST(TestCompiledFormulaRun, unaryNegate)
 {
     const auto formula{formula::parse("--1.6")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -238,7 +238,7 @@ TEST(TestCompiledFormulaRun, unaryNegateComplex)
     const auto formula{formula::parse("-z")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -253,7 +253,7 @@ TEST(TestCompiledFormulaRun, addAddadd)
 {
     const auto formula{formula::parse("1.1+2.2+3.3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -265,7 +265,7 @@ TEST(TestCompiledFormulaRun, mulMulMul)
 {
     const auto formula{formula::parse("2.2*2.2*2.2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -277,7 +277,7 @@ TEST(TestCompiledFormulaRun, addMulAdd)
 {
     const auto formula{formula::parse("1.1+2.2*3.3+4.4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -289,7 +289,7 @@ TEST(TestCompiledFormulaRun, power)
 {
     const auto formula{formula::parse("2^3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -301,7 +301,7 @@ TEST(TestCompiledFormulaRun, chainedPower)
 {
     const auto formula{formula::parse("2^3^2")}; // same as (2^3)^2
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -313,7 +313,7 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
 {
     const auto formula{formula::parse("2*3^2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -325,7 +325,7 @@ TEST(TestCompiledFormulaRun, assignment)
 {
     const auto formula{formula::parse("z=4+2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -340,7 +340,7 @@ TEST(TestCompiledFormulaRun, assignmentParens)
 {
     const auto formula{formula::parse("(z=4)+2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -355,7 +355,7 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
 {
     const auto formula{formula::parse("z1=z2=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -374,7 +374,7 @@ TEST(TestCompiledFormulaRun, modulus)
     const auto formula{formula::parse("|z|")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {-3.0, -2.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -387,7 +387,7 @@ TEST(TestCompiledFormulaRun, conjugate)
     const auto formula{formula::parse("conj(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -400,7 +400,7 @@ TEST(TestCompiledFormulaRun, identity)
     const auto formula{formula::parse("ident(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -412,7 +412,7 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
 {
     const auto formula{formula::parse("4<3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -424,7 +424,7 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
 {
     const auto formula{formula::parse("3<4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -436,7 +436,7 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
 {
     const auto formula{formula::parse("3<z=4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -451,7 +451,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
 {
     const auto formula{formula::parse("3<=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -463,7 +463,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
 {
     const auto formula{formula::parse("3<=4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -475,7 +475,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
 {
     const auto formula{formula::parse("3<=2")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -487,7 +487,7 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
 {
     const auto formula{formula::parse("3>4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -499,7 +499,7 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
 {
     const auto formula{formula::parse("4>3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -511,7 +511,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
 {
     const auto formula{formula::parse("3>=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -523,7 +523,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
 {
     const auto formula{formula::parse("4>=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -535,7 +535,7 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
 {
     const auto formula{formula::parse("3==3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -547,7 +547,7 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
 {
     const auto formula{formula::parse("3==4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -559,7 +559,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
 {
     const auto formula{formula::parse("3!=4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -571,7 +571,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
 {
     const auto formula{formula::parse("3!=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -583,7 +583,7 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
 {
     const auto formula{formula::parse("1&&1")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -595,7 +595,7 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
 {
     const auto formula{formula::parse("1&&0")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -607,7 +607,7 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 {
     const auto formula{formula::parse("0&&z=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -622,7 +622,7 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
 {
     const auto formula{formula::parse("1||0")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -634,7 +634,7 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
 {
     const auto formula{formula::parse("0||0")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -646,7 +646,7 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 {
     const auto formula{formula::parse("1||z=3")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -662,7 +662,7 @@ TEST(TestCompiledFormulaRun, statements)
     const auto formula{formula::parse("3\n"
                                       "4\n")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(true));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -675,7 +675,7 @@ TEST(TestCompiledFormulaRun, assignmentStatements)
     const auto formula{formula::parse("q=3\n"
                                       "z=4\n")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -695,7 +695,7 @@ TEST(TestCompiledFormulaRun, formulaInitialize)
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {100.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::INITIALIZE)};
 
@@ -715,7 +715,7 @@ TEST(TestCompiledFormulaRun, formulaIterate)
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -734,7 +734,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
     const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {2.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::BAILOUT)};
 
@@ -751,7 +751,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::BAILOUT)};
 
@@ -776,7 +776,7 @@ TEST_P(RunFunctionCall, run)
     const FunctionCallParam &param{GetParam()};
     const auto formula{formula::parse(param.expr)};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -791,7 +791,7 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
     const auto formula{formula::parse("if(5)\n"
                                       "endif")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -804,7 +804,7 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
     const auto formula{formula::parse("if(5<4)\n"
                                       "endif")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -819,7 +819,7 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
                                       "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -837,7 +837,7 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {5.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -862,7 +862,7 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
     formula->set_value("y", {0.0, 0.0});
     formula->set_value("z", {0.0, 0.0});
     formula->set_value("q", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -896,7 +896,7 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
     formula->set_value("y", {0.0, 0.0});
     formula->set_value("z", {0.0, 0.0});
     formula->set_value("q", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -922,7 +922,7 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
                                       "elseif(1)\n"
                                       "endif")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -936,7 +936,7 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
                                       "elseif(0)\n"
                                       "endif")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -951,7 +951,7 @@ TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
                                       "else\n"
                                       "endif")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -968,7 +968,7 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
                                       "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -990,7 +990,7 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 
@@ -1014,7 +1014,7 @@ TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
                                       "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
-    ASSERT_TRUE(formula->compile(false));
+    ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
 

@@ -56,7 +56,7 @@ int main(const std::vector<std::string_view> &args)
         formula->set_value(name, value);
     }
 
-    if (compile && !formula->compile(false))
+    if (compile && !formula->compile())
     {
         std::cerr << "Error: Failed to compile formula\n";
         return 1;

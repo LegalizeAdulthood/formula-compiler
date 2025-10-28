@@ -4,10 +4,10 @@
 //
 #include "formula/formula.h"
 
-#include "Compiler.h"
-#include "Interpreter.h"
 #include "ast.h"
+#include "Compiler.h"
 #include "functions.h"
+#include "Interpreter.h"
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
@@ -200,12 +200,12 @@ public:
     }
 
     Complex interpret(Part part) override;
-    bool compile(bool use_visitor) override;
+    bool compile() override;
     Complex run(Part part) override;
 
 private:
     ast::CompileError init_code_holder(asmjit::CodeHolder &code);
-    ast::CompileError compile_part(bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
+    ast::CompileError compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
 
     ast::EmitterState m_state;
     ast::FormulaDefinition m_ast;
@@ -272,27 +272,13 @@ ast::CompileError update_symbols(
     return {};
 }
 
-ast::CompileError ParsedFormula::compile_part(
-    bool use_visitor, asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
+ast::CompileError ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label)
 {
-    if (!node)
-    {
-        return {}; // Nothing to compile
-    }
-
     label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
     asmjit::x86::Xmm result = comp.newXmmSd();
-    if (use_visitor)
+    if (true)
     {
-        if (const ast::CompileError err  = ast::compile(node, comp, m_state, result); err)
-        {
-            std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';;
-            return err;
-        }
-    }
-    else
-    {
-        if (const ast::CompileError err = node->compile(comp, m_state, result);err)
+        if (const ast::CompileError err = ast::compile(node, comp, m_state, result); err)
         {
             std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
             ;
@@ -354,10 +340,10 @@ ast::CompileError emit_data_section(asmjit::x86::Compiler &comp, ast::EmitterSta
     return {};
 }
 
-bool ParsedFormula::compile(bool use_visitor)
+bool ParsedFormula::compile()
 {
     asmjit::CodeHolder code;
-    if (const ast::CompileError err =init_code_holder(code); err)
+    if (const ast::CompileError err = init_code_holder(code); err)
     {
         std::cerr << "Failed to initialize code holder:\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
         return false;
@@ -369,7 +355,12 @@ bool ParsedFormula::compile(bool use_visitor)
     asmjit::Label bailout_label{};
     const auto do_part = [&, this](const char *name, ast::Expr part, asmjit::Label &label)
     {
-        if (const ast::CompileError err = compile_part(use_visitor, comp, part, label); err)
+        if (!part)
+        {
+            return true; // Nothing to compile
+        }
+
+        if (const ast::CompileError err = compile_part(comp, part, label); err)
         {
             std::cerr << "Failed to compile part " << name << ":\n"
                       << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
