@@ -199,6 +199,18 @@ public:
         }
         return {};
     }
+    const std::shared_ptr<ast::Node> &get_initialize() const override
+    {
+        return m_ast.initialize;
+    }
+    const std::shared_ptr<ast::Node> &get_iterate() const override
+    {
+        return m_ast.iterate;
+    }
+    const std::shared_ptr<ast::Node> &get_bailout() const override
+    {
+        return m_ast.bailout;
+    }
 
     Complex interpret(Part part) override;
     bool compile() override;

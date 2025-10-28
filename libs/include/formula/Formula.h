@@ -12,6 +12,11 @@
 namespace formula
 {
 
+namespace ast
+{
+class Node;
+}
+
 enum Part
 {
     INITIALIZE = 0,
@@ -26,7 +31,9 @@ public:
 
     virtual void set_value(std::string_view name, Complex value) = 0;
     virtual Complex get_value(std::string_view name) const = 0;
-
+    virtual const std::shared_ptr<ast::Node> &get_initialize() const = 0;
+    virtual const std::shared_ptr<ast::Node> &get_iterate() const = 0;
+    virtual const std::shared_ptr<ast::Node> &get_bailout() const = 0;
     virtual Complex interpret(Part part) = 0;
     virtual bool compile() = 0;
     virtual Complex run(Part part) = 0;

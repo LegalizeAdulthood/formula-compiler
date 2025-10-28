@@ -17,6 +17,9 @@ TEST(TestCompiledFormulaRun, one)
 {
     const auto formula{formula::parse("1")};
     ASSERT_TRUE(formula);
+    ASSERT_FALSE(formula->get_initialize());
+    ASSERT_TRUE(formula->get_iterate());
+    ASSERT_FALSE(formula->get_bailout());
     ASSERT_TRUE(formula->compile());
 
     const formula::Complex result{formula->run(formula::ITERATE)};
@@ -733,6 +736,9 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 {
     const auto formula{formula::parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_initialize());
+    ASSERT_TRUE(formula->get_iterate());
+    ASSERT_TRUE(formula->get_bailout());
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
