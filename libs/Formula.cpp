@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include <formula/formula.h>
+#include <formula/Formula.h>
 
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
