@@ -6,7 +6,6 @@
 
 #include <formula/Complex.h>
 
-#include <iostream>
 #include <memory>
 #include <string_view>
 
