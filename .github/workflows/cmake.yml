@@ -40,6 +40,8 @@ jobs:
       shell: bash
       run: |
         ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh
+        echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
+        sudo dpkg-reconfigure man-db
         sudo apt install mono-complete
 
     - name: Install Prerequisites macOS
