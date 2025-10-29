@@ -12,6 +12,7 @@ add_library(formula
     functions.h functions.cpp
     include/formula/Interpreter.h Interpreter.cpp
     include/formula/Node.h Node.cpp
+    include/formula/Simplifier.h Simplifier.cpp
     include/formula/Visitor.h
 )
 target_compile_options(formula PRIVATE
