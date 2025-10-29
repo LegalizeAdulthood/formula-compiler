@@ -124,7 +124,7 @@ static CompileError call(asmjit::x86::Compiler &comp, double (*fn)(double), asmj
 
 void Compiler::visit(const FunctionCallNode &node)
 {
-    node.arg().visit(*this);
+    node.arg()->visit(*this);
     if (!success())
     {
         return;
@@ -414,7 +414,7 @@ void Compiler::visit(const BinaryOpNode &node)
 void Compiler::visit(const AssignmentNode &node)
 {
     asmjit::Label label = get_symbol_label(comp, state.data.symbols, node.variable());
-    node.expression().visit(*this);
+    node.expression()->visit(*this);
     if (!success())
     {
         return;
@@ -438,14 +438,14 @@ void Compiler::visit(const IfStatementNode &node)
 {
     asmjit::Label else_label = comp.newLabel();
     asmjit::Label end_label = comp.newLabel();
-    node.condition().visit(*this);
+    node.condition()->visit(*this);
     asmjit::x86::Xmm zero{comp.newXmm()};
     ASMJIT_STORE(comp.xorpd(zero, zero));              // xmm = 0.0
     ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result <=> 0.0?
     ASMJIT_STORE(comp.jz(else_label));                 // if result == 0.0, jump to else block
     if (node.has_then_block())
     {
-        node.then_block().visit(*this);
+        node.then_block()->visit(*this);
         if (!success())
         {
             return;
@@ -461,7 +461,7 @@ void Compiler::visit(const IfStatementNode &node)
     ASMJIT_STORE(comp.bind(else_label));
     if (node.has_else_block())
     {
-        node.else_block().visit(*this);
+        node.else_block()->visit(*this);
         if (!success())
         {
             return;

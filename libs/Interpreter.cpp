@@ -69,7 +69,7 @@ private:
 
 void Interpreter::visit(const AssignmentNode &node)
 {
-    node.expression().visit(*this);
+    node.expression()->visit(*this);
     m_symbols[node.variable()] = result();
 }
 
@@ -160,7 +160,7 @@ void Interpreter::visit(const BinaryOpNode &node)
 
 void Interpreter::visit(const FunctionCallNode &node)
 {
-    node.arg().visit(*this);
+    node.arg()->visit(*this);
     back() = evaluate(node.name(), back());
 }
 
@@ -178,12 +178,12 @@ void Interpreter::visit(const IdentifierNode &node)
 
 void Interpreter::visit(const IfStatementNode &node)
 {
-    node.condition().visit(*this);
+    node.condition()->visit(*this);
     if (result() != Complex{0.0, 0.0})
     {
         if (node.has_then_block())
         {
-            node.then_block().visit(*this);
+            node.then_block()->visit(*this);
         }
         else
         {
@@ -194,7 +194,7 @@ void Interpreter::visit(const IfStatementNode &node)
 
     if (node.has_else_block())
     {
-        node.else_block().visit(*this);
+        node.else_block()->visit(*this);
     }
     else
     {

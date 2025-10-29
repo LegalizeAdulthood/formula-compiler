@@ -82,9 +82,9 @@ public:
     {
         return m_name;
     }
-    const Node &arg() const
+    const Expr &arg() const
     {
-        return *m_arg;
+        return m_arg;
     }
 
 private:
@@ -173,9 +173,9 @@ public:
     {
         return m_variable;
     }
-    const Node &expression() const
+    const Expr &expression() const
     {
-        return *m_expression;
+        return m_expression;
     }
 
 private:
@@ -216,27 +216,27 @@ public:
 
     void visit(Visitor &visitor) const override;
 
-    const Node &condition() const
+    const Expr &condition() const
     {
-        return *m_condition;
+        return m_condition;
     }
     bool has_then_block() const
     {
         return static_cast<bool>(m_then_block);
     }
-    const Node &then_block() const
+    const Expr &then_block() const
     {
         assert(m_then_block);
-        return *m_then_block;
+        return m_then_block;
     }
     bool has_else_block() const
     {
         return static_cast<bool>(m_else_block);
     }
-    const Node &else_block() const
+    const Expr &else_block() const
     {
         assert(m_else_block);
-        return *m_else_block;
+        return m_else_block;
     }
 
 private:
