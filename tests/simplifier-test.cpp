@@ -76,6 +76,8 @@ void NodeFormatter::visit(const StatementSeqNode &node)
 
 void NodeFormatter::visit(const UnaryOpNode &node)
 {
+    m_str << "unary_op:" << node.op() << '\n';
+    node.operand()->visit(*this);
 }
 
 class TestFormulaSimplifier : public Test
@@ -98,6 +100,11 @@ std::shared_ptr<IdentifierNode> identifier(const std::string &name)
 std::shared_ptr<StatementSeqNode> statements(const std::vector<Expr> &statements)
 {
     return std::make_shared<StatementSeqNode>(statements);
+}
+
+std::shared_ptr<UnaryOpNode> unary(char op, const Expr &operand)
+{
+    return std::make_shared<UnaryOpNode>(op, operand);
 }
 
 } // namespace
@@ -129,4 +136,12 @@ TEST_F(TestFormulaSimplifier, collapseMultipleNumberStatements)
               "number:7\n"
               "identifier:q\n",
         str.str());
+}
+
+TEST_F(TestFormulaSimplifier, unaryNumber)
+{
+    const Expr simplified{formula::simplify(unary('-', number(-42.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:42\n", str.str());
 }

@@ -108,9 +108,9 @@ public:
     {
         return m_op;
     }
-    const Node &operand() const
+    const Expr &operand() const
     {
-        return *m_operand;
+        return m_operand;
     }
 
 private:

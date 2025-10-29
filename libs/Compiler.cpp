@@ -167,12 +167,12 @@ void Compiler::visit(const UnaryOpNode &node)
     const char op{node.op()};
     if (op == '+')
     {
-        node.operand().visit(*this);
+        node.operand()->visit(*this);
     }
     else if (op == '-')
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        compile_operand(node.operand(), operand);
+        compile_operand(*node.operand(), operand);
         if (!success())
         {
             return;
@@ -185,7 +185,7 @@ void Compiler::visit(const UnaryOpNode &node)
     else if (op == '|') // modulus operator |x + yi| returns x^2 + y^2
     {
         asmjit::x86::Xmm operand{comp.newXmm()};
-        compile_operand(node.operand(), operand);
+        compile_operand(*node.operand(), operand);
         if (!success())
         {
             return;

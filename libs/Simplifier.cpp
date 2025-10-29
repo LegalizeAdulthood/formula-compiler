@@ -148,6 +148,25 @@ void Simplifier::visit(const StatementSeqNode &node)
 
 void Simplifier::visit(const UnaryOpNode &node)
 {
+    if (auto number = dynamic_cast<NumberNode *>(node.operand().get()))
+    {
+        double value = number->value();
+        switch (node.op())
+        {
+        case '+':
+            // Unary plus, no change
+            m_result.push_back(std::make_shared<NumberNode>(value));
+            return;
+        case '-':
+            // Unary minus
+            m_result.push_back(std::make_shared<NumberNode>(-value));
+            return;
+        default:
+            // Unknown operator, fall through
+            break;
+        }
+    }
+    m_result.push_back(std::make_shared<UnaryOpNode>(node.op(), node.operand()));
 }
 
 } // namespace

@@ -217,7 +217,7 @@ void Interpreter::visit(const StatementSeqNode &node)
 
 void Interpreter::visit(const UnaryOpNode &node)
 {
-    node.operand().visit(*this);
+    node.operand()->visit(*this);
     if (node.op() == '-')
     {
         back().re = -back().re;
