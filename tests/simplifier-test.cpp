@@ -115,6 +115,11 @@ std::shared_ptr<BinaryOpNode> binary(const Expr &left, const char op, const Expr
     return std::make_shared<BinaryOpNode>(left, op, right);
 }
 
+std::shared_ptr<BinaryOpNode> binary(const Expr &left, const std::string &op, const Expr &right)
+{
+    return std::make_shared<BinaryOpNode>(left, op, right);
+}
+
 } // namespace
 
 TEST_F(TestFormulaSimplifier, simplifySingleStatementSequence)
@@ -192,4 +197,20 @@ TEST_F(TestFormulaSimplifier, numberExpression)
 
     simplified->visit(formatter);
     EXPECT_EQ("number:4\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, shortCircuitAnd)
+{
+    const Expr simplified{formula::simplify(binary(number(0.0), "&&", identifier("x")))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:0\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, shortCircuitOr)
+{
+    const Expr simplified{formula::simplify(binary(number(12.0), "||", identifier("x")))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:1\n", str.str());
 }

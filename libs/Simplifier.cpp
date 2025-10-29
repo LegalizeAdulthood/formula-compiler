@@ -95,6 +95,22 @@ void Simplifier::visit(const BinaryOpNode &node)
     node.left()->visit(*this);
     Expr lhs{m_result.back()};
     m_result.pop_back();
+    if (auto left = dynamic_cast<NumberNode *>(lhs.get()))
+    {
+        // short-circuit and
+        if (node.op() == "&&" && left->value() == 0.0)
+        {
+            m_result.push_back(std::make_shared<NumberNode>(0.0));
+            return;
+        }
+        // short-circuit or
+        if (node.op() == "||" && left->value() != 0.0)
+        {
+            m_result.push_back(std::make_shared<NumberNode>(1.0));
+            return;
+        }
+    }
+
     node.right()->visit(*this);
     Expr rhs{m_result.back()};
     m_result.pop_back();
