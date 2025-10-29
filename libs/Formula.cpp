@@ -7,7 +7,7 @@
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
 
-#include "ast.h"
+#include <formula/Node.h>
 #include "functions.h"
 
 #include <asmjit/core.h>

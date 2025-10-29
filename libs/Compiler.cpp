@@ -6,7 +6,7 @@
 
 #include <formula/Visitor.h>
 
-#include "ast.h"
+#include <formula/Node.h>
 #include "functions.h"
 
 #include <cassert>

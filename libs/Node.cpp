@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "ast.h"
+#include <formula/Node.h>
 
 #include <formula/Visitor.h>
 

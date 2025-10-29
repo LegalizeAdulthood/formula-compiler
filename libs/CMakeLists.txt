@@ -6,12 +6,12 @@ find_package(asmjit CONFIG REQUIRED)
 find_package(boost_parser CONFIG REQUIRED)
 
 add_library(formula
-    ast.h ast.cpp
     include/formula/Compiler.h Compiler.cpp
     include/formula/Complex.h
     include/formula/Formula.h Formula.cpp
     functions.h functions.cpp
     include/formula/Interpreter.h Interpreter.cpp
+    include/formula/Node.h Node.cpp
     include/formula/Visitor.h
 )
 target_compile_options(formula PRIVATE
