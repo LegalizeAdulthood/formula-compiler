@@ -138,17 +138,17 @@ public:
 
     void visit(Visitor &visitor) const override;
 
-    const Node &left() const
+    const Expr &left() const
     {
-        return *m_left;
+        return m_left;
     }
     const std::string &op() const
     {
         return m_op;
     }
-    const Node &right() const
+    const Expr &right() const
     {
-        return *m_right;
+        return m_right;
     }
 
 private:

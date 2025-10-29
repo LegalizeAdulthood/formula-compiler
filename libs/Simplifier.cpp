@@ -92,6 +92,42 @@ void Simplifier::visit(const AssignmentNode &node)
 
 void Simplifier::visit(const BinaryOpNode &node)
 {
+    node.left()->visit(*this);
+    Expr lhs{m_result.back()};
+    m_result.pop_back();
+    node.right()->visit(*this);
+    Expr rhs{m_result.back()};
+    m_result.pop_back();
+    if (auto left = dynamic_cast<NumberNode *>(lhs.get()))
+    {
+        if (auto right = dynamic_cast<NumberNode *>(rhs.get()))
+        {
+            double lhs = left->value();
+            double rhs = right->value();
+            const std::string &op{node.op()};
+            if (op == "+")
+            {
+                m_result.push_back(std::make_shared<NumberNode>(lhs + rhs));
+                return;
+            }
+            if (op == "-")
+            {
+                m_result.push_back(std::make_shared<NumberNode>(lhs - rhs));
+                return;
+            }
+            if (op == "*")
+            {
+                m_result.push_back(std::make_shared<NumberNode>(lhs * rhs));
+                return;
+            }
+            if (op == "/")
+            {
+                m_result.push_back(std::make_shared<NumberNode>(lhs / rhs));
+                return;
+            }
+        }
+    }
+    m_result.push_back(std::make_shared<BinaryOpNode>(lhs, node.op(), rhs));
 }
 
 void Simplifier::visit(const FunctionCallNode &node)

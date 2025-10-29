@@ -75,7 +75,7 @@ void Interpreter::visit(const AssignmentNode &node)
 
 void Interpreter::visit(const BinaryOpNode &node)
 {
-    node.left().visit(*this);
+    node.left()->visit(*this);
     const std::string &op{node.op()};
     const auto bool_result = [](bool condition)
     {
@@ -87,7 +87,7 @@ void Interpreter::visit(const BinaryOpNode &node)
         {
             return;
         }
-        node.right().visit(*this);
+        node.right()->visit(*this);
         back() = bool_result(result() != Complex{0.0, 0.0});
         return;
     }
@@ -99,13 +99,13 @@ void Interpreter::visit(const BinaryOpNode &node)
             return;
         }
         back() = {};
-        node.right().visit(*this);
+        node.right()->visit(*this);
         back() = bool_result(result() != Complex{0.0, 0.0});
         return;
     }
 
     m_result.push_back(Complex{});
-    node.right().visit(*this);
+    node.right()->visit(*this);
     const Complex right{pop()};
     const Complex &left{back()};
     if (op == "+")

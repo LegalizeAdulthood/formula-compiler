@@ -217,7 +217,7 @@ static CompileError call(
 
 void Compiler::visit(const BinaryOpNode &node)
 {
-    node.left().visit(*this);
+    node.left()->visit(*this);
     asmjit::Label skip_right = comp.newLabel();
     asmjit::x86::Xmm right{comp.newXmm()};
     const std::string &op{node.op()};
@@ -247,7 +247,7 @@ void Compiler::visit(const BinaryOpNode &node)
         comp.bind(eval_right);
         comp.movsd(m_result.back(), zero);
     }
-    compile_operand(node.right(), right);
+    compile_operand(*node.right(), right);
     comp.bind(skip_right);
     if (op == "+")
     {

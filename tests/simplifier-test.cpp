@@ -46,6 +46,9 @@ void NodeFormatter::visit(const AssignmentNode &node)
 
 void NodeFormatter::visit(const BinaryOpNode &node)
 {
+    m_str << "binary_op:" << node.op() << '\n';
+    node.left()->visit(*this);
+    node.right()->visit(*this);
 }
 
 void NodeFormatter::visit(const FunctionCallNode &node)
@@ -107,6 +110,11 @@ std::shared_ptr<UnaryOpNode> unary(char op, const Expr &operand)
     return std::make_shared<UnaryOpNode>(op, operand);
 }
 
+std::shared_ptr<BinaryOpNode> binary(const Expr &left, const char op, const Expr &right)
+{
+    return std::make_shared<BinaryOpNode>(left, op, right);
+}
+
 } // namespace
 
 TEST_F(TestFormulaSimplifier, simplifySingleStatementSequence)
@@ -144,4 +152,44 @@ TEST_F(TestFormulaSimplifier, unaryNumber)
 
     simplified->visit(formatter);
     EXPECT_EQ("number:42\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, addTwoNumbers)
+{
+    const Expr simplified{formula::simplify(binary(number(7.0), '+', number(12.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:19\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, subtractTwoNumbers)
+{
+    const Expr simplified{formula::simplify(binary(number(12.0), '-', number(7.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:5\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, multiplyTwoNumbers)
+{
+    const Expr simplified{formula::simplify(binary(number(12.0), '*', number(2.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:24\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, divideTwoNumbers)
+{
+    const Expr simplified{formula::simplify(binary(number(12.0), '/', number(2.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:6\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, numberExpression)
+{
+    const Expr simplified{formula::simplify(binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:4\n", str.str());
 }
