@@ -214,3 +214,19 @@ TEST_F(TestFormulaSimplifier, shortCircuitOr)
     simplified->visit(formatter);
     EXPECT_EQ("number:1\n", str.str());
 }
+
+TEST_F(TestFormulaSimplifier, logicalAnd)
+{
+    const Expr simplified{formula::simplify(binary(number(3.0), "&&", number(4.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:1\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, logicalOr)
+{
+    const Expr simplified{formula::simplify(binary(number(0.0), "||", number(3.0)))};
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:1\n", str.str());
+}
