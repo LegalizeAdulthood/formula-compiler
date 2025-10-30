@@ -94,7 +94,7 @@ private:
 
 void Simplifier::visit(const AssignmentNode &node)
 {
-    throw std::runtime_error("AssignmentNode not implemented");
+    m_result.push_back(std::make_shared<AssignmentNode>(node.variable(), node.expression()));
 }
 
 void Simplifier::visit(const BinaryOpNode &node)
