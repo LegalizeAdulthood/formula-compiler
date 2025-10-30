@@ -5,6 +5,7 @@
 #include <formula/Simplifier.h>
 
 #include "node-builders.h"
+#include "NodeFormatter.h"
 
 #include <formula/Node.h>
 #include <formula/Visitor.h>
@@ -19,75 +20,6 @@ using namespace testing;
 
 namespace formula::test
 {
-
-class NodeFormatter : public Visitor
-{
-public:
-    NodeFormatter(std::ostream &str) :
-        m_str(str)
-    {
-    }
-    NodeFormatter(const NodeFormatter &rhs) = delete;
-    NodeFormatter(NodeFormatter &&rhs) = delete;
-    ~NodeFormatter() override = default;
-    NodeFormatter &operator=(const NodeFormatter &rhs) = delete;
-    NodeFormatter &operator=(NodeFormatter &&rhs) = delete;
-
-    void visit(const AssignmentNode &node) override;
-    void visit(const BinaryOpNode &node) override;
-    void visit(const FunctionCallNode &node) override;
-    void visit(const IdentifierNode &node) override;
-    void visit(const IfStatementNode &node) override;
-    void visit(const NumberNode &node) override;
-    void visit(const StatementSeqNode &node) override;
-    void visit(const UnaryOpNode &node) override;
-
-private:
-    std::ostream &m_str;
-};
-
-void NodeFormatter::visit(const AssignmentNode &node)
-{
-}
-
-void NodeFormatter::visit(const BinaryOpNode &node)
-{
-    m_str << "binary_op:" << node.op() << '\n';
-    node.left()->visit(*this);
-    node.right()->visit(*this);
-}
-
-void NodeFormatter::visit(const FunctionCallNode &node)
-{
-}
-
-void NodeFormatter::visit(const IdentifierNode &node)
-{
-    m_str << "identifier:" << node.name() << '\n';
-}
-
-void NodeFormatter::visit(const IfStatementNode &node)
-{
-}
-
-void NodeFormatter::visit(const NumberNode &node)
-{
-    m_str << "number:" << node.value() << '\n';
-}
-
-void NodeFormatter::visit(const StatementSeqNode &node)
-{
-    for (const Expr &stmt : node.statements())
-    {
-        stmt->visit(*this);
-    }
-}
-
-void NodeFormatter::visit(const UnaryOpNode &node)
-{
-    m_str << "unary_op:" << node.op() << '\n';
-    node.operand()->visit(*this);
-}
 
 class TestFormulaSimplifier : public Test
 {
@@ -109,8 +41,10 @@ TEST_F(TestFormulaSimplifier, multipleStatementSequencePreserved)
     const Expr simplified{simplify(statements({number(42.0), identifier("z")}))};
 
     simplified->visit(formatter);
-    EXPECT_EQ("number:42\n"
-              "identifier:z\n",
+    EXPECT_EQ("statement_seq:2 {\n"
+              "number:42\n"
+              "identifier:z\n"
+              "}\n",
         str.str());
 }
 
@@ -119,9 +53,12 @@ TEST_F(TestFormulaSimplifier, collapseMultipleNumberStatements)
     const Expr simplified{simplify(statements({identifier("z"), number(42.0), number(7.0), identifier("q")}))};
 
     simplified->visit(formatter);
-    EXPECT_EQ("identifier:z\n"
+    EXPECT_EQ("statement_seq:3 {\n"
+              "identifier:z\n"
               "number:7\n"
-              "identifier:q\n",
+              "identifier:q\n"
+              "}\n",
+
         str.str());
 }
 
