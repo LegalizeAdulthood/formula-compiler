@@ -230,7 +230,60 @@ void Simplifier::visit(const IdentifierNode &node)
 
 void Simplifier::visit(const IfStatementNode &node)
 {
-    throw std::runtime_error("IfStatementNode not implemented");
+    node.condition()->visit(*this);
+    Expr condition{m_result.back()};
+    m_result.pop_back();
+
+    // If the condition is a constant number, we can simplify the if statement
+    if (auto number = dynamic_cast<NumberNode *>(condition.get()))
+    {
+        // Non-zero condition: simplify to then block (or 1.0 if no then block)
+        if (number->value() != 0.0)
+        {
+            if (node.has_then_block())
+            {
+                node.then_block()->visit(*this);
+            }
+            else
+            {
+                m_result.push_back(std::make_shared<NumberNode>(1.0));
+            }
+        }
+        // Zero condition: simplify to else block (or 0.0 if no else block)
+        else
+        {
+            if (node.has_else_block())
+            {
+                node.else_block()->visit(*this);
+            }
+            else
+            {
+                m_result.push_back(std::make_shared<NumberNode>(0.0));
+            }
+        }
+        return;
+    }
+
+    // If condition is not a constant, keep the original if statement
+    // but simplify the blocks recursively
+    Expr then_block = nullptr;
+    Expr else_block = nullptr;
+
+    if (node.has_then_block())
+    {
+        node.then_block()->visit(*this);
+        then_block = m_result.back();
+        m_result.pop_back();
+    }
+
+    if (node.has_else_block())
+    {
+        node.else_block()->visit(*this);
+        else_block = m_result.back();
+        m_result.pop_back();
+    }
+
+    m_result.push_back(std::make_shared<IfStatementNode>(condition, then_block, else_block));
 }
 
 void Simplifier::visit(const NumberNode &node)

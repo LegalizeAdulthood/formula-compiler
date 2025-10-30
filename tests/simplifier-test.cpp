@@ -218,13 +218,7 @@ TEST_F(TestFormulaSimplifier, functionCallOnIdentifierNotSimplified)
 
 TEST_F(TestFormulaSimplifier, unknownFunctionNotSimplified)
 {
-    const Expr simplified = simplify(function_call("unknown_func", number(5.0)));
-
-    simplified->visit(formatter);
-    EXPECT_EQ("function_call:unknown_func(\n"
-              "number:5\n"
-              ")\n",
-        str.str());
+    EXPECT_THROW(simplify(function_call("unknown_func", number(5.0))), std::exception);
 }
 
 TEST_F(TestFormulaSimplifier, piConstantSimplified)
@@ -285,6 +279,79 @@ TEST_F(TestFormulaSimplifier, constantsInFunctionCallsSimplified)
     std::ostringstream expected;
     expected << "number:" << expectedValue << "\n";
     EXPECT_EQ(expected.str(), str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionSimplified)
+{
+    const Expr simplified = simplify(if_statement(number(1.0), number(42.0), number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:42\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionSimplified)
+{
+    const Expr simplified = simplify(if_statement(number(0.0), number(42.0), number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:7\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionNoElse)
+{
+    const Expr simplified = simplify(if_statement(number(5.0), number(42.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:42\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionNoElse)
+{
+    const Expr simplified = simplify(if_statement(number(0.0), number(42.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:0\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionNoThen)
+{
+    const Expr simplified = simplify(if_statement(number(3.0), nullptr, number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:1\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionNoThen)
+{
+    const Expr simplified = simplify(if_statement(number(0.0), nullptr, number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:7\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithExpressionConditionSimplified)
+{
+    // If condition evaluates to a number, it should be simplified
+    const Expr simplified = simplify(if_statement(binary(number(2.0), '+', number(3.0)), number(42.0), number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("number:42\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, ifStatementWithVariableConditionNotSimplified)
+{
+    // If condition contains variables, it should not be simplified
+    const Expr simplified = simplify(if_statement(identifier("x"), number(42.0), number(7.0)));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("if_statement:(\n"
+              "identifier:x\n"
+              ") {\n"
+              "number:42\n"
+              "} else {\n"
+              "number:7\n"
+              "} endif\n",
+        str.str());
 }
 
 } // namespace formula::test

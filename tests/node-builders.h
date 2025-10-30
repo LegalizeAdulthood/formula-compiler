@@ -49,4 +49,10 @@ inline std::shared_ptr<BinaryOpNode> binary(const Expr &left, const std::string 
     return std::make_shared<BinaryOpNode>(left, op, right);
 }
 
+inline std::shared_ptr<IfStatementNode> if_statement(
+    const Expr &condition, const Expr &then_block, const Expr &else_block = nullptr)
+{
+    return std::make_shared<IfStatementNode>(condition, then_block, else_block);
+}
+
 } // namespace formula::ast
