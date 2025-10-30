@@ -77,7 +77,7 @@ inline Complex operator/(const Complex &lhs, const Complex &rhs)
 inline Complex &operator/=(Complex &lhs, const Complex &rhs)
 {
     lhs = lhs / rhs;
- return lhs;
+    return lhs;
 }
 
 inline Complex abs(const Complex &value)

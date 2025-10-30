@@ -6,8 +6,8 @@
 
 #include <formula/Visitor.h>
 
-#include <formula/Node.h>
 #include "functions.h"
+#include <formula/Node.h>
 
 #include <map>
 #include <string>
