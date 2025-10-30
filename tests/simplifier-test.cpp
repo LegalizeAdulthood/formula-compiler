@@ -4,6 +4,8 @@
 //
 #include <formula/Simplifier.h>
 
+#include "node-builders.h"
+
 #include <formula/Node.h>
 #include <formula/Visitor.h>
 
@@ -15,7 +17,7 @@
 using namespace formula::ast;
 using namespace testing;
 
-namespace
+namespace formula::test
 {
 
 class NodeFormatter : public Visitor
@@ -25,7 +27,11 @@ public:
         m_str(str)
     {
     }
+    NodeFormatter(const NodeFormatter &rhs) = delete;
+    NodeFormatter(NodeFormatter &&rhs) = delete;
     ~NodeFormatter() override = default;
+    NodeFormatter &operator=(const NodeFormatter &rhs) = delete;
+    NodeFormatter &operator=(NodeFormatter &&rhs) = delete;
 
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;
@@ -90,41 +96,9 @@ protected:
     NodeFormatter formatter{str};
 };
 
-std::shared_ptr<NumberNode> number(double value)
-{
-    return std::make_shared<NumberNode>(value);
-}
-
-std::shared_ptr<IdentifierNode> identifier(const std::string &name)
-{
-    return std::make_shared<IdentifierNode>(name);
-}
-
-std::shared_ptr<StatementSeqNode> statements(const std::vector<Expr> &statements)
-{
-    return std::make_shared<StatementSeqNode>(statements);
-}
-
-std::shared_ptr<UnaryOpNode> unary(char op, const Expr &operand)
-{
-    return std::make_shared<UnaryOpNode>(op, operand);
-}
-
-std::shared_ptr<BinaryOpNode> binary(const Expr &left, const char op, const Expr &right)
-{
-    return std::make_shared<BinaryOpNode>(left, op, right);
-}
-
-std::shared_ptr<BinaryOpNode> binary(const Expr &left, const std::string &op, const Expr &right)
-{
-    return std::make_shared<BinaryOpNode>(left, op, right);
-}
-
-} // namespace
-
 TEST_F(TestFormulaSimplifier, simplifySingleStatementSequence)
 {
-    const Expr simplified{formula::simplify(statements({number(42.0)}))};
+    const Expr simplified{simplify(statements({number(42.0)}))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:42\n", str.str());
@@ -132,7 +106,7 @@ TEST_F(TestFormulaSimplifier, simplifySingleStatementSequence)
 
 TEST_F(TestFormulaSimplifier, multipleStatementSequencePreserved)
 {
-    const Expr simplified{formula::simplify(statements({number(42.0), identifier("z")}))};
+    const Expr simplified{simplify(statements({number(42.0), identifier("z")}))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:42\n"
@@ -142,7 +116,7 @@ TEST_F(TestFormulaSimplifier, multipleStatementSequencePreserved)
 
 TEST_F(TestFormulaSimplifier, collapseMultipleNumberStatements)
 {
-    const Expr simplified{formula::simplify(statements({identifier("z"), number(42.0), number(7.0), identifier("q")}))};
+    const Expr simplified{simplify(statements({identifier("z"), number(42.0), number(7.0), identifier("q")}))};
 
     simplified->visit(formatter);
     EXPECT_EQ("identifier:z\n"
@@ -153,7 +127,7 @@ TEST_F(TestFormulaSimplifier, collapseMultipleNumberStatements)
 
 TEST_F(TestFormulaSimplifier, unaryNumber)
 {
-    const Expr simplified{formula::simplify(unary('-', number(-42.0)))};
+    const Expr simplified{simplify(unary('-', number(-42.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:42\n", str.str());
@@ -161,7 +135,7 @@ TEST_F(TestFormulaSimplifier, unaryNumber)
 
 TEST_F(TestFormulaSimplifier, addTwoNumbers)
 {
-    const Expr simplified{formula::simplify(binary(number(7.0), '+', number(12.0)))};
+    const Expr simplified{simplify(binary(number(7.0), '+', number(12.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:19\n", str.str());
@@ -169,7 +143,7 @@ TEST_F(TestFormulaSimplifier, addTwoNumbers)
 
 TEST_F(TestFormulaSimplifier, subtractTwoNumbers)
 {
-    const Expr simplified{formula::simplify(binary(number(12.0), '-', number(7.0)))};
+    const Expr simplified{simplify(binary(number(12.0), '-', number(7.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:5\n", str.str());
@@ -177,7 +151,7 @@ TEST_F(TestFormulaSimplifier, subtractTwoNumbers)
 
 TEST_F(TestFormulaSimplifier, multiplyTwoNumbers)
 {
-    const Expr simplified{formula::simplify(binary(number(12.0), '*', number(2.0)))};
+    const Expr simplified{simplify(binary(number(12.0), '*', number(2.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:24\n", str.str());
@@ -185,7 +159,7 @@ TEST_F(TestFormulaSimplifier, multiplyTwoNumbers)
 
 TEST_F(TestFormulaSimplifier, divideTwoNumbers)
 {
-    const Expr simplified{formula::simplify(binary(number(12.0), '/', number(2.0)))};
+    const Expr simplified{simplify(binary(number(12.0), '/', number(2.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:6\n", str.str());
@@ -193,7 +167,7 @@ TEST_F(TestFormulaSimplifier, divideTwoNumbers)
 
 TEST_F(TestFormulaSimplifier, numberExpression)
 {
-    const Expr simplified{formula::simplify(binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))))};
+    const Expr simplified{simplify(binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:4\n", str.str());
@@ -201,7 +175,7 @@ TEST_F(TestFormulaSimplifier, numberExpression)
 
 TEST_F(TestFormulaSimplifier, shortCircuitAnd)
 {
-    const Expr simplified{formula::simplify(binary(number(0.0), "&&", identifier("x")))};
+    const Expr simplified{simplify(binary(number(0.0), "&&", identifier("x")))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:0\n", str.str());
@@ -209,7 +183,7 @@ TEST_F(TestFormulaSimplifier, shortCircuitAnd)
 
 TEST_F(TestFormulaSimplifier, shortCircuitOr)
 {
-    const Expr simplified{formula::simplify(binary(number(12.0), "||", identifier("x")))};
+    const Expr simplified{simplify(binary(number(12.0), "||", identifier("x")))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:1\n", str.str());
@@ -217,7 +191,7 @@ TEST_F(TestFormulaSimplifier, shortCircuitOr)
 
 TEST_F(TestFormulaSimplifier, logicalAnd)
 {
-    const Expr simplified{formula::simplify(binary(number(3.0), "&&", number(4.0)))};
+    const Expr simplified{simplify(binary(number(3.0), "&&", number(4.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:1\n", str.str());
@@ -225,8 +199,10 @@ TEST_F(TestFormulaSimplifier, logicalAnd)
 
 TEST_F(TestFormulaSimplifier, logicalOr)
 {
-    const Expr simplified{formula::simplify(binary(number(0.0), "||", number(3.0)))};
+    const Expr simplified{simplify(binary(number(0.0), "||", number(3.0)))};
 
     simplified->visit(formatter);
     EXPECT_EQ("number:1\n", str.str());
 }
+
+} // namespace formula::test

@@ -7,6 +7,7 @@ include(GoogleTest)
 find_package(GTest CONFIG REQUIRED)
 
 add_executable("test-formula"
+    "node-builders.h"
     "function-call.h" "function-call.cpp"
     "compile-test.cpp"
     "interpreter-test.cpp"
