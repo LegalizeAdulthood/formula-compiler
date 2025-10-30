@@ -40,6 +40,7 @@ misc_group_sources("Git" FILES
     ".gitignore"
     ".gitmodules")
 misc_group_sources("GitHub" FILES
+    ".github/copilot-instructions.md"
     ".github/workflows/cmake.yml"
     "LICENSE.txt"
     "ReadMe.md")
