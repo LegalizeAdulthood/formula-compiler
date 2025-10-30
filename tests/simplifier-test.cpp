@@ -93,6 +93,29 @@ struct BinaryOpTestParam
     std::string test_name;
 };
 
+static std::string trim_ws(std::string s)
+{
+    for (auto nl = s.find('\n'); nl != std::string::npos; nl = s.find('\n', nl))
+    {
+        s[nl] = ' ';
+    }
+    while (s.back() == '\n' || s.back() == ' ')
+    {
+        s.pop_back();
+    }
+    return s;
+}
+
+// Google Test formatter for BinaryOpTestParam
+void PrintTo(const BinaryOpTestParam &param, std::ostream *os)
+{
+    std::ostringstream expr_str;
+    NodeFormatter formatter{expr_str};
+    param.expression->visit(formatter);
+    *os << "BinaryOpTestParam{test_name: " << param.test_name << ", expression: " << trim_ws(expr_str.str())
+        << ", expected: " << trim_ws(param.expected) << "}";
+}
+
 class TestSimplifyBinaryOp : public TestFormulaSimplifier, public WithParamInterface<BinaryOpTestParam>
 {
 };
@@ -118,6 +141,11 @@ static BinaryOpTestParam s_binary_op_test_params[] = {
     {binary(number(12.0), "||", identifier("x")), "number:1\n", "shortCircuitOr"},
     {binary(number(3.0), "&&", number(4.0)), "number:1\n", "logicalAnd"},
     {binary(number(0.0), "||", number(3.0)), "number:1\n", "logicalOr"},
+    {binary(number(0.0), "<", number(4.0)), "number:1\n", "lessThan"},
+    {binary(number(4.0), ">", number(0.0)), "number:1\n", "greaterThan"},
+    {binary(number(3.0), "==", number(3.0)), "number:1\n", "equalTo"},
+    {binary(number(0.0), "<=", number(4.0)), "number:1\n", "lessThanOrEqual"},
+    {binary(number(4.0), ">=", number(0.0)), "number:1\n", "greaterThanOrEqual"},
 };
 
 INSTANTIATE_TEST_SUITE_P(BinaryOperations, TestSimplifyBinaryOp, ValuesIn(s_binary_op_test_params),

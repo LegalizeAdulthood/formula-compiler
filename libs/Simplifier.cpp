@@ -45,14 +45,16 @@ public:
         return m_type;
     }
 
-    void visit(const AssignmentNode &node) override { m_type = NodeType::ASSIGNMENT;}
-    void visit(const BinaryOpNode &node) override { m_type = NodeType::BINARY_OP;}
-    void visit(const FunctionCallNode &node) override{m_type = NodeType::FUNCTION_CALL;}
-    void visit(const IdentifierNode &node) override{m_type = NodeType::IDENTIFIER;}
-    void visit(const IfStatementNode &node) override{m_type = NodeType::IF_STATEMENT;}
-    void visit(const NumberNode &node) override{m_type = NodeType::NUMBER;}
-    void visit(const StatementSeqNode &node) override{m_type = NodeType::STATEMENT_SEQ;}
-    void visit(const UnaryOpNode &node) override{m_type =NodeType::UNARY_OP;}
+    // clang-format off
+    void visit(const AssignmentNode &node) override     { m_type = NodeType::ASSIGNMENT; }
+    void visit(const BinaryOpNode &node) override       { m_type = NodeType::BINARY_OP; }
+    void visit(const FunctionCallNode &node) override   { m_type = NodeType::FUNCTION_CALL; }
+    void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }
+    void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }
+    void visit(const NumberNode &node) override         { m_type = NodeType::NUMBER; }
+    void visit(const StatementSeqNode &node) override   { m_type = NodeType::STATEMENT_SEQ; }
+    void visit(const UnaryOpNode &node) override        { m_type = NodeType::UNARY_OP; }
+    // clang-format on
 
 private:
     NodeType m_type{};
@@ -157,6 +159,31 @@ void Simplifier::visit(const BinaryOpNode &node)
         if (op == "||")
         {
             m_result.push_back(std::make_shared<NumberNode>(left_value != 0.0 || right_value != 0.0 ? 1.0 : 0.0));
+            return;
+        }
+        if (op == "<")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(left_value < right_value ? 1.0 : 0.0));
+            return;
+        }
+        if (op == ">")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(left_value > right_value ? 1.0 : 0.0));
+            return;
+        }
+        if (op == "==")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(left_value == right_value ? 1.0 : 0.0));
+            return;
+        }
+        if (op == "<=")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(left_value <= right_value ? 1.0 : 0.0));
+            return;
+        }
+        if (op == ">=")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(left_value >= right_value ? 1.0 : 0.0));
             return;
         }
     }
