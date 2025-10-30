@@ -9,6 +9,8 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 using namespace formula::ast;
@@ -89,6 +91,7 @@ private:
 
 void Simplifier::visit(const AssignmentNode &node)
 {
+    throw std::runtime_error("AssignmentNode not implemented");
 }
 
 void Simplifier::visit(const BinaryOpNode &node)
@@ -162,6 +165,7 @@ void Simplifier::visit(const BinaryOpNode &node)
 
 void Simplifier::visit(const FunctionCallNode &node)
 {
+    throw std::runtime_error("FunctionCallNode not implemented");
 }
 
 void Simplifier::visit(const IdentifierNode &node)
@@ -171,6 +175,7 @@ void Simplifier::visit(const IdentifierNode &node)
 
 void Simplifier::visit(const IfStatementNode &node)
 {
+    throw std::runtime_error("IfStatementNode not implemented");
 }
 
 void Simplifier::visit(const NumberNode &node)
@@ -214,23 +219,31 @@ void Simplifier::visit(const StatementSeqNode &node)
 
 void Simplifier::visit(const UnaryOpNode &node)
 {
-    if (auto number = dynamic_cast<NumberNode *>(node.operand().get()))
+    node.operand()->visit(*this);
+    Expr op{m_result.back()};
+    m_result.pop_back();
+    if (auto number = dynamic_cast<NumberNode *>(op.get()))
     {
         double value = number->value();
         switch (node.op())
         {
         case '+':
             // Unary plus, no change
-            m_result.push_back(std::make_shared<NumberNode>(value));
-            return;
+            break;
         case '-':
             // Unary minus
-            m_result.push_back(std::make_shared<NumberNode>(-value));
-            return;
-        default:
-            // Unknown operator, fall through
+            value = -value;
             break;
+        case '|':
+            // Unary modulus
+            value *= value;
+            break;
+        default:
+            // Unknown operator
+            throw std::runtime_error("Unknown unary operator '" + std::string{1, node.op()} + "' in simplifier");
         }
+        m_result.push_back(std::make_shared<NumberNode>(value));
+        return;
     }
     m_result.push_back(std::make_shared<UnaryOpNode>(node.op(), node.operand()));
 }
