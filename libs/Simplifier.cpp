@@ -89,19 +89,25 @@ public:
     }
 
 private:
+    Expr visit_result(Expr node)
+    {
+        node->visit(*this);
+        Expr result{m_result.back()};
+        m_result.pop_back();
+        return result;
+    }
     std::vector<Expr> m_result;
 };
 
 void Simplifier::visit(const AssignmentNode &node)
 {
+    // keep existing
     m_result.push_back(std::make_shared<AssignmentNode>(node.variable(), node.expression()));
 }
 
 void Simplifier::visit(const BinaryOpNode &node)
 {
-    node.left()->visit(*this);
-    Expr lhs{m_result.back()};
-    m_result.pop_back();
+    Expr lhs{visit_result(node.left())};
     auto left = dynamic_cast<NumberNode *>(lhs.get());
     if (left)
     {
@@ -119,9 +125,7 @@ void Simplifier::visit(const BinaryOpNode &node)
         }
     }
 
-    node.right()->visit(*this);
-    Expr rhs{m_result.back()};
-    m_result.pop_back();
+    Expr rhs{visit_result(node.right())};
     if (auto right = dynamic_cast<NumberNode *>(rhs.get()))
     {
         const double left_value = left->value();
@@ -188,15 +192,14 @@ void Simplifier::visit(const BinaryOpNode &node)
             return;
         }
     }
+
+    // keep existing
     m_result.push_back(std::make_shared<BinaryOpNode>(lhs, node.op(), rhs));
 }
 
 void Simplifier::visit(const FunctionCallNode &node)
 {
-    node.arg()->visit(*this);
-    Expr arg{m_result.back()};
-    m_result.pop_back();
-
+    Expr arg{visit_result(node.arg())};
     if (const auto number = dynamic_cast<NumberNode *>(arg.get()))
     {
         const double result_value = evaluate(node.name(), number->value());
@@ -204,7 +207,7 @@ void Simplifier::visit(const FunctionCallNode &node)
         return;
     }
 
-    // If we can't simplify, keep the original function call
+    // keep existing
     m_result.push_back(std::make_shared<FunctionCallNode>(node.name(), arg));
 }
 
@@ -224,15 +227,13 @@ void Simplifier::visit(const IdentifierNode &node)
         return;
     }
 
-    // For other identifiers, keep them as-is
+    // keep existing
     m_result.push_back(std::make_shared<IdentifierNode>(node.name()));
 }
 
 void Simplifier::visit(const IfStatementNode &node)
 {
-    node.condition()->visit(*this);
-    Expr condition{m_result.back()};
-    m_result.pop_back();
+    Expr condition{visit_result(node.condition())};
 
     // If the condition is a constant number, we can simplify the if statement
     if (auto number = dynamic_cast<NumberNode *>(condition.get()))
@@ -271,16 +272,12 @@ void Simplifier::visit(const IfStatementNode &node)
 
     if (node.has_then_block())
     {
-        node.then_block()->visit(*this);
-        then_block = m_result.back();
-        m_result.pop_back();
+        then_block = visit_result(node.then_block());
     }
 
     if (node.has_else_block())
     {
-        node.else_block()->visit(*this);
-        else_block = m_result.back();
-        m_result.pop_back();
+        else_block = visit_result(node.else_block());
     }
 
     m_result.push_back(std::make_shared<IfStatementNode>(condition, then_block, else_block));
@@ -304,9 +301,7 @@ void Simplifier::visit(const StatementSeqNode &node)
     bool was_number{false};
     for (Expr stmt : node.statements())
     {
-        stmt->visit(*this);
-        stmt = m_result.back();
-        m_result.pop_back();
+        stmt = visit_result(stmt);
         if (!was_number)
         {
             repl.push_back(stmt);
@@ -327,9 +322,7 @@ void Simplifier::visit(const StatementSeqNode &node)
 
 void Simplifier::visit(const UnaryOpNode &node)
 {
-    node.operand()->visit(*this);
-    Expr op{m_result.back()};
-    m_result.pop_back();
+    Expr op{visit_result(node.operand())};
     if (auto number = dynamic_cast<NumberNode *>(op.get()))
     {
         double value = number->value();
