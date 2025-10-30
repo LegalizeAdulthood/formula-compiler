@@ -70,76 +70,39 @@ TEST_F(TestFormulaSimplifier, unaryNumber)
     EXPECT_EQ("number:42\n", str.str());
 }
 
-TEST_F(TestFormulaSimplifier, addTwoNumbers)
+struct BinaryOpTestParam
 {
-    const Expr simplified{simplify(binary(number(7.0), '+', number(12.0)))};
+    Expr expression;
+    std::string expected;
+    std::string test_name;
+};
+
+class TestSimplifyBinaryOp : public TestFormulaSimplifier, public WithParamInterface<BinaryOpTestParam>
+{
+};
+
+TEST_P(TestSimplifyBinaryOp, simplifyBinaryOperation)
+{
+    const auto &param = GetParam();
+
+    const Expr simplified{simplify(param.expression)};
 
     simplified->visit(formatter);
-    EXPECT_EQ("number:19\n", str.str());
+    EXPECT_EQ(param.expected, str.str());
 }
 
-TEST_F(TestFormulaSimplifier, subtractTwoNumbers)
-{
-    const Expr simplified{simplify(binary(number(12.0), '-', number(7.0)))};
+static BinaryOpTestParam s_binary_op_test_params[] = {
+    {binary(number(7.0), '+', number(12.0)), "number:19\n", "addTwoNumbers"},
+    {binary(number(12.0), '-', number(7.0)), "number:5\n", "subtractTwoNumbers"},
+    {binary(number(12.0), '*', number(2.0)), "number:24\n", "multiplyTwoNumbers"},
+    {binary(number(12.0), '/', number(2.0)), "number:6\n", "divideTwoNumbers"},
+    {binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))), "number:4\n", "numberExpression"},
+    {binary(number(0.0), "&&", identifier("x")), "number:0\n", "shortCircuitAnd"},
+    {binary(number(12.0), "||", identifier("x")), "number:1\n", "shortCircuitOr"},
+    {binary(number(3.0), "&&", number(4.0)), "number:1\n", "logicalAnd"},
+    {binary(number(0.0), "||", number(3.0)), "number:1\n", "logicalOr"}};
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:5\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, multiplyTwoNumbers)
-{
-    const Expr simplified{simplify(binary(number(12.0), '*', number(2.0)))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:24\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, divideTwoNumbers)
-{
-    const Expr simplified{simplify(binary(number(12.0), '/', number(2.0)))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:6\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, numberExpression)
-{
-    const Expr simplified{simplify(binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:4\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, shortCircuitAnd)
-{
-    const Expr simplified{simplify(binary(number(0.0), "&&", identifier("x")))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:0\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, shortCircuitOr)
-{
-    const Expr simplified{simplify(binary(number(12.0), "||", identifier("x")))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:1\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, logicalAnd)
-{
-    const Expr simplified{simplify(binary(number(3.0), "&&", number(4.0)))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:1\n", str.str());
-}
-
-TEST_F(TestFormulaSimplifier, logicalOr)
-{
-    const Expr simplified{simplify(binary(number(0.0), "||", number(3.0)))};
-
-    simplified->visit(formatter);
-    EXPECT_EQ("number:1\n", str.str());
-}
+INSTANTIATE_TEST_SUITE_P(BinaryOperations, TestSimplifyBinaryOp, ValuesIn(s_binary_op_test_params),
+    [](const TestParamInfo<BinaryOpTestParam> &info) { return info.param.test_name; });
 
 } // namespace formula::test
