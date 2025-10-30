@@ -24,6 +24,11 @@ inline std::shared_ptr<IdentifierNode> identifier(const std::string &name)
     return std::make_shared<IdentifierNode>(name);
 }
 
+inline std::shared_ptr<FunctionCallNode> function_call(const std::string &name, const Expr &arg)
+{
+    return std::make_shared<FunctionCallNode>(name, arg);
+}
+
 inline std::shared_ptr<StatementSeqNode> statements(const std::vector<Expr> &statements)
 {
     return std::make_shared<StatementSeqNode>(statements);
@@ -44,4 +49,4 @@ inline std::shared_ptr<BinaryOpNode> binary(const Expr &left, const std::string 
     return std::make_shared<BinaryOpNode>(left, op, right);
 }
 
-} // namespace formula::test
+} // namespace formula::ast

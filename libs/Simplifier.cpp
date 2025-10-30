@@ -4,6 +4,7 @@
 //
 #include <formula/Simplifier.h>
 
+#include "functions.h"
 #include <formula/Visitor.h>
 
 #include <cassert>
@@ -192,7 +193,19 @@ void Simplifier::visit(const BinaryOpNode &node)
 
 void Simplifier::visit(const FunctionCallNode &node)
 {
-    throw std::runtime_error("FunctionCallNode not implemented");
+    node.arg()->visit(*this);
+    Expr arg{m_result.back()};
+    m_result.pop_back();
+
+    if (const auto number = dynamic_cast<NumberNode *>(arg.get()))
+    {
+        const double result_value = evaluate(node.name(), number->value());
+        m_result.push_back(std::make_shared<NumberNode>(result_value));
+        return;
+    }
+
+    // If we can't simplify, keep the original function call
+    m_result.push_back(std::make_shared<FunctionCallNode>(node.name(), arg));
 }
 
 void Simplifier::visit(const IdentifierNode &node)
