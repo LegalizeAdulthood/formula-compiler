@@ -156,39 +156,43 @@ void Simplifier::visit(const BinaryOpNode &node)
             m_result.push_back(std::make_shared<NumberNode>(std::pow(left_value, right_value)));
             return;
         }
+        const auto bool_result{[&](bool expr)
+            {
+                m_result.push_back(std::make_shared<NumberNode>(expr ? 1.0 : 0.0));
+            }};
         if (op == "&&")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value != 0.0 && right_value != 0.0 ? 1.0 : 0.0));
+            bool_result(left_value != 0.0 && right_value != 0.0);
             return;
         }
         if (op == "||")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value != 0.0 || right_value != 0.0 ? 1.0 : 0.0));
+            bool_result(left_value != 0.0 || right_value != 0.0);
             return;
         }
         if (op == "<")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value < right_value ? 1.0 : 0.0));
+            bool_result(left_value < right_value);
             return;
         }
         if (op == ">")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value > right_value ? 1.0 : 0.0));
+            bool_result(left_value > right_value ? 1.0 : 0.0);
             return;
         }
         if (op == "==")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value == right_value ? 1.0 : 0.0));
+            bool_result(left_value == right_value ? 1.0 : 0.0);
             return;
         }
         if (op == "<=")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value <= right_value ? 1.0 : 0.0));
+            bool_result(left_value <= right_value ? 1.0 : 0.0);
             return;
         }
         if (op == ">=")
         {
-            m_result.push_back(std::make_shared<NumberNode>(left_value >= right_value ? 1.0 : 0.0));
+            bool_result(left_value >= right_value ? 1.0 : 0.0);
             return;
         }
     }
