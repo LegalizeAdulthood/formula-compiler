@@ -100,7 +100,9 @@ static BinaryOpTestParam s_binary_op_test_params[] = {
     {binary(number(0.0), "&&", identifier("x")), "number:0\n", "shortCircuitAnd"},
     {binary(number(12.0), "||", identifier("x")), "number:1\n", "shortCircuitOr"},
     {binary(number(3.0), "&&", number(4.0)), "number:1\n", "logicalAnd"},
-    {binary(number(0.0), "||", number(3.0)), "number:1\n", "logicalOr"}};
+    {binary(number(0.0), "||", number(3.0)), "number:1\n", "logicalOr"},
+    {binary(number(2.0), "^", number(2.0)), "number:4\n", "power"},
+};
 
 INSTANTIATE_TEST_SUITE_P(BinaryOperations, TestSimplifyBinaryOp, ValuesIn(s_binary_op_test_params),
     [](const TestParamInfo<BinaryOpTestParam> &info) { return info.param.test_name; });

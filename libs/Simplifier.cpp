@@ -7,6 +7,7 @@
 #include <formula/Visitor.h>
 
 #include <cassert>
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -138,6 +139,11 @@ void Simplifier::visit(const BinaryOpNode &node)
         if (op == "/")
         {
             m_result.push_back(std::make_shared<NumberNode>(left_value / right_value));
+            return;
+        }
+        if (op == "^")
+        {
+            m_result.push_back(std::make_shared<NumberNode>(std::pow(left_value, right_value)));
             return;
         }
         if (op == "&&")
