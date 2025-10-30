@@ -210,6 +210,21 @@ void Simplifier::visit(const FunctionCallNode &node)
 
 void Simplifier::visit(const IdentifierNode &node)
 {
+    const std::string &name = node.name();
+
+    // Simplify mathematical constants
+    if (name == "pi")
+    {
+        m_result.push_back(std::make_shared<NumberNode>(std::atan2(0.0, -1.0)));
+        return;
+    }
+    if (name == "e")
+    {
+        m_result.push_back(std::make_shared<NumberNode>(std::exp(1.0)));
+        return;
+    }
+
+    // For other identifiers, keep them as-is
     m_result.push_back(std::make_shared<IdentifierNode>(node.name()));
 }
 

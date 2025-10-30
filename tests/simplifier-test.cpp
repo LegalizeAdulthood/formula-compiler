@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 
@@ -191,14 +192,10 @@ class TestSimplifyFunctionCall : public TestFormulaSimplifier, public WithParamI
 
 TEST_P(TestSimplifyFunctionCall, simplifyFunctionCallOnNumber)
 {
-    // Arrange
     const auto &param = GetParam();
-    const Expr expression = function_call(param.function_name, number(param.input_value));
 
-    // Act
-    const Expr simplified = simplify(expression);
+    const Expr simplified = simplify(function_call(param.function_name, number(param.input_value)));
 
-    // Assert
     simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << param.expected_result << "\n";
@@ -210,13 +207,8 @@ INSTANTIATE_TEST_SUITE_P(FunctionCalls, TestSimplifyFunctionCall, ValuesIn(s_fun
 
 TEST_F(TestFormulaSimplifier, functionCallOnIdentifierNotSimplified)
 {
-    // Arrange
-    const Expr expression = function_call("sin", identifier("x"));
+    const Expr simplified = simplify(function_call("sin", identifier("x")));
 
-    // Act
-    const Expr simplified = simplify(expression);
-
-    // Assert
     simplified->visit(formatter);
     EXPECT_EQ("function_call:sin(\n"
               "identifier:x\n"
@@ -226,18 +218,73 @@ TEST_F(TestFormulaSimplifier, functionCallOnIdentifierNotSimplified)
 
 TEST_F(TestFormulaSimplifier, unknownFunctionNotSimplified)
 {
-    // Arrange
-    const Expr expression = function_call("unknown_func", number(5.0));
+    const Expr simplified = simplify(function_call("unknown_func", number(5.0)));
 
-    // Act
-    const Expr simplified = simplify(expression);
-
-    // Assert
     simplified->visit(formatter);
     EXPECT_EQ("function_call:unknown_func(\n"
               "number:5\n"
               ")\n",
         str.str());
+}
+
+TEST_F(TestFormulaSimplifier, piConstantSimplified)
+{
+    const Expr simplified = simplify(identifier("pi"));
+
+    simplified->visit(formatter);
+    std::ostringstream expected;
+    expected << "number:" << std::atan2(0.0, -1.0) << "\n"; // ~3.14159
+    EXPECT_EQ(expected.str(), str.str());
+}
+
+TEST_F(TestFormulaSimplifier, eConstantSimplified)
+{
+    const Expr simplified = simplify(identifier("e"));
+
+    simplified->visit(formatter);
+    std::ostringstream expected;
+    expected << "number:" << std::exp(1.0) << "\n"; // ~2.71828
+    EXPECT_EQ(expected.str(), str.str());
+}
+
+TEST_F(TestFormulaSimplifier, otherIdentifierNotSimplified)
+{
+    const Expr simplified = simplify(identifier("someVariable"));
+
+    simplified->visit(formatter);
+    EXPECT_EQ("identifier:someVariable\n", str.str());
+}
+
+TEST_F(TestFormulaSimplifier, piInExpressionSimplified)
+{
+    const Expr simplified = simplify(binary(identifier("pi"), '*', number(2.0)));
+
+    simplified->visit(formatter);
+    std::ostringstream expected;
+    expected << "number:" << (std::atan2(0.0, -1.0) * 2.0) << "\n";
+    EXPECT_EQ(expected.str(), str.str());
+}
+
+TEST_F(TestFormulaSimplifier, eInExpressionSimplified)
+{
+    const Expr simplified = simplify(binary(number(1.0), '+', identifier("e")));
+
+    simplified->visit(formatter);
+    std::ostringstream expected;
+    expected << "number:" << (1.0 + std::exp(1.0)) << "\n";
+    EXPECT_EQ(expected.str(), str.str());
+}
+
+TEST_F(TestFormulaSimplifier, constantsInFunctionCallsSimplified)
+{
+    // Test sin(pi/2) which should equal 1.0
+    const Expr simplified = simplify(function_call("sin", binary(identifier("pi"), '/', number(2.0))));
+
+    simplified->visit(formatter);
+    const double expectedValue = std::sin(std::atan2(0.0, -1.0) / 2.0);
+    std::ostringstream expected;
+    expected << "number:" << expectedValue << "\n";
+    EXPECT_EQ(expected.str(), str.str());
 }
 
 } // namespace formula::test
