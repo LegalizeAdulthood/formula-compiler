@@ -466,3 +466,24 @@ TEST(TestFormulaParse, backslashContinuesStatement)
                                "0)\n"
                                "endif"));
 }
+
+TEST(TestFormulaParse, commaSeparatedStatements)
+{
+    EXPECT_TRUE(formula::parse("3,4"));
+}
+
+TEST(TestFormulaParse, commaSeparatedAssignmentStatements)
+{
+    EXPECT_TRUE(formula::parse("z=3,z=4"));
+}
+
+TEST(TestFormulaParse, mixedNewlineAndCommaSeparators)
+{
+    EXPECT_TRUE(formula::parse("z=3,z=4\n"
+                               "z=5"));
+}
+
+TEST(TestFormulaParse, commaWithSpaces)
+{
+    EXPECT_TRUE(formula::parse("3 , 4"));
+}

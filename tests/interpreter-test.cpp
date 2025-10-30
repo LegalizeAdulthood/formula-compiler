@@ -377,7 +377,7 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
 
     ASSERT_EQ(0.0, formula->interpret(formula::ITERATE).re); // 0 is false, so the second part is not evaluated
 
-    ASSERT_EQ(0.0, formula->get_value("z").re);              // z should not be set
+    ASSERT_EQ(0.0, formula->get_value("z").re); // z should not be set
 }
 
 TEST(TestFormulaInterpreter, logicalOrTrue)
@@ -423,10 +423,29 @@ TEST(TestFormulaInterpreter, statements)
     ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
 }
 
+TEST(TestFormulaInterpreter, commaSeparatedStatements)
+{
+    const auto formula{formula::parse("3,4")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
+}
+
 TEST(TestFormulaInterpreter, assignmentStatements)
 {
     const auto formula{formula::parse("q=3\n"
                                       "z=4\n")};
+    ASSERT_TRUE(formula);
+
+    ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);
+
+    ASSERT_EQ(3.0, formula->get_value("q").re);
+    ASSERT_EQ(4.0, formula->get_value("z").re);
+}
+
+TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatements)
+{
+    const auto formula{formula::parse("q=3,z=4")};
     ASSERT_TRUE(formula);
 
     ASSERT_EQ(4.0, formula->interpret(formula::ITERATE).re);

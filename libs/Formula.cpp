@@ -4,11 +4,11 @@
 //
 #include <formula/Formula.h>
 
+#include "functions.h"
+
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
-
 #include <formula/Node.h>
-#include "functions.h"
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
@@ -113,6 +113,7 @@ const auto user_variable = identifier - reserved_function - reserved_variable - 
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
 const auto skipper = blank | char_(';') >> *(char_ - eol) | char_('\\') >> eol;
+const auto statement_separator = +eol | char_(',');
 
 // Grammar rules
 rule<struct NumberTag, ast::Expr> number = "number";
@@ -132,6 +133,8 @@ rule<struct ElseIfStatementTag, ast::Expr> elseif_statement = "elseif statement"
 rule<struct ElseBlockTag, ast::Expr> else_block = "else block";
 rule<struct StatementTag, ast::Expr> statement = "statement";
 rule<struct StatementSequenceTag, ast::Expr> statement_seq = "statement sequence";
+rule<struct FormulaPartTag, ast::Expr> formula_part = "formula part";
+rule<struct SinglePartFormulaTag, ast::Expr> single_part_formula = "single part formula";
 rule<struct FormulaDefinitionTag, ast::FormulaDefinition> formula = "formula definition";
 
 const auto number_def = double_[make_number];
@@ -164,14 +167,16 @@ const auto if_statement_def =                                                //
         >> else_block                                                        //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
-const auto statement_seq_def = (statement % +eol)[make_statement_seq] >> *eol;
-const auto formula_def = (statement_seq >> lit(':') >> statement_seq >> lit(',') >> statement_seq) //
-    | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr));
+const auto statement_seq_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
+const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
+const auto single_part_formula_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
+const auto formula_def = (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part) //
+    | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr));
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
     else_block, elseif_statement, if_statement, statement, statement_seq,      //
-    formula);
+    formula_part, single_part_formula, formula);
 
 using Function = double();
 
