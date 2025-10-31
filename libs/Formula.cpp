@@ -142,6 +142,13 @@ rule<struct StatementSequenceTag, ast::Expr> statement_seq = "statement sequence
 rule<struct FormulaPartTag, ast::Expr> formula_part = "formula part";
 rule<struct SinglePartFormulaTag, ast::Expr> single_part_formula = "single part formula";
 rule<struct FormulaDefinitionTag, ast::FormulaDefinition> formula = "formula definition";
+rule<struct GlobalSectionTag, ast::Expr> global_section = "global section";
+rule<struct BuiltinSectionTag, ast::Expr> builtin_section = "builtin section";
+rule<struct InitSectionTag, ast::Expr> init_section = "initialize section";
+rule<struct LoopSectionTag, ast::Expr> loop_section = "loop section";
+rule<struct BailoutSectionTag, ast::Expr> bailout_section = "bailout section";
+rule<struct PerturbInitSectionTag, ast::Expr> perturb_init_section = "perturbinit section";
+rule<struct PerturbLoopSectionTag, ast::Expr> perturb_loop_section = "perturbloop section";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
@@ -174,15 +181,26 @@ const auto if_statement_def =                                                //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
+const auto global_section_def = lit("global:") >> *eol >> statement_seq;
+const auto builtin_section_def = lit("builtin:") >> *eol >> statement_seq;
+const auto init_section_def = lit("init:") >> *eol >> statement_seq;
+const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
+const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
+const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
+const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto single_part_formula_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
-const auto formula_def = (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula] //
-    | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr))[make_formula];
+const auto formula_def =                                                                           //
+    (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]           //
+    | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr))[make_formula]; //
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
     else_block, elseif_statement, if_statement, statement, statement_seq,      //
-    formula_part, single_part_formula, formula);
+    formula_part, single_part_formula, formula,                                //
+    global_section, builtin_section,                                           //
+    init_section, loop_section, bailout_section,                               //
+    perturb_init_section, perturb_loop_section);
 
 using Function = double();
 
