@@ -223,9 +223,9 @@ public:
         return m_ast.bailout;
     }
 
-    Complex interpret(Part part) override;
+    Complex interpret(Section part) override;
     bool compile() override;
-    Complex run(Part part) override;
+    Complex run(Section part) override;
 
 private:
     ast::CompileError init_code_holder(asmjit::CodeHolder &code);
@@ -240,15 +240,15 @@ private:
     asmjit::FileLogger m_logger{stdout};
 };
 
-Complex ParsedFormula::interpret(Part part)
+Complex ParsedFormula::interpret(Section part)
 {
     switch (part)
     {
-    case INITIALIZE:
+    case Section::INITIALIZE:
         return ast::interpret(m_ast.initialize, m_state.symbols);
-    case ITERATE:
+    case Section::ITERATE:
         return ast::interpret(m_ast.iterate, m_state.symbols);
-    case BAILOUT:
+    case Section::BAILOUT:
         return ast::interpret(m_ast.bailout, m_state.symbols);
     }
     throw std::runtime_error("Invalid part for interpreter");
@@ -418,7 +418,7 @@ bool ParsedFormula::compile()
     return true;
 }
 
-Complex ParsedFormula::run(Part part)
+Complex ParsedFormula::run(Section part)
 {
     auto result = [this](Function *fn)
     {
@@ -431,11 +431,11 @@ Complex ParsedFormula::run(Part part)
     };
     switch (part)
     {
-    case INITIALIZE:
+    case Section::INITIALIZE:
         return result(m_initialize);
-    case ITERATE:
+    case Section::ITERATE:
         return result(m_iterate);
-    case BAILOUT:
+    case Section::BAILOUT:
         return result(m_bailout);
     }
     throw std::runtime_error("Invalid part for run");

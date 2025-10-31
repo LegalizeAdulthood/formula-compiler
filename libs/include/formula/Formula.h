@@ -17,12 +17,23 @@ namespace ast
 class Node;
 }
 
-enum Part
+enum class Section
 {
-    INITIALIZE = 0,
-    ITERATE = 1,
-    BAILOUT = 2
+    NONE = 0,
+    PER_IMAGE,
+    BUILTIN,
+    INITIALIZE,
+    ITERATE,
+    BAILOUT,
+    PERTURB_INITIALIZE,
+    PERTURB_ITERATE,
+    NUM_SECTIONS
 };
+
+inline int operator+(Section value)
+{
+    return static_cast<int>(value);
+}
 
 class Formula
 {
@@ -34,9 +45,9 @@ public:
     virtual const std::shared_ptr<ast::Node> &get_initialize() const = 0;
     virtual const std::shared_ptr<ast::Node> &get_iterate() const = 0;
     virtual const std::shared_ptr<ast::Node> &get_bailout() const = 0;
-    virtual Complex interpret(Part part) = 0;
+    virtual Complex interpret(Section part) = 0;
     virtual bool compile() = 0;
-    virtual Complex run(Part part) = 0;
+    virtual Complex run(Section part) = 0;
 };
 
 std::shared_ptr<Formula> parse(std::string_view text);
