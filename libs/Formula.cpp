@@ -90,7 +90,25 @@ const auto make_if_statement = [](auto &ctx)
 const auto make_formula = [](auto &ctx)
 {
     const auto &attr{_attr(ctx)};
-    return ast::FormulaDefinition{nullptr, nullptr, std::get<0>(attr), std::get<1>(attr), std::get<2>(attr)};
+    ast::FormulaDefinition result{};
+    result.initialize = std::get<0>(attr);
+    result.iterate = std::get<1>(attr);
+    result.bailout = std::get<2>(attr);
+    return result;
+};
+
+template <size_t N, typename T>
+ast::Expr attr_or_null(T &ctx)
+{
+    const auto &attr{std::get<N>(_attr(ctx))};
+    return attr ? attr.value() : nullptr;
+}
+
+const auto make_section_formula = [](auto &ctx)
+{
+    return ast::FormulaDefinition{attr_or_null<0>(ctx), attr_or_null<1>(ctx), //
+        attr_or_null<2>(ctx), attr_or_null<3>(ctx), attr_or_null<4>(ctx),     //
+        attr_or_null<5>(ctx), attr_or_null<6>(ctx)};
 };
 
 // Terminal parsers
@@ -192,13 +210,13 @@ const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_s
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto single_part_formula_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
 const auto section_formula_def = //
-    -global_section_def >>       //
+    (-global_section_def >>       //
     -builtin_section_def >>      //
     -init_section_def >>         //
     -loop_section_def >>         //
     -bailout_section_def >>      //
     -perturb_init_section_def >> //
-    -perturb_loop_section_def;
+    -perturb_loop_section_def)[make_section_formula];
 const auto formula_def =                                                                           //
     (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]           //
     | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr))[make_formula]; //
