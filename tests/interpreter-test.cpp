@@ -321,6 +321,7 @@ TEST(TestFormulaInterpreter, compareLessPrecedence)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, compareLessEqualTrueEquality)
@@ -510,6 +511,7 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(0.0, z.re); // z should not be set
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, logicalOrTrue)
@@ -556,6 +558,7 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(0.0, z.re); // z should not be set
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, statements)
@@ -594,7 +597,9 @@ TEST(TestFormulaInterpreter, assignmentStatements)
     const Complex q = formula->get_value("q");
     const Complex z = formula->get_value("z");
     EXPECT_EQ(3.0, q.re);
+    EXPECT_EQ(0.0, q.im);
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatements)
@@ -609,7 +614,9 @@ TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatements)
     const Complex q = formula->get_value("q");
     const Complex z = formula->get_value("z");
     EXPECT_EQ(3.0, q.re);
+    EXPECT_EQ(0.0, q.im);
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, formulaInitialize)
@@ -626,7 +633,9 @@ TEST(TestFormulaInterpreter, formulaInitialize)
     const Complex pixel = formula->get_value("pixel");
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.4, pixel.re);
+    EXPECT_EQ(0.0, pixel.im);
     EXPECT_EQ(4.4, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, formulaIterate)
@@ -643,7 +652,9 @@ TEST(TestFormulaInterpreter, formulaIterate)
     const Complex pixel = formula->get_value("pixel");
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.4, pixel.re);
+    EXPECT_EQ(0.0, pixel.im);
     EXPECT_EQ(8.4, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, formulaBailoutFalse)
@@ -658,6 +669,7 @@ TEST(TestFormulaInterpreter, formulaBailoutFalse)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(2.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, formulaBailoutTrue)
@@ -673,6 +685,7 @@ TEST(TestFormulaInterpreter, formulaBailoutTrue)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(8.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 namespace
@@ -736,6 +749,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyTrue)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(3.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, ifStatementBodyFalse)
@@ -752,6 +766,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyFalse)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(5.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
@@ -778,9 +793,13 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
     const Complex z = formula->get_value("z");
     const Complex q = formula->get_value("q");
     EXPECT_EQ(0.0, x.re);
+    EXPECT_EQ(0.0, x.im);
     EXPECT_EQ(0.0, y.re);
+    EXPECT_EQ(0.0, y.im);
     EXPECT_EQ(3.0, z.re);
+    EXPECT_EQ(0.0, z.im);
     EXPECT_EQ(4.0, q.re);
+    EXPECT_EQ(0.0, q.im);
 }
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
@@ -807,9 +826,13 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
     const Complex z = formula->get_value("z");
     const Complex q = formula->get_value("q");
     EXPECT_EQ(1.0, x.re);
+    EXPECT_EQ(0.0, x.im);
     EXPECT_EQ(2.0, y.re);
+    EXPECT_EQ(0.0, y.im);
     EXPECT_EQ(0.0, z.re);
+    EXPECT_EQ(0.0, z.im);
     EXPECT_EQ(0.0, q.re);
+    EXPECT_EQ(0.0, q.im);
 }
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
@@ -869,6 +892,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
@@ -889,6 +913,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
@@ -911,6 +936,7 @@ TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
     EXPECT_EQ(0.0, result.im);
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.0, z.re);
+    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, flip)
