@@ -149,6 +149,7 @@ rule<struct LoopSectionTag, ast::Expr> loop_section = "loop section";
 rule<struct BailoutSectionTag, ast::Expr> bailout_section = "bailout section";
 rule<struct PerturbInitSectionTag, ast::Expr> perturb_init_section = "perturbinit section";
 rule<struct PerturbLoopSectionTag, ast::Expr> perturb_loop_section = "perturbloop section";
+rule<struct SectionTag, ast::FormulaDefinition> section_formula = "section formula";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
@@ -190,6 +191,14 @@ const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_s
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto single_part_formula_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
+const auto section_formula_def = //
+    -global_section_def >>       //
+    -builtin_section_def >>      //
+    -init_section_def >>         //
+    -loop_section_def >>         //
+    -bailout_section_def >>      //
+    -perturb_init_section_def >> //
+    -perturb_loop_section_def;
 const auto formula_def =                                                                           //
     (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]           //
     | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr))[make_formula]; //
@@ -200,7 +209,7 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     formula_part, single_part_formula, formula,                                //
     global_section, builtin_section,                                           //
     init_section, loop_section, bailout_section,                               //
-    perturb_init_section, perturb_loop_section);
+    perturb_init_section, perturb_loop_section, section_formula);
 
 using Function = double();
 
