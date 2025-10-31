@@ -247,9 +247,13 @@ private:
 
 struct FormulaDefinition
 {
+    Expr per_image;
+    Expr builtin;
     Expr initialize;
     Expr iterate;
     Expr bailout;
+    Expr perturb_initialize;
+    Expr perturb_iterate;
 };
 
 } // namespace formula::ast

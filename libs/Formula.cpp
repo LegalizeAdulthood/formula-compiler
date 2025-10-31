@@ -87,6 +87,12 @@ const auto make_if_statement = [](auto &ctx)
     return std::make_shared<ast::IfStatementNode>(std::get<0>(attr), std::get<1>(attr), std::get<2>(attr));
 };
 
+const auto make_formula = [](auto &ctx)
+{
+    const auto &attr{_attr(ctx)};
+    return ast::FormulaDefinition{nullptr, nullptr, std::get<0>(attr), std::get<1>(attr), std::get<2>(attr)};
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -170,8 +176,8 @@ const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto single_part_formula_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
-const auto formula_def = (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part) //
-    | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr));
+const auto formula_def = (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula] //
+    | (attr<ast::Expr>(nullptr) >> single_part_formula >> attr<ast::Expr>(nullptr))[make_formula];
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
