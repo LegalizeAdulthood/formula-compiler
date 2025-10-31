@@ -615,10 +615,10 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 
     const Complex result{formula->run(Section::ITERATE)};
 
-    EXPECT_EQ(0.0, result.re);                         // 0 is false, so the second part is not evaluated
-    EXPECT_EQ(0.0, result.im);                         //
+    EXPECT_EQ(0.0, result.re);                // 0 is false, so the second part is not evaluated
+    EXPECT_EQ(0.0, result.im);                //
     const Complex z{formula->get_value("z")}; //
-    EXPECT_EQ(0.0, z.re);                              // z should not be set
+    EXPECT_EQ(0.0, z.re);                     // z should not be set
     EXPECT_EQ(0.0, z.im);
 }
 
@@ -654,17 +654,17 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 
     const Complex result{formula->run(Section::ITERATE)};
 
-    EXPECT_EQ(1.0, result.re);                         // 1 is true, so the second part is not evaluated
-    EXPECT_EQ(0.0, result.im);                         //
+    EXPECT_EQ(1.0, result.re);                // 1 is true, so the second part is not evaluated
+    EXPECT_EQ(0.0, result.im);                //
     const Complex z{formula->get_value("z")}; //
-    EXPECT_EQ(0.0, z.re);                              // z should not be set
+    EXPECT_EQ(0.0, z.re);                     // z should not be set
     EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, statements)
 {
     const auto formula{parse("3\n"
-                                      "4\n")};
+                             "4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -677,7 +677,7 @@ TEST(TestCompiledFormulaRun, statements)
 TEST(TestCompiledFormulaRun, assignmentStatements)
 {
     const auto formula{parse("q=3\n"
-                                      "z=4\n")};
+                             "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -796,7 +796,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 {
     const auto formula{parse("if(5)\n"
-                                      "endif")};
+                             "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -809,7 +809,7 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
 {
     const auto formula{parse("if(5<4)\n"
-                                      "endif")};
+                             "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -822,8 +822,8 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
 TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 {
     const auto formula{parse("if(5)\n"
-                                      "z=3\n"
-                                      "endif")};
+                             "z=3\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -840,8 +840,8 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
 {
     const auto formula{parse("if(5<4)\n"
-                                      "z=3\n"
-                                      "endif")};
+                             "z=3\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {5.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -858,12 +858,12 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
 {
     const auto formula{parse("if(0)\n"
-                                      "x=1\n"
-                                      "y=2\n"
-                                      "else\n"
-                                      "z=3\n"
-                                      "q=4\n"
-                                      "endif")};
+                             "x=1\n"
+                             "y=2\n"
+                             "else\n"
+                             "z=3\n"
+                             "q=4\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -892,12 +892,12 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
 {
     const auto formula{parse("if(1)\n"
-                                      "x=1\n"
-                                      "y=2\n"
-                                      "else\n"
-                                      "z=3\n"
-                                      "q=4\n"
-                                      "endif")};
+                             "x=1\n"
+                             "y=2\n"
+                             "else\n"
+                             "z=3\n"
+                             "q=4\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -926,8 +926,8 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
 TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
 {
     const auto formula{parse("if(0)\n"
-                                      "elseif(1)\n"
-                                      "endif")};
+                             "elseif(1)\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -940,8 +940,8 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
 TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
 {
     const auto formula{parse("if(0)\n"
-                                      "elseif(0)\n"
-                                      "endif")};
+                             "elseif(0)\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -954,9 +954,9 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
 TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 {
     const auto formula{parse("if(0)\n"
-                                      "elseif(0)\n"
-                                      "else\n"
-                                      "endif")};
+                             "elseif(0)\n"
+                             "else\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -969,10 +969,10 @@ TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
 {
     const auto formula{parse("if(0)\n"
-                                      "z=1\n"
-                                      "elseif(1)\n"
-                                      "z=4\n"
-                                      "endif")};
+                             "z=1\n"
+                             "elseif(1)\n"
+                             "z=4\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -989,12 +989,12 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
 TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
 {
     const auto formula{parse("if(0)\n"
-                                      "z=1\n"
-                                      "elseif(0)\n"
-                                      "z=3\n"
-                                      "else\n"
-                                      "z=4\n"
-                                      "endif")};
+                             "z=1\n"
+                             "elseif(0)\n"
+                             "z=3\n"
+                             "else\n"
+                             "z=4\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -1011,14 +1011,14 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
 TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
 {
     const auto formula{parse("if(0)\n"
-                                      "z=1\n"
-                                      "elseif(0)\n"
-                                      "z=3\n"
-                                      "elseif(1)\n"
-                                      "z=4\n"
-                                      "else\n"
-                                      "z=5\n"
-                                      "endif")};
+                             "z=1\n"
+                             "elseif(0)\n"
+                             "z=3\n"
+                             "elseif(1)\n"
+                             "z=4\n"
+                             "else\n"
+                             "z=5\n"
+                             "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
