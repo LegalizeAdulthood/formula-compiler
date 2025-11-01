@@ -97,6 +97,14 @@ const auto make_formula = [](auto &ctx)
     return result;
 };
 
+const auto make_simple_formula = [](auto &ctx)
+{
+    const auto &attr{_attr(ctx)};
+    ast::FormulaSections result{};
+    result.iterate = attr;
+    return result;
+};
+
 template <size_t N, typename T>
 ast::Expr attr_or_null(T &ctx)
 {
@@ -134,6 +142,11 @@ const auto reserved_function = lexeme[                                     //
         "one"_p | "zero"_p)                                                //
     >> !alnum];                                                            //
 const auto reserved_word = lexeme[("if"_l | "elseif"_l | "else"_l | "endif"_l) >> !alnum];
+const auto section_name = lexeme[("global"_l | "builtin"_l               //
+                                     | "init"_l | "loop"_l | "bailout"_l //
+                                     | "perturbinit"_l | "perturbloop"_l //
+                                     | "default"_l | "switch"_l)         //
+    >> !alnum];
 const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
@@ -222,9 +235,9 @@ const auto section_formula_def =     //
         -perturb_loop_section_def >> //
         -default_section_def >>      //
         -switch_section_def)[make_section_formula];
-const auto formula_def =                                                                     //
-    (formula_part >> lit(':') >> formula_part >> lit(',') >> statement)[make_formula]        //
-    | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr))[make_formula]; //
+const auto formula_def =                                                              //
+    (formula_part >> lit(':') >> formula_part >> lit(',') >> statement)[make_formula] //
+    | statement_seq[make_simple_formula];
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
@@ -519,9 +532,12 @@ FormulaPtr parse(std::string_view text)
     try
     {
         bool debug{};
-        if (auto success = parse(text, formula, skipper, ast, debug ? trace::on : trace::off); success && ast.iterate)
+        if (auto success = parse(text, formula, skipper, ast, debug ? trace::on : trace::off); success)
         {
-            return std::make_shared<ParsedFormula>(ast);
+            if (ast.iterate)
+            {
+                return std::make_shared<ParsedFormula>(ast);
+            }
         }
     }
     catch (const parse_error<std::string_view::const_iterator> &e)
