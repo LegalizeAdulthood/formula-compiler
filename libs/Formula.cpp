@@ -90,7 +90,7 @@ const auto make_if_statement = [](auto &ctx)
 const auto make_formula = [](auto &ctx)
 {
     const auto &attr{_attr(ctx)};
-    ast::FormulaDefinition result{};
+    ast::FormulaSections result{};
     result.initialize = std::get<0>(attr);
     result.iterate = std::get<1>(attr);
     result.bailout = std::get<2>(attr);
@@ -106,9 +106,10 @@ ast::Expr attr_or_null(T &ctx)
 
 const auto make_section_formula = [](auto &ctx)
 {
-    return ast::FormulaDefinition{attr_or_null<0>(ctx), attr_or_null<1>(ctx), //
-        attr_or_null<2>(ctx), attr_or_null<3>(ctx), attr_or_null<4>(ctx),     //
-        attr_or_null<5>(ctx), attr_or_null<6>(ctx)};
+    return ast::FormulaSections{attr_or_null<0>(ctx), attr_or_null<1>(ctx), //
+        attr_or_null<2>(ctx), attr_or_null<3>(ctx), attr_or_null<4>(ctx),   //
+        attr_or_null<5>(ctx), attr_or_null<6>(ctx),                         //
+        attr_or_null<7>(ctx), attr_or_null<8>(ctx)};
 };
 
 // Terminal parsers
@@ -158,7 +159,7 @@ rule<struct ElseBlockTag, ast::Expr> else_block = "else block";
 rule<struct StatementTag, ast::Expr> statement = "statement";
 rule<struct StatementSequenceTag, ast::Expr> statement_seq = "statement sequence";
 rule<struct FormulaPartTag, ast::Expr> formula_part = "formula part";
-rule<struct FormulaDefinitionTag, ast::FormulaDefinition> formula = "formula definition";
+rule<struct FormulaDefinitionTag, ast::FormulaSections> formula = "formula definition";
 rule<struct GlobalSectionTag, ast::Expr> global_section = "global section";
 rule<struct BuiltinSectionTag, ast::Expr> builtin_section = "builtin section";
 rule<struct InitSectionTag, ast::Expr> init_section = "initialize section";
@@ -166,7 +167,9 @@ rule<struct LoopSectionTag, ast::Expr> loop_section = "loop section";
 rule<struct BailoutSectionTag, ast::Expr> bailout_section = "bailout section";
 rule<struct PerturbInitSectionTag, ast::Expr> perturb_init_section = "perturbinit section";
 rule<struct PerturbLoopSectionTag, ast::Expr> perturb_loop_section = "perturbloop section";
-rule<struct SectionTag, ast::FormulaDefinition> section_formula = "section formula";
+rule<struct DefaultSectionTag, ast::Expr> default_section = "default section";
+rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
+rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
@@ -206,17 +209,21 @@ const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
 const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
 const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
+const auto default_section_def = lit("default:") >> *eol >> statement_seq;
+const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
-const auto section_formula_def = //
-    (-global_section_def >>       //
-    -builtin_section_def >>      //
-    -init_section_def >>         //
-    -loop_section_def >>         //
-    -bailout_section_def >>      //
-    -perturb_init_section_def >> //
-    -perturb_loop_section_def)[make_section_formula];
-const auto formula_def =                                                                           //
-    (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]           //
+const auto section_formula_def =     //
+    (-global_section_def >>          //
+        -builtin_section_def >>      //
+        -init_section_def >>         //
+        -loop_section_def >>         //
+        -bailout_section_def >>      //
+        -perturb_init_section_def >> //
+        -perturb_loop_section_def >> //
+        -default_section_def >>      //
+        -switch_section_def)[make_section_formula];
+const auto formula_def =                                                                     //
+    (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]     //
     | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr))[make_formula]; //
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
@@ -225,14 +232,16 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     formula_part, formula,                                                     //
     global_section, builtin_section,                                           //
     init_section, loop_section, bailout_section,                               //
-    perturb_init_section, perturb_loop_section, section_formula);
+    perturb_init_section, perturb_loop_section,                                //
+    default_section, switch_section,                                           //
+    section_formula);
 
 using Function = double();
 
 class ParsedFormula : public Formula
 {
 public:
-    ParsedFormula(ast::FormulaDefinition ast) :
+    ParsedFormula(ast::FormulaSections ast) :
         m_ast(ast)
     {
         m_state.symbols["e"] = {std::exp(1.0), 0.0};
@@ -264,7 +273,7 @@ private:
     ast::CompileError compile_part(asmjit::x86::Compiler &comp, ast::Expr node, asmjit::Label &label);
 
     ast::EmitterState m_state;
-    ast::FormulaDefinition m_ast;
+    ast::FormulaSections m_ast;
     Function *m_initialize{};
     Function *m_iterate{};
     Function *m_bailout{};
@@ -290,6 +299,10 @@ const ast::Expr &ParsedFormula::get_section(Section section) const
         return m_ast.perturb_initialize;
     case Section::PERTURB_ITERATE:
         return m_ast.perturb_iterate;
+    case Section::DEFAULT:
+        return m_ast.defaults;
+    case Section::SWITCH:
+        return m_ast.type_switch;
 
     default:
         throw std::runtime_error("Unknown section " + std::to_string(+section));
@@ -501,7 +514,7 @@ Complex ParsedFormula::run(Section part)
 
 FormulaPtr parse(std::string_view text)
 {
-    ast::FormulaDefinition ast;
+    ast::FormulaSections ast;
 
     try
     {

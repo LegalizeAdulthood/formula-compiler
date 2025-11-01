@@ -21,13 +21,15 @@ using Expr = std::shared_ptr<Node>;
 enum class Section
 {
     NONE = 0,
-    PER_IMAGE,
-    BUILTIN,
-    INITIALIZE,
-    ITERATE,
-    BAILOUT,
-    PERTURB_INITIALIZE,
-    PERTURB_ITERATE,
+    PER_IMAGE,          // global:
+    BUILTIN,            // builtin:
+    INITIALIZE,         // init:
+    ITERATE,            // loop:
+    BAILOUT,            // bailout:
+    PERTURB_INITIALIZE, // perturbinit:
+    PERTURB_ITERATE,    // perturbloop:
+    DEFAULT,            // default:
+    SWITCH,             // switch:
     NUM_SECTIONS
 };
 

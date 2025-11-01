@@ -245,7 +245,7 @@ private:
     Expr m_else_block;
 };
 
-struct FormulaDefinition
+struct FormulaSections
 {
     Expr per_image;
     Expr builtin;
@@ -254,6 +254,8 @@ struct FormulaDefinition
     Expr bailout;
     Expr perturb_initialize;
     Expr perturb_iterate;
+    Expr defaults;
+    Expr type_switch;
 };
 
 } // namespace formula::ast
