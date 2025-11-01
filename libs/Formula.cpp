@@ -223,7 +223,7 @@ const auto section_formula_def =     //
         -default_section_def >>      //
         -switch_section_def)[make_section_formula];
 const auto formula_def =                                                                     //
-    (formula_part >> lit(':') >> formula_part >> lit(',') >> formula_part)[make_formula]     //
+    (formula_part >> lit(':') >> formula_part >> lit(',') >> statement)[make_formula]        //
     | (attr<ast::Expr>(nullptr) >> statement_seq >> attr<ast::Expr>(nullptr))[make_formula]; //
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
