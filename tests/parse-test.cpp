@@ -337,7 +337,19 @@ TEST(TestFormulaParse, initializeIterateBailout)
     const FormulaPtr result{parse("z=pixel:z=z*z+pixel,|z|>4")};
 
     ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
     EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
+
+TEST(TestFormulaParse, statementSequenceInitialize)
+{
+    const FormulaPtr result{parse("z=pixel,d=0:z=z*z+pixel,|z|>4")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
 
 static std::vector<std::string> s_read_only_vars{
