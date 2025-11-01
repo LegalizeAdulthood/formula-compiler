@@ -255,18 +255,7 @@ public:
         }
         return {};
     }
-    const std::shared_ptr<ast::Node> &get_initialize() const override
-    {
-        return m_ast.initialize;
-    }
-    const std::shared_ptr<ast::Node> &get_iterate() const override
-    {
-        return m_ast.iterate;
-    }
-    const std::shared_ptr<ast::Node> &get_bailout() const override
-    {
-        return m_ast.bailout;
-    }
+    const ast::Expr &get_section(Section section) const override;
 
     Complex interpret(Section part) override;
     bool compile() override;
@@ -284,6 +273,30 @@ private:
     asmjit::JitRuntime m_runtime;
     asmjit::FileLogger m_logger{stdout};
 };
+
+const ast::Expr &ParsedFormula::get_section(Section section) const
+{
+    switch (section)
+    {
+    case Section::PER_IMAGE:
+        return m_ast.per_image;
+    case Section::BUILTIN:
+        return m_ast.builtin;
+    case Section::INITIALIZE:
+        return m_ast.initialize;
+    case Section::ITERATE:
+        return m_ast.iterate;
+    case Section::BAILOUT:
+        return m_ast.bailout;
+    case Section::PERTURB_INITIALIZE:
+        return m_ast.perturb_initialize;
+    case Section::PERTURB_ITERATE:
+        return m_ast.perturb_iterate;
+
+    default:
+        throw std::runtime_error("Unknown section " + std::to_string(+section));
+    }
+}
 
 Complex ParsedFormula::interpret(Section part)
 {

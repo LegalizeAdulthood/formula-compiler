@@ -18,9 +18,9 @@ TEST(TestCompiledFormulaRun, one)
 {
     const FormulaPtr formula{parse("1")};
     ASSERT_TRUE(formula);
-    ASSERT_FALSE(formula->get_initialize());
-    ASSERT_TRUE(formula->get_iterate());
-    ASSERT_FALSE(formula->get_bailout());
+    ASSERT_FALSE(formula->get_section(Section::INITIALIZE));
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_FALSE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::ITERATE)};
@@ -737,9 +737,9 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 {
     const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_initialize());
-    ASSERT_TRUE(formula->get_iterate());
-    ASSERT_TRUE(formula->get_bailout());
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
 
