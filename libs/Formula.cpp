@@ -87,21 +87,41 @@ const auto make_if_statement = [](auto &ctx)
     return std::make_shared<ast::IfStatementNode>(std::get<0>(attr), std::get<1>(attr), std::get<2>(attr));
 };
 
-const auto make_formula = [](auto &ctx)
+void split_iterate_bailout(ast::FormulaSections &result, const ast::Expr &expr)
+{
+    if (const auto *seq = dynamic_cast<ast::StatementSeqNode*>(expr.get()); seq)
+    {
+        if (seq->statements().size() > 1)
+        {
+            std::vector<ast::Expr> statements = seq->statements();
+            result.bailout = statements.back();
+            statements.pop_back();
+            result.iterate = std::make_shared<ast::StatementSeqNode>(statements);
+        }
+        else
+        {
+            result.bailout = expr;
+        }
+    }
+    else
+    {
+        result.bailout = expr;
+    }
+}
+
+const auto make_init_formula = [](auto &ctx)
 {
     const auto &attr{_attr(ctx)};
     ast::FormulaSections result{};
     result.initialize = std::get<0>(attr);
-    result.iterate = std::get<1>(attr);
-    result.bailout = std::get<2>(attr);
+    split_iterate_bailout(result, std::get<1>(attr));
     return result;
 };
 
 const auto make_simple_formula = [](auto &ctx)
 {
-    const auto &attr{_attr(ctx)};
     ast::FormulaSections result{};
-    result.iterate = attr;
+    split_iterate_bailout(result, _attr(ctx));
     return result;
 };
 
@@ -236,7 +256,7 @@ const auto section_formula_def =     //
         -default_section_def >>      //
         -switch_section_def)[make_section_formula];
 const auto formula_def =                                                               //
-    (statement_seq >> lit(':') >> formula_part >> lit(',') >> statement)[make_formula] //
+    (statement_seq >> lit(':') >> statement_seq)[make_init_formula] //
     | statement_seq[make_simple_formula];
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
@@ -534,10 +554,7 @@ FormulaPtr parse(std::string_view text)
         bool debug{};
         if (auto success = parse(text, formula, skipper, ast, debug ? trace::on : trace::off); success)
         {
-            if (ast.iterate)
-            {
-                return std::make_shared<ParsedFormula>(ast);
-            }
+            return std::make_shared<ParsedFormula>(ast);
         }
     }
     catch (const parse_error<std::string_view::const_iterator> &e)
