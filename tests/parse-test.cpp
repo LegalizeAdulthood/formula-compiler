@@ -15,209 +15,329 @@ using namespace testing;
 
 TEST(TestFormulaParse, constant)
 {
-    ASSERT_TRUE(parse("1"));
+    const FormulaPtr result{parse("1")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, identifier)
 {
-    ASSERT_TRUE(parse("z2"));
+    const FormulaPtr result{parse("z2")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, parenExpr)
 {
-    ASSERT_TRUE(parse("(z)"));
+    const FormulaPtr result{parse("(z)")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, add)
 {
-    ASSERT_TRUE(parse("1+2"));
+    const FormulaPtr result{parse("1+2")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, subtract)
 {
-    ASSERT_TRUE(parse("1-2"));
+    const FormulaPtr result{parse("1-2")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, multiply)
 {
-    ASSERT_TRUE(parse("1*2"));
+    const FormulaPtr result{parse("1*2")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, divide)
 {
-    ASSERT_TRUE(parse("1/2"));
+    const FormulaPtr result{parse("1/2")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, multiplyAdd)
 {
-    ASSERT_TRUE(parse("1*2+4"));
+    const FormulaPtr result{parse("1*2+4")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, parenthesisExpr)
 {
-    ASSERT_TRUE(parse("1*(2+4)"));
+    const FormulaPtr result{parse("1*(2+4)")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, unaryMinus)
 {
-    ASSERT_TRUE(parse("-(1)"));
+    const FormulaPtr result{parse("-(1)")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, unaryPlus)
 {
-    ASSERT_TRUE(parse("+(1)"));
+    const FormulaPtr result{parse("+(1)")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, unaryMinusNegativeOne)
 {
-    ASSERT_TRUE(parse("--1"));
+    const FormulaPtr result{parse("--1")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, addAddAdd)
 {
-    ASSERT_TRUE(parse("1+1+1"));
+    const FormulaPtr result{parse("1+1+1")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, capitalLetterInIdentifier)
 {
-    ASSERT_TRUE(parse("A"));
+    const FormulaPtr result{parse("A")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, numberInIdentifier)
 {
-    ASSERT_TRUE(parse("a1"));
+    const FormulaPtr result{parse("a1")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, underscoreInIdentifier)
 {
-    ASSERT_TRUE(parse("A_1"));
+    const FormulaPtr result{parse("A_1")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, invalidIdentifier)
 {
-    EXPECT_FALSE(parse("1a"));
-    EXPECT_FALSE(parse("_a"));
+    const FormulaPtr result1{parse("1a")};
+    const FormulaPtr result2{parse("_a")};
+
+    EXPECT_FALSE(result1);
+    EXPECT_FALSE(result2);
 }
 
 TEST(TestFormulaParse, power)
 {
-    EXPECT_TRUE(parse("2^3"));
+    const FormulaPtr result{parse("2^3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, chainedPower)
 {
-    EXPECT_TRUE(parse("2^2^2"));
+    const FormulaPtr result{parse("2^2^2")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, assignment)
 {
-    EXPECT_TRUE(parse("z=4"));
+    const FormulaPtr result{parse("z=4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, assignmentLongVariable)
 {
-    EXPECT_TRUE(parse("this_is_another4_variable_name2=4"));
+    const FormulaPtr result{parse("this_is_another4_variable_name2=4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, modulus)
 {
-    EXPECT_TRUE(parse("|-3.0|"));
+    const FormulaPtr result{parse("|-3.0|")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareLess)
 {
-    EXPECT_TRUE(parse("4<3"));
+    const FormulaPtr result{parse("4<3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareLessPrecedence)
 {
-    EXPECT_TRUE(parse("3<z=4"));
+    const FormulaPtr result{parse("3<z=4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareLessEqual)
 {
-    EXPECT_TRUE(parse("4<=3"));
+    const FormulaPtr result{parse("4<=3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareGreater)
 {
-    EXPECT_TRUE(parse("4>3"));
+    const FormulaPtr result{parse("4>3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareAssociatesLeft)
 {
-    EXPECT_TRUE(parse("4>3<4")); // This is equivalent to (4 > 3) < 4
+    const FormulaPtr result{parse("4>3<4")}; // This is equivalent to (4 > 3) < 4
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareGreaterEqual)
 {
-    EXPECT_TRUE(parse("4>=3"));
+    const FormulaPtr result{parse("4>=3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareEqual)
 {
-    EXPECT_TRUE(parse("4==3"));
+    const FormulaPtr result{parse("4==3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, compareNotEqual)
 {
-    EXPECT_TRUE(parse("4!=3"));
+    const FormulaPtr result{parse("4!=3")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, logicalAnd)
 {
-    EXPECT_TRUE(parse("4==3&&5==6"));
+    const FormulaPtr result{parse("4==3&&5==6")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, logicalOr)
 {
-    EXPECT_TRUE(parse("4==3||5==6"));
+    const FormulaPtr result{parse("4==3||5==6")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ignoreComments)
 {
-    EXPECT_TRUE(parse("3; z=6 oh toodlee doo"));
+    const FormulaPtr result{parse("3; z=6 oh toodlee doo")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ignoreCommentsLF)
 {
-    EXPECT_TRUE(parse("3; z=6 oh toodlee doo\n"));
+    const FormulaPtr result{parse("3; z=6 oh toodlee doo\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ignoreCommentsCRLF)
 {
-    EXPECT_TRUE(parse("3; z=6 oh toodlee doo\r\n"));
+    const FormulaPtr result{parse("3; z=6 oh toodlee doo\r\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, statements)
 {
-    EXPECT_TRUE(parse("3\n"
-                      "4\n"));
+    const FormulaPtr result{parse("3\n"
+                                  "4\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, assignmentStatements)
 {
-    EXPECT_TRUE(parse("z=3\n"
-                      "z=4\n"));
+    const FormulaPtr result{parse("z=3\n"
+                                  "z=4\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, assignmentWithComments)
 {
-    EXPECT_TRUE(parse("z=3; comment\n"
-                      "z=4; another comment\n"));
+    const FormulaPtr result{parse("z=3; comment\n"
+                                  "z=4; another comment\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, assignmentWithBlankLines)
 {
-    EXPECT_TRUE(parse("z=3; comment\n"
-                      "\r\n"
-                      "\n"
-                      "z=4; another comment\n"));
+    const FormulaPtr result{parse("z=3; comment\n"
+                                  "\r\n"
+                                  "\n"
+                                  "z=4; another comment\n")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, initializeIterateBailout)
 {
-    EXPECT_TRUE(parse("z=pixel:z=z*z+pixel,|z|>4"));
+    const FormulaPtr result{parse("z=pixel:z=z*z+pixel,|z|>4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 static std::vector<std::string> s_read_only_vars{
@@ -233,7 +353,9 @@ class ReadOnlyVariables : public TestWithParam<std::string>
 
 TEST_P(ReadOnlyVariables, notAssignable)
 {
-    ASSERT_FALSE(parse(GetParam() + "=1"));
+    const FormulaPtr result{parse(GetParam() + "=1")};
+
+    ASSERT_FALSE(result);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReadOnlyVariables, ValuesIn(s_read_only_vars));
@@ -255,12 +377,17 @@ class Functions : public TestWithParam<std::string>
 
 TEST_P(Functions, notAssignable)
 {
-    ASSERT_FALSE(parse(GetParam() + "=1"));
+    const FormulaPtr result{parse(GetParam() + "=1")};
+
+    ASSERT_FALSE(result);
 }
 
 TEST_P(Functions, functionOne)
 {
-    ASSERT_TRUE(parse(GetParam() + "(1)"));
+    const FormulaPtr result{parse(GetParam() + "(1)")};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
@@ -271,8 +398,12 @@ class ReservedWords : public TestWithParam<std::string>
 
 TEST_P(ReservedWords, notAssignable)
 {
-    ASSERT_FALSE(parse(GetParam() + "=1"));
-    ASSERT_TRUE(parse(GetParam() + "2=1"));
+    const FormulaPtr result1{parse(GetParam() + "=1")};
+    const FormulaPtr result2{parse(GetParam() + "2=1")};
+
+    ASSERT_FALSE(result1);
+    ASSERT_TRUE(result2);
+    ASSERT_TRUE(result2->get_iterate());
 }
 
 static std::string s_reserved_words[]{
@@ -286,205 +417,288 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_wo
 
 TEST(TestFormulaParse, reservedVariablePrefixToUserVariable)
 {
-    EXPECT_TRUE(parse("e2=1"));
+    const FormulaPtr result{parse("e2=1")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, reservedFunctionPrefixToUserVariable)
 {
-    EXPECT_TRUE(parse("sine=1"));
+    const FormulaPtr result{parse("sine=1")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, reservedKeywordPrefixToUserVariable)
 {
-    EXPECT_TRUE(parse("if1=1"));
+    const FormulaPtr result{parse("if1=1")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifWithoutEndIf)
 {
-    EXPECT_FALSE(parse("if(1)"));
+    const FormulaPtr result{parse("if(1)")};
+
+    EXPECT_FALSE(result);
 }
 
 TEST(TestFormulaParse, ifEmptyBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifBlankLinesBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "1\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "1\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenComplexBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "x=1\n"
-                      "y=2\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "x=1\n"
+                                  "y=2\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifComparisonCondition)
 {
-    EXPECT_TRUE(parse("if(1<2)\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(1<2)\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifConjunctiveCondition)
 {
-    EXPECT_TRUE(parse("if(1&&2)\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(1&&2)\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifElseWithoutEndIf)
 {
-    EXPECT_FALSE(parse("if(1)\n"
-                       "else"));
+    const FormulaPtr result{parse("if(1)\n"
+                                  "else")};
+
+    EXPECT_FALSE(result);
 }
 
 TEST(TestFormulaParse, ifElseEmptyBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "else\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "else\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifElseBlankLinesBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "\n"
-                      "else\n"
-                      "\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "\n"
+                                  "else\n"
+                                  "\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenElseBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "else\n"
-                      "1\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "else\n"
+                                  "1\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenBodyElse)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "1\n"
-                      "else\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "1\n"
+                                  "else\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenElseComplexBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "x=1\n"
-                      "y=2\n"
-                      "else\n"
-                      "z=3\n"
-                      "q=4\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "x=1\n"
+                                  "y=2\n"
+                                  "else\n"
+                                  "z=3\n"
+                                  "q=4\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifElseIfWithoutEndIf)
 {
-    EXPECT_FALSE(parse("if(1)\n"
-                       "elseif(0)"));
+    const FormulaPtr result{parse("if(1)\n"
+                                  "elseif(0)")};
+
+    EXPECT_FALSE(result);
 }
 
 TEST(TestFormulaParse, ifElseIfElseWithoutEndIf)
 {
-    EXPECT_FALSE(parse("if(1)\n"
-                       "elseif(0)\n"
-                       "else"));
+    const FormulaPtr result{parse("if(1)\n"
+                                  "elseif(0)\n"
+                                  "else")};
+
+    EXPECT_FALSE(result);
 }
 
 TEST(TestFormulaParse, ifElseIfEmptyBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "elseif(1)\n"
-                      "else\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "elseif(1)\n"
+                                  "else\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifMultipleElseIfEmptyBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "elseif(0)\n"
-                      "elseif(0)\n"
-                      "else\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "elseif(0)\n"
+                                  "elseif(0)\n"
+                                  "else\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifElseIfBlankLinesBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "\n"
-                      "elseif(0)\n"
-                      "\n"
-                      "else\n"
-                      "\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "\n"
+                                  "elseif(0)\n"
+                                  "\n"
+                                  "else\n"
+                                  "\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenElseIfBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "elseif(0)\n"
-                      "1\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "elseif(0)\n"
+                                  "1\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenBodyElseIf)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "1\n"
-                      "elseif(0)\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "1\n"
+                                  "elseif(0)\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, ifThenElseIfComplexBody)
 {
-    EXPECT_TRUE(parse("if(0)\n"
-                      "x=1\n"
-                      "y=2\n"
-                      "elseif(1)\n"
-                      "z=3\n"
-                      "q=4\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(0)\n"
+                                  "x=1\n"
+                                  "y=2\n"
+                                  "elseif(1)\n"
+                                  "z=3\n"
+                                  "q=4\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, backslashContinuesStatement)
 {
-    EXPECT_TRUE(parse("if(\\\n"
-                      "0)\n"
-                      "endif"));
+    const FormulaPtr result{parse("if(\\\n"
+                                  "0)\n"
+                                  "endif")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, commaSeparatedStatements)
 {
-    EXPECT_TRUE(parse("3,4"));
+    const FormulaPtr result{parse("3,4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, commaSeparatedAssignmentStatements)
 {
-    EXPECT_TRUE(parse("z=3,z=4"));
+    const FormulaPtr result{parse("z=3,z=4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, mixedNewlineAndCommaSeparators)
 {
-    EXPECT_TRUE(parse("z=3,z=4\n"
-                      "z=5"));
+    const FormulaPtr result{parse("z=3,z=4\n"
+                                  "z=5")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
 
 TEST(TestFormulaParse, commaWithSpaces)
 {
-    EXPECT_TRUE(parse("3 , 4"));
+    const FormulaPtr result{parse("3 , 4")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_iterate());
 }
