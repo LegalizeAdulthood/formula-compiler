@@ -214,7 +214,7 @@ const auto if_statement_def =                                                //
         >> else_block                                                        //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
-const auto statement_seq_def = (statement % (+eol | char_(',')))[make_statement_seq] >> *eol;
+const auto statement_seq_def = (statement % statement_separator)[make_statement_seq] >> *eol;
 const auto global_section_def = lit("global:") >> *eol >> statement_seq;
 const auto builtin_section_def = lit("builtin:") >> *eol >> statement_seq;
 const auto init_section_def = lit("init:") >> *eol >> statement_seq;
