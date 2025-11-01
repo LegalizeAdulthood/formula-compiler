@@ -15,6 +15,7 @@ namespace formula
 namespace ast
 {
 class Node;
+using Expr = std::shared_ptr<Node>;
 }
 
 enum class Section
@@ -42,9 +43,9 @@ public:
 
     virtual void set_value(std::string_view name, Complex value) = 0;
     virtual Complex get_value(std::string_view name) const = 0;
-    virtual const std::shared_ptr<ast::Node> &get_initialize() const = 0;
-    virtual const std::shared_ptr<ast::Node> &get_iterate() const = 0;
-    virtual const std::shared_ptr<ast::Node> &get_bailout() const = 0;
+    virtual const ast::Expr &get_initialize() const = 0;
+    virtual const ast::Expr &get_iterate() const = 0;
+    virtual const ast::Expr &get_bailout() const = 0;
     virtual Complex interpret(Section part) = 0;
     virtual bool compile() = 0;
     virtual Complex run(Section part) = 0;
