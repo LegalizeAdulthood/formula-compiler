@@ -10,13 +10,15 @@
 #include <string_view>
 #include <vector>
 
+using namespace formula;
+
 namespace
 {
 
 int main(const std::vector<std::string_view> &args)
 {
     bool compile{};
-    std::map<std::string, formula::Complex> values;
+    std::map<std::string, Complex> values;
     for (size_t i = 1; i < args.size(); ++i)
     {
         if (args[i] == "--compile")
@@ -45,7 +47,7 @@ int main(const std::vector<std::string_view> &args)
     std::cout << "Enter an expression:\n";
     std::string line;
     std::getline(std::cin, line);
-    std::shared_ptr<formula::Formula> formula = formula::parse(line);
+    FormulaPtr formula = parse(line);
     if (!formula)
     {
         std::cerr << "Error: Invalid formula\n";
@@ -62,7 +64,7 @@ int main(const std::vector<std::string_view> &args)
         return 1;
     }
 
-    std::cout << "Evaluated: " << (compile ? formula->run((formula::Section::ITERATE)) : formula->interpret((formula::Section::ITERATE))) << '\n';
+    std::cout << "Evaluated: " << (compile ? formula->run((Section::ITERATE)) : formula->interpret((Section::ITERATE))) << '\n';
     return 0;
 }
 

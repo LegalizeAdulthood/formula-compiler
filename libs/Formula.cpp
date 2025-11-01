@@ -488,7 +488,7 @@ Complex ParsedFormula::run(Section part)
 
 } // namespace
 
-std::shared_ptr<Formula> parse(std::string_view text)
+FormulaPtr parse(std::string_view text)
 {
     ast::FormulaDefinition ast;
 

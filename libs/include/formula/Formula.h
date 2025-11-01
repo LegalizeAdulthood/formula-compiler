@@ -50,6 +50,8 @@ public:
     virtual Complex run(Section part) = 0;
 };
 
-std::shared_ptr<Formula> parse(std::string_view text);
+using FormulaPtr = std::shared_ptr<Formula>;
+
+FormulaPtr parse(std::string_view text);
 
 } // namespace formula

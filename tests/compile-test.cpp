@@ -16,7 +16,7 @@ using namespace testing;
 
 TEST(TestCompiledFormulaRun, one)
 {
-    const auto formula{parse("1")};
+    const FormulaPtr formula{parse("1")};
     ASSERT_TRUE(formula);
     ASSERT_FALSE(formula->get_initialize());
     ASSERT_TRUE(formula->get_iterate());
@@ -31,7 +31,7 @@ TEST(TestCompiledFormulaRun, one)
 
 TEST(TestCompiledFormulaRun, two)
 {
-    const auto formula{parse("2")};
+    const FormulaPtr formula{parse("2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -43,7 +43,7 @@ TEST(TestCompiledFormulaRun, two)
 
 TEST(TestCompiledFormulaRun, identifier)
 {
-    const auto formula{parse("e")};
+    const FormulaPtr formula{parse("e")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -55,7 +55,7 @@ TEST(TestCompiledFormulaRun, identifier)
 
 TEST(TestCompiledFormulaRun, identifierComplex)
 {
-    const auto formula{parse("z")};
+    const FormulaPtr formula{parse("z")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     ASSERT_TRUE(formula->compile());
@@ -72,7 +72,7 @@ TEST(TestCompiledFormulaRun, identifierComplex)
 
 TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 {
-    const auto formula{parse("a")};
+    const FormulaPtr formula{parse("a")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -84,7 +84,7 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 
 TEST(TestCompiledFormulaRun, add)
 {
-    const auto formula{parse("1.2+1.2")};
+    const FormulaPtr formula{parse("1.2+1.2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -96,7 +96,7 @@ TEST(TestCompiledFormulaRun, add)
 
 TEST(TestCompiledFormulaRun, addComplex)
 {
-    const auto formula{parse("z+q")};
+    const FormulaPtr formula{parse("z+q")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
@@ -116,7 +116,7 @@ TEST(TestCompiledFormulaRun, addComplex)
 
 TEST(TestCompiledFormulaRun, subtract)
 {
-    const auto formula{parse("1.5-2.2")};
+    const FormulaPtr formula{parse("1.5-2.2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -128,7 +128,7 @@ TEST(TestCompiledFormulaRun, subtract)
 
 TEST(TestCompiledFormulaRun, subtractComplex)
 {
-    const auto formula{parse("z-q")};
+    const FormulaPtr formula{parse("z-q")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
@@ -148,7 +148,7 @@ TEST(TestCompiledFormulaRun, subtractComplex)
 
 TEST(TestCompiledFormulaRun, multiply)
 {
-    const auto formula{parse("2.2*3.1")};
+    const FormulaPtr formula{parse("2.2*3.1")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -161,7 +161,7 @@ TEST(TestCompiledFormulaRun, multiply)
 // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
 TEST(TestCompiledFormulaRun, multiplyComplex)
 {
-    const auto formula{parse("z*q")};
+    const FormulaPtr formula{parse("z*q")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {3.0, 4.0});
@@ -182,7 +182,7 @@ TEST(TestCompiledFormulaRun, multiplyComplex)
 
 TEST(TestCompiledFormulaRun, divide)
 {
-    const auto formula{parse("13.76/4.3")};
+    const FormulaPtr formula{parse("13.76/4.3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -194,7 +194,7 @@ TEST(TestCompiledFormulaRun, divide)
 
 TEST(TestCompiledFormulaRun, divideComplex)
 {
-    const auto formula{parse("w/z")};
+    const FormulaPtr formula{parse("w/z")};
     ASSERT_TRUE(formula);
     formula->set_value("w", {1.0, 2.0});
     formula->set_value("z", {3.0, 4.0});
@@ -215,7 +215,7 @@ TEST(TestCompiledFormulaRun, divideComplex)
 
 TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
 {
-    const auto formula{parse("6.02e23/2")};
+    const FormulaPtr formula{parse("6.02e23/2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -227,7 +227,7 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
 
 TEST(TestCompiledFormulaRun, unaryNegate)
 {
-    const auto formula{parse("--1.6")};
+    const FormulaPtr formula{parse("--1.6")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -239,7 +239,7 @@ TEST(TestCompiledFormulaRun, unaryNegate)
 
 TEST(TestCompiledFormulaRun, unaryNegateComplex)
 {
-    const auto formula{parse("-z")};
+    const FormulaPtr formula{parse("-z")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {1.0, 2.0});
     ASSERT_TRUE(formula->compile());
@@ -255,7 +255,7 @@ TEST(TestCompiledFormulaRun, unaryNegateComplex)
 
 TEST(TestCompiledFormulaRun, addAddadd)
 {
-    const auto formula{parse("1.1+2.2+3.3")};
+    const FormulaPtr formula{parse("1.1+2.2+3.3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -267,7 +267,7 @@ TEST(TestCompiledFormulaRun, addAddadd)
 
 TEST(TestCompiledFormulaRun, mulMulMul)
 {
-    const auto formula{parse("2.2*2.2*2.2")};
+    const FormulaPtr formula{parse("2.2*2.2*2.2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -279,7 +279,7 @@ TEST(TestCompiledFormulaRun, mulMulMul)
 
 TEST(TestCompiledFormulaRun, addMulAdd)
 {
-    const auto formula{parse("1.1+2.2*3.3+4.4")};
+    const FormulaPtr formula{parse("1.1+2.2*3.3+4.4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -291,7 +291,7 @@ TEST(TestCompiledFormulaRun, addMulAdd)
 
 TEST(TestCompiledFormulaRun, power)
 {
-    const auto formula{parse("2^3")};
+    const FormulaPtr formula{parse("2^3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -303,7 +303,7 @@ TEST(TestCompiledFormulaRun, power)
 
 TEST(TestCompiledFormulaRun, chainedPower)
 {
-    const auto formula{parse("2^3^2")}; // same as (2^3)^2
+    const FormulaPtr formula{parse("2^3^2")}; // same as (2^3)^2
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -315,7 +315,7 @@ TEST(TestCompiledFormulaRun, chainedPower)
 
 TEST(TestCompiledFormulaRun, powerPrecedence)
 {
-    const auto formula{parse("2*3^2")};
+    const FormulaPtr formula{parse("2*3^2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -327,7 +327,7 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
 
 TEST(TestCompiledFormulaRun, assignment)
 {
-    const auto formula{parse("z=4+2")};
+    const FormulaPtr formula{parse("z=4+2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -342,7 +342,7 @@ TEST(TestCompiledFormulaRun, assignment)
 
 TEST(TestCompiledFormulaRun, assignmentParens)
 {
-    const auto formula{parse("(z=4)+2")};
+    const FormulaPtr formula{parse("(z=4)+2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -357,7 +357,7 @@ TEST(TestCompiledFormulaRun, assignmentParens)
 
 TEST(TestCompiledFormulaRun, chainedAssignment)
 {
-    const auto formula{parse("z1=z2=3")};
+    const FormulaPtr formula{parse("z1=z2=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -375,7 +375,7 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
 
 TEST(TestCompiledFormulaRun, modulus)
 {
-    const auto formula{parse("|z|")};
+    const FormulaPtr formula{parse("|z|")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {-3.0, -2.0});
     ASSERT_TRUE(formula->compile());
@@ -388,7 +388,7 @@ TEST(TestCompiledFormulaRun, modulus)
 
 TEST(TestCompiledFormulaRun, conjugate)
 {
-    const auto formula{parse("conj(z)")};
+    const FormulaPtr formula{parse("conj(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -401,7 +401,7 @@ TEST(TestCompiledFormulaRun, conjugate)
 
 TEST(TestCompiledFormulaRun, identity)
 {
-    const auto formula{parse("ident(z)")};
+    const FormulaPtr formula{parse("ident(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -414,7 +414,7 @@ TEST(TestCompiledFormulaRun, identity)
 
 TEST(TestCompiledFormulaRun, compareLessFalse)
 {
-    const auto formula{parse("4<3")};
+    const FormulaPtr formula{parse("4<3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -426,7 +426,7 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
 
 TEST(TestCompiledFormulaRun, compareLessTrue)
 {
-    const auto formula{parse("3<4")};
+    const FormulaPtr formula{parse("3<4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -438,7 +438,7 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
 
 TEST(TestCompiledFormulaRun, compareLessPrecedence)
 {
-    const auto formula{parse("3<z=4")};
+    const FormulaPtr formula{parse("3<z=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -453,7 +453,7 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
 {
-    const auto formula{parse("3<=3")};
+    const FormulaPtr formula{parse("3<=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -465,7 +465,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
 
 TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
 {
-    const auto formula{parse("3<=4")};
+    const FormulaPtr formula{parse("3<=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -477,7 +477,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
 
 TEST(TestCompiledFormulaRun, compareLessEqualFalse)
 {
-    const auto formula{parse("3<=2")};
+    const FormulaPtr formula{parse("3<=2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -489,7 +489,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
 
 TEST(TestCompiledFormulaRun, compareGreaterFalse)
 {
-    const auto formula{parse("3>4")};
+    const FormulaPtr formula{parse("3>4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -501,7 +501,7 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
 
 TEST(TestCompiledFormulaRun, compareGreaterTrue)
 {
-    const auto formula{parse("4>3")};
+    const FormulaPtr formula{parse("4>3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -513,7 +513,7 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
 {
-    const auto formula{parse("3>=3")};
+    const FormulaPtr formula{parse("3>=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -525,7 +525,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
 
 TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
 {
-    const auto formula{parse("4>=3")};
+    const FormulaPtr formula{parse("4>=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -537,7 +537,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
 
 TEST(TestCompiledFormulaRun, compareEqualTrue)
 {
-    const auto formula{parse("3==3")};
+    const FormulaPtr formula{parse("3==3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -549,7 +549,7 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
 
 TEST(TestCompiledFormulaRun, compareEqualFalse)
 {
-    const auto formula{parse("3==4")};
+    const FormulaPtr formula{parse("3==4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -561,7 +561,7 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
 
 TEST(TestCompiledFormulaRun, compareNotEqualTrue)
 {
-    const auto formula{parse("3!=4")};
+    const FormulaPtr formula{parse("3!=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -573,7 +573,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
 
 TEST(TestCompiledFormulaRun, compareNotEqualFalse)
 {
-    const auto formula{parse("3!=3")};
+    const FormulaPtr formula{parse("3!=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -585,7 +585,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
 
 TEST(TestCompiledFormulaRun, logicalAndTrue)
 {
-    const auto formula{parse("1&&1")};
+    const FormulaPtr formula{parse("1&&1")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -597,7 +597,7 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
 
 TEST(TestCompiledFormulaRun, logicalAndFalse)
 {
-    const auto formula{parse("1&&0")};
+    const FormulaPtr formula{parse("1&&0")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -609,7 +609,7 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
 
 TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 {
-    const auto formula{parse("0&&z=3")};
+    const FormulaPtr formula{parse("0&&z=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -624,7 +624,7 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 
 TEST(TestCompiledFormulaRun, logicalOrTrue)
 {
-    const auto formula{parse("1||0")};
+    const FormulaPtr formula{parse("1||0")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -636,7 +636,7 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
 
 TEST(TestCompiledFormulaRun, logicalOrFalse)
 {
-    const auto formula{parse("0||0")};
+    const FormulaPtr formula{parse("0||0")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -648,7 +648,7 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
 
 TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 {
-    const auto formula{parse("1||z=3")};
+    const FormulaPtr formula{parse("1||z=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -663,8 +663,8 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 
 TEST(TestCompiledFormulaRun, statements)
 {
-    const auto formula{parse("3\n"
-                             "4\n")};
+    const FormulaPtr formula{parse("3\n"
+                                   "4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -676,8 +676,8 @@ TEST(TestCompiledFormulaRun, statements)
 
 TEST(TestCompiledFormulaRun, assignmentStatements)
 {
-    const auto formula{parse("q=3\n"
-                             "z=4\n")};
+    const FormulaPtr formula{parse("q=3\n"
+                                   "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -695,7 +695,7 @@ TEST(TestCompiledFormulaRun, assignmentStatements)
 
 TEST(TestCompiledFormulaRun, formulaInitialize)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {100.0, 0.0});
@@ -715,7 +715,7 @@ TEST(TestCompiledFormulaRun, formulaInitialize)
 
 TEST(TestCompiledFormulaRun, formulaIterate)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
@@ -735,7 +735,7 @@ TEST(TestCompiledFormulaRun, formulaIterate)
 
 TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_initialize());
     ASSERT_TRUE(formula->get_iterate());
@@ -754,7 +754,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 
 TEST(TestCompiledFormulaRun, formulaBailoutTrue)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
@@ -781,7 +781,7 @@ class RunFunctionCall : public TestWithParam<FunctionCallParam>
 TEST_P(RunFunctionCall, run)
 {
     const FunctionCallParam &param{GetParam()};
-    const auto formula{parse(param.expr)};
+    const FormulaPtr formula{parse(param.expr)};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -795,8 +795,8 @@ INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
 
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 {
-    const auto formula{parse("if(5)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -808,8 +808,8 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
 
 TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(5<4)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5<4)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -821,9 +821,9 @@ TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
 
 TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 {
-    const auto formula{parse("if(5)\n"
-                             "z=3\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5)\n"
+                                   "z=3\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -839,9 +839,9 @@ TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 
 TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
 {
-    const auto formula{parse("if(5<4)\n"
-                             "z=3\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5<4)\n"
+                                   "z=3\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {5.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -857,13 +857,13 @@ TEST(TestCompiledFormulaRun, ifStatementBodyFalse)
 
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "x=1\n"
-                             "y=2\n"
-                             "else\n"
-                             "z=3\n"
-                             "q=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "x=1\n"
+                                   "y=2\n"
+                                   "else\n"
+                                   "z=3\n"
+                                   "q=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -891,13 +891,13 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionFalse)
 
 TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
 {
-    const auto formula{parse("if(1)\n"
-                             "x=1\n"
-                             "y=2\n"
-                             "else\n"
-                             "z=3\n"
-                             "q=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(1)\n"
+                                   "x=1\n"
+                                   "y=2\n"
+                                   "else\n"
+                                   "z=3\n"
+                                   "q=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -925,9 +925,9 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
 
 TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(1)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(1)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -939,9 +939,9 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
 
 TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(0)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(0)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -953,10 +953,10 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
 
 TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(0)\n"
-                             "else\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(0)\n"
+                                   "else\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->compile());
 
@@ -968,11 +968,11 @@ TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
 
 TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(1)\n"
-                             "z=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(1)\n"
+                                   "z=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -988,13 +988,13 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
 
 TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(0)\n"
-                             "z=3\n"
-                             "else\n"
-                             "z=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(0)\n"
+                                   "z=3\n"
+                                   "else\n"
+                                   "z=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -1010,15 +1010,15 @@ TEST(TestCompiledFormulaRun, ifElseIfStatementBodyFalse)
 
 TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(0)\n"
-                             "z=3\n"
-                             "elseif(1)\n"
-                             "z=4\n"
-                             "else\n"
-                             "z=5\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(0)\n"
+                                   "z=3\n"
+                                   "elseif(1)\n"
+                                   "z=4\n"
+                                   "else\n"
+                                   "z=5\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
     ASSERT_TRUE(formula->compile());

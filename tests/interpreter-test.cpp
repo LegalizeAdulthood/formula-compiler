@@ -66,7 +66,7 @@ TEST(TestFormulaInterpreter, divide)
 
 TEST(TestFormulaInterpreter, addMultiply)
 {
-    const auto formula{parse("1+3*2")};
+    const FormulaPtr formula{parse("1+3*2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -77,7 +77,7 @@ TEST(TestFormulaInterpreter, addMultiply)
 
 TEST(TestFormulaInterpreter, multiplyAdd)
 {
-    const auto formula{parse("3*2+1")};
+    const FormulaPtr formula{parse("3*2+1")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -88,7 +88,7 @@ TEST(TestFormulaInterpreter, multiplyAdd)
 
 TEST(TestFormulaInterpreter, addAddAdd)
 {
-    const auto formula{parse("1+1+1")};
+    const FormulaPtr formula{parse("1+1+1")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -99,7 +99,7 @@ TEST(TestFormulaInterpreter, addAddAdd)
 
 TEST(TestFormulaInterpreter, mulMulMul)
 {
-    const auto formula{parse("2*2*2")};
+    const FormulaPtr formula{parse("2*2*2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -110,7 +110,7 @@ TEST(TestFormulaInterpreter, mulMulMul)
 
 TEST(TestFormulaInterpreter, twoPi)
 {
-    const auto formula{parse("2*pi")};
+    const FormulaPtr formula{parse("2*pi")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -121,7 +121,7 @@ TEST(TestFormulaInterpreter, twoPi)
 
 TEST(TestFormulaInterpreter, unknownIdentifierIsZero)
 {
-    const auto formula{parse("a")};
+    const FormulaPtr formula{parse("a")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -132,7 +132,7 @@ TEST(TestFormulaInterpreter, unknownIdentifierIsZero)
 
 TEST(TestFormulaInterpreter, setComplexValue)
 {
-    const auto formula{parse("0")};
+    const FormulaPtr formula{parse("0")};
     ASSERT_TRUE(formula);
     formula->set_value("a", {1.0, 2.0});
 
@@ -144,7 +144,7 @@ TEST(TestFormulaInterpreter, setComplexValue)
 
 TEST(TestFormulaInterpreter, setSymbolValue)
 {
-    const auto formula{parse("a*a + b*b")};
+    const FormulaPtr formula{parse("a*a + b*b")};
     ASSERT_TRUE(formula);
     formula->set_value("a", {2.0, 0.0});
     formula->set_value("b", {3.0, 0.0});
@@ -157,7 +157,7 @@ TEST(TestFormulaInterpreter, setSymbolValue)
 
 TEST(TestFormulaInterpreter, power)
 {
-    const auto formula{parse("2^3")};
+    const FormulaPtr formula{parse("2^3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -169,7 +169,7 @@ TEST(TestFormulaInterpreter, power)
 TEST(TestFormulaInterpreter, chainedPower)
 {
     // TODO: is power operator left associative or right associative?
-    const auto formula{parse("2^3^2")}; // same as (2^3)^2
+    const FormulaPtr formula{parse("2^3^2")}; // same as (2^3)^2
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -180,7 +180,7 @@ TEST(TestFormulaInterpreter, chainedPower)
 
 TEST(TestFormulaInterpreter, powerPrecedence)
 {
-    const auto formula{parse("2*3^2")};
+    const FormulaPtr formula{parse("2*3^2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -191,7 +191,7 @@ TEST(TestFormulaInterpreter, powerPrecedence)
 
 TEST(TestFormulaInterpreter, getValue)
 {
-    const auto formula{parse("1")};
+    const FormulaPtr formula{parse("1")};
     EXPECT_TRUE(formula);
 
     const Complex e = formula->get_value("e");
@@ -202,7 +202,7 @@ TEST(TestFormulaInterpreter, getValue)
 
 TEST(TestFormulaInterpreter, getValueUnknown)
 {
-    const auto formula{parse("1")};
+    const FormulaPtr formula{parse("1")};
     EXPECT_TRUE(formula);
 
     const Complex a = formula->get_value("a"); // unknown identifier
@@ -213,7 +213,7 @@ TEST(TestFormulaInterpreter, getValueUnknown)
 
 TEST(TestFormulaInterpreter, assignment)
 {
-    const auto formula{parse("z=4+2")};
+    const FormulaPtr formula{parse("z=4+2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -227,7 +227,7 @@ TEST(TestFormulaInterpreter, assignment)
 
 TEST(TestFormulaInterpreter, assignmentParens)
 {
-    const auto formula{parse("(z=4)+2")};
+    const FormulaPtr formula{parse("(z=4)+2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -240,7 +240,7 @@ TEST(TestFormulaInterpreter, assignmentParens)
 
 TEST(TestFormulaInterpreter, chainedAssignment)
 {
-    const auto formula{parse("z1=z2=3")};
+    const FormulaPtr formula{parse("z1=z2=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -255,7 +255,7 @@ TEST(TestFormulaInterpreter, chainedAssignment)
 
 TEST(TestFormulaInterpreter, modulus)
 {
-    const auto formula{parse("|-3.0 + flip(-2)|")};
+    const FormulaPtr formula{parse("|-3.0 + flip(-2)|")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -266,7 +266,7 @@ TEST(TestFormulaInterpreter, modulus)
 
 TEST(TestFormulaInterpreter, conjugate)
 {
-    const auto formula{parse("conj(z)")};
+    const FormulaPtr formula{parse("conj(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
 
@@ -278,7 +278,7 @@ TEST(TestFormulaInterpreter, conjugate)
 
 TEST(TestFormulaInterpreter, identity)
 {
-    const auto formula{parse("ident(z)")};
+    const FormulaPtr formula{parse("ident(z)")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {3.0, 4.0});
 
@@ -290,7 +290,7 @@ TEST(TestFormulaInterpreter, identity)
 
 TEST(TestFormulaInterpreter, compareLessFalse)
 {
-    const auto formula{parse("4<3")};
+    const FormulaPtr formula{parse("4<3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -301,7 +301,7 @@ TEST(TestFormulaInterpreter, compareLessFalse)
 
 TEST(TestFormulaInterpreter, compareLessTrue)
 {
-    const auto formula{parse("3<4")};
+    const FormulaPtr formula{parse("3<4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -312,7 +312,7 @@ TEST(TestFormulaInterpreter, compareLessTrue)
 
 TEST(TestFormulaInterpreter, compareLessPrecedence)
 {
-    const auto formula{parse("3<z=4")};
+    const FormulaPtr formula{parse("3<z=4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -326,7 +326,7 @@ TEST(TestFormulaInterpreter, compareLessPrecedence)
 
 TEST(TestFormulaInterpreter, compareLessEqualTrueEquality)
 {
-    const auto formula{parse("3<=3")};
+    const FormulaPtr formula{parse("3<=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -337,7 +337,7 @@ TEST(TestFormulaInterpreter, compareLessEqualTrueEquality)
 
 TEST(TestFormulaInterpreter, compareLessEqualTrueLess)
 {
-    const auto formula{parse("3<=4")};
+    const FormulaPtr formula{parse("3<=4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -348,7 +348,7 @@ TEST(TestFormulaInterpreter, compareLessEqualTrueLess)
 
 TEST(TestFormulaInterpreter, compareLessEqualFalse)
 {
-    const auto formula{parse("3<=2")};
+    const FormulaPtr formula{parse("3<=2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -359,7 +359,7 @@ TEST(TestFormulaInterpreter, compareLessEqualFalse)
 
 TEST(TestFormulaInterpreter, compareAssociatesLeft)
 {
-    const auto formula{parse("4<3<4")}; // (4 < 3) < 4
+    const FormulaPtr formula{parse("4<3<4")}; // (4 < 3) < 4
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -370,7 +370,7 @@ TEST(TestFormulaInterpreter, compareAssociatesLeft)
 
 TEST(TestFormulaInterpreter, compareGreaterFalse)
 {
-    const auto formula{parse("3>4")};
+    const FormulaPtr formula{parse("3>4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -381,7 +381,7 @@ TEST(TestFormulaInterpreter, compareGreaterFalse)
 
 TEST(TestFormulaInterpreter, compareGreaterTrue)
 {
-    const auto formula{parse("4>3")};
+    const FormulaPtr formula{parse("4>3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -392,7 +392,7 @@ TEST(TestFormulaInterpreter, compareGreaterTrue)
 
 TEST(TestFormulaInterpreter, compareGreaterEqualTrueEquality)
 {
-    const auto formula{parse("3>=3")};
+    const FormulaPtr formula{parse("3>=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -403,7 +403,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualTrueEquality)
 
 TEST(TestFormulaInterpreter, compareGreaterEqualTrueGreater)
 {
-    const auto formula{parse("4>=3")};
+    const FormulaPtr formula{parse("4>=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -414,7 +414,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualTrueGreater)
 
 TEST(TestFormulaInterpreter, compareGreaterEqualFalse)
 {
-    const auto formula{parse("2>=3")};
+    const FormulaPtr formula{parse("2>=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -425,7 +425,7 @@ TEST(TestFormulaInterpreter, compareGreaterEqualFalse)
 
 TEST(TestFormulaInterpreter, compareEqualTrue)
 {
-    const auto formula{parse("3==3")};
+    const FormulaPtr formula{parse("3==3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -436,7 +436,7 @@ TEST(TestFormulaInterpreter, compareEqualTrue)
 
 TEST(TestFormulaInterpreter, compareEqualFalse)
 {
-    const auto formula{parse("3==4")};
+    const FormulaPtr formula{parse("3==4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -447,7 +447,7 @@ TEST(TestFormulaInterpreter, compareEqualFalse)
 
 TEST(TestFormulaInterpreter, compareNotEqualTrue)
 {
-    const auto formula{parse("3!=4")};
+    const FormulaPtr formula{parse("3!=4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -458,7 +458,7 @@ TEST(TestFormulaInterpreter, compareNotEqualTrue)
 
 TEST(TestFormulaInterpreter, compareNotEqualFalse)
 {
-    const auto formula{parse("3!=3")};
+    const FormulaPtr formula{parse("3!=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -469,7 +469,7 @@ TEST(TestFormulaInterpreter, compareNotEqualFalse)
 
 TEST(TestFormulaInterpreter, logicalAndTrue)
 {
-    const auto formula{parse("1&&1")};
+    const FormulaPtr formula{parse("1&&1")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -480,7 +480,7 @@ TEST(TestFormulaInterpreter, logicalAndTrue)
 
 TEST(TestFormulaInterpreter, logicalAndFalse)
 {
-    const auto formula{parse("1&&0")};
+    const FormulaPtr formula{parse("1&&0")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -491,7 +491,7 @@ TEST(TestFormulaInterpreter, logicalAndFalse)
 
 TEST(TestFormulaInterpreter, logicalAndPrecedence)
 {
-    const auto formula{parse("1+2&&3+4")};
+    const FormulaPtr formula{parse("1+2&&3+4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -502,7 +502,7 @@ TEST(TestFormulaInterpreter, logicalAndPrecedence)
 
 TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
 {
-    const auto formula{parse("0&&z=3")};
+    const FormulaPtr formula{parse("0&&z=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -516,7 +516,7 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
 
 TEST(TestFormulaInterpreter, logicalOrTrue)
 {
-    const auto formula{parse("1||0")};
+    const FormulaPtr formula{parse("1||0")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -527,7 +527,7 @@ TEST(TestFormulaInterpreter, logicalOrTrue)
 
 TEST(TestFormulaInterpreter, logicalOrFalse)
 {
-    const auto formula{parse("0||0")};
+    const FormulaPtr formula{parse("0||0")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -538,7 +538,7 @@ TEST(TestFormulaInterpreter, logicalOrFalse)
 
 TEST(TestFormulaInterpreter, logicalOrPrecedence)
 {
-    const auto formula{parse("1+2||3+4")};
+    const FormulaPtr formula{parse("1+2||3+4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -549,7 +549,7 @@ TEST(TestFormulaInterpreter, logicalOrPrecedence)
 
 TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 {
-    const auto formula{parse("1||z=3")};
+    const FormulaPtr formula{parse("1||z=3")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -563,8 +563,8 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 
 TEST(TestFormulaInterpreter, statements)
 {
-    const auto formula{parse("3\n"
-                             "4\n")};
+    const FormulaPtr formula{parse("3\n"
+                                   "4\n")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -575,7 +575,7 @@ TEST(TestFormulaInterpreter, statements)
 
 TEST(TestFormulaInterpreter, commaSeparatedStatements)
 {
-    const auto formula{parse("3,4")};
+    const FormulaPtr formula{parse("3,4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -586,8 +586,8 @@ TEST(TestFormulaInterpreter, commaSeparatedStatements)
 
 TEST(TestFormulaInterpreter, assignmentStatements)
 {
-    const auto formula{parse("q=3\n"
-                             "z=4\n")};
+    const FormulaPtr formula{parse("q=3\n"
+                                   "z=4\n")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -604,7 +604,7 @@ TEST(TestFormulaInterpreter, assignmentStatements)
 
 TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatements)
 {
-    const auto formula{parse("q=3,z=4")};
+    const FormulaPtr formula{parse("q=3,z=4")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -621,7 +621,7 @@ TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatements)
 
 TEST(TestFormulaInterpreter, formulaInitialize)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {100.0, 0.0});
@@ -640,7 +640,7 @@ TEST(TestFormulaInterpreter, formulaInitialize)
 
 TEST(TestFormulaInterpreter, formulaIterate)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
@@ -659,7 +659,7 @@ TEST(TestFormulaInterpreter, formulaIterate)
 
 TEST(TestFormulaInterpreter, formulaBailoutFalse)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {2.0, 0.0});
 
@@ -674,7 +674,7 @@ TEST(TestFormulaInterpreter, formulaBailoutFalse)
 
 TEST(TestFormulaInterpreter, formulaBailoutTrue)
 {
-    const auto formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
@@ -700,7 +700,7 @@ class InterpreterFunctionCall : public TestWithParam<FunctionCallParam>
 TEST_P(InterpreterFunctionCall, interpret)
 {
     const FunctionCallParam &param{GetParam()};
-    const auto formula{parse(param.expr)};
+    const FormulaPtr formula{parse(param.expr)};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -713,8 +713,8 @@ INSTANTIATE_TEST_SUITE_P(TestFormula, InterpreterFunctionCall, ValuesIn(g_calls)
 
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 {
-    const auto formula{parse("if(5)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -725,8 +725,8 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(5<4)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5<4)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -737,9 +737,9 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 {
-    const auto formula{parse("if(5)\n"
-                             "z=3\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5)\n"
+                                   "z=3\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
@@ -754,9 +754,9 @@ TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 
 TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 {
-    const auto formula{parse("if(5<4)\n"
-                             "z=3\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(5<4)\n"
+                                   "z=3\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {5.0, 0.0});
 
@@ -771,13 +771,13 @@ TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "x=1\n"
-                             "y=2\n"
-                             "else\n"
-                             "z=3\n"
-                             "q=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "x=1\n"
+                                   "y=2\n"
+                                   "else\n"
+                                   "z=3\n"
+                                   "q=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -804,13 +804,13 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 {
-    const auto formula{parse("if(1)\n"
-                             "x=1\n"
-                             "y=2\n"
-                             "else\n"
-                             "z=3\n"
-                             "q=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(1)\n"
+                                   "x=1\n"
+                                   "y=2\n"
+                                   "else\n"
+                                   "z=3\n"
+                                   "q=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("x", {0.0, 0.0});
     formula->set_value("y", {0.0, 0.0});
@@ -837,9 +837,9 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(1)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(1)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -850,9 +850,9 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(0)\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(0)\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -863,10 +863,10 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "elseif(0)\n"
-                             "else\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "elseif(0)\n"
+                                   "else\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -877,11 +877,11 @@ TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(1)\n"
-                             "z=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(1)\n"
+                                   "z=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
@@ -897,13 +897,13 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(0)\n"
-                             "z=3\n"
-                             "else\n"
-                             "z=4\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(0)\n"
+                                   "z=3\n"
+                                   "else\n"
+                                   "z=4\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
@@ -918,15 +918,15 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 
 TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
 {
-    const auto formula{parse("if(0)\n"
-                             "z=1\n"
-                             "elseif(0)\n"
-                             "z=3\n"
-                             "elseif(1)\n"
-                             "z=4\n"
-                             "else\n"
-                             "z=5\n"
-                             "endif")};
+    const FormulaPtr formula{parse("if(0)\n"
+                                   "z=1\n"
+                                   "elseif(0)\n"
+                                   "z=3\n"
+                                   "elseif(1)\n"
+                                   "z=4\n"
+                                   "else\n"
+                                   "z=5\n"
+                                   "endif")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {0.0, 0.0});
 
@@ -941,7 +941,7 @@ TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
 
 TEST(TestFormulaInterpreter, flip)
 {
-    const auto formula{parse("flip(1)")};
+    const FormulaPtr formula{parse("flip(1)")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -952,7 +952,7 @@ TEST(TestFormulaInterpreter, flip)
 
 TEST(TestFormulaInterpreter, complexAdd)
 {
-    const auto formula{parse("1+flip(1)")};
+    const FormulaPtr formula{parse("1+flip(1)")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -963,7 +963,7 @@ TEST(TestFormulaInterpreter, complexAdd)
 
 TEST(TestFormulaInterpreter, complexSubtract)
 {
-    const auto formula{parse("1-flip(1)")};
+    const FormulaPtr formula{parse("1-flip(1)")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -974,7 +974,7 @@ TEST(TestFormulaInterpreter, complexSubtract)
 
 TEST(TestFormulaInterpreter, complexMultiply)
 {
-    const auto formula{parse("flip(1)*flip(1)")};
+    const FormulaPtr formula{parse("flip(1)*flip(1)")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -985,7 +985,7 @@ TEST(TestFormulaInterpreter, complexMultiply)
 
 TEST(TestFormulaInterpreter, complexDivideScalar)
 {
-    const auto formula{parse("(1+flip(1))/2")};
+    const FormulaPtr formula{parse("(1+flip(1))/2")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
@@ -996,7 +996,7 @@ TEST(TestFormulaInterpreter, complexDivideScalar)
 
 TEST(TestFormulaInterpreter, complexDivide)
 {
-    const auto formula{parse("(1+flip(1))/(2+flip(2))")};
+    const FormulaPtr formula{parse("(1+flip(1))/(2+flip(2))")};
     ASSERT_TRUE(formula);
 
     const Complex result{formula->interpret(Section::ITERATE)};
