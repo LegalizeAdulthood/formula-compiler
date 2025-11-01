@@ -840,3 +840,11 @@ TEST(TestFormulaParse, commaWithSpaces)
     EXPECT_TRUE(result->get_section(Section::ITERATE));
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
+
+TEST(TestFormulaParse, globalSection)
+{
+    const FormulaPtr result{parse("global:1")};
+
+    EXPECT_TRUE(result);
+    ASSERT_TRUE(result->get_section(Section::PER_IMAGE));
+}

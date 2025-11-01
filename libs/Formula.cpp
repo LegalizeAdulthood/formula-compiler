@@ -167,7 +167,7 @@ const auto section_name = lexeme[("global"_l | "builtin"_l               //
                                      | "perturbinit"_l | "perturbloop"_l //
                                      | "default"_l | "switch"_l)         //
     >> !alnum];
-const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word;
+const auto user_variable = identifier - reserved_function - reserved_variable - reserved_word - section_name;
 const auto rel_op = "<="_p | ">="_p | "<"_p | ">"_p | "=="_p | "!="_p;
 const auto logical_op = "&&"_p | "||"_p;
 const auto skipper = blank | char_(';') >> *(char_ - eol) | char_('\\') >> eol;
@@ -205,7 +205,7 @@ rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
 
 const auto number_def = double_[make_number];
-const auto variable_def = (identifier - reserved_function - reserved_word)[make_identifier];
+const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
 const auto function_call_def = (reserved_function >> '(' >> expr >> ')')[make_function_call];
 const auto unary_op_def = (char_("-+") >> factor)[make_unary_op] | (char_('|') >> expr >> '|')[make_unary_op];
 const auto factor_def = number | function_call | variable | '(' >> expr >> ')' | unary_op;
@@ -257,7 +257,8 @@ const auto section_formula_def =     //
         -switch_section_def)[make_section_formula];
 const auto formula_def =                                            //
     (statement_seq >> lit(':') >> statement_seq)[make_init_formula] //
-    | statement_seq[make_simple_formula];
+    | statement_seq[make_simple_formula]                            //
+    | &(section_name >> lit(':')) >> section_formula_def;
 
 BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
     factor, power, term, additive, assignment, expr, comparative, conjunctive, //
@@ -402,14 +403,11 @@ ast::CompileError ParsedFormula::compile_part(asmjit::x86::Compiler &comp, ast::
 {
     label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
     asmjit::x86::Xmm result = comp.newXmmSd();
-    if (true)
+    if (const ast::CompileError err = ast::compile(node, comp, m_state, result); err)
     {
-        if (const ast::CompileError err = ast::compile(node, comp, m_state, result); err)
-        {
-            std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
-            ;
-            return err;
-        }
+        std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
+        ;
+        return err;
     }
     if (const ast::CompileError err = update_symbols(comp, m_state.symbols, m_state.data.symbols, result); err)
     {
