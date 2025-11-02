@@ -326,7 +326,7 @@ TEST(TestFormulaParse, builtinSectionMandelbrot)
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
     EXPECT_TRUE(builtin);
-    EXPECT_EQ("type:1\n", to_string(builtin));
+    EXPECT_EQ("setting:type=1\n", to_string(builtin));
 }
 
 TEST(TestFormulaParse, builtinSectionJulia)
@@ -336,7 +336,7 @@ TEST(TestFormulaParse, builtinSectionJulia)
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
     EXPECT_TRUE(builtin);
-    EXPECT_EQ("type:2\n", to_string(builtin));
+    EXPECT_EQ("setting:type=2\n", to_string(builtin));
 }
 
 struct DefaultSectionParam
@@ -503,7 +503,7 @@ TEST(TestFormulaParse, builtinSections)
     EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
     ast::Expr builtin = result->get_section(Section::BUILTIN);
     EXPECT_TRUE(builtin);
-    EXPECT_EQ("type:1\n", to_string(builtin));
+    EXPECT_EQ("setting:type=1\n", to_string(builtin));
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
     EXPECT_FALSE(result->get_section(Section::ITERATE));
     EXPECT_FALSE(result->get_section(Section::BAILOUT));

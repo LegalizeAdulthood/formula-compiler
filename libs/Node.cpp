@@ -61,11 +61,6 @@ void StatementSeqNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void TypeNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
 void UnaryOpNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);

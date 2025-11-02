@@ -34,7 +34,6 @@ enum class NodeType
     NUMBER,
     PARAM_BLOCK,
     STATEMENT_SEQ,
-    TYPE,
     UNARY_OP
 };
 
@@ -59,7 +58,6 @@ public:
     void visit(const ParamBlockNode &node) override     { m_type = NodeType::PARAM_BLOCK; }
     void visit(const SettingNode &node) override        { m_type = NodeType::SETTING; }
     void visit(const StatementSeqNode &node) override   { m_type = NodeType::STATEMENT_SEQ; }
-    void visit(const TypeNode &node) override           { m_type = NodeType::TYPE; }
     void visit(const UnaryOpNode &node) override        { m_type = NodeType::UNARY_OP; }
     // clang-format on
 

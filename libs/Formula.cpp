@@ -140,11 +140,6 @@ const auto make_section_formula = [](auto &ctx)
         attr_or_null<7>(ctx), attr_or_null<8>(ctx)};
 };
 
-const auto make_type = [](auto &ctx)
-{
-    return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
-};
-
 const auto make_setting_single = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
@@ -279,7 +274,7 @@ const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % statement_separator)[make_statement_seq] >> *eol;
 const auto statement_section = *eol >> statement_seq;
 const auto global_section_def = lit("global:") >> statement_section;
-const auto builtin_type_def = (lit("type") >> lit('=') >> char_("12"))[make_type];
+const auto builtin_type_def = (string("type") >> lit('=') >> (int_(1) | int_(2)))[make_setting_single];
 const auto builtin_section_def = lit("builtin:") >> *eol >> builtin_type >> *eol;
 const auto init_section_def = lit("init:") >> statement_section;
 const auto loop_section_def = lit("loop:") >> statement_section;

@@ -35,7 +35,6 @@ public:
     void visit(const ast::ParamBlockNode &node) override;
     void visit(const ast::SettingNode &node) override;
     void visit(const ast::StatementSeqNode &node) override;
-    void visit(const ast::TypeNode &node) override;
     void visit(const ast::UnaryOpNode &node) override;
 
 private:

@@ -34,7 +34,6 @@ public:
     virtual void visit(const ParamBlockNode &node) = 0;
     virtual void visit(const SettingNode &node) = 0;
     virtual void visit(const StatementSeqNode &node) = 0;
-    virtual void visit(const TypeNode &node) = 0;
     virtual void visit(const UnaryOpNode &node) = 0;
 };
 
@@ -69,9 +68,6 @@ public:
     {
     }
     void visit(const StatementSeqNode &node) override
-    {
-    }
-    void visit(const TypeNode &node) override
     {
     }
     void visit(const UnaryOpNode &node) override
