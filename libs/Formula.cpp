@@ -228,6 +228,7 @@ rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
 rule<struct BuiltinTypeTag, ast::Expr> builtin_type = "builtin type";
 rule<struct DefaultValueTag, ast::Expr> default_value = "default value";
+rule<struct DefaultBoolTag, ast::Expr> default_bool = "default bool";
 rule<struct DefaultDoubleTag, ast::Expr> default_double = "default double";
 rule<struct DefaultComplexTag, ast::Expr> default_complex = "default complex";
 rule<struct DefaultStringTag, ast::Expr> default_string = "default string";
@@ -277,6 +278,7 @@ const auto loop_section_def = lit("loop:") >> statement_section;
 const auto bailout_section_def = lit("bailout:") >> statement_section;
 const auto perturb_init_section_def = lit("perturbinit:") >> statement_section;
 const auto perturb_loop_section_def = lit("perturbloop:") >> statement_section;
+const auto default_bool_def = (string("render") >> '=' >> bool_)[make_default_single];
 const auto default_double_def = ((string("angle") | string("magn")) >> '=' >> double_)[make_default_single];
 const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
@@ -291,8 +293,8 @@ const auto default_text_def = ((string("perturb") | string("precision")) >> '=' 
     >> lexeme[*(char_ - eol)])[make_default_single];
 const auto default_rating_def = (string("rating") >> '=' //
     >> (string("recommended") | string("average") | string("notRecommended")))[make_default_enum];
-const auto default_value_def = default_double | default_complex | default_string | default_int | default_text //
-    | default_method | default_periodicity | default_rating;
+const auto default_value_def = default_bool | default_double | default_complex | default_string //
+    | default_int | default_text | default_method | default_periodicity | default_rating;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -321,8 +323,8 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,            
     default_value, default_section,                                             //
     switch_section,                                                             //
     builtin_type,                                                               //
-    default_double, default_complex, default_string, default_int, default_text, //
-    default_method, default_periodicity, default_rating,                        //
+    default_bool, default_double, default_complex, default_string, default_int, //
+    default_text, default_method, default_periodicity, default_rating,          //
     section_formula);
 
 using Function = double();

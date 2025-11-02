@@ -379,6 +379,8 @@ static DefaultSectionParam s_default_values[]{
     {"ratingRecommended", "default:rating=recommended", "default:rating=recommended\n"},          //
     {"ratingAverage", "default:rating=average", "default:rating=average\n"},                      //
     {"ratingNotRecommended", "default:rating=notRecommended", "default:rating=notRecommended\n"}, //
+    {"renderTrue", "default:render=true", "default:render=true\n"},                               //
+    {"renderFalse", "default:render=false", "default:render=false\n"},                            //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
