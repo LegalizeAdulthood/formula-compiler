@@ -555,6 +555,11 @@ Complex ParsedFormula::run(Section part)
     throw std::runtime_error("Invalid part for run");
 }
 
+bool valid_sections(const ast::FormulaSections &ast)
+{
+    return ast.builtin ? !(ast.per_image || ast.initialize || ast.iterate || ast.bailout) : true;
+}
+
 } // namespace
 
 FormulaPtr parse(std::string_view text)
@@ -566,7 +571,10 @@ FormulaPtr parse(std::string_view text)
         bool debug{};
         if (auto success = parse(text, formula, skipper, ast, debug ? trace::on : trace::off); success)
         {
-            return std::make_shared<ParsedFormula>(ast);
+            if (valid_sections(ast))
+            {
+                return std::make_shared<ParsedFormula>(ast);
+            }
         }
     }
     catch (const parse_error<std::string_view::const_iterator> &e)

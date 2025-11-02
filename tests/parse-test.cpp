@@ -992,10 +992,9 @@ TEST_P(InvalidSectionOrdering, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_invalid_sections));
 
-TEST(TestFormulaParse, allSections)
+TEST(TestFormulaParse, maximumSections)
 {
     const FormulaPtr result{parse("global:1\n"
-                                  "builtin:type=1\n"
                                   "init:1\n"
                                   "loop:1\n"
                                   "bailout:1\n"
@@ -1006,7 +1005,7 @@ TEST(TestFormulaParse, allSections)
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
-    EXPECT_TRUE(result->get_section(Section::BUILTIN));
+    EXPECT_FALSE(result->get_section(Section::BUILTIN));
     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
     EXPECT_TRUE(result->get_section(Section::ITERATE));
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
@@ -1015,5 +1014,84 @@ TEST(TestFormulaParse, allSections)
     EXPECT_TRUE(result->get_section(Section::DEFAULT));
     EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
+
+TEST(TestFormulaParse, builtinSections)
+{
+    const FormulaPtr result{parse("builtin:type=1\n"
+                                  "perturbinit:1\n"
+                                  "perturbloop:1\n"
+                                  "default:1\n"
+                                  "switch:1\n")};
+
+    ASSERT_TRUE(result);
+    EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
+    ast::Expr builtin = result->get_section(Section::BUILTIN);
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("type:1\n", to_string(builtin));
+    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
+    EXPECT_FALSE(result->get_section(Section::ITERATE));
+    EXPECT_FALSE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
+    EXPECT_TRUE(result->get_section(Section::DEFAULT));
+    EXPECT_TRUE(result->get_section(Section::SWITCH));
+}
+
+struct BuiltinDisallowsParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const BuiltinDisallowsParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static BuiltinDisallowsParam s_builtin_disallows[]{
+    {"global",
+        "global:1\n"
+        "builtin:type=1\n"
+        "perturbinit:1\n"
+        "perturbloop:1\n"
+        "default:1\n"
+        "switch:1\n"},
+    {"init",
+        "builtin:type=1\n"
+        "init:1\n"
+        "perturbinit:1\n"
+        "perturbloop:1\n"
+        "default:1\n"
+        "switch:1\n"},
+    {"loop",
+        "builtin:type=1\n"
+        "loop:1\n"
+        "perturbinit:1\n"
+        "perturbloop:1\n"
+        "default:1\n"
+        "switch:1\n"},
+    {"bailout",
+        "builtin:type=1\n"
+        "bailout:1\n"
+        "perturbinit:1\n"
+        "perturbloop:1\n"
+        "default:1\n"
+        "switch:1\n"},
+};
+
+class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
+{
+};
+
+TEST_P(BuiltinDisallows, parse)
+{
+    const BuiltinDisallowsParam &param{GetParam()};
+
+    const FormulaPtr result{parse(param.text)};
+
+    ASSERT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinDisallows, ValuesIn(s_builtin_disallows));
 
 } // namespace formula::test
