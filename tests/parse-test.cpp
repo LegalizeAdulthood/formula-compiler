@@ -360,22 +360,25 @@ static DefaultSectionParam s_default_values[]{
     {"helpTopic", R"(default:helptopic="DivideBrot5")",
         R"(default:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "default:magn=4.5\n"},                                //
-    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},                       //
-    {"methodGuessing", "default:method=guessing", "default:method=\"guessing\"\n"},    //
-    {"methodMultiPass", "default:method=multipass", "default:method=\"multipass\"\n"}, //
-    {"methodOnePass", "default:method=onepass", "default:method=\"onepass\"\n"},       //
-    {"periodicity0", "default:periodicity=0", "default:periodicity=0\n"},              //
-    {"periodicity1", "default:periodicity=1", "default:periodicity=1\n"},              //
-    {"periodicity2", "default:periodicity=2", "default:periodicity=2\n"},              //
-    {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},              //
-    {"perturbFalse", "default:perturb=false", "default:perturb=\"false\"\n"},          //
-    {"perturbTrue", "default:perturb=true", "default:perturb=\"true\"\n"},             //
+    {"magn", "default:magn=4.5", "default:magn=4.5\n"},                            //
+    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},                   //
+    {"methodGuessing", "default:method=guessing", "default:method=guessing\n"},    //
+    {"methodMultiPass", "default:method=multipass", "default:method=multipass\n"}, //
+    {"methodOnePass", "default:method=onepass", "default:method=onepass\n"},       //
+    {"periodicity0", "default:periodicity=0", "default:periodicity=0\n"},          //
+    {"periodicity1", "default:periodicity=1", "default:periodicity=1\n"},          //
+    {"periodicity2", "default:periodicity=2", "default:periodicity=2\n"},          //
+    {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},          //
+    {"perturbFalse", "default:perturb=false", "default:perturb=\"false\"\n"},      //
+    {"perturbTrue", "default:perturb=true", "default:perturb=\"true\"\n"},         //
     {"perturbExpr", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
         "default:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
     {"precisionNumber", "default:precision=30", "default:precision=\"30\"\n"},        //
     {"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
-        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"}, //
+        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"},                               //
+    {"ratingRecommended", "default:rating=recommended", "default:rating=recommended\n"},          //
+    {"ratingAverage", "default:rating=average", "default:rating=average\n"},                      //
+    {"ratingNotRecommended", "default:rating=notRecommended", "default:rating=notRecommended\n"}, //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>

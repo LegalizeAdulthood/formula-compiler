@@ -277,10 +277,15 @@ private:
     BuiltinType m_type;
 };
 
+struct EnumName
+{
+    std::string name;
+};
+
 class DefaultNode : public Node
 {
 public:
-    using ValueType = std::variant<double, Complex, std::string, int>;
+    using ValueType = std::variant<double, Complex, std::string, int, EnumName>;
 
     DefaultNode(std::string key, int value) :
         m_key(std::move(key)),
@@ -300,6 +305,11 @@ public:
     DefaultNode(std::string key, std::string_view value) :
         m_key(std::move(key)),
         m_value(std::string{value})
+    {
+    }
+    DefaultNode(std::string key, EnumName value) :
+        m_key(std::move(key)),
+        m_value(std::move(value))
     {
     }
     ~DefaultNode() override = default;

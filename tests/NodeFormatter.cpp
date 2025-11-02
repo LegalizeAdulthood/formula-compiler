@@ -46,6 +46,10 @@ void NodeFormatter::visit(const ast::DefaultNode &node)
     {
         m_str << std::get<3>(node.value());
     }
+    else if (node.value().index() == 4)
+    {
+        m_str << std::get<4>(node.value()).name;
+    }
     else
     {
         throw std::runtime_error("ValueType variant index out of range");

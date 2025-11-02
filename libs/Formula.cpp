@@ -157,6 +157,12 @@ const auto make_default_complex = [](auto &ctx)
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
 };
 
+const auto make_default_enum = [](auto &ctx)
+{
+    const auto &attr = _attr(ctx);
+    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), ast::EnumName{std::get<1>(attr)});
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -229,6 +235,7 @@ rule<struct DefaultIntTag, ast::Expr> default_int = "default int";
 rule<struct DefaultMethodTag, ast::Expr> default_method = "default method";
 rule<struct DefaultPeriodicityTag, ast::Expr> default_periodicity = "default periodicity";
 rule<struct DefaultTextTag, ast::Expr> default_text = "default text";
+rule<struct DefaultRatingTag, ast::Expr> default_rating = "default rating";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -276,14 +283,16 @@ const auto default_complex_def =
 const auto default_string_def = ((string("helpfile") | string("helptopic")) //
     >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
 const auto default_method_def = (string("method") >> '=' //
-    >> (string("guessing") | string("multipass") | string("onepass")))[make_default_single];
+    >> (string("guessing") | string("multipass") | string("onepass")))[make_default_enum];
 const auto default_periodicity_def = (string("periodicity") >> '=' //
     >> (int_(0) | int_(1) | int_(2) | int_(3)))[make_default_single];
 const auto default_int_def = (string("maxiter") >> '=' >> int_)[make_default_single];
 const auto default_text_def = ((string("perturb") | string("precision")) >> '=' //
     >> lexeme[*(char_ - eol)])[make_default_single];
-const auto default_value_def = default_double | default_complex | default_string | default_int | default_method |
-    default_periodicity | default_text;
+const auto default_rating_def = (string("rating") >> '=' //
+    >> (string("recommended") | string("average") | string("notRecommended")))[make_default_enum];
+const auto default_value_def = default_double | default_complex | default_string | default_int | default_text //
+    | default_method | default_periodicity | default_rating;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -302,18 +311,18 @@ const auto formula_def =                                            //
     | statement_seq[make_simple_formula]                            //
     | &(section_name >> lit(':')) >> section_formula_def;
 
-BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
-    factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    else_block, elseif_statement, if_statement, statement, statement_seq,      //
-    formula_part, formula,                                                     //
-    global_section, builtin_section,                                           //
-    init_section, loop_section, bailout_section,                               //
-    perturb_init_section, perturb_loop_section,                                //
-    default_value, default_section,                                            //
-    switch_section,                                                            //
-    builtin_type,                                                              //
-    default_double, default_complex, default_string, default_int,              //
-    default_method, default_periodicity, default_text,                         //
+BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,            //
+    factor, power, term, additive, assignment, expr, comparative, conjunctive,  //
+    else_block, elseif_statement, if_statement, statement, statement_seq,       //
+    formula_part, formula,                                                      //
+    global_section, builtin_section,                                            //
+    init_section, loop_section, bailout_section,                                //
+    perturb_init_section, perturb_loop_section,                                 //
+    default_value, default_section,                                             //
+    switch_section,                                                             //
+    builtin_type,                                                               //
+    default_double, default_complex, default_string, default_int, default_text, //
+    default_method, default_periodicity, default_rating,                        //
     section_formula);
 
 using Function = double();
