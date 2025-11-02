@@ -279,7 +279,7 @@ const auto bailout_section_def = lit("bailout:") >> statement_section;
 const auto perturb_init_section_def = lit("perturbinit:") >> statement_section;
 const auto perturb_loop_section_def = lit("perturbloop:") >> statement_section;
 const auto default_bool_def = (string("render") >> '=' >> bool_)[make_default_single];
-const auto default_double_def = ((string("angle") | string("magn") | string("skew")) //
+const auto default_double_def = ((string("angle") | string("magn") | string("skew") | string("stretch")) //
     >> '=' >> double_)[make_default_single];
 const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];

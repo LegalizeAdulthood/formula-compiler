@@ -382,6 +382,7 @@ static DefaultSectionParam s_default_values[]{
     {"renderTrue", "default:render=true", "default:render=true\n"},                               //
     {"renderFalse", "default:render=false", "default:render=false\n"},                            //
     {"skew", "default:skew=-4.5", "default:skew=-4.5\n"},                                         //
+    {"stretch", "default:stretch=4.5", "default:stretch=4.5\n"},                                  //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
