@@ -20,8 +20,6 @@ TEST(TestCompiledFormulaRun, one)
 {
     const FormulaPtr formula{parse("1")};
     ASSERT_TRUE(formula);
-    ASSERT_FALSE(formula->get_section(Section::INITIALIZE));
-    ASSERT_FALSE(formula->get_section(Section::ITERATE));
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
@@ -35,6 +33,7 @@ TEST(TestCompiledFormulaRun, two)
 {
     const FormulaPtr formula{parse("2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -47,6 +46,7 @@ TEST(TestCompiledFormulaRun, identifier)
 {
     const FormulaPtr formula{parse("e")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -59,6 +59,7 @@ TEST(TestCompiledFormulaRun, identifierComplex)
 {
     const FormulaPtr formula{parse("z")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {1.0, 2.0});
     ASSERT_TRUE(formula->compile());
     formula->set_value("z", {2.0, 4.0});
@@ -76,6 +77,7 @@ TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
 {
     const FormulaPtr formula{parse("a")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -88,6 +90,7 @@ TEST(TestCompiledFormulaRun, add)
 {
     const FormulaPtr formula{parse("1.2+1.2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -100,6 +103,7 @@ TEST(TestCompiledFormulaRun, addComplex)
 {
     const FormulaPtr formula{parse("z+q")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -120,6 +124,7 @@ TEST(TestCompiledFormulaRun, subtract)
 {
     const FormulaPtr formula{parse("1.5-2.2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -132,6 +137,7 @@ TEST(TestCompiledFormulaRun, subtractComplex)
 {
     const FormulaPtr formula{parse("z-q")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {2.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -152,6 +158,7 @@ TEST(TestCompiledFormulaRun, multiply)
 {
     const FormulaPtr formula{parse("2.2*3.1")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -165,6 +172,7 @@ TEST(TestCompiledFormulaRun, multiplyComplex)
 {
     const FormulaPtr formula{parse("z*q")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {1.0, 2.0});
     formula->set_value("q", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -186,6 +194,7 @@ TEST(TestCompiledFormulaRun, divide)
 {
     const FormulaPtr formula{parse("13.76/4.3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -198,6 +207,7 @@ TEST(TestCompiledFormulaRun, divideComplex)
 {
     const FormulaPtr formula{parse("w/z")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("w", {1.0, 2.0});
     formula->set_value("z", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
@@ -219,6 +229,7 @@ TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
 {
     const FormulaPtr formula{parse("6.02e23/2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -231,6 +242,7 @@ TEST(TestCompiledFormulaRun, unaryNegate)
 {
     const FormulaPtr formula{parse("--1.6")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -243,6 +255,7 @@ TEST(TestCompiledFormulaRun, unaryNegateComplex)
 {
     const FormulaPtr formula{parse("-z")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {1.0, 2.0});
     ASSERT_TRUE(formula->compile());
 
@@ -259,6 +272,7 @@ TEST(TestCompiledFormulaRun, addAddadd)
 {
     const FormulaPtr formula{parse("1.1+2.2+3.3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -271,6 +285,7 @@ TEST(TestCompiledFormulaRun, mulMulMul)
 {
     const FormulaPtr formula{parse("2.2*2.2*2.2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -283,6 +298,7 @@ TEST(TestCompiledFormulaRun, addMulAdd)
 {
     const FormulaPtr formula{parse("1.1+2.2*3.3+4.4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -295,6 +311,7 @@ TEST(TestCompiledFormulaRun, power)
 {
     const FormulaPtr formula{parse("2^3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -307,6 +324,7 @@ TEST(TestCompiledFormulaRun, chainedPower)
 {
     const FormulaPtr formula{parse("2^3^2")}; // same as (2^3)^2
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -319,6 +337,7 @@ TEST(TestCompiledFormulaRun, powerPrecedence)
 {
     const FormulaPtr formula{parse("2*3^2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -331,6 +350,7 @@ TEST(TestCompiledFormulaRun, assignment)
 {
     const FormulaPtr formula{parse("z=4+2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -346,6 +366,7 @@ TEST(TestCompiledFormulaRun, assignmentParens)
 {
     const FormulaPtr formula{parse("(z=4)+2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -361,6 +382,7 @@ TEST(TestCompiledFormulaRun, chainedAssignment)
 {
     const FormulaPtr formula{parse("z1=z2=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -379,6 +401,7 @@ TEST(TestCompiledFormulaRun, modulus)
 {
     const FormulaPtr formula{parse("|z|")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {-3.0, -2.0});
     ASSERT_TRUE(formula->compile());
 
@@ -392,6 +415,7 @@ TEST(TestCompiledFormulaRun, conjugate)
 {
     const FormulaPtr formula{parse("conj(z)")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
 
@@ -405,6 +429,7 @@ TEST(TestCompiledFormulaRun, identity)
 {
     const FormulaPtr formula{parse("ident(z)")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {3.0, 4.0});
     ASSERT_TRUE(formula->compile());
 
@@ -418,6 +443,7 @@ TEST(TestCompiledFormulaRun, compareLessFalse)
 {
     const FormulaPtr formula{parse("4<3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -430,6 +456,7 @@ TEST(TestCompiledFormulaRun, compareLessTrue)
 {
     const FormulaPtr formula{parse("3<4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -442,6 +469,7 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
 {
     const FormulaPtr formula{parse("3<z=4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -457,6 +485,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
 {
     const FormulaPtr formula{parse("3<=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -469,6 +498,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
 {
     const FormulaPtr formula{parse("3<=4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -481,6 +511,7 @@ TEST(TestCompiledFormulaRun, compareLessEqualFalse)
 {
     const FormulaPtr formula{parse("3<=2")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -493,6 +524,7 @@ TEST(TestCompiledFormulaRun, compareGreaterFalse)
 {
     const FormulaPtr formula{parse("3>4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -505,6 +537,7 @@ TEST(TestCompiledFormulaRun, compareGreaterTrue)
 {
     const FormulaPtr formula{parse("4>3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -517,6 +550,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
 {
     const FormulaPtr formula{parse("3>=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -529,6 +563,7 @@ TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
 {
     const FormulaPtr formula{parse("4>=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -541,6 +576,7 @@ TEST(TestCompiledFormulaRun, compareEqualTrue)
 {
     const FormulaPtr formula{parse("3==3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -553,6 +589,7 @@ TEST(TestCompiledFormulaRun, compareEqualFalse)
 {
     const FormulaPtr formula{parse("3==4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -565,6 +602,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualTrue)
 {
     const FormulaPtr formula{parse("3!=4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -577,6 +615,7 @@ TEST(TestCompiledFormulaRun, compareNotEqualFalse)
 {
     const FormulaPtr formula{parse("3!=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -589,6 +628,7 @@ TEST(TestCompiledFormulaRun, logicalAndTrue)
 {
     const FormulaPtr formula{parse("1&&1")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -601,6 +641,7 @@ TEST(TestCompiledFormulaRun, logicalAndFalse)
 {
     const FormulaPtr formula{parse("1&&0")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -613,6 +654,7 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
 {
     const FormulaPtr formula{parse("0&&z=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -628,6 +670,7 @@ TEST(TestCompiledFormulaRun, logicalOrTrue)
 {
     const FormulaPtr formula{parse("1||0")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -640,6 +683,7 @@ TEST(TestCompiledFormulaRun, logicalOrFalse)
 {
     const FormulaPtr formula{parse("0||0")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -652,6 +696,7 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 {
     const FormulaPtr formula{parse("1||z=3")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -668,6 +713,7 @@ TEST(TestCompiledFormulaRun, statementsIterate)
     const FormulaPtr formula{parse("3\n"
                                    "4\n")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::ITERATE)};
@@ -681,6 +727,7 @@ TEST(TestCompiledFormulaRun, statementsBailout)
     const FormulaPtr formula{parse("3\n"
                                    "4\n")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
@@ -694,6 +741,7 @@ TEST(TestCompiledFormulaRun, assignmentStatementsIterate)
     const FormulaPtr formula{parse("q=3\n"
                                    "z=4\n")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::ITERATE)};
@@ -710,7 +758,6 @@ TEST(TestCompiledFormulaRun, assignmentStatementsBailout)
     const FormulaPtr formula{parse("q=3\n"
                                    "z=4\n")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::ITERATE));
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
@@ -727,6 +774,7 @@ TEST(TestCompiledFormulaRun, formulaInitialize)
 {
     const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {100.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -747,6 +795,7 @@ TEST(TestCompiledFormulaRun, formulaIterate)
 {
     const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -767,8 +816,6 @@ TEST(TestCompiledFormulaRun, formulaBailoutFalse)
 {
     const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
-    ASSERT_TRUE(formula->get_section(Section::ITERATE));
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {2.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -786,6 +833,7 @@ TEST(TestCompiledFormulaRun, formulaBailoutTrue)
 {
     const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
     ASSERT_TRUE(formula->compile());
@@ -813,6 +861,7 @@ TEST_P(RunFunctionCall, run)
     const FunctionCallParam &param{GetParam()};
     const FormulaPtr formula{parse(param.expr)};
     ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
 
     const Complex result{formula->run(Section::BAILOUT)};
