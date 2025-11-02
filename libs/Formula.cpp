@@ -347,12 +347,18 @@ Complex ParsedFormula::interpret(Section part)
 {
     switch (part)
     {
+    case Section::PER_IMAGE:
+        return ast::interpret(m_ast.per_image, m_state.symbols);
     case Section::INITIALIZE:
         return ast::interpret(m_ast.initialize, m_state.symbols);
     case Section::ITERATE:
         return ast::interpret(m_ast.iterate, m_state.symbols);
     case Section::BAILOUT:
         return ast::interpret(m_ast.bailout, m_state.symbols);
+    case Section::PERTURB_INITIALIZE:
+        return ast::interpret(m_ast.perturb_initialize, m_state.symbols);
+    case Section::PERTURB_ITERATE:
+        return ast::interpret(m_ast.perturb_iterate, m_state.symbols);
     }
     throw std::runtime_error("Invalid part for interpreter");
 }
