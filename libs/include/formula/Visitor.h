@@ -9,7 +9,7 @@ namespace formula::ast
 
 class AssignmentNode;
 class BinaryOpNode;
-class DefaultNode;
+class SettingNode;
 class FunctionCallNode;
 class IdentifierNode;
 class IfStatementNode;
@@ -27,12 +27,12 @@ public:
 
     virtual void visit(const AssignmentNode &node) = 0;
     virtual void visit(const BinaryOpNode &node) = 0;
-    virtual void visit(const DefaultNode &node) = 0;
     virtual void visit(const FunctionCallNode &node) = 0;
     virtual void visit(const IdentifierNode &node) = 0;
     virtual void visit(const IfStatementNode &node) = 0;
     virtual void visit(const NumberNode &node) = 0;
     virtual void visit(const ParamBlockNode &node) = 0;
+    virtual void visit(const SettingNode &node) = 0;
     virtual void visit(const StatementSeqNode &node) = 0;
     virtual void visit(const TypeNode &node) = 0;
     virtual void visit(const UnaryOpNode &node) = 0;
@@ -50,9 +50,6 @@ public:
     void visit(const BinaryOpNode &node) override
     {
     }
-    void visit(const DefaultNode &node) override
-    {
-    }
     void visit(const FunctionCallNode &node) override
     {
     }
@@ -66,6 +63,9 @@ public:
     {
     }
     void visit(const ParamBlockNode &node) override
+    {
+    }
+    void visit(const SettingNode &node) override
     {
     }
     void visit(const StatementSeqNode &node) override

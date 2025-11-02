@@ -26,11 +26,6 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void DefaultNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
 void FunctionCallNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
@@ -52,6 +47,11 @@ void NumberNode::visit(Visitor &visitor) const
 }
 
 void ParamBlockNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void SettingNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }

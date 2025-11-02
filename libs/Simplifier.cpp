@@ -27,7 +27,7 @@ enum class NodeType
     NONE = 0,
     ASSIGNMENT,
     BINARY_OP,
-    DEFAULT,
+    SETTING,
     FUNCTION_CALL,
     IDENTIFIER,
     IF_STATEMENT,
@@ -52,19 +52,19 @@ public:
     // clang-format off
     void visit(const AssignmentNode &node) override     { m_type = NodeType::ASSIGNMENT; }
     void visit(const BinaryOpNode &node) override       { m_type = NodeType::BINARY_OP; }
-    void visit(const DefaultNode &node) override        { m_type = NodeType::DEFAULT; }
     void visit(const FunctionCallNode &node) override   { m_type = NodeType::FUNCTION_CALL; }
     void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }
     void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }
     void visit(const NumberNode &node) override         { m_type = NodeType::NUMBER; }
     void visit(const ParamBlockNode &node) override     { m_type = NodeType::PARAM_BLOCK; }
+    void visit(const SettingNode &node) override        { m_type = NodeType::SETTING; }
     void visit(const StatementSeqNode &node) override   { m_type = NodeType::STATEMENT_SEQ; }
     void visit(const TypeNode &node) override           { m_type = NodeType::TYPE; }
     void visit(const UnaryOpNode &node) override        { m_type = NodeType::UNARY_OP; }
     // clang-format on
 
 private:
-    NodeType m_type{};
+    NodeType m_type{NodeType::NONE};
 };
 
 NodeType get_node_type(Expr node)

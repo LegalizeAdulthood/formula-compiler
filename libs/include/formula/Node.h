@@ -282,42 +282,42 @@ struct EnumName
     std::string name;
 };
 
-class DefaultNode : public Node
+class SettingNode : public Node
 {
 public:
     using ValueType = std::variant<double, Complex, std::string, int, EnumName, bool>;
 
-    DefaultNode(std::string key, int value) :
+    SettingNode(std::string key, int value) :
         m_key(std::move(key)),
         m_value(value)
     {
     }
-    DefaultNode(std::string key, double value) :
+    SettingNode(std::string key, double value) :
         m_key(std::move(key)),
         m_value(value)
     {
     }
-    DefaultNode(std::string key, Complex value) :
+    SettingNode(std::string key, Complex value) :
         m_key(std::move(key)),
         m_value(value)
     {
     }
-    DefaultNode(std::string key, std::string_view value) :
+    SettingNode(std::string key, std::string_view value) :
         m_key(std::move(key)),
         m_value(std::string{value})
     {
     }
-    DefaultNode(std::string key, EnumName value) :
+    SettingNode(std::string key, EnumName value) :
         m_key(std::move(key)),
         m_value(std::move(value))
     {
     }
-    DefaultNode(std::string key, bool value) :
+    SettingNode(std::string key, bool value) :
         m_key(std::move(key)),
         m_value(value)
     {
     }
-    ~DefaultNode() override = default;
+    ~SettingNode() override = default;
     void visit(Visitor &visitor) const override;
 
     const std::string &key() const

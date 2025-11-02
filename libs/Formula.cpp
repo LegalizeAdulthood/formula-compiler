@@ -145,22 +145,22 @@ const auto make_type = [](auto &ctx)
     return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
 };
 
-const auto make_default_single = [](auto &ctx)
+const auto make_setting_single = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
-    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
+    return std::make_shared<ast::SettingNode>(std::get<0>(attr), std::get<1>(attr));
 };
 
-const auto make_default_complex = [](auto &ctx)
+const auto make_setting_complex = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
-    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
+    return std::make_shared<ast::SettingNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
 };
 
-const auto make_default_enum = [](auto &ctx)
+const auto make_setting_enum = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
-    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), ast::EnumName{std::get<1>(attr)});
+    return std::make_shared<ast::SettingNode>(std::get<0>(attr), ast::EnumName{std::get<1>(attr)});
 };
 
 const auto make_param_block = [](auto &ctx)
@@ -233,16 +233,16 @@ rule<struct DefaultSectionTag, ast::Expr> default_section = "default section";
 rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
 rule<struct BuiltinTypeTag, ast::Expr> builtin_type = "builtin type";
-rule<struct DefaultValueTag, ast::Expr> default_value = "default value";
-rule<struct DefaultBoolTag, ast::Expr> default_bool = "default bool";
-rule<struct DefaultDoubleTag, ast::Expr> default_double = "default double";
-rule<struct DefaultComplexTag, ast::Expr> default_complex = "default complex";
-rule<struct DefaultStringTag, ast::Expr> default_string = "default string";
-rule<struct DefaultIntTag, ast::Expr> default_int = "default int";
-rule<struct DefaultMethodTag, ast::Expr> default_method = "default method";
-rule<struct DefaultPeriodicityTag, ast::Expr> default_periodicity = "default periodicity";
-rule<struct DefaultTextTag, ast::Expr> default_text = "default text";
-rule<struct DefaultRatingTag, ast::Expr> default_rating = "default rating";
+rule<struct DefaultSettingTag, ast::Expr> default_setting = "default setting";
+rule<struct SettingBoolTag, ast::Expr> setting_bool = "bool setting";
+rule<struct SettingDoubleTag, ast::Expr> setting_double = "double setting";
+rule<struct SettingComplexTag, ast::Expr> setting_complex = "complex number setting";
+rule<struct SettingStringTag, ast::Expr> setting_string = "string setting";
+rule<struct SettingIntTag, ast::Expr> setting_int = "int setting";
+rule<struct SettingMethodTag, ast::Expr> setting_method = "method setting";
+rule<struct SettingPeriodicityTag, ast::Expr> setting_periodicity = "periodicity setting";
+rule<struct SettingTextTag, ast::Expr> setting_text = "text setting";
+rule<struct SettingRatingTag, ast::Expr> setting_rating = "rating setting";
 rule<struct ParamSettingTag, ast::Expr> param_setting = "param setting";
 rule<struct DefaultParamBlockTag, ast::Expr> default_param_block = "default param block";
 
@@ -286,30 +286,30 @@ const auto loop_section_def = lit("loop:") >> statement_section;
 const auto bailout_section_def = lit("bailout:") >> statement_section;
 const auto perturb_init_section_def = lit("perturbinit:") >> statement_section;
 const auto perturb_loop_section_def = lit("perturbloop:") >> statement_section;
-const auto default_bool_def = (string("render") >> '=' >> bool_)[make_default_single];
-const auto default_double_def = ((string("angle") | string("magn") | string("skew") | string("stretch")) //
-    >> '=' >> double_)[make_default_single];
-const auto default_complex_def =
-    (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
-const auto default_string_def = ((string("helpfile") | string("helptopic") | string("title")) //
-    >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
-const auto default_method_def = (string("method") >> '=' //
-    >> (string("guessing") | string("multipass") | string("onepass")))[make_default_enum];
-const auto default_periodicity_def = (string("periodicity") >> '=' //
-    >> (int_(0) | int_(1) | int_(2) | int_(3)))[make_default_single];
-const auto default_int_def = (string("maxiter") >> '=' >> int_)[make_default_single];
-const auto default_text_def = ((string("perturb") | string("precision")) >> '=' //
-    >> lexeme[*(char_ - eol)])[make_default_single];
-const auto default_rating_def = (string("rating") >> '=' //
-    >> (string("recommended") | string("average") | string("notRecommended")))[make_default_enum];
+const auto setting_bool_def = (string("render") >> '=' >> bool_)[make_setting_single];
+const auto setting_double_def = ((string("angle") | string("magn") | string("skew") | string("stretch")) //
+    >> '=' >> double_)[make_setting_single];
+const auto setting_complex_def =
+    (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_setting_complex];
+const auto setting_string_def = ((string("helpfile") | string("helptopic") | string("title")) //
+    >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_setting_single];
+const auto setting_method_def = (string("method") >> '=' //
+    >> (string("guessing") | string("multipass") | string("onepass")))[make_setting_enum];
+const auto setting_periodicity_def = (string("periodicity") >> '=' //
+    >> (int_(0) | int_(1) | int_(2) | int_(3)))[make_setting_single];
+const auto setting_int_def = (string("maxiter") >> '=' >> int_)[make_setting_single];
+const auto setting_text_def = ((string("perturb") | string("precision")) >> '=' //
+    >> lexeme[*(char_ - eol)])[make_setting_single];
+const auto setting_rating_def = (string("rating") >> '=' //
+    >> (string("recommended") | string("average") | string("notRecommended")))[make_setting_enum];
 const auto default_param_block_def = (string("bool") >> lit("param") >> user_variable >> eol //
                                          >> attr(nullptr) >> *eol                            //
                                          >> lit("endparam"))[make_param_block] >>
     *eol;
-const auto default_value_def = default_bool | default_double | default_complex | default_string //
-    | default_int | default_text | default_method | default_periodicity | default_rating        //
+const auto default_setting_def = setting_bool | setting_double | setting_complex | setting_string //
+    | setting_int | setting_text | setting_method | setting_periodicity | setting_rating        //
     | default_param_block;
-const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
+const auto default_section_def = lit("default:") >> *eol >> default_setting >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto section_formula_def =     //
@@ -334,11 +334,11 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,            
     global_section, builtin_section,                                            //
     init_section, loop_section, bailout_section,                                //
     perturb_init_section, perturb_loop_section,                                 //
-    default_value, default_section,                                             //
+    default_setting, default_section,                                           //
     switch_section,                                                             //
     builtin_type,                                                               //
-    default_bool, default_double, default_complex, default_string, default_int, //
-    default_text, default_method, default_periodicity, default_rating,          //
+    setting_bool, setting_double, setting_complex, setting_string, setting_int, //
+    setting_text, setting_method, setting_periodicity, setting_rating,          //
     default_param_block,                                                        //
     section_formula);
 

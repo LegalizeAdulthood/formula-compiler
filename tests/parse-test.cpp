@@ -352,38 +352,38 @@ inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
 }
 
 static DefaultSectionParam s_default_values[]{
-    {"angle", "default:angle=0", "default:angle=0\n"},                  //
-    {"center", "default:center=(-0.5,0)", "default:center=(-0.5,0)\n"}, //
+    {"angle", "default:angle=0", "setting:angle=0\n"},                  //
+    {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
     {"helpFile", R"(default:helpfile="HelpFile.html")",
-        R"(default:helpfile="HelpFile.html")"
+        R"(setting:helpfile="HelpFile.html")"
         "\n"},
     {"helpTopic", R"(default:helptopic="DivideBrot5")",
-        R"(default:helptopic="DivideBrot5")"
+        R"(setting:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "default:magn=4.5\n"},                            //
-    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},                   //
-    {"methodGuessing", "default:method=guessing", "default:method=guessing\n"},    //
-    {"methodMultiPass", "default:method=multipass", "default:method=multipass\n"}, //
-    {"methodOnePass", "default:method=onepass", "default:method=onepass\n"},       //
-    {"periodicity0", "default:periodicity=0", "default:periodicity=0\n"},          //
-    {"periodicity1", "default:periodicity=1", "default:periodicity=1\n"},          //
-    {"periodicity2", "default:periodicity=2", "default:periodicity=2\n"},          //
-    {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},          //
-    {"perturbFalse", "default:perturb=false", "default:perturb=\"false\"\n"},      //
-    {"perturbTrue", "default:perturb=true", "default:perturb=\"true\"\n"},         //
+    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},                            //
+    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"},                   //
+    {"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
+    {"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
+    {"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //
+    {"periodicity0", "default:periodicity=0", "setting:periodicity=0\n"},          //
+    {"periodicity1", "default:periodicity=1", "setting:periodicity=1\n"},          //
+    {"periodicity2", "default:periodicity=2", "setting:periodicity=2\n"},          //
+    {"periodicity3", "default:periodicity=3", "setting:periodicity=3\n"},          //
+    {"perturbFalse", "default:perturb=false", "setting:perturb=\"false\"\n"},      //
+    {"perturbTrue", "default:perturb=true", "setting:perturb=\"true\"\n"},         //
     {"perturbExpr", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
-        "default:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
-    {"precisionNumber", "default:precision=30", "default:precision=\"30\"\n"},        //
+        "setting:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
+    {"precisionNumber", "default:precision=30", "setting:precision=\"30\"\n"},        //
     {"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
-        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //
-    {"ratingRecommended", "default:rating=recommended", "default:rating=recommended\n"},              //
-    {"ratingAverage", "default:rating=average", "default:rating=average\n"},                          //
-    {"ratingNotRecommended", "default:rating=notRecommended", "default:rating=notRecommended\n"},     //
-    {"renderTrue", "default:render=true", "default:render=true\n"},                                   //
-    {"renderFalse", "default:render=false", "default:render=false\n"},                                //
-    {"skew", "default:skew=-4.5", "default:skew=-4.5\n"},                                             //
-    {"stretch", "default:stretch=4.5", "default:stretch=4.5\n"},                                      //
-    {"title", R"(default:title="This is a fancy one!")", "default:title=\"This is a fancy one!\"\n"}, //
+        "setting:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //
+    {"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
+    {"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
+    {"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
+    {"renderTrue", "default:render=true", "setting:render=true\n"},                                   //
+    {"renderFalse", "default:render=false", "setting:render=false\n"},                                //
+    {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //
+    {"stretch", "default:stretch=4.5", "setting:stretch=4.5\n"},                                      //
+    {"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
     {"boolParamBlock",
         "default:bool param foo\n"
         "endparam",
