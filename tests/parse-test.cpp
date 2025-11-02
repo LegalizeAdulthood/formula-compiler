@@ -362,6 +362,9 @@ static DefaultSectionParam s_default_values[]{
         "\n"},
     {"magn", "default:magn=4.5", "default:magn=4.5\n"},
     {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},
+    {"methodGuessing", "default:method=guessing", "default:method=\"guessing\"\n"},
+    {"methodMultiPass", "default:method=multipass", "default:method=\"multipass\"\n"},
+    {"methodOnePass", "default:method=onepass", "default:method=\"onepass\"\n"},
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>

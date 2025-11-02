@@ -226,6 +226,7 @@ rule<struct DefaultDoubleTag, ast::Expr> default_double = "default double";
 rule<struct DefaultComplexTag, ast::Expr> default_complex = "default complex";
 rule<struct DefaultStringTag, ast::Expr> default_string = "default string";
 rule<struct DefaultIntTag, ast::Expr> default_int = "default int";
+rule<struct DefaultMethodTag, ast::Expr> default_method = "default method";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -272,8 +273,10 @@ const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
 const auto default_string_def = ((string("helpfile") | string("helptopic")) //
     >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
+const auto default_method_def = (string("method") >> '=' //
+    >> (string("guessing") | string("multipass") | string("onepass")))[make_default_single];
 const auto default_int_def = (string("maxiter") >> '=' >> int_)[make_default_single];
-const auto default_value_def = default_double | default_complex | default_string | default_int;
+const auto default_value_def = default_double | default_complex | default_string | default_int | default_method;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -292,17 +295,17 @@ const auto formula_def =                                            //
     | statement_seq[make_simple_formula]                            //
     | &(section_name >> lit(':')) >> section_formula_def;
 
-BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           //
-    factor, power, term, additive, assignment, expr, comparative, conjunctive, //
-    else_block, elseif_statement, if_statement, statement, statement_seq,      //
-    formula_part, formula,                                                     //
-    global_section, builtin_section,                                           //
-    init_section, loop_section, bailout_section,                               //
-    perturb_init_section, perturb_loop_section,                                //
-    default_value, default_section,                                            //
-    switch_section,                                                            //
-    builtin_type,                                                              //
-    default_double, default_complex, default_string, default_int,              //
+BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,              //
+    factor, power, term, additive, assignment, expr, comparative, conjunctive,    //
+    else_block, elseif_statement, if_statement, statement, statement_seq,         //
+    formula_part, formula,                                                        //
+    global_section, builtin_section,                                              //
+    init_section, loop_section, bailout_section,                                  //
+    perturb_init_section, perturb_loop_section,                                   //
+    default_value, default_section,                                               //
+    switch_section,                                                               //
+    builtin_type,                                                                 //
+    default_double, default_complex, default_string, default_int, default_method, //
     section_formula);
 
 using Function = double();
