@@ -145,7 +145,7 @@ const auto make_type = [](auto &ctx)
     return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
 };
 
-const auto make_default_integer = [](auto &ctx)
+const auto make_default_single = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
@@ -155,12 +155,6 @@ const auto make_default_complex = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
-};
-
-const auto make_default_string = [](auto &ctx)
-{
-    const auto &attr = _attr(ctx);
-    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
 };
 
 // Terminal parsers
@@ -226,8 +220,11 @@ rule<struct PerturbLoopSectionTag, ast::Expr> perturb_loop_section = "perturbloo
 rule<struct DefaultSectionTag, ast::Expr> default_section = "default section";
 rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
-rule<struct TypeTag, ast::Expr> type = "builtin type";
+rule<struct BuiltinTypeTag, ast::Expr> builtin_type = "builtin type";
 rule<struct DefaultValueTag, ast::Expr> default_value = "default value";
+rule<struct DefaultDoubleTag, ast::Expr> default_double = "default double";
+rule<struct DefaultComplexTag, ast::Expr> default_complex = "default complex";
+rule<struct DefaultStringTag, ast::Expr> default_string = "default string";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -261,18 +258,19 @@ const auto if_statement_def =                                                //
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % statement_separator)[make_statement_seq] >> *eol;
 const auto global_section_def = lit("global:") >> *eol >> statement_seq;
-const auto type_def = (lit("type") >> lit('=') >> char_("12"))[make_type];
-const auto builtin_section_def = lit("builtin:") >> *eol >> type >> *eol;
+const auto builtin_type_def = (lit("type") >> lit('=') >> char_("12"))[make_type];
+const auto builtin_section_def = lit("builtin:") >> *eol >> builtin_type >> *eol;
 const auto init_section_def = lit("init:") >> *eol >> statement_seq;
 const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
 const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
 const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
-const auto default_integer = (string("angle") >> '=' >> int_)[make_default_integer];
-const auto default_complex = (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
-const auto default_string = ((string("helpfile") | string("helptopic")) //
-    >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_string];
-const auto default_value_def = default_integer | default_complex | default_string;
+const auto default_double_def = ((string("angle") | string("magn")) >> '=' >> double_)[make_default_single];
+const auto default_complex_def =
+    (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
+const auto default_string_def = ((string("helpfile") | string("helptopic")) //
+    >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
+const auto default_value_def = default_double | default_complex | default_string;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -300,7 +298,8 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     perturb_init_section, perturb_loop_section,                                //
     default_value, default_section,                                            //
     switch_section,                                                            //
-    type,                                                                      //
+    builtin_type,                                                              //
+    default_double, default_complex, default_string,                           //
     section_formula);
 
 using Function = double();

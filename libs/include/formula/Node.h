@@ -280,9 +280,9 @@ private:
 class DefaultNode : public Node
 {
 public:
-    using ValueType = std::variant<int, Complex, std::string>;
+    using ValueType = std::variant<double, Complex, std::string>;
 
-    DefaultNode(std::string key, int value) :
+    DefaultNode(std::string key, double value) :
         m_key(std::move(key)),
         m_value(value)
     {

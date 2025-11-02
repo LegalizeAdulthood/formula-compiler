@@ -383,6 +383,16 @@ TEST(TestFormualParse, defaultSectionHelpTopic)
         to_string(builtin));
 }
 
+TEST(TestFormualParse, defaultSectionMagn)
+{
+    const FormulaPtr result{parse(R"(default:magn=4.5)")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("default:magn=4.5\n", to_string(builtin));
+}
+
 struct InvalidSectionParam
 {
     std::string_view name;
