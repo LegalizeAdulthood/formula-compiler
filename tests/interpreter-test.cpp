@@ -12,129 +12,97 @@
 #include <cmath>
 #include <iostream>
 #include <iterator>
+#include <string_view>
 
 using namespace formula;
 using namespace testing;
 
-TEST(TestFormulaInterpreter, one)
+namespace formula::test
 {
-    const Complex result{parse("1")->interpret(Section::BAILOUT)};
 
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
+struct InterpreterParam
+{
+    std::string_view name;
+    std::string_view text;
+    Section section;
+    double expected_re;
+    double expected_im;
+};
+
+inline void PrintTo(const InterpreterParam &param, std::ostream *os)
+{
+    *os << param.name;
 }
 
-TEST(TestFormulaInterpreter, two)
+// TODO: is power operator left associative or right associative?
+static InterpreterParam s_formulas[]{
+    {"one", "1", Section::BAILOUT, 1.0, 0.0},                                 //
+    {"two", "2", Section::BAILOUT, 2.0, 0.0},                                 //
+    {"add", "1+1", Section::BAILOUT, 2.0, 0.0},                               //
+    {"unaryMinusNegativeOne", "--1", Section::BAILOUT, 1.0, 0.0},             //
+    {"multiply", "2*3", Section::BAILOUT, 6.0, 0.0},                          //
+    {"divide", "6/2", Section::BAILOUT, 3.0, 0.0},                            //
+    {"addMultiply", "1+3*2", Section::BAILOUT, 7.0, 0.0},                     //
+    {"multiplyAdd", "3*2+1", Section::BAILOUT, 7.0, 0.0},                     //
+    {"addAddAdd", "1+1+1", Section::BAILOUT, 3.0, 0.0},                       //
+    {"mulMulMul", "2*2*2", Section::BAILOUT, 8.0, 0.0},                       //
+    {"twoPi", "2*pi", Section::BAILOUT, 6.2831853071795862, 0.0},             //
+    {"unknownIdentifierIsZero", "a", Section::BAILOUT, 0.0, 0.0},             //
+    {"power", "2^3", Section::BAILOUT, 8.0, 0.0},                             //
+    {"chainedPower", "2^3^2", Section::BAILOUT, 64.0, 0.0},                   //
+    {"powerPrecedence", "2*3^2", Section::BAILOUT, 18.0, 0.0},                //
+    {"modulus", "|-3.0 + flip(-2)|", Section::BAILOUT, 13.0, 0.0},            //
+    {"compareLessFalse", "4<3", Section::BAILOUT, 0.0, 0.0},                  //
+    {"compareLessTrue", "3<4", Section::BAILOUT, 1.0, 0.0},                   //
+    {"compareLessEqualTrueEquality", "3<=3", Section::BAILOUT, 1.0, 0.0},     //
+    {"compareLessEqualTrueLess", "3<=4", Section::BAILOUT, 1.0, 0.0},         //
+    {"compareLessEqualFalse", "3<=2", Section::BAILOUT, 0.0, 0.0},            //
+    {"compareAssociatesLeft", "4<3<4", Section::BAILOUT, 1.0, 0.0},           //
+    {"compareGreaterFalse", "3>4", Section::BAILOUT, 0.0, 0.0},               //
+    {"compareGreaterTrue", "4>3", Section::BAILOUT, 1.0, 0.0},                //
+    {"compareGreaterEqualTrueEquality", "3>=3", Section::BAILOUT, 1.0, 0.0},  //
+    {"compareGreaterEqualTrueGreater", "4>=3", Section::BAILOUT, 1.0, 0.0},   //
+    {"compareGreaterEqualFalse", "2>=3", Section::BAILOUT, 0.0, 0.0},         //
+    {"compareEqualTrue", "3==3", Section::BAILOUT, 1.0, 0.0},                 //
+    {"compareEqualFalse", "3==4", Section::BAILOUT, 0.0, 0.0},                //
+    {"compareNotEqualTrue", "3!=4", Section::BAILOUT, 1.0, 0.0},              //
+    {"compareNotEqualFalse", "3!=3", Section::BAILOUT, 0.0, 0.0},             //
+    {"logicalAndTrue", "1&&1", Section::BAILOUT, 1.0, 0.0},                   //
+    {"logicalAndFalse", "1&&0", Section::BAILOUT, 0.0, 0.0},                  //
+    {"logicalAndPrecedence", "1+2&&3+4", Section::BAILOUT, 1.0, 0.0},         //
+    {"logicalOrTrue", "1||0", Section::BAILOUT, 1.0, 0.0},                    //
+    {"logicalOrFalse", "0||0", Section::BAILOUT, 0.0, 0.0},                   //
+    {"logicalOrPrecedence", "1+2||3+4", Section::BAILOUT, 1.0, 0.0},          //
+    {"statementsIterate", "3\n4\n", Section::ITERATE, 3.0, 0.0},              //
+    {"statementsBailout", "3\n4\n", Section::BAILOUT, 4.0, 0.0},              //
+    {"commaSeparatedStatementsIterate", "3,4", Section::ITERATE, 3.0, 0.0},   //
+    {"commaSeparatedStatementsBailout", "3,4", Section::BAILOUT, 4.0, 0.0},   //
+    {"flip", "flip(1)", Section::BAILOUT, 0.0, 1.0},                          //
+    {"complexAdd", "1+flip(1)", Section::BAILOUT, 1.0, 1.0},                  //
+    {"complexSubtract", "1-flip(1)", Section::BAILOUT, 1.0, -1.0},            //
+    {"complexMultiply", "flip(1)*flip(1)", Section::BAILOUT, -1.0, 0.0},      //
+    {"complexDivideScalar", "(1+flip(1))/2", Section::BAILOUT, 0.5, 0.5},     //
+    {"complexDivide", "(1+flip(1))/(2+flip(2))", Section::BAILOUT, 0.5, 0.0}, //
+};
+
+class FormulaInterpretSuite : public TestWithParam<InterpreterParam>
 {
-    const Complex result{parse("2")->interpret(Section::BAILOUT)};
+};
 
-    EXPECT_EQ(2.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, add)
+TEST_P(FormulaInterpretSuite, interpret)
 {
-    const Complex result{parse("1+1")->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(2.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, unaryMinusNegativeOne)
-{
-    const Complex result{parse("--1")->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, multiply)
-{
-    const Complex result{parse("2*3")->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(6.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, divide)
-{
-    const Complex result{parse("6/2")->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(3.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, addMultiply)
-{
-    const FormulaPtr formula{parse("1+3*2")};
+    const InterpreterParam &param{GetParam()};
+    const FormulaPtr formula{parse(param.text)};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->get_section(param.section));
 
-    const Complex result{formula->interpret(Section::BAILOUT)};
+    const Complex result{formula->interpret(param.section)};
 
-    EXPECT_EQ(7.0, result.re);
-    EXPECT_EQ(0.0, result.im);
+    EXPECT_NEAR(param.expected_re, result.re, 1e-8);
+    EXPECT_NEAR(param.expected_im, result.im, 1e-8);
 }
 
-TEST(TestFormulaInterpreter, multiplyAdd)
-{
-    const FormulaPtr formula{parse("3*2+1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(7.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, addAddAdd)
-{
-    const FormulaPtr formula{parse("1+1+1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(3.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, mulMulMul)
-{
-    const FormulaPtr formula{parse("2*2*2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(8.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, twoPi)
-{
-    const FormulaPtr formula{parse("2*pi")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_NEAR(6.28318, result.re, 1e-5);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, unknownIdentifierIsZero)
-{
-    const FormulaPtr formula{parse("a")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
+INSTANTIATE_TEST_SUITE_P(TestInterpreter, FormulaInterpretSuite, ValuesIn(s_formulas));
 
 TEST(TestFormulaInterpreter, setComplexValue)
 {
@@ -160,43 +128,6 @@ TEST(TestFormulaInterpreter, setSymbolValue)
     const Complex result{formula->interpret(Section::BAILOUT)};
 
     EXPECT_NEAR(13.0, result.re, 1e-5);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, power)
-{
-    const FormulaPtr formula{parse("2^3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(8.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, chainedPower)
-{
-    // TODO: is power operator left associative or right associative?
-    const FormulaPtr formula{parse("2^3^2")}; // same as (2^3)^2
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(64.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, powerPrecedence)
-{
-    const FormulaPtr formula{parse("2*3^2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(18.0, result.re);
     EXPECT_EQ(0.0, result.im);
 }
 
@@ -269,18 +200,6 @@ TEST(TestFormulaInterpreter, chainedAssignment)
     EXPECT_EQ((formula::Complex{3.0, 0.0}), z2);
 }
 
-TEST(TestFormulaInterpreter, modulus)
-{
-    const FormulaPtr formula{parse("|-3.0 + flip(-2)|")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(13.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestFormulaInterpreter, conjugate)
 {
     const FormulaPtr formula{parse("conj(z)")};
@@ -307,30 +226,6 @@ TEST(TestFormulaInterpreter, identity)
     EXPECT_EQ(4.0, result.im);
 }
 
-TEST(TestFormulaInterpreter, compareLessFalse)
-{
-    const FormulaPtr formula{parse("4<3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareLessTrue)
-{
-    const FormulaPtr formula{parse("3<4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestFormulaInterpreter, compareLessPrecedence)
 {
     const FormulaPtr formula{parse("3<z=4")};
@@ -344,198 +239,6 @@ TEST(TestFormulaInterpreter, compareLessPrecedence)
     const Complex z = formula->get_value("z");
     EXPECT_EQ(4.0, z.re);
     EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestFormulaInterpreter, compareLessEqualTrueEquality)
-{
-    const FormulaPtr formula{parse("3<=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareLessEqualTrueLess)
-{
-    const FormulaPtr formula{parse("3<=4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareLessEqualFalse)
-{
-    const FormulaPtr formula{parse("3<=2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareAssociatesLeft)
-{
-    const FormulaPtr formula{parse("4<3<4")}; // (4 < 3) < 4
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // (4 < 3) is false (0.0), (0 < 4) is true, so the result is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareGreaterFalse)
-{
-    const FormulaPtr formula{parse("3>4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareGreaterTrue)
-{
-    const FormulaPtr formula{parse("4>3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareGreaterEqualTrueEquality)
-{
-    const FormulaPtr formula{parse("3>=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareGreaterEqualTrueGreater)
-{
-    const FormulaPtr formula{parse("4>=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareGreaterEqualFalse)
-{
-    const FormulaPtr formula{parse("2>=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareEqualTrue)
-{
-    const FormulaPtr formula{parse("3==3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareEqualFalse)
-{
-    const FormulaPtr formula{parse("3==4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareNotEqualTrue)
-{
-    const FormulaPtr formula{parse("3!=4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareNotEqualFalse)
-{
-    const FormulaPtr formula{parse("3!=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, logicalAndTrue)
-{
-    const FormulaPtr formula{parse("1&&1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, logicalAndFalse)
-{
-    const FormulaPtr formula{parse("1&&0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, logicalAndPrecedence)
-{
-    const FormulaPtr formula{parse("1+2&&3+4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // (1+2) && (3+4) is true
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
@@ -553,42 +256,6 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestFormulaInterpreter, logicalOrTrue)
-{
-    const FormulaPtr formula{parse("1||0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, logicalOrFalse)
-{
-    const FormulaPtr formula{parse("0||0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, logicalOrPrecedence)
-{
-    const FormulaPtr formula{parse("1+2||3+4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // (1+2) || (3+4) is true
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 {
     const FormulaPtr formula{parse("1||z=3")};
@@ -602,32 +269,6 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
     const Complex z = formula->get_value("z");
     EXPECT_EQ(0.0, z.re); // z should not be set
     EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestFormulaInterpreter, statements)
-{
-    const FormulaPtr formula{parse("3\n"
-                                   "4\n")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(4.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, commaSeparatedStatements)
-{
-    const FormulaPtr formula{parse("3,4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::ITERATE));
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(4.0, result.re);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)
@@ -1048,74 +689,4 @@ TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestFormulaInterpreter, flip)
-{
-    const FormulaPtr formula{parse("flip(1)")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(1.0, result.im); // flip(1) should return 0 + i
-}
-
-TEST(TestFormulaInterpreter, complexAdd)
-{
-    const FormulaPtr formula{parse("1+flip(1)")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(1.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, complexSubtract)
-{
-    const FormulaPtr formula{parse("1-flip(1)")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(-1.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, complexMultiply)
-{
-    const FormulaPtr formula{parse("flip(1)*flip(1)")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(-1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, complexDivideScalar)
-{
-    const FormulaPtr formula{parse("(1+flip(1))/2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.5, result.re);
-    EXPECT_EQ(0.5, result.im);
-}
-
-TEST(TestFormulaInterpreter, complexDivide)
-{
-    const FormulaPtr formula{parse("(1+flip(1))/(2+flip(2))")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.5, result.re);
-    EXPECT_EQ(0.0, result.im); // (1+i)/(2+2i) = 0.5 + 0.0i
-}
+} // namespace formula::test
