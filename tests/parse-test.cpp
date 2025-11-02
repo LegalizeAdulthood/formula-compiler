@@ -477,7 +477,7 @@ TEST_P(Functions, functionOne)
     const FormulaPtr result{parse(GetParam() + "(1)")};
 
     ASSERT_TRUE(result);
-    ASSERT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
@@ -847,8 +847,154 @@ TEST(TestFormulaParse, globalSection)
 {
     const FormulaPtr result{parse("global:1")};
 
-    EXPECT_TRUE(result);
-    ASSERT_TRUE(result->get_section(Section::PER_IMAGE));
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
+}
+
+TEST(TestFormulaParse, builtinSection)
+{
+    const FormulaPtr result{parse("builtin:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::BUILTIN));
+}
+
+TEST(TestFormulaParse, initSection)
+{
+    const FormulaPtr result{parse("init:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+}
+
+TEST(TestFormulaParse, loopSection)
+{
+    const FormulaPtr result{parse("loop:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+}
+
+TEST(TestFormulaParse, bailoutSection)
+{
+    const FormulaPtr result{parse("bailout:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
+
+TEST(TestFormulaParse, perturbInitSection)
+{
+    const FormulaPtr result{parse("perturbinit:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
+}
+
+TEST(TestFormulaParse, perturbLoopSection)
+{
+    const FormulaPtr result{parse("perturbloop:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
+}
+
+TEST(TestFormulaParse, defaultSection)
+{
+    const FormulaPtr result{parse("default:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::DEFAULT));
+}
+
+TEST(TestFormulaParse, switchSection)
+{
+    const FormulaPtr result{parse("switch:1")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::SWITCH));
+}
+
+struct InvalidSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const InvalidSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static InvalidSectionParam s_invalid_sections[]{
+    {"unknownSection",
+        "global:1\n"
+        "unknown:1"},
+    {"globalSectionFirst",
+        "builtin:1\n"
+        "global:1"},
+    {"builtinBeforeInit",
+        "init:1\n"
+        "builtin:1"},
+    {"initAfterLoop",
+        "loop:1\n"
+        "init:1"},
+    {"initAfterBailout",
+        "bailout:1\n"
+        "init:1"},
+    {"loopAfterBailout",
+        "bailout:1\n"
+        "loop:1"},
+    {"bailoutAfterPerturbInit",
+        "perturbinit:1\n"
+        "bailout:1"},
+    {"perturbInitAfterPerturbLoop",
+        "perturbloop:1\n"
+        "perturbinit:1"},
+    {"perturbLoopAfterDefault",
+        "default:1\n"
+        "perturbloop:1"},
+    {"defaultAfterSwitch",
+        "switch:1\n"
+        "default:1"},
+};
+
+class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
+{
+};
+
+TEST_P(InvalidSectionOrdering, parse)
+{
+    const InvalidSectionParam &param{GetParam()};
+    const FormulaPtr result{parse(param.text)};
+
+    ASSERT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_invalid_sections));
+
+TEST(TestFormulaParse, allSections)
+{
+    const FormulaPtr result{parse("global:1\n"
+                                  "builtin:1\n"
+                                  "init:1\n"
+                                  "loop:1\n"
+                                  "bailout:1\n"
+                                  "perturbinit:1\n"
+                                  "perturbloop:1\n"
+                                  "default:1\n"
+                                  "switch:1\n")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
+    EXPECT_TRUE(result->get_section(Section::BUILTIN));
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
+    EXPECT_TRUE(result->get_section(Section::DEFAULT));
+    EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
 } // namespace formula::test
