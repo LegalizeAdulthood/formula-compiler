@@ -140,6 +140,11 @@ const auto make_section_formula = [](auto &ctx)
         attr_or_null<7>(ctx), attr_or_null<8>(ctx)};
 };
 
+const auto make_type = [](auto &ctx)
+{
+    return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -203,6 +208,7 @@ rule<struct PerturbLoopSectionTag, ast::Expr> perturb_loop_section = "perturbloo
 rule<struct DefaultSectionTag, ast::Expr> default_section = "default section";
 rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
+rule<struct TypeTag, ast::Expr> type = "builtin type";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -236,7 +242,8 @@ const auto if_statement_def =                                                //
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % statement_separator)[make_statement_seq] >> *eol;
 const auto global_section_def = lit("global:") >> *eol >> statement_seq;
-const auto builtin_section_def = lit("builtin:") >> *eol >> statement_seq;
+const auto type_def = (lit("type") >> lit('=') >> char_("12"))[make_type];
+const auto builtin_section_def = lit("builtin:") >> *eol >> type >> *eol;
 const auto init_section_def = lit("init:") >> *eol >> statement_seq;
 const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
 const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
@@ -268,6 +275,7 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     init_section, loop_section, bailout_section,                               //
     perturb_init_section, perturb_loop_section,                                //
     default_section, switch_section,                                           //
+    type,                                                                      //
     section_formula);
 
 using Function = double();

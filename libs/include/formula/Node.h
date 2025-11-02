@@ -245,23 +245,34 @@ private:
     Expr m_else_block;
 };
 
+enum class BuiltinType
+{
+    MANDELBROT = 1,
+    JULIA = 2
+};
+
+inline int operator+(BuiltinType value)
+{
+    return static_cast<int>(value);
+}
+
 class TypeNode : public Node
 {
 public:
-    explicit TypeNode(int type) :
+    explicit TypeNode(BuiltinType type) :
         m_type(type)
     {
     }
     ~TypeNode() override = default;
     void visit(Visitor &visitor) const override;
 
-    int type() const
+    BuiltinType type() const
     {
         return m_type;
     }
 
 private:
-    int m_type;
+    BuiltinType m_type;
 };
 
 struct FormulaSections

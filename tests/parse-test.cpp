@@ -4,6 +4,8 @@
 //
 #include <formula/Formula.h>
 
+#include "NodeFormatter.h"
+
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -851,12 +853,29 @@ TEST(TestFormulaParse, globalSection)
     EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
 }
 
-TEST(TestFormulaParse, builtinSection)
+TEST(TestFormulaParse, builtinSectionMandelbrot)
 {
-    const FormulaPtr result{parse("builtin:1")};
+    const FormulaPtr result{parse("builtin:type=1")};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::BUILTIN));
+    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("type:1\n", to_string(builtin));
+}
+
+TEST(TestFormulaParse, builtinSectionJulia)
+{
+    const FormulaPtr result{parse("builtin:type=2")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("type:2\n", to_string(builtin));
+}
+
+TEST(TestFormulaParse, builtinSectionBogus)
+{
+    ASSERT_FALSE(parse("builtin:type=0"));
 }
 
 TEST(TestFormulaParse, initSection)
@@ -976,7 +995,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_in
 TEST(TestFormulaParse, allSections)
 {
     const FormulaPtr result{parse("global:1\n"
-                                  "builtin:1\n"
+                                  "builtin:type=1\n"
                                   "init:1\n"
                                   "loop:1\n"
                                   "bailout:1\n"

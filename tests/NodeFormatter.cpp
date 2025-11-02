@@ -76,7 +76,7 @@ void NodeFormatter::visit(const ast::StatementSeqNode &node)
 
 void NodeFormatter::visit(const ast::TypeNode &node)
 {
-    m_str << "type:" << node.type() << '\n';
+    m_str << "type:" << +node.type() << '\n';
 }
 
 void NodeFormatter::visit(const ast::UnaryOpNode &node)
