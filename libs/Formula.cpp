@@ -157,6 +157,12 @@ const auto make_default_center = [](auto &ctx)
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
 };
 
+const auto make_default_help_file = [](auto &ctx)
+{
+    const auto &attr = _attr(ctx);
+    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -264,7 +270,8 @@ const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_s
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
 const auto default_angle = (string("angle") >> '=' >> int_)[make_default_angle];
 const auto default_center = (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_center];
-const auto default_value_def = default_angle | default_center;
+const auto default_help_file = (string("helpfile") >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_help_file];
+const auto default_value_def = default_angle | default_center | default_help_file;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;

@@ -38,6 +38,14 @@ void NodeFormatter::visit(const ast::DefaultNode &node)
         const Complex &value{std::get<1>(node.value())};
         m_str << '(' << value.re << ',' << value.im << ')';
     }
+    else if (node.value().index() == 2)
+    {
+        m_str << '"' << std::get<2>(node.value()) << '"';
+    }
+    else
+    {
+        throw std::runtime_error("ValueType variant index out of range");
+    }
     m_str << '\n';
 }
 

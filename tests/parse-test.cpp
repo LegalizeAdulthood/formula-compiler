@@ -359,6 +359,18 @@ TEST(TestFormualParse, defaultSectionCenter)
     EXPECT_EQ("default:center=(-0.5,0)\n", to_string(builtin));
 }
 
+TEST(TestFormualParse, defaultSectionHelpFile)
+{
+    const FormulaPtr result{parse(R"(default:helpfile="HelpFile.html")")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ(R"(default:helpfile="HelpFile.html")"
+              "\n",
+        to_string(builtin));
+}
+
 struct InvalidSectionParam
 {
     std::string_view name;

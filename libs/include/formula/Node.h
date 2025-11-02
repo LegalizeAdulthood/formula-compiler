@@ -9,6 +9,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -279,6 +280,8 @@ private:
 class DefaultNode : public Node
 {
 public:
+    using ValueType = std::variant<int, Complex, std::string>;
+
     DefaultNode(std::string key, int value) :
         m_key(std::move(key)),
         m_value(value)
@@ -289,6 +292,11 @@ public:
         m_value(value)
     {
     }
+    DefaultNode(std::string key, std::string_view value) :
+        m_key(std::move(key)),
+        m_value(std::string{value})
+    {
+    }
     ~DefaultNode() override = default;
     void visit(Visitor &visitor) const override;
 
@@ -296,14 +304,14 @@ public:
     {
         return m_key;
     }
-    std::variant<int,Complex> value() const
+    const ValueType &value() const
     {
         return m_value;
     }
 
 private:
     std::string m_key;
-    std::variant<int,Complex> m_value;
+    ValueType m_value;
 };
 
 struct FormulaSections
