@@ -257,14 +257,15 @@ const auto if_statement_def =                                                //
         >> "endif")[make_if_statement];
 const auto statement_def = if_statement | conjunctive;
 const auto statement_seq_def = (statement % statement_separator)[make_statement_seq] >> *eol;
-const auto global_section_def = lit("global:") >> *eol >> statement_seq;
+const auto statement_section = *eol >> statement_seq;
+const auto global_section_def = lit("global:") >> statement_section;
 const auto builtin_type_def = (lit("type") >> lit('=') >> char_("12"))[make_type];
 const auto builtin_section_def = lit("builtin:") >> *eol >> builtin_type >> *eol;
-const auto init_section_def = lit("init:") >> *eol >> statement_seq;
-const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
-const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
-const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
-const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
+const auto init_section_def = lit("init:") >> statement_section;
+const auto loop_section_def = lit("loop:") >> statement_section;
+const auto bailout_section_def = lit("bailout:") >> statement_section;
+const auto perturb_init_section_def = lit("perturbinit:") >> statement_section;
+const auto perturb_loop_section_def = lit("perturbloop:") >> statement_section;
 const auto default_double_def = ((string("angle") | string("magn")) >> '=' >> double_)[make_default_single];
 const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
@@ -272,7 +273,7 @@ const auto default_string_def = ((string("helpfile") | string("helptopic")) //
     >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
 const auto default_value_def = default_double | default_complex | default_string;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
-const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
+const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto section_formula_def =     //
     (-global_section_def >>          //
