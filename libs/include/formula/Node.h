@@ -378,4 +378,6 @@ struct FormulaSections
     Expr type_switch;
 };
 
+using FormulaSectionsPtr = std::shared_ptr<FormulaSections>;
+
 } // namespace formula::ast

@@ -94,7 +94,7 @@ TEST_P(SimpleExpressions, parse)
 {
     const SimpleExpressionParam &param{GetParam()};
 
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
@@ -106,8 +106,8 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_
 
 TEST(TestFormulaParse, invalidIdentifier)
 {
-    const FormulaPtr result1{parse("1a")};
-    const FormulaPtr result2{parse("_a")};
+    const FormulaPtr result1{create_formula("1a")};
+    const FormulaPtr result2{create_formula("_a")};
 
     EXPECT_FALSE(result1);
     EXPECT_FALSE(result2);
@@ -142,7 +142,7 @@ class MultiStatements : public TestWithParam<MultiStatementParam>
 TEST_P(MultiStatements, parse)
 {
     const MultiStatementParam &param{GetParam()};
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
@@ -154,7 +154,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, MultiStatements, ValuesIn(s_multi_sta
 
 TEST(TestFormulaParse, initializeIterateBailout)
 {
-    const FormulaPtr result{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr result{create_formula("z=pixel:z=z*z+pixel,|z|>4")};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
@@ -164,7 +164,7 @@ TEST(TestFormulaParse, initializeIterateBailout)
 
 TEST(TestFormulaParse, statementSequenceInitialize)
 {
-    const FormulaPtr result{parse("z=pixel,d=0:z=z*z+pixel,|z|>4")};
+    const FormulaPtr result{create_formula("z=pixel,d=0:z=z*z+pixel,|z|>4")};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
@@ -185,7 +185,7 @@ class ReadOnlyVariables : public TestWithParam<std::string>
 
 TEST_P(ReadOnlyVariables, notAssignable)
 {
-    const FormulaPtr result{parse(GetParam() + "=1")};
+    const FormulaPtr result{create_formula(GetParam() + "=1")};
 
     ASSERT_FALSE(result);
 }
@@ -209,14 +209,14 @@ class Functions : public TestWithParam<std::string>
 
 TEST_P(Functions, notAssignable)
 {
-    const FormulaPtr result{parse(GetParam() + "=1")};
+    const FormulaPtr result{create_formula(GetParam() + "=1")};
 
     ASSERT_FALSE(result);
 }
 
 TEST_P(Functions, functionOne)
 {
-    const FormulaPtr result{parse(GetParam() + "(1)")};
+    const FormulaPtr result{create_formula(GetParam() + "(1)")};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
@@ -230,8 +230,8 @@ class ReservedWords : public TestWithParam<std::string>
 
 TEST_P(ReservedWords, notAssignable)
 {
-    const FormulaPtr result1{parse(GetParam() + "=1")};
-    const FormulaPtr result2{parse(GetParam() + "2=1")};
+    const FormulaPtr result1{create_formula(GetParam() + "=1")};
+    const FormulaPtr result2{create_formula(GetParam() + "2=1")};
 
     ASSERT_FALSE(result1);
     ASSERT_TRUE(result2);
@@ -273,7 +273,7 @@ class ParseFailures : public TestWithParam<ParseFailureParam>
 TEST_P(ParseFailures, parse)
 {
     const ParseFailureParam &param{GetParam()};
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     EXPECT_FALSE(result);
 }
@@ -311,7 +311,7 @@ TEST_P(SingleSections, parse)
 {
     const SingleSectionParam &param{GetParam()};
 
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(param.section));
@@ -321,7 +321,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SingleSections, ValuesIn(s_single_sec
 
 TEST(TestFormulaParse, builtinSectionMandelbrot)
 {
-    const FormulaPtr result{parse("builtin:type=1")};
+    const FormulaPtr result{create_formula("builtin:type=1")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -331,7 +331,7 @@ TEST(TestFormulaParse, builtinSectionMandelbrot)
 
 TEST(TestFormulaParse, builtinSectionJulia)
 {
-    const FormulaPtr result{parse("builtin:type=2")};
+    const FormulaPtr result{create_formula("builtin:type=2")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -399,7 +399,7 @@ TEST_P(DefaultSection, parse)
 {
     const DefaultSectionParam &param{GetParam()};
 
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_TRUE(result);
     const ast::Expr &section{result->get_section(Section::DEFAULT)};
@@ -461,7 +461,7 @@ TEST_P(InvalidSectionOrdering, parse)
 {
     const InvalidSectionParam &param{GetParam()};
 
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_FALSE(result);
 }
@@ -470,7 +470,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_in
 
 TEST(TestFormulaParse, maximumSections)
 {
-    const FormulaPtr result{parse("global:1\n"
+    const FormulaPtr result{create_formula("global:1\n"
                                   "init:1\n"
                                   "loop:1\n"
                                   "bailout:1\n"
@@ -493,7 +493,7 @@ TEST(TestFormulaParse, maximumSections)
 
 TEST(TestFormulaParse, builtinSections)
 {
-    const FormulaPtr result{parse("builtin:type=1\n"
+    const FormulaPtr result{create_formula("builtin:type=1\n"
                                   "perturbinit:1\n"
                                   "perturbloop:1\n"
                                   "default:angle=0\n"
@@ -563,7 +563,7 @@ TEST_P(BuiltinDisallows, parse)
 {
     const BuiltinDisallowsParam &param{GetParam()};
 
-    const FormulaPtr result{parse(param.text)};
+    const FormulaPtr result{create_formula(param.text)};
 
     ASSERT_FALSE(result);
 }

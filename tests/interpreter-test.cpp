@@ -98,7 +98,7 @@ class FormulaInterpretSuite : public TestWithParam<InterpreterParam>
 TEST_P(FormulaInterpretSuite, interpret)
 {
     const InterpreterParam &param{GetParam()};
-    const FormulaPtr formula{parse(param.text)};
+    const FormulaPtr formula{create_formula(param.text)};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(param.section));
 
@@ -112,7 +112,7 @@ INSTANTIATE_TEST_SUITE_P(TestInterpreter, FormulaInterpretSuite, ValuesIn(s_form
 
 TEST(TestFormulaInterpreter, setComplexValue)
 {
-    const FormulaPtr formula{parse("0")};
+    const FormulaPtr formula{create_formula("0")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("a", {1.0, 2.0});
@@ -125,7 +125,7 @@ TEST(TestFormulaInterpreter, setComplexValue)
 
 TEST(TestFormulaInterpreter, setSymbolValue)
 {
-    const FormulaPtr formula{parse("a*a + b*b")};
+    const FormulaPtr formula{create_formula("a*a + b*b")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("a", {2.0, 0.0});
@@ -139,7 +139,7 @@ TEST(TestFormulaInterpreter, setSymbolValue)
 
 TEST(TestFormulaInterpreter, getValue)
 {
-    const FormulaPtr formula{parse("1")};
+    const FormulaPtr formula{create_formula("1")};
     EXPECT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -151,7 +151,7 @@ TEST(TestFormulaInterpreter, getValue)
 
 TEST(TestFormulaInterpreter, getValueUnknown)
 {
-    const FormulaPtr formula{parse("1")};
+    const FormulaPtr formula{create_formula("1")};
     EXPECT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -163,7 +163,7 @@ TEST(TestFormulaInterpreter, getValueUnknown)
 
 TEST(TestFormulaInterpreter, assignment)
 {
-    const FormulaPtr formula{parse("z=4+2")};
+    const FormulaPtr formula{create_formula("z=4+2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -178,7 +178,7 @@ TEST(TestFormulaInterpreter, assignment)
 
 TEST(TestFormulaInterpreter, assignmentParens)
 {
-    const FormulaPtr formula{parse("(z=4)+2")};
+    const FormulaPtr formula{create_formula("(z=4)+2")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -192,7 +192,7 @@ TEST(TestFormulaInterpreter, assignmentParens)
 
 TEST(TestFormulaInterpreter, chainedAssignment)
 {
-    const FormulaPtr formula{parse("z1=z2=3")};
+    const FormulaPtr formula{create_formula("z1=z2=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -208,7 +208,7 @@ TEST(TestFormulaInterpreter, chainedAssignment)
 
 TEST(TestFormulaInterpreter, conjugate)
 {
-    const FormulaPtr formula{parse("conj(z)")};
+    const FormulaPtr formula{create_formula("conj(z)")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {3.0, 4.0});
@@ -221,7 +221,7 @@ TEST(TestFormulaInterpreter, conjugate)
 
 TEST(TestFormulaInterpreter, identity)
 {
-    const FormulaPtr formula{parse("ident(z)")};
+    const FormulaPtr formula{create_formula("ident(z)")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {3.0, 4.0});
@@ -234,7 +234,7 @@ TEST(TestFormulaInterpreter, identity)
 
 TEST(TestFormulaInterpreter, compareLessPrecedence)
 {
-    const FormulaPtr formula{parse("3<z=4")};
+    const FormulaPtr formula{create_formula("3<z=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -249,7 +249,7 @@ TEST(TestFormulaInterpreter, compareLessPrecedence)
 
 TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
 {
-    const FormulaPtr formula{parse("0&&z=3")};
+    const FormulaPtr formula{create_formula("0&&z=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -264,7 +264,7 @@ TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
 
 TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 {
-    const FormulaPtr formula{parse("1||z=3")};
+    const FormulaPtr formula{create_formula("1||z=3")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -279,7 +279,7 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)
 {
-    const FormulaPtr formula{parse("q=3\n"
+    const FormulaPtr formula{create_formula("q=3\n"
                                    "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::ITERATE));
@@ -300,7 +300,7 @@ TEST(TestFormulaInterpreter, assignmentStatementsIterate)
 
 TEST(TestFormulaInterpreter, assignmentStatementsBailout)
 {
-    const FormulaPtr formula{parse("q=3\n"
+    const FormulaPtr formula{create_formula("q=3\n"
                                    "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
@@ -321,7 +321,7 @@ TEST(TestFormulaInterpreter, assignmentStatementsBailout)
 
 TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatementsIterate)
 {
-    const FormulaPtr formula{parse("q=3,z=4")};
+    const FormulaPtr formula{create_formula("q=3,z=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::ITERATE));
     formula->set_value("q", {-1.0, -1.0});
@@ -341,7 +341,7 @@ TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatementsIterate)
 
 TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatementsBailout)
 {
-    const FormulaPtr formula{parse("q=3,z=4")};
+    const FormulaPtr formula{create_formula("q=3,z=4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("q", {-1.0, -1.0});
@@ -361,7 +361,7 @@ TEST(TestFormulaInterpreter, commaSeparatedAssignmentStatementsBailout)
 
 TEST(TestFormulaInterpreter, formulaInitialize)
 {
-    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{create_formula("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
     ASSERT_TRUE(formula->get_section(Section::ITERATE));
@@ -383,7 +383,7 @@ TEST(TestFormulaInterpreter, formulaInitialize)
 
 TEST(TestFormulaInterpreter, formulaIterate)
 {
-    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{create_formula("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {2.0, 0.0});
@@ -402,7 +402,7 @@ TEST(TestFormulaInterpreter, formulaIterate)
 
 TEST(TestFormulaInterpreter, formulaBailoutFalse)
 {
-    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{create_formula("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("z", {2.0, 0.0});
 
@@ -417,7 +417,7 @@ TEST(TestFormulaInterpreter, formulaBailoutFalse)
 
 TEST(TestFormulaInterpreter, formulaBailoutTrue)
 {
-    const FormulaPtr formula{parse("z=pixel:z=z*z+pixel,|z|>4")};
+    const FormulaPtr formula{create_formula("z=pixel:z=z*z+pixel,|z|>4")};
     ASSERT_TRUE(formula);
     formula->set_value("pixel", {4.4, 0.0});
     formula->set_value("z", {8.0, 0.0});
@@ -443,7 +443,7 @@ class InterpreterFunctionCall : public TestWithParam<FunctionCallParam>
 TEST_P(InterpreterFunctionCall, interpret)
 {
     const FunctionCallParam &param{GetParam()};
-    const FormulaPtr formula{parse(param.expr)};
+    const FormulaPtr formula{create_formula(param.expr)};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -457,7 +457,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormula, InterpreterFunctionCall, ValuesIn(g_calls)
 
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 {
-    const FormulaPtr formula{parse("if(5)\n"
+    const FormulaPtr formula{create_formula("if(5)\n"
                                    "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
@@ -470,7 +470,7 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 {
-    const FormulaPtr formula{parse("if(5<4)\n"
+    const FormulaPtr formula{create_formula("if(5<4)\n"
                                    "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
@@ -483,7 +483,7 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 {
-    const FormulaPtr formula{parse("if(5)\n"
+    const FormulaPtr formula{create_formula("if(5)\n"
                                    "z=3\n"
                                    "endif")};
     ASSERT_TRUE(formula);
@@ -501,7 +501,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 
 TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 {
-    const FormulaPtr formula{parse("if(5<4)\n"
+    const FormulaPtr formula{create_formula("if(5<4)\n"
                                    "z=3\n"
                                    "endif")};
     ASSERT_TRUE(formula);
@@ -519,7 +519,7 @@ TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "x=1\n"
                                    "y=2\n"
                                    "else\n"
@@ -553,7 +553,7 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 {
-    const FormulaPtr formula{parse("if(1)\n"
+    const FormulaPtr formula{create_formula("if(1)\n"
                                    "x=1\n"
                                    "y=2\n"
                                    "else\n"
@@ -587,7 +587,7 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "elseif(1)\n"
                                    "endif")};
     ASSERT_TRUE(formula);
@@ -601,7 +601,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "elseif(0)\n"
                                    "endif")};
     ASSERT_TRUE(formula);
@@ -615,7 +615,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "elseif(0)\n"
                                    "else\n"
                                    "endif")};
@@ -630,7 +630,7 @@ TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "z=1\n"
                                    "elseif(1)\n"
                                    "z=4\n"
@@ -651,7 +651,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "z=1\n"
                                    "elseif(0)\n"
                                    "z=3\n"
@@ -673,7 +673,7 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 
 TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
 {
-    const FormulaPtr formula{parse("if(0)\n"
+    const FormulaPtr formula{create_formula("if(0)\n"
                                    "z=1\n"
                                    "elseif(0)\n"
                                    "z=3\n"

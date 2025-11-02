@@ -53,6 +53,6 @@ public:
 
 using FormulaPtr = std::shared_ptr<Formula>;
 
-FormulaPtr parse(std::string_view text);
+FormulaPtr create_formula(std::string_view text);
 
 } // namespace formula
