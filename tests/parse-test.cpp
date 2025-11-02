@@ -339,59 +339,48 @@ TEST(TestFormulaParse, builtinSectionJulia)
     EXPECT_EQ("type:2\n", to_string(builtin));
 }
 
-TEST(TestFormualParse, defaultSectionAngle)
+struct DefaultSectionParam
 {
-    const FormulaPtr result{parse("default:angle=0")};
+    std::string_view name;
+    std::string_view text;
+    std::string_view expected;
+};
 
-    ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ("default:angle=0\n", to_string(builtin));
+inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
 }
 
-TEST(TestFormualParse, defaultSectionCenter)
+static DefaultSectionParam s_default_values[]{
+    {"angle", "default:angle=0", "default:angle=0\n"},
+    {"center", "default:center=(-0.5,0)", "default:center=(-0.5,0)\n"},
+    {"helpFile", R"(default:helpfile="HelpFile.html")",
+        R"(default:helpfile="HelpFile.html")"
+        "\n"},
+    {"helpTopic", R"(default:helptopic="DivideBrot5")",
+        R"(default:helptopic="DivideBrot5")"
+        "\n"},
+    {"magn", "default:magn=4.5", "default:magn=4.5\n"},
+    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},
+};
+
+class DefaultSection : public TestWithParam<DefaultSectionParam>
 {
-    const FormulaPtr result{parse("default:center=(-0.5,0)")};
+};
+
+TEST_P(DefaultSection, parse)
+{
+    const DefaultSectionParam &param{GetParam()};
+
+    const FormulaPtr result{parse(param.text)};
 
     ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ("default:center=(-0.5,0)\n", to_string(builtin));
+    const ast::Expr &section{result->get_section(Section::DEFAULT)};
+    EXPECT_TRUE(section);
+    EXPECT_EQ(param.expected, to_string(section));
 }
 
-TEST(TestFormualParse, defaultSectionHelpFile)
-{
-    const FormulaPtr result{parse(R"(default:helpfile="HelpFile.html")")};
-
-    ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ(R"(default:helpfile="HelpFile.html")"
-              "\n",
-        to_string(builtin));
-}
-
-TEST(TestFormualParse, defaultSectionHelpTopic)
-{
-    const FormulaPtr result{parse(R"(default:helptopic="DivideBrot5")")};
-
-    ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ(R"(default:helptopic="DivideBrot5")"
-              "\n",
-        to_string(builtin));
-}
-
-TEST(TestFormualParse, defaultSectionMagn)
-{
-    const FormulaPtr result{parse(R"(default:magn=4.5)")};
-
-    ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ("default:magn=4.5\n", to_string(builtin));
-}
+INSTANTIATE_TEST_SUITE_P(TestFormualParse, DefaultSection, ValuesIn(s_default_values));
 
 struct InvalidSectionParam
 {

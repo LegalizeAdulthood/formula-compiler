@@ -225,6 +225,7 @@ rule<struct DefaultValueTag, ast::Expr> default_value = "default value";
 rule<struct DefaultDoubleTag, ast::Expr> default_double = "default double";
 rule<struct DefaultComplexTag, ast::Expr> default_complex = "default complex";
 rule<struct DefaultStringTag, ast::Expr> default_string = "default string";
+rule<struct DefaultIntTag, ast::Expr> default_int = "default int";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -271,7 +272,8 @@ const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
 const auto default_string_def = ((string("helpfile") | string("helptopic")) //
     >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
-const auto default_value_def = default_double | default_complex | default_string;
+const auto default_int_def = (string("maxiter") >> '=' >> int_)[make_default_single];
+const auto default_value_def = default_double | default_complex | default_string | default_int;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -300,7 +302,7 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     default_value, default_section,                                            //
     switch_section,                                                            //
     builtin_type,                                                              //
-    default_double, default_complex, default_string,                           //
+    default_double, default_complex, default_string, default_int,              //
     section_formula);
 
 using Function = double();
