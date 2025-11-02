@@ -280,7 +280,8 @@ const auto default_method_def = (string("method") >> '=' //
 const auto default_periodicity_def = (string("periodicity") >> '=' //
     >> (int_(0) | int_(1) | int_(2) | int_(3)))[make_default_single];
 const auto default_int_def = (string("maxiter") >> '=' >> int_)[make_default_single];
-const auto default_text_def = (string("perturb") >> '=' >> lexeme[*(char_ - eol)])[make_default_single];
+const auto default_text_def = ((string("perturb") | string("precision")) >> '=' //
+    >> lexeme[*(char_ - eol)])[make_default_single];
 const auto default_value_def = default_double | default_complex | default_string | default_int | default_method |
     default_periodicity | default_text;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;

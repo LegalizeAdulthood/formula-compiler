@@ -371,8 +371,11 @@ static DefaultSectionParam s_default_values[]{
     {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},              //
     {"perturbFalse", "default:perturb=false", "default:perturb=\"false\"\n"},          //
     {"perturbTrue", "default:perturb=true", "default:perturb=\"true\"\n"},             //
-    {"perturbExpression", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
+    {"perturbExpr", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
         "default:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
+    {"precisionNumber", "default:precision=30", "default:precision=\"30\"\n"},        //
+    {"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
+        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"}, //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
