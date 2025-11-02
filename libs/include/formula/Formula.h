@@ -16,7 +16,7 @@ namespace ast
 {
 class Node;
 using Expr = std::shared_ptr<Node>;
-}
+} // namespace ast
 
 enum class Section
 {
