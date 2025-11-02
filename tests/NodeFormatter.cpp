@@ -28,7 +28,17 @@ void NodeFormatter::visit(const ast::BinaryOpNode &node)
 
 void NodeFormatter::visit(const ast::DefaultNode &node)
 {
-    m_str << "default:" << node.key() << "=" << node.value() << '\n';
+    m_str << "default:" << node.key() << "=";
+    if (node.value().index() == 0)
+    {
+        m_str << std::get<0>(node.value());
+    }
+    else if (node.value().index() == 1)
+    {
+        const Complex &value{std::get<1>(node.value())};
+        m_str << '(' << value.re << ',' << value.im << ')';
+    }
+    m_str << '\n';
 }
 
 void NodeFormatter::visit(const ast::FunctionCallNode &node)

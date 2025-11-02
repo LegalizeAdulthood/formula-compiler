@@ -9,6 +9,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace formula::ast
@@ -283,6 +284,11 @@ public:
         m_value(value)
     {
     }
+    DefaultNode(std::string key, Complex value) :
+        m_key(std::move(key)),
+        m_value(value)
+    {
+    }
     ~DefaultNode() override = default;
     void visit(Visitor &visitor) const override;
 
@@ -290,14 +296,14 @@ public:
     {
         return m_key;
     }
-    int value() const
+    std::variant<int,Complex> value() const
     {
         return m_value;
     }
 
 private:
     std::string m_key;
-    int m_value;
+    std::variant<int,Complex> m_value;
 };
 
 struct FormulaSections

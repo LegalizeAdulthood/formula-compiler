@@ -145,10 +145,16 @@ const auto make_type = [](auto &ctx)
     return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
 };
 
-const auto make_default_value = [](auto &ctx)
+const auto make_default_angle = [](auto &ctx)
 {
     const auto &attr = _attr(ctx);
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
+const auto make_default_center = [](auto &ctx)
+{
+    const auto &attr = _attr(ctx);
+    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), Complex{std::get<1>(attr), std::get<2>(attr)});
 };
 
 // Terminal parsers
@@ -256,7 +262,9 @@ const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
 const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
 const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
-const auto default_value_def = (string("angle") >> lit('=') >> int_)[make_default_value];
+const auto default_angle = (string("angle") >> '=' >> int_)[make_default_angle];
+const auto default_center = (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_center];
+const auto default_value_def = default_angle | default_center;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
