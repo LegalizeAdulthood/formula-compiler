@@ -352,7 +352,6 @@ inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
 }
 
 static DefaultSectionParam s_default_values[]{
-    //
     {"angle", "default:angle=0", "default:angle=0\n"},                  //
     {"center", "default:center=(-0.5,0)", "default:center=(-0.5,0)\n"}, //
     {"helpFile", R"(default:helpfile="HelpFile.html")",
@@ -370,6 +369,10 @@ static DefaultSectionParam s_default_values[]{
     {"periodicity1", "default:periodicity=1", "default:periodicity=1\n"},              //
     {"periodicity2", "default:periodicity=2", "default:periodicity=2\n"},              //
     {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},              //
+    {"perturbFalse", "default:perturb=false", "default:perturb=\"false\"\n"},          //
+    {"perturbTrue", "default:perturb=true", "default:perturb=\"true\"\n"},             //
+    {"perturbExpression", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
+        "default:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
