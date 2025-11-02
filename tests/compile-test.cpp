@@ -16,44 +16,82 @@ using namespace testing;
 namespace formula::test
 {
 
-TEST(TestCompiledFormulaRun, one)
+struct CompileParam
 {
-    const FormulaPtr formula{parse("1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
+    std::string_view name;
+    std::string_view text;
+    Section section;
+    double expected_re;
+    double expected_im;
+};
 
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
+inline void PrintTo(const CompileParam &param, std::ostream *os)
+{
+    *os << param.name;
 }
 
-TEST(TestCompiledFormulaRun, two)
+static CompileParam s_compiled_formulas[]{
+    {"one", "1", Section::BAILOUT, 1.0, 0.0},
+    {"two", "2", Section::BAILOUT, 2.0, 0.0},
+    {"identifier", "e", Section::BAILOUT, std::exp(1.0), 0.0},
+    {"unknownIdentifierIsZero", "a", Section::BAILOUT, 0.0, 0.0},
+    {"add", "1.2+1.2", Section::BAILOUT, 2.4, 0.0},
+    {"subtract", "1.5-2.2", Section::BAILOUT, -0.7, 0.0},
+    {"multiply", "2.2*3.1", Section::BAILOUT, 6.82, 0.0},
+    {"divide", "13.76/4.3", Section::BAILOUT, 3.2, 0.0},
+    {"avogadrosNumberDivide", "6.02e23/2", Section::BAILOUT, 3.01e23, 0.0},
+    {"unaryNegate", "--1.6", Section::BAILOUT, 1.6, 0.0},
+    {"addAddAdd", "1.1+2.2+3.3", Section::BAILOUT, 6.6, 0.0},
+    {"mulMulMul", "2.2*2.2*2.2", Section::BAILOUT, 10.648, 0.0},
+    {"addMulAdd", "1.1+2.2*3.3+4.4", Section::BAILOUT, 12.76, 0.0},
+    {"power", "2^3", Section::BAILOUT, 8.0, 0.0},
+    {"chainedPower", "2^3^2", Section::BAILOUT, 64.0, 0.0},
+    {"powerPrecedence", "2*3^2", Section::BAILOUT, 18.0, 0.0},
+    {"compareLessFalse", "4<3", Section::BAILOUT, 0.0, 0.0},
+    {"compareLessTrue", "3<4", Section::BAILOUT, 1.0, 0.0},
+    {"compareLessEqualTrueEquality", "3<=3", Section::BAILOUT, 1.0, 0.0},
+    {"compareLessEqualTrueLess", "3<=4", Section::BAILOUT, 1.0, 0.0},
+    {"compareLessEqualFalse", "3<=2", Section::BAILOUT, 0.0, 0.0},
+    {"compareGreaterFalse", "3>4", Section::BAILOUT, 0.0, 0.0},
+    {"compareGreaterTrue", "4>3", Section::BAILOUT, 1.0, 0.0},
+    {"compareGreaterEqualTrueEquality", "3>=3", Section::BAILOUT, 1.0, 0.0},
+    {"compareGreaterEqualTrueGreater", "4>=3", Section::BAILOUT, 1.0, 0.0},
+    {"compareEqualTrue", "3==3", Section::BAILOUT, 1.0, 0.0},
+    {"compareEqualFalse", "3==4", Section::BAILOUT, 0.0, 0.0},
+    {"compareNotEqualTrue", "3!=4", Section::BAILOUT, 1.0, 0.0},
+    {"compareNotEqualFalse", "3!=3", Section::BAILOUT, 0.0, 0.0},
+    {"logicalAndTrue", "1&&1", Section::BAILOUT, 1.0, 0.0},
+    {"logicalAndFalse", "1&&0", Section::BAILOUT, 0.0, 0.0},
+    {"logicalOrTrue", "1||0", Section::BAILOUT, 1.0, 0.0},
+    {"logicalOrFalse", "0||0", Section::BAILOUT, 0.0, 0.0},
+    {"statementsIterate", "3\n4\n", Section::ITERATE, 3.0, 0.0},
+    {"statementsBailout", "3\n4\n", Section::BAILOUT, 4.0, 0.0},
+    {"ifStatementEmptyBodyTrue", "if(5)\nendif", Section::BAILOUT, 1.0, 0.0},
+    {"ifStatementEmptyBodyFalse", "if(5<4)\nendif", Section::BAILOUT, 0.0, 0.0},
+    {"ifElseIfStatementEmptyBodyTrue", "if(0)\nelseif(1)\nendif", Section::BAILOUT, 1.0, 0.0},
+    {"ifElseIfStatementEmptyBodyFalse", "if(0)\nelseif(0)\nendif", Section::BAILOUT, 0.0, 0.0},
+    {"ifElseIfElseStatementEmptyBodyFalse", "if(0)\nelseif(0)\nelse\nendif", Section::BAILOUT, 0.0, 0.0},
+};
+
+class CompiledFormulaRunSuite : public TestWithParam<CompileParam>
 {
-    const FormulaPtr formula{parse("2")};
+};
+
+TEST_P(CompiledFormulaRunSuite, run)
+{
+    const CompileParam &param{GetParam()};
+    const FormulaPtr formula{parse(param.text)};
     ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->get_section(param.section));
     ASSERT_TRUE(formula->compile());
 
-    const Complex result{formula->run(Section::BAILOUT)};
+    const Complex result{formula->run(param.section)};
 
-    EXPECT_EQ(2.0, result.re);
-    EXPECT_EQ(0.0, result.im);
+    EXPECT_NEAR(param.expected_re, result.re, 1e-6);
+    EXPECT_NEAR(param.expected_im, result.im, 1e-6);
 }
 
-TEST(TestCompiledFormulaRun, identifier)
-{
-    const FormulaPtr formula{parse("e")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(std::exp(1.0), result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
+INSTANTIATE_TEST_SUITE_P(TestCompiledFormula, CompiledFormulaRunSuite, ValuesIn(s_compiled_formulas));
 
 TEST(TestCompiledFormulaRun, identifierComplex)
 {
@@ -71,32 +109,6 @@ TEST(TestCompiledFormulaRun, identifierComplex)
     const Complex z{formula->get_value("z")};
     EXPECT_EQ(1.0, z.re);
     EXPECT_EQ(2.0, z.im);
-}
-
-TEST(TestCompiledFormulaRun, unknownIdentifierIsZero)
-{
-    const FormulaPtr formula{parse("a")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, add)
-{
-    const FormulaPtr formula{parse("1.2+1.2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(2.4, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, addComplex)
@@ -120,19 +132,6 @@ TEST(TestCompiledFormulaRun, addComplex)
     EXPECT_EQ(4.0, q.im);
 }
 
-TEST(TestCompiledFormulaRun, subtract)
-{
-    const FormulaPtr formula{parse("1.5-2.2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(-0.7, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, subtractComplex)
 {
     const FormulaPtr formula{parse("z-q")};
@@ -152,19 +151,6 @@ TEST(TestCompiledFormulaRun, subtractComplex)
     const Complex q{formula->get_value("q")};
     EXPECT_EQ(2.0, q.re);
     EXPECT_EQ(4.0, q.im);
-}
-
-TEST(TestCompiledFormulaRun, multiply)
-{
-    const FormulaPtr formula{parse("2.2*3.1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(6.82, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
 }
 
 // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
@@ -190,19 +176,6 @@ TEST(TestCompiledFormulaRun, multiplyComplex)
     EXPECT_EQ(4.0, q.im);
 }
 
-TEST(TestCompiledFormulaRun, divide)
-{
-    const FormulaPtr formula{parse("13.76/4.3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(3.2, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, divideComplex)
 {
     const FormulaPtr formula{parse("w/z")};
@@ -225,32 +198,6 @@ TEST(TestCompiledFormulaRun, divideComplex)
     EXPECT_EQ(4.0, z.im);
 }
 
-TEST(TestCompiledFormulaRun, avogadrosNumberDivide)
-{
-    const FormulaPtr formula{parse("6.02e23/2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(3.01e23, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, unaryNegate)
-{
-    const FormulaPtr formula{parse("--1.6")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(1.6, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, unaryNegateComplex)
 {
     const FormulaPtr formula{parse("-z")};
@@ -266,84 +213,6 @@ TEST(TestCompiledFormulaRun, unaryNegateComplex)
     const Complex z{formula->get_value("z")};
     EXPECT_EQ(1.0, z.re);
     EXPECT_EQ(2.0, z.im);
-}
-
-TEST(TestCompiledFormulaRun, addAddadd)
-{
-    const FormulaPtr formula{parse("1.1+2.2+3.3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(6.6, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, mulMulMul)
-{
-    const FormulaPtr formula{parse("2.2*2.2*2.2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(10.648, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, addMulAdd)
-{
-    const FormulaPtr formula{parse("1.1+2.2*3.3+4.4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_NEAR(12.76, result.re, 1e-6);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, power)
-{
-    const FormulaPtr formula{parse("2^3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(8.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, chainedPower)
-{
-    const FormulaPtr formula{parse("2^3^2")}; // same as (2^3)^2
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(64.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, powerPrecedence)
-{
-    const FormulaPtr formula{parse("2*3^2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(18.0, result.re);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, assignment)
@@ -439,32 +308,6 @@ TEST(TestCompiledFormulaRun, identity)
     ASSERT_EQ(4.0, result.im);
 }
 
-TEST(TestCompiledFormulaRun, compareLessFalse)
-{
-    const FormulaPtr formula{parse("4<3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // false is 0.0
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareLessTrue)
-{
-    const FormulaPtr formula{parse("3<4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re); // true is 1.0
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, compareLessPrecedence)
 {
     const FormulaPtr formula{parse("3<z=4")};
@@ -479,175 +322,6 @@ TEST(TestCompiledFormulaRun, compareLessPrecedence)
     const Complex z{formula->get_value("z")};
     EXPECT_EQ(4.0, z.re);
     EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestCompiledFormulaRun, compareLessEqualTrueEquality)
-{
-    const FormulaPtr formula{parse("3<=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareLessEqualTrueLess)
-{
-    const FormulaPtr formula{parse("3<=4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareLessEqualFalse)
-{
-    const FormulaPtr formula{parse("3<=2")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareGreaterFalse)
-{
-    const FormulaPtr formula{parse("3>4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareGreaterTrue)
-{
-    const FormulaPtr formula{parse("4>3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareGreaterEqualTrueEquality)
-{
-    const FormulaPtr formula{parse("3>=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareGreaterEqualTrueGreater)
-{
-    const FormulaPtr formula{parse("4>=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareEqualTrue)
-{
-    const FormulaPtr formula{parse("3==3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareEqualFalse)
-{
-    const FormulaPtr formula{parse("3==4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareNotEqualTrue)
-{
-    const FormulaPtr formula{parse("3!=4")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, compareNotEqualFalse)
-{
-    const FormulaPtr formula{parse("3!=3")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, logicalAndTrue)
-{
-    const FormulaPtr formula{parse("1&&1")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, logicalAndFalse)
-{
-    const FormulaPtr formula{parse("1&&0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
@@ -666,32 +340,6 @@ TEST(TestCompiledFormulaRun, logicalAndShortCircuitTrue)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestCompiledFormulaRun, logicalOrTrue)
-{
-    const FormulaPtr formula{parse("1||0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, logicalOrFalse)
-{
-    const FormulaPtr formula{parse("0||0")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
 {
     const FormulaPtr formula{parse("1||z=3")};
@@ -706,34 +354,6 @@ TEST(TestCompiledFormulaRun, logicalOrShortCircuit)
     const Complex z{formula->get_value("z")}; //
     EXPECT_EQ(0.0, z.re);                     // z should not be set
     EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestCompiledFormulaRun, statementsIterate)
-{
-    const FormulaPtr formula{parse("3\n"
-                                   "4\n")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::ITERATE));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::ITERATE)};
-
-    EXPECT_EQ(3.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, statementsBailout)
-{
-    const FormulaPtr formula{parse("3\n"
-                                   "4\n")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(4.0, result.re);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, assignmentStatementsIterate)
@@ -872,34 +492,6 @@ TEST_P(RunFunctionCall, run)
 
 INSTANTIATE_TEST_SUITE_P(TestFormula, RunFunctionCall, ValuesIn(g_calls));
 
-TEST(TestCompiledFormulaRun, ifStatementEmptyBodyTrue)
-{
-    const FormulaPtr formula{parse("if(5)\n"
-                                   "endif")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, ifStatementEmptyBodyFalse)
-{
-    const FormulaPtr formula{parse("if(5<4)\n"
-                                   "endif")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
 TEST(TestCompiledFormulaRun, ifStatementBodyTrue)
 {
     const FormulaPtr formula{parse("if(5)\n"
@@ -1006,52 +598,6 @@ TEST(TestCompiledFormulaRun, ifThenElseComplexBodyConditionTrue)
     const Complex q{formula->get_value("q")};
     EXPECT_EQ(0.0, q.re);
     EXPECT_EQ(0.0, q.im);
-}
-
-TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyTrue)
-{
-    const FormulaPtr formula{parse("if(0)\n"
-                                   "elseif(1)\n"
-                                   "endif")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, ifElseIfStatementEmptyBodyFalse)
-{
-    const FormulaPtr formula{parse("if(0)\n"
-                                   "elseif(0)\n"
-                                   "endif")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-}
-
-TEST(TestCompiledFormulaRun, ifElseIfElseStatementEmptyBodyFalse)
-{
-    const FormulaPtr formula{parse("if(0)\n"
-                                   "elseif(0)\n"
-                                   "else\n"
-                                   "endif")};
-    ASSERT_TRUE(formula);
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-    ASSERT_TRUE(formula->compile());
-
-    const Complex result{formula->run(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re);
-    EXPECT_EQ(0.0, result.im);
 }
 
 TEST(TestCompiledFormulaRun, ifElseIfStatementBodyTrue)
