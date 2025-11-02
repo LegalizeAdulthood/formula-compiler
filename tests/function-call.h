@@ -9,6 +9,9 @@
 #include <array>
 #include <iostream>
 
+namespace formula::test
+{
+
 struct FunctionCallParam
 {
     std::string_view expr;
@@ -22,3 +25,5 @@ inline std::ostream &operator<<(std::ostream &str, const FunctionCallParam &valu
 }
 
 extern std::array<FunctionCallParam, 37> g_calls;
+
+} // namespace formula::test

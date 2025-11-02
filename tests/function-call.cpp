@@ -4,6 +4,9 @@
 //
 #include "function-call.h"
 
+namespace formula::test
+{
+
 std::array<FunctionCallParam, 37> g_calls{
     FunctionCallParam{"abs(-1.0)", 1.0, {1.0, 0.0}},
     FunctionCallParam{"acos(-1.0)", 3.1415926535897931, {3.1415926535897931, 0.0}},
@@ -43,3 +46,5 @@ std::array<FunctionCallParam, 37> g_calls{
     FunctionCallParam{"trunc(1.6)", 1.0, {1.0, 0.0}},
     FunctionCallParam{"zero(1.0)", 0.0, {0.0, 0.0}},
 };
+
+} // namespace formula::test

@@ -14,7 +14,6 @@
 #include <iterator>
 #include <string_view>
 
-using namespace formula;
 using namespace testing;
 
 namespace formula::test

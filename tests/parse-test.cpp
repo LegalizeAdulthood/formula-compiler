@@ -10,8 +10,10 @@
 #include <string>
 #include <vector>
 
-using namespace formula;
 using namespace testing;
+
+namespace formula::test
+{
 
 TEST(TestFormulaParse, constant)
 {
@@ -848,3 +850,5 @@ TEST(TestFormulaParse, globalSection)
     EXPECT_TRUE(result);
     ASSERT_TRUE(result->get_section(Section::PER_IMAGE));
 }
+
+} // namespace formula::test

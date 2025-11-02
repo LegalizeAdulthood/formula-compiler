@@ -11,8 +11,10 @@
 #include <cmath>
 #include <complex>
 
-using namespace formula;
 using namespace testing;
+
+namespace formula::test
+{
 
 TEST(TestCompiledFormulaRun, one)
 {
@@ -1071,3 +1073,5 @@ TEST(TestCompiledFormulaRun, ifMultipleElseIfStatementBodyFalse)
     EXPECT_EQ(4.0, z.re);
     EXPECT_EQ(0.0, z.im);
 }
+
+} // namespace formula::test
