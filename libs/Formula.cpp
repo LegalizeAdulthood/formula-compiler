@@ -283,7 +283,7 @@ const auto default_double_def = ((string("angle") | string("magn") | string("ske
     >> '=' >> double_)[make_default_single];
 const auto default_complex_def =
     (string("center") >> '=' >> '(' >> double_ >> ',' >> double_ >> ')')[make_default_complex];
-const auto default_string_def = ((string("helpfile") | string("helptopic")) //
+const auto default_string_def = ((string("helpfile") | string("helptopic") | string("title")) //
     >> '=' >> lexeme['"' >> *(char_ - '"') >> '"'])[make_default_single];
 const auto default_method_def = (string("method") >> '=' //
     >> (string("guessing") | string("multipass") | string("onepass")))[make_default_enum];

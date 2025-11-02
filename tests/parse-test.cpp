@@ -375,14 +375,15 @@ static DefaultSectionParam s_default_values[]{
         "default:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
     {"precisionNumber", "default:precision=30", "default:precision=\"30\"\n"},        //
     {"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
-        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"},                               //
-    {"ratingRecommended", "default:rating=recommended", "default:rating=recommended\n"},          //
-    {"ratingAverage", "default:rating=average", "default:rating=average\n"},                      //
-    {"ratingNotRecommended", "default:rating=notRecommended", "default:rating=notRecommended\n"}, //
-    {"renderTrue", "default:render=true", "default:render=true\n"},                               //
-    {"renderFalse", "default:render=false", "default:render=false\n"},                            //
-    {"skew", "default:skew=-4.5", "default:skew=-4.5\n"},                                         //
-    {"stretch", "default:stretch=4.5", "default:stretch=4.5\n"},                                  //
+        "default:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                       //
+    {"ratingRecommended", "default:rating=recommended", "default:rating=recommended\n"},                  //
+    {"ratingAverage", "default:rating=average", "default:rating=average\n"},                              //
+    {"ratingNotRecommended", "default:rating=notRecommended", "default:rating=notRecommended\n"},         //
+    {"renderTrue", "default:render=true", "default:render=true\n"},                                       //
+    {"renderFalse", "default:render=false", "default:render=false\n"},                                    //
+    {"skew", "default:skew=-4.5", "default:skew=-4.5\n"},                                                 //
+    {"stretch", "default:stretch=4.5", "default:stretch=4.5\n"},                                          //
+    {"title", R"(default:title="This is a fancy one!")", "default:title=\"This is a fancy one!\"\n"}, //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
