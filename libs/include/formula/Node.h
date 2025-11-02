@@ -245,6 +245,25 @@ private:
     Expr m_else_block;
 };
 
+class TypeNode : public Node
+{
+public:
+    explicit TypeNode(int type) :
+        m_type(type)
+    {
+    }
+    ~TypeNode() override = default;
+    void visit(Visitor &visitor) const override;
+
+    int type() const
+    {
+        return m_type;
+    }
+
+private:
+    int m_type;
+};
+
 struct FormulaSections
 {
     Expr per_image;

@@ -31,6 +31,7 @@ public:
     void visit(const ast::IfStatementNode &node) override;
     void visit(const ast::NumberNode &node) override;
     void visit(const ast::StatementSeqNode &node) override;
+    void visit(const ast::TypeNode &node) override;
     void visit(const ast::UnaryOpNode &node) override;
 
 private:

@@ -16,22 +16,7 @@
 namespace formula::ast
 {
 
-void NumberNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
-void IdentifierNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
-void FunctionCallNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
-void UnaryOpNode::visit(Visitor &visitor) const
+void AssignmentNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
@@ -41,7 +26,22 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void AssignmentNode::visit(Visitor &visitor) const
+void FunctionCallNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void IdentifierNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void IfStatementNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void NumberNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
@@ -51,7 +51,12 @@ void StatementSeqNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void IfStatementNode::visit(Visitor &visitor) const
+void TypeNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void UnaryOpNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }

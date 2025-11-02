@@ -19,7 +19,7 @@ namespace formula::ast
 namespace
 {
 
-class Interpreter : public Visitor
+class Interpreter : public NullVisitor
 {
 public:
     explicit Interpreter(Dictionary symbols) :

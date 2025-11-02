@@ -32,6 +32,7 @@ enum class NodeType
     IF_STATEMENT,
     NUMBER,
     STATEMENT_SEQ,
+    TYPE,
     UNARY_OP
 };
 
@@ -54,6 +55,7 @@ public:
     void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }
     void visit(const NumberNode &node) override         { m_type = NodeType::NUMBER; }
     void visit(const StatementSeqNode &node) override   { m_type = NodeType::STATEMENT_SEQ; }
+    void visit(const TypeNode &node) override           { m_type = NodeType::TYPE; }
     void visit(const UnaryOpNode &node) override        { m_type = NodeType::UNARY_OP; }
     // clang-format on
 
@@ -68,7 +70,7 @@ NodeType get_node_type(Expr node)
     return v.result();
 }
 
-class Simplifier : public Visitor
+class Simplifier : public NullVisitor
 {
 public:
     Simplifier() = default;

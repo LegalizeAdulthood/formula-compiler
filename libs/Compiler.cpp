@@ -59,7 +59,7 @@ static asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBinding
     return label;
 }
 
-class Compiler : public Visitor
+class Compiler : public NullVisitor
 {
 public:
     Compiler(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result, CompileError &err) :
