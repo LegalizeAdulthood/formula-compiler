@@ -371,6 +371,18 @@ TEST(TestFormualParse, defaultSectionHelpFile)
         to_string(builtin));
 }
 
+TEST(TestFormualParse, defaultSectionHelpTopic)
+{
+    const FormulaPtr result{parse(R"(default:helptopic="DivideBrot5")")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ(R"(default:helptopic="DivideBrot5")"
+              "\n",
+        to_string(builtin));
+}
+
 struct InvalidSectionParam
 {
     std::string_view name;
