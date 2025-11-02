@@ -89,7 +89,7 @@ const auto make_if_statement = [](auto &ctx)
 
 void split_iterate_bailout(ast::FormulaSections &result, const ast::Expr &expr)
 {
-    if (const auto *seq = dynamic_cast<ast::StatementSeqNode*>(expr.get()); seq)
+    if (const auto *seq = dynamic_cast<ast::StatementSeqNode *>(expr.get()); seq)
     {
         if (seq->statements().size() > 1)
         {
@@ -255,7 +255,7 @@ const auto section_formula_def =     //
         -perturb_loop_section_def >> //
         -default_section_def >>      //
         -switch_section_def)[make_section_formula];
-const auto formula_def =                                                               //
+const auto formula_def =                                            //
     (statement_seq >> lit(':') >> statement_seq)[make_init_formula] //
     | statement_seq[make_simple_formula];
 
