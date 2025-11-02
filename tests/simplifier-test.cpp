@@ -112,7 +112,7 @@ class TestSimplifyBinaryOp : public TestFormulaSimplifier, public WithParamInter
 
 TEST_P(TestSimplifyBinaryOp, simplifyBinaryOperation)
 {
-    const auto &param = GetParam();
+    const BinaryOpTestParam &param = GetParam();
 
     const Expr simplified{simplify(param.expression)};
 
