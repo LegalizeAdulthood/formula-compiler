@@ -14,6 +14,7 @@ class FunctionCallNode;
 class IdentifierNode;
 class IfStatementNode;
 class NumberNode;
+class ParamBlockNode;
 class StatementSeqNode;
 class TypeNode;
 class UnaryOpNode;
@@ -31,6 +32,7 @@ public:
     virtual void visit(const IdentifierNode &node) = 0;
     virtual void visit(const IfStatementNode &node) = 0;
     virtual void visit(const NumberNode &node) = 0;
+    virtual void visit(const ParamBlockNode &node) = 0;
     virtual void visit(const StatementSeqNode &node) = 0;
     virtual void visit(const TypeNode &node) = 0;
     virtual void visit(const UnaryOpNode &node) = 0;
@@ -61,6 +63,9 @@ public:
     {
     }
     void visit(const NumberNode &node) override
+    {
+    }
+    void visit(const ParamBlockNode &node) override
     {
     }
     void visit(const StatementSeqNode &node) override

@@ -99,6 +99,16 @@ void NodeFormatter::visit(const ast::NumberNode &node)
     m_str << "number:" << node.value() << '\n';
 }
 
+void NodeFormatter::visit(const ast::ParamBlockNode &node)
+{
+    m_str << "param_block:" << node.type() << ',' << node.name() << " {\n";
+    if (node.block())
+    {
+        node.block()->visit(*this);
+    }
+    m_str << "}\n";
+}
+
 void NodeFormatter::visit(const ast::StatementSeqNode &node)
 {
     m_str << "statement_seq:" << node.statements().size() << " {\n";

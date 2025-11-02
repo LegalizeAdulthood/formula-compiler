@@ -51,6 +51,11 @@ void NumberNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
+void ParamBlockNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void StatementSeqNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);

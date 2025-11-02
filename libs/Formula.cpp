@@ -163,6 +163,12 @@ const auto make_default_enum = [](auto &ctx)
     return std::make_shared<ast::DefaultNode>(std::get<0>(attr), ast::EnumName{std::get<1>(attr)});
 };
 
+const auto make_param_block = [](auto &ctx)
+{
+    const auto &attr{_attr(ctx)};
+    return std::make_shared<ast::ParamBlockNode>(std::get<0>(attr), std::get<1>(attr), std::get<2>(attr));
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -237,6 +243,8 @@ rule<struct DefaultMethodTag, ast::Expr> default_method = "default method";
 rule<struct DefaultPeriodicityTag, ast::Expr> default_periodicity = "default periodicity";
 rule<struct DefaultTextTag, ast::Expr> default_text = "default text";
 rule<struct DefaultRatingTag, ast::Expr> default_rating = "default rating";
+rule<struct ParamSettingTag, ast::Expr> param_setting = "param setting";
+rule<struct DefaultParamBlockTag, ast::Expr> default_param_block = "default param block";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -294,8 +302,13 @@ const auto default_text_def = ((string("perturb") | string("precision")) >> '=' 
     >> lexeme[*(char_ - eol)])[make_default_single];
 const auto default_rating_def = (string("rating") >> '=' //
     >> (string("recommended") | string("average") | string("notRecommended")))[make_default_enum];
+const auto default_param_block_def = (string("bool") >> lit("param") >> user_variable >> eol //
+                                         >> attr(nullptr) >> *eol                            //
+                                         >> lit("endparam"))[make_param_block] >>
+    *eol;
 const auto default_value_def = default_bool | default_double | default_complex | default_string //
-    | default_int | default_text | default_method | default_periodicity | default_rating;
+    | default_int | default_text | default_method | default_periodicity | default_rating        //
+    | default_param_block;
 const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> statement_section;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
@@ -326,6 +339,7 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,            
     builtin_type,                                                               //
     default_bool, default_double, default_complex, default_string, default_int, //
     default_text, default_method, default_periodicity, default_rating,          //
+    default_param_block,                                                        //
     section_formula);
 
 using Function = double();

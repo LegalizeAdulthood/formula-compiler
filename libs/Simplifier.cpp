@@ -32,6 +32,7 @@ enum class NodeType
     IDENTIFIER,
     IF_STATEMENT,
     NUMBER,
+    PARAM_BLOCK,
     STATEMENT_SEQ,
     TYPE,
     UNARY_OP
@@ -56,6 +57,7 @@ public:
     void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }
     void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }
     void visit(const NumberNode &node) override         { m_type = NodeType::NUMBER; }
+    void visit(const ParamBlockNode &node) override     { m_type = NodeType::PARAM_BLOCK; }
     void visit(const StatementSeqNode &node) override   { m_type = NodeType::STATEMENT_SEQ; }
     void visit(const TypeNode &node) override           { m_type = NodeType::TYPE; }
     void visit(const UnaryOpNode &node) override        { m_type = NodeType::UNARY_OP; }

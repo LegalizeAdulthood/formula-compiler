@@ -334,6 +334,37 @@ private:
     ValueType m_value;
 };
 
+class ParamBlockNode : public Node
+{
+public:
+    ParamBlockNode(std::string type, std::string name, const Expr &block) :
+        m_type(std::move(type)),
+        m_name(std::move(name)),
+        m_block(block)
+    {
+    }
+    ~ParamBlockNode() override = default;
+    void visit(Visitor &visitor) const override;
+
+    const std::string &type() const
+    {
+        return m_type;
+    }
+    const std::string &name() const
+    {
+        return m_name;
+    }
+    const Expr &block() const
+    {
+        return m_block;
+    }
+
+private:
+    std::string m_type;
+    std::string m_name;
+    Expr m_block;
+};
+
 struct FormulaSections
 {
     Expr per_image;
