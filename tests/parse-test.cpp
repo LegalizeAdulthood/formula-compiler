@@ -17,9 +17,84 @@ using namespace testing;
 namespace formula::test
 {
 
-TEST(TestFormulaParse, constant)
+struct SimpleExpressionParam
 {
-    const FormulaPtr result{parse("1")};
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const SimpleExpressionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static SimpleExpressionParam s_simple_expressions[]{
+    {"constant", "1"},
+    {"identifier", "z2"},
+    {"parenExpr", "(z)"},
+    {"add", "1+2"},
+    {"subtract", "1-2"},
+    {"multiply", "1*2"},
+    {"divide", "1/2"},
+    {"multiplyAdd", "1*2+4"},
+    {"parenthesisExpr", "1*(2+4)"},
+    {"unaryMinus", "-(1)"},
+    {"unaryPlus", "+(1)"},
+    {"unaryMinusNegativeOne", "--1"},
+    {"addAddAdd", "1+1+1"},
+    {"capitalLetterInIdentifier", "A"},
+    {"numberInIdentifier", "a1"},
+    {"underscoreInIdentifier", "A_1"},
+    {"power", "2^3"},
+    {"chainedPower", "2^2^2"},
+    {"assignment", "z=4"},
+    {"assignmentLongVariable", "this_is_another4_variable_name2=4"},
+    {"modulus", "|-3.0|"},
+    {"compareLess", "4<3"},
+    {"compareLessPrecedence", "3<z=4"},
+    {"compareLessEqual", "4<=3"},
+    {"compareGreater", "4>3"},
+    {"compareAssociatesLeft", "4>3<4"},
+    {"compareGreaterEqual", "4>=3"},
+    {"compareEqual", "4==3"},
+    {"compareNotEqual", "4!=3"},
+    {"logicalAnd", "4==3&&5==6"},
+    {"logicalOr", "4==3||5==6"},
+    {"ignoreComments", "3; z=6 oh toodlee doo"},
+    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n"},
+    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n"},
+    {"reservedVariablePrefixToUserVariable", "e2=1"},
+    {"reservedFunctionPrefixToUserVariable", "sine=1"},
+    {"reservedKeywordPrefixToUserVariable", "if1=1"},
+    {"ifEmptyBody", "if(0)\nendif"},
+    {"ifBlankLinesBody", "if(0)\n\nendif"},
+    {"ifThenBody", "if(0)\n1\nendif"},
+    {"ifThenComplexBody", "if(0)\nx=1\ny=2\nendif"},
+    {"ifComparisonCondition", "if(1<2)\nendif"},
+    {"ifConjunctiveCondition", "if(1&&2)\nendif"},
+    {"ifElseEmptyBody", "if(0)\nelse\nendif"},
+    {"ifElseBlankLinesBody", "if(0)\n\nelse\n\nendif"},
+    {"ifThenElseBody", "if(0)\nelse\n1\nendif"},
+    {"ifThenBodyElse", "if(0)\n1\nelse\nendif"},
+    {"ifThenElseComplexBody", "if(0)\nx=1\ny=2\nelse\nz=3\nq=4\nendif"},
+    {"ifElseIfEmptyBody", "if(0)\nelseif(1)\nelse\nendif"},
+    {"ifMultipleElseIfEmptyBody", "if(0)\nelseif(0)\nelseif(0)\nelse\nendif"},
+    {"ifElseIfBlankLinesBody", "if(0)\n\nelseif(0)\n\nelse\n\nendif"},
+    {"ifThenElseIfBody", "if(0)\nelseif(0)\n1\nendif"},
+    {"ifThenBodyElseIf", "if(0)\n1\nelseif(0)\nendif"},
+    {"ifThenElseIfComplexBody", "if(0)\nx=1\ny=2\nelseif(1)\nz=3\nq=4\nendif"},
+    {"backslashContinuesStatement", "if(\\\n0)\nendif"},
+};
+
+class SimpleExpressions : public TestWithParam<SimpleExpressionParam>
+{
+};
+
+TEST_P(SimpleExpressions, parse)
+{
+    const SimpleExpressionParam &param{GetParam()};
+
+    const FormulaPtr result{parse(param.text)};
 
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
@@ -27,155 +102,7 @@ TEST(TestFormulaParse, constant)
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
 
-TEST(TestFormulaParse, identifier)
-{
-    const FormulaPtr result{parse("z2")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, parenExpr)
-{
-    const FormulaPtr result{parse("(z)")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, add)
-{
-    const FormulaPtr result{parse("1+2")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, subtract)
-{
-    const FormulaPtr result{parse("1-2")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, multiply)
-{
-    const FormulaPtr result{parse("1*2")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, divide)
-{
-    const FormulaPtr result{parse("1/2")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, multiplyAdd)
-{
-    const FormulaPtr result{parse("1*2+4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, parenthesisExpr)
-{
-    const FormulaPtr result{parse("1*(2+4)")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, unaryMinus)
-{
-    const FormulaPtr result{parse("-(1)")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, unaryPlus)
-{
-    const FormulaPtr result{parse("+(1)")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, unaryMinusNegativeOne)
-{
-    const FormulaPtr result{parse("--1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, addAddAdd)
-{
-    const FormulaPtr result{parse("1+1+1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, capitalLetterInIdentifier)
-{
-    const FormulaPtr result{parse("A")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, numberInIdentifier)
-{
-    const FormulaPtr result{parse("a1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, underscoreInIdentifier)
-{
-    const FormulaPtr result{parse("A_1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_expressions));
 
 TEST(TestFormulaParse, invalidIdentifier)
 {
@@ -186,190 +113,36 @@ TEST(TestFormulaParse, invalidIdentifier)
     EXPECT_FALSE(result2);
 }
 
-TEST(TestFormulaParse, power)
+struct MultiStatementParam
 {
-    const FormulaPtr result{parse("2^3")};
+    std::string_view name;
+    std::string_view text;
+};
 
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+inline void PrintTo(const MultiStatementParam &param, std::ostream *os)
+{
+    *os << param.name;
 }
 
-TEST(TestFormulaParse, chainedPower)
+static MultiStatementParam s_multi_statements[]{
+    {"statements", "3\n4\n"},
+    {"assignmentStatements", "z=3\nz=4\n"},
+    {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},
+    {"assignmentWithBlankLines", "z=3; comment\n\r\n\nz=4; another comment\n"},
+    {"commaSeparatedStatements", "3,4"},
+    {"commaSeparatedAssignmentStatements", "z=3,z=4"},
+    {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},
+    {"commaWithSpaces", "3 , 4"},
+};
+
+class MultiStatements : public TestWithParam<MultiStatementParam>
 {
-    const FormulaPtr result{parse("2^2^2")};
+};
 
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, assignment)
+TEST_P(MultiStatements, parse)
 {
-    const FormulaPtr result{parse("z=4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, assignmentLongVariable)
-{
-    const FormulaPtr result{parse("this_is_another4_variable_name2=4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, modulus)
-{
-    const FormulaPtr result{parse("|-3.0|")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareLess)
-{
-    const FormulaPtr result{parse("4<3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareLessPrecedence)
-{
-    const FormulaPtr result{parse("3<z=4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareLessEqual)
-{
-    const FormulaPtr result{parse("4<=3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareGreater)
-{
-    const FormulaPtr result{parse("4>3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareAssociatesLeft)
-{
-    const FormulaPtr result{parse("4>3<4")}; // This is equivalent to (4 > 3) < 4
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareGreaterEqual)
-{
-    const FormulaPtr result{parse("4>=3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareEqual)
-{
-    const FormulaPtr result{parse("4==3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, compareNotEqual)
-{
-    const FormulaPtr result{parse("4!=3")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, logicalAnd)
-{
-    const FormulaPtr result{parse("4==3&&5==6")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, logicalOr)
-{
-    const FormulaPtr result{parse("4==3||5==6")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ignoreComments)
-{
-    const FormulaPtr result{parse("3; z=6 oh toodlee doo")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ignoreCommentsLF)
-{
-    const FormulaPtr result{parse("3; z=6 oh toodlee doo\n")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ignoreCommentsCRLF)
-{
-    const FormulaPtr result{parse("3; z=6 oh toodlee doo\r\n")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, statements)
-{
-    const FormulaPtr result{parse("3\n"
-                                  "4\n")};
+    const MultiStatementParam &param{GetParam()};
+    const FormulaPtr result{parse(param.text)};
 
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
@@ -377,40 +150,7 @@ TEST(TestFormulaParse, statements)
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
 
-TEST(TestFormulaParse, assignmentStatements)
-{
-    const FormulaPtr result{parse("z=3\n"
-                                  "z=4\n")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, assignmentWithComments)
-{
-    const FormulaPtr result{parse("z=3; comment\n"
-                                  "z=4; another comment\n")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, assignmentWithBlankLines)
-{
-    const FormulaPtr result{parse("z=3; comment\n"
-                                  "\r\n"
-                                  "\n"
-                                  "z=4; another comment\n")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, MultiStatements, ValuesIn(s_multi_statements));
 
 TEST(TestFormulaParse, initializeIterateBailout)
 {
@@ -507,351 +247,77 @@ static std::string s_reserved_words[]{
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
-TEST(TestFormulaParse, reservedVariablePrefixToUserVariable)
+struct ParseFailureParam
 {
-    const FormulaPtr result{parse("e2=1")};
+    std::string_view name;
+    std::string_view text;
+};
 
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
+{
+    *os << param.name;
 }
 
-TEST(TestFormulaParse, reservedFunctionPrefixToUserVariable)
+static ParseFailureParam s_parse_failures[]{
+    {"ifWithoutEndIf", "if(1)"},
+    {"ifElseWithoutEndIf", "if(1)\nelse"},
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
+    {"builtinSectionBogus", "builtin:type=0"},
+};
+
+class ParseFailures : public TestWithParam<ParseFailureParam>
 {
-    const FormulaPtr result{parse("sine=1")};
+};
 
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, reservedKeywordPrefixToUserVariable)
+TEST_P(ParseFailures, parse)
 {
-    const FormulaPtr result{parse("if1=1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifWithoutEndIf)
-{
-    const FormulaPtr result{parse("if(1)")};
+    const ParseFailureParam &param{GetParam()};
+    const FormulaPtr result{parse(param.text)};
 
     EXPECT_FALSE(result);
 }
 
-TEST(TestFormulaParse, ifEmptyBody)
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
+
+struct SingleSectionParam
 {
-    const FormulaPtr result{parse("if(0)\n"
-                                  "endif")};
+    std::string_view name;
+    std::string_view text;
+    Section section;
+};
+
+inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static SingleSectionParam s_single_sections[]{
+    {"globalSection", "global:1", Section::PER_IMAGE},
+    {"initSection", "init:1", Section::INITIALIZE},
+    {"loopSection", "loop:1", Section::ITERATE},
+    {"bailoutSection", "bailout:1", Section::BAILOUT},
+    {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
+    {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
+    {"defaultSection", "default:1", Section::DEFAULT},
+    {"switchSection", "switch:1", Section::SWITCH},
+};
+
+class SingleSections : public TestWithParam<SingleSectionParam>
+{
+};
+
+TEST_P(SingleSections, parse)
+{
+    const SingleSectionParam &param{GetParam()};
+
+    const FormulaPtr result{parse(param.text)};
 
     ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(param.section));
 }
 
-TEST(TestFormulaParse, ifBlankLinesBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "1\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenComplexBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "x=1\n"
-                                  "y=2\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifComparisonCondition)
-{
-    const FormulaPtr result{parse("if(1<2)\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifConjunctiveCondition)
-{
-    const FormulaPtr result{parse("if(1&&2)\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifElseWithoutEndIf)
-{
-    const FormulaPtr result{parse("if(1)\n"
-                                  "else")};
-
-    EXPECT_FALSE(result);
-}
-
-TEST(TestFormulaParse, ifElseEmptyBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "else\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifElseBlankLinesBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "\n"
-                                  "else\n"
-                                  "\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenElseBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "else\n"
-                                  "1\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenBodyElse)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "1\n"
-                                  "else\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenElseComplexBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "x=1\n"
-                                  "y=2\n"
-                                  "else\n"
-                                  "z=3\n"
-                                  "q=4\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifElseIfWithoutEndIf)
-{
-    const FormulaPtr result{parse("if(1)\n"
-                                  "elseif(0)")};
-
-    EXPECT_FALSE(result);
-}
-
-TEST(TestFormulaParse, ifElseIfElseWithoutEndIf)
-{
-    const FormulaPtr result{parse("if(1)\n"
-                                  "elseif(0)\n"
-                                  "else")};
-
-    EXPECT_FALSE(result);
-}
-
-TEST(TestFormulaParse, ifElseIfEmptyBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "elseif(1)\n"
-                                  "else\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifMultipleElseIfEmptyBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "elseif(0)\n"
-                                  "elseif(0)\n"
-                                  "else\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifElseIfBlankLinesBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "\n"
-                                  "elseif(0)\n"
-                                  "\n"
-                                  "else\n"
-                                  "\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenElseIfBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "elseif(0)\n"
-                                  "1\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenBodyElseIf)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "1\n"
-                                  "elseif(0)\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, ifThenElseIfComplexBody)
-{
-    const FormulaPtr result{parse("if(0)\n"
-                                  "x=1\n"
-                                  "y=2\n"
-                                  "elseif(1)\n"
-                                  "z=3\n"
-                                  "q=4\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, backslashContinuesStatement)
-{
-    const FormulaPtr result{parse("if(\\\n"
-                                  "0)\n"
-                                  "endif")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, commaSeparatedStatements)
-{
-    const FormulaPtr result{parse("3,4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, commaSeparatedAssignmentStatements)
-{
-    const FormulaPtr result{parse("z=3,z=4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, mixedNewlineAndCommaSeparators)
-{
-    const FormulaPtr result{parse("z=3,z=4\n"
-                                  "z=5")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, commaWithSpaces)
-{
-    const FormulaPtr result{parse("3 , 4")};
-
-    ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, globalSection)
-{
-    const FormulaPtr result{parse("global:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
-}
+INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SingleSections, ValuesIn(s_single_sections));
 
 TEST(TestFormulaParse, builtinSectionMandelbrot)
 {
@@ -871,67 +337,6 @@ TEST(TestFormulaParse, builtinSectionJulia)
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
     EXPECT_TRUE(builtin);
     EXPECT_EQ("type:2\n", to_string(builtin));
-}
-
-TEST(TestFormulaParse, builtinSectionBogus)
-{
-    ASSERT_FALSE(parse("builtin:type=0"));
-}
-
-TEST(TestFormulaParse, initSection)
-{
-    const FormulaPtr result{parse("init:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-}
-
-TEST(TestFormulaParse, loopSection)
-{
-    const FormulaPtr result{parse("loop:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-}
-
-TEST(TestFormulaParse, bailoutSection)
-{
-    const FormulaPtr result{parse("bailout:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-}
-
-TEST(TestFormulaParse, perturbInitSection)
-{
-    const FormulaPtr result{parse("perturbinit:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
-}
-
-TEST(TestFormulaParse, perturbLoopSection)
-{
-    const FormulaPtr result{parse("perturbloop:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
-}
-
-TEST(TestFormulaParse, defaultSection)
-{
-    const FormulaPtr result{parse("default:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::DEFAULT));
-}
-
-TEST(TestFormulaParse, switchSection)
-{
-    const FormulaPtr result{parse("switch:1")};
-
-    ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
 struct InvalidSectionParam
@@ -985,6 +390,7 @@ class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
 TEST_P(InvalidSectionOrdering, parse)
 {
     const InvalidSectionParam &param{GetParam()};
+
     const FormulaPtr result{parse(param.text)};
 
     ASSERT_FALSE(result);
