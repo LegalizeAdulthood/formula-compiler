@@ -50,6 +50,10 @@ void NodeFormatter::visit(const ast::DefaultNode &node)
     {
         m_str << std::get<4>(node.value()).name;
     }
+    else if (node.value().index() == 5)
+    {
+        m_str << (std::get<5>(node.value()) ? "true" : "false");
+    }
     else
     {
         throw std::runtime_error("ValueType variant index out of range");
