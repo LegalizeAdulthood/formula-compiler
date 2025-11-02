@@ -275,6 +275,31 @@ private:
     BuiltinType m_type;
 };
 
+class DefaultNode : public Node
+{
+public:
+    DefaultNode(std::string key, int value) :
+        m_key(std::move(key)),
+        m_value(value)
+    {
+    }
+    ~DefaultNode() override = default;
+    void visit(Visitor &visitor) const override;
+
+    const std::string &key() const
+    {
+        return m_key;
+    }
+    int value() const
+    {
+        return m_value;
+    }
+
+private:
+    std::string m_key;
+    int m_value;
+};
+
 struct FormulaSections
 {
     Expr per_image;

@@ -145,6 +145,12 @@ const auto make_type = [](auto &ctx)
     return std::make_shared<ast::TypeNode>(static_cast<ast::BuiltinType>(_attr(ctx) - '0'));
 };
 
+const auto make_default_value = [](auto &ctx)
+{
+    const auto &attr = _attr(ctx);
+    return std::make_shared<ast::DefaultNode>(std::get<0>(attr), std::get<1>(attr));
+};
+
 // Terminal parsers
 const auto alpha = char_('a', 'z') | char_('A', 'Z');
 const auto digit = char_('0', '9');
@@ -209,6 +215,7 @@ rule<struct DefaultSectionTag, ast::Expr> default_section = "default section";
 rule<struct SwitchSectionTag, ast::Expr> switch_section = "switch section";
 rule<struct SectionTag, ast::FormulaSections> section_formula = "section formula";
 rule<struct TypeTag, ast::Expr> type = "builtin type";
+rule<struct DefaultValueTag, ast::Expr> default_value = "default value";
 
 const auto number_def = double_[make_number];
 const auto variable_def = (identifier - reserved_function - reserved_word - section_name)[make_identifier];
@@ -249,7 +256,8 @@ const auto loop_section_def = lit("loop:") >> *eol >> statement_seq;
 const auto bailout_section_def = lit("bailout:") >> *eol >> statement_seq;
 const auto perturb_init_section_def = lit("perturbinit:") >> *eol >> statement_seq;
 const auto perturb_loop_section_def = lit("perturbloop:") >> *eol >> statement_seq;
-const auto default_section_def = lit("default:") >> *eol >> statement_seq;
+const auto default_value_def = (string("angle") >> lit('=') >> int_)[make_default_value];
+const auto default_section_def = lit("default:") >> *eol >> default_value >> *eol;
 const auto switch_section_def = lit("switch:") >> *eol >> statement_seq;
 const auto formula_part_def = (statement % +eol)[make_statement_seq] >> *eol;
 const auto section_formula_def =     //
@@ -274,7 +282,8 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,           /
     global_section, builtin_section,                                           //
     init_section, loop_section, bailout_section,                               //
     perturb_init_section, perturb_loop_section,                                //
-    default_section, switch_section,                                           //
+    default_value, default_section,                                            //
+    switch_section,                                                            //
     type,                                                                      //
     section_formula);
 

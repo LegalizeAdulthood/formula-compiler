@@ -27,6 +27,7 @@ enum class NodeType
     NONE = 0,
     ASSIGNMENT,
     BINARY_OP,
+    DEFAULT,
     FUNCTION_CALL,
     IDENTIFIER,
     IF_STATEMENT,
@@ -50,6 +51,7 @@ public:
     // clang-format off
     void visit(const AssignmentNode &node) override     { m_type = NodeType::ASSIGNMENT; }
     void visit(const BinaryOpNode &node) override       { m_type = NodeType::BINARY_OP; }
+    void visit(const DefaultNode &node) override        { m_type = NodeType::DEFAULT; }
     void visit(const FunctionCallNode &node) override   { m_type = NodeType::FUNCTION_CALL; }
     void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }
     void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }

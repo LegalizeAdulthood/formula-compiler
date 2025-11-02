@@ -28,6 +28,7 @@ public:
 
     void visit(const ast::AssignmentNode &node) override;
     void visit(const ast::BinaryOpNode &node) override;
+    void visit(const ast::DefaultNode &node) override;
     void visit(const ast::FunctionCallNode &node) override;
     void visit(const ast::IdentifierNode &node) override;
     void visit(const ast::IfStatementNode &node) override;

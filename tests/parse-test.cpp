@@ -299,7 +299,7 @@ static SingleSectionParam s_single_sections[]{
     {"bailoutSection", "bailout:1", Section::BAILOUT},
     {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
     {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
-    {"defaultSection", "default:1", Section::DEFAULT},
+    {"defaultSection", "default:angle=0", Section::DEFAULT},
     {"switchSection", "switch:1", Section::SWITCH},
 };
 
@@ -339,6 +339,16 @@ TEST(TestFormulaParse, builtinSectionJulia)
     EXPECT_EQ("type:2\n", to_string(builtin));
 }
 
+TEST(TestFormualParse, defaultSectionAngle)
+{
+    const FormulaPtr result{parse("default:angle=0")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::DEFAULT)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("default:angle=0\n", to_string(builtin));
+}
+
 struct InvalidSectionParam
 {
     std::string_view name;
@@ -376,11 +386,11 @@ static InvalidSectionParam s_invalid_sections[]{
         "perturbloop:1\n"
         "perturbinit:1"},
     {"perturbLoopAfterDefault",
-        "default:1\n"
+        "default:angle=0\n"
         "perturbloop:1"},
     {"defaultAfterSwitch",
         "switch:1\n"
-        "default:1"},
+        "default:angle=0"},
 };
 
 class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
@@ -406,7 +416,7 @@ TEST(TestFormulaParse, maximumSections)
                                   "bailout:1\n"
                                   "perturbinit:1\n"
                                   "perturbloop:1\n"
-                                  "default:1\n"
+                                  "default:angle=0\n"
                                   "switch:1\n")};
 
     ASSERT_TRUE(result);
@@ -426,7 +436,7 @@ TEST(TestFormulaParse, builtinSections)
     const FormulaPtr result{parse("builtin:type=1\n"
                                   "perturbinit:1\n"
                                   "perturbloop:1\n"
-                                  "default:1\n"
+                                  "default:angle=0\n"
                                   "switch:1\n")};
 
     ASSERT_TRUE(result);
@@ -460,28 +470,28 @@ static BuiltinDisallowsParam s_builtin_disallows[]{
         "builtin:type=1\n"
         "perturbinit:1\n"
         "perturbloop:1\n"
-        "default:1\n"
+        "default:angle=0\n"
         "switch:1\n"},
     {"init",
         "builtin:type=1\n"
         "init:1\n"
         "perturbinit:1\n"
         "perturbloop:1\n"
-        "default:1\n"
+        "default:angle=0\n"
         "switch:1\n"},
     {"loop",
         "builtin:type=1\n"
         "loop:1\n"
         "perturbinit:1\n"
         "perturbloop:1\n"
-        "default:1\n"
+        "default:angle=0\n"
         "switch:1\n"},
     {"bailout",
         "builtin:type=1\n"
         "bailout:1\n"
         "perturbinit:1\n"
         "perturbloop:1\n"
-        "default:1\n"
+        "default:angle=0\n"
         "switch:1\n"},
 };
 

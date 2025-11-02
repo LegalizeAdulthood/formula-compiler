@@ -26,6 +26,11 @@ void NodeFormatter::visit(const ast::BinaryOpNode &node)
     node.right()->visit(*this);
 }
 
+void NodeFormatter::visit(const ast::DefaultNode &node)
+{
+    m_str << "default:" << node.key() << "=" << node.value() << '\n';
+}
+
 void NodeFormatter::visit(const ast::FunctionCallNode &node)
 {
     m_str << "function_call:" << node.name() << "(\n";

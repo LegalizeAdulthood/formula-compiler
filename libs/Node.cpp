@@ -26,6 +26,11 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
+void DefaultNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void FunctionCallNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
