@@ -352,19 +352,24 @@ inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
 }
 
 static DefaultSectionParam s_default_values[]{
-    {"angle", "default:angle=0", "default:angle=0\n"},
-    {"center", "default:center=(-0.5,0)", "default:center=(-0.5,0)\n"},
+    //
+    {"angle", "default:angle=0", "default:angle=0\n"},                  //
+    {"center", "default:center=(-0.5,0)", "default:center=(-0.5,0)\n"}, //
     {"helpFile", R"(default:helpfile="HelpFile.html")",
         R"(default:helpfile="HelpFile.html")"
         "\n"},
     {"helpTopic", R"(default:helptopic="DivideBrot5")",
         R"(default:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "default:magn=4.5\n"},
-    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},
-    {"methodGuessing", "default:method=guessing", "default:method=\"guessing\"\n"},
-    {"methodMultiPass", "default:method=multipass", "default:method=\"multipass\"\n"},
-    {"methodOnePass", "default:method=onepass", "default:method=\"onepass\"\n"},
+    {"magn", "default:magn=4.5", "default:magn=4.5\n"},                                //
+    {"maxIter", "default:maxiter=256", "default:maxiter=256\n"},                       //
+    {"methodGuessing", "default:method=guessing", "default:method=\"guessing\"\n"},    //
+    {"methodMultiPass", "default:method=multipass", "default:method=\"multipass\"\n"}, //
+    {"methodOnePass", "default:method=onepass", "default:method=\"onepass\"\n"},       //
+    {"periodicity0", "default:periodicity=0", "default:periodicity=0\n"},              //
+    {"periodicity1", "default:periodicity=1", "default:periodicity=1\n"},              //
+    {"periodicity2", "default:periodicity=2", "default:periodicity=2\n"},              //
+    {"periodicity3", "default:periodicity=3", "default:periodicity=3\n"},              //
 };
 
 class DefaultSection : public TestWithParam<DefaultSectionParam>
