@@ -4,6 +4,8 @@
 //
 #pragma once
 
+#include "formula/Formula.h"
+
 #include <formula/Visitor.h>
 
 #include <ostream>
@@ -37,5 +39,7 @@ public:
 private:
     std::ostream &m_str;
 };
+
+std::string to_string(const ast::Expr &expr);
 
 } // namespace formula::test

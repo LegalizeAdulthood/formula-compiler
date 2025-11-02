@@ -7,6 +7,7 @@
 #include <formula/Node.h>
 
 #include <iostream>
+#include <sstream>
 
 namespace formula::test
 {
@@ -82,6 +83,14 @@ void NodeFormatter::visit(const ast::UnaryOpNode &node)
 {
     m_str << "unary_op:" << node.op() << '\n';
     node.operand()->visit(*this);
+}
+
+std::string to_string(const ast::Expr &expr)
+{
+    std::ostringstream str;
+    NodeFormatter formatter(str);
+    expr->visit(formatter);
+    return str.str();
 }
 
 } // namespace formula::test

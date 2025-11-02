@@ -26,67 +26,58 @@ namespace formula::test
 
 class TestFormulaSimplifier : public Test
 {
-protected:
-    std::ostringstream str;
-    NodeFormatter formatter{str};
 };
 
 TEST_F(TestFormulaSimplifier, simplifySingleStatementSequence)
 {
     const Expr simplified{simplify(statements({number(42.0)}))};
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:42\n", str.str());
+    EXPECT_EQ("number:42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, multipleStatementSequencePreserved)
 {
     const Expr simplified{simplify(statements({number(42.0), identifier("z")}))};
 
-    simplified->visit(formatter);
     EXPECT_EQ("statement_seq:2 {\n"
               "number:42\n"
               "identifier:z\n"
               "}\n",
-        str.str());
+        to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, collapseMultipleNumberStatements)
 {
     const Expr simplified{simplify(statements({identifier("z"), number(42.0), number(7.0), identifier("q")}))};
 
-    simplified->visit(formatter);
     EXPECT_EQ("statement_seq:3 {\n"
               "identifier:z\n"
               "number:7\n"
               "identifier:q\n"
               "}\n",
 
-        str.str());
+        to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, unaryPlusNumber)
 {
     const Expr simplified{simplify(unary('+', number(-42.0)))};
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:-42\n", str.str());
+    EXPECT_EQ("number:-42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, unaryMinusNumber)
 {
     const Expr simplified{simplify(unary('-', number(-42.0)))};
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:42\n", str.str());
+    EXPECT_EQ("number:42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, unaryModulusNumber)
 {
     const Expr simplified{simplify(unary('|', number(-6.0)))};
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:36\n", str.str());
+    EXPECT_EQ("number:36\n", to_string(simplified));
 }
 
 struct BinaryOpTestParam
@@ -109,14 +100,10 @@ static std::string trim_ws(std::string s)
     return s;
 }
 
-// Google Test formatter for BinaryOpTestParam
 void PrintTo(const BinaryOpTestParam &param, std::ostream *os)
 {
-    std::ostringstream expr_str;
-    NodeFormatter formatter{expr_str};
-    param.expression->visit(formatter);
-    *os << "BinaryOpTestParam{test_name: " << param.test_name << ", expression: " << trim_ws(expr_str.str())
-        << ", expected: " << trim_ws(param.expected) << "}";
+    *os << "BinaryOpTestParam{test_name: " << param.test_name
+        << ", expression: " << trim_ws(to_string(param.expression)) << ", expected: " << trim_ws(param.expected) << "}";
 }
 
 class TestSimplifyBinaryOp : public TestFormulaSimplifier, public WithParamInterface<BinaryOpTestParam>
@@ -129,8 +116,7 @@ TEST_P(TestSimplifyBinaryOp, simplifyBinaryOperation)
 
     const Expr simplified{simplify(param.expression)};
 
-    simplified->visit(formatter);
-    EXPECT_EQ(param.expected, str.str());
+    EXPECT_EQ(param.expected, to_string(simplified));
 }
 
 static BinaryOpTestParam s_binary_op_test_params[] = {
@@ -196,10 +182,9 @@ TEST_P(TestSimplifyFunctionCall, simplifyFunctionCallOnNumber)
 
     const Expr simplified = simplify(function_call(param.function_name, number(param.input_value)));
 
-    simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << param.expected_result << "\n";
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 INSTANTIATE_TEST_SUITE_P(FunctionCalls, TestSimplifyFunctionCall, ValuesIn(s_function_simplify_test_params),
@@ -209,11 +194,10 @@ TEST_F(TestFormulaSimplifier, functionCallOnIdentifierNotSimplified)
 {
     const Expr simplified = simplify(function_call("sin", identifier("x")));
 
-    simplified->visit(formatter);
     EXPECT_EQ("function_call:sin(\n"
               "identifier:x\n"
               ")\n",
-        str.str());
+        to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, unknownFunctionNotSimplified)
@@ -225,48 +209,43 @@ TEST_F(TestFormulaSimplifier, piConstantSimplified)
 {
     const Expr simplified = simplify(identifier("pi"));
 
-    simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << std::atan2(0.0, -1.0) << "\n"; // ~3.14159
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, eConstantSimplified)
 {
     const Expr simplified = simplify(identifier("e"));
 
-    simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << std::exp(1.0) << "\n"; // ~2.71828
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, otherIdentifierNotSimplified)
 {
     const Expr simplified = simplify(identifier("someVariable"));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("identifier:someVariable\n", str.str());
+    EXPECT_EQ("identifier:someVariable\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, piInExpressionSimplified)
 {
     const Expr simplified = simplify(binary(identifier("pi"), '*', number(2.0)));
 
-    simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << (std::atan2(0.0, -1.0) * 2.0) << "\n";
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, eInExpressionSimplified)
 {
     const Expr simplified = simplify(binary(number(1.0), '+', identifier("e")));
 
-    simplified->visit(formatter);
     std::ostringstream expected;
     expected << "number:" << (1.0 + std::exp(1.0)) << "\n";
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, constantsInFunctionCallsSimplified)
@@ -274,59 +253,52 @@ TEST_F(TestFormulaSimplifier, constantsInFunctionCallsSimplified)
     // Test sin(pi/2) which should equal 1.0
     const Expr simplified = simplify(function_call("sin", binary(identifier("pi"), '/', number(2.0))));
 
-    simplified->visit(formatter);
     const double expectedValue = std::sin(std::atan2(0.0, -1.0) / 2.0);
     std::ostringstream expected;
     expected << "number:" << expectedValue << "\n";
-    EXPECT_EQ(expected.str(), str.str());
+    EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionSimplified)
 {
     const Expr simplified = simplify(if_statement(number(1.0), number(42.0), number(7.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:42\n", str.str());
+    EXPECT_EQ("number:42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionSimplified)
 {
     const Expr simplified = simplify(if_statement(number(0.0), number(42.0), number(7.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:7\n", str.str());
+    EXPECT_EQ("number:7\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionNoElse)
 {
     const Expr simplified = simplify(if_statement(number(5.0), number(42.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:42\n", str.str());
+    EXPECT_EQ("number:42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionNoElse)
 {
     const Expr simplified = simplify(if_statement(number(0.0), number(42.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:0\n", str.str());
+    EXPECT_EQ("number:0\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithNonZeroConditionNoThen)
 {
     const Expr simplified = simplify(if_statement(number(3.0), nullptr, number(7.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:1\n", str.str());
+    EXPECT_EQ("number:1\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithZeroConditionNoThen)
 {
     const Expr simplified = simplify(if_statement(number(0.0), nullptr, number(7.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:7\n", str.str());
+    EXPECT_EQ("number:7\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithExpressionConditionSimplified)
@@ -334,8 +306,7 @@ TEST_F(TestFormulaSimplifier, ifStatementWithExpressionConditionSimplified)
     // If condition evaluates to a number, it should be simplified
     const Expr simplified = simplify(if_statement(binary(number(2.0), '+', number(3.0)), number(42.0), number(7.0)));
 
-    simplified->visit(formatter);
-    EXPECT_EQ("number:42\n", str.str());
+    EXPECT_EQ("number:42\n", to_string(simplified));
 }
 
 TEST_F(TestFormulaSimplifier, ifStatementWithVariableConditionNotSimplified)
@@ -343,7 +314,6 @@ TEST_F(TestFormulaSimplifier, ifStatementWithVariableConditionNotSimplified)
     // If condition contains variables, it should not be simplified
     const Expr simplified = simplify(if_statement(identifier("x"), number(42.0), number(7.0)));
 
-    simplified->visit(formatter);
     EXPECT_EQ("if_statement:(\n"
               "identifier:x\n"
               ") {\n"
@@ -351,7 +321,7 @@ TEST_F(TestFormulaSimplifier, ifStatementWithVariableConditionNotSimplified)
               "} else {\n"
               "number:7\n"
               "} endif\n",
-        str.str());
+        to_string(simplified));
 }
 
 } // namespace formula::test
