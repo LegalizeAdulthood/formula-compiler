@@ -8,6 +8,7 @@
 #include "formula/Interpreter.h"
 #include "parser.h"
 
+#include <cstdint>
 #include <utility>
 
 using namespace formula::ast;
