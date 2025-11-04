@@ -20,6 +20,7 @@ enum class TokenType
     MINUS,
     MULTIPLY,
     DIVIDE,
+    POWER,
     INVALID
 };
 

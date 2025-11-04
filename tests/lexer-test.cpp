@@ -456,4 +456,89 @@ TEST(TestLexer, standaloneOperators)
     EXPECT_EQ(TokenType::DIVIDE, tokens[3].type);
 }
 
+TEST(TestLexer, powerOperator)
+{
+    Lexer lexer("2^3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::POWER, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, powerWithSpaces)
+{
+    Lexer lexer("5 ^ 2");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::POWER, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, chainedPower)
+{
+    Lexer lexer("2^3^4");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::POWER, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::POWER, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[4].value));
+}
+
+TEST(TestLexer, powerInExpression)
+{
+    Lexer lexer("1+2^3*4");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::POWER, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[6].value));
+}
+
+TEST(TestLexer, allOperators)
+{
+    Lexer lexer("+ - * / ^");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::PLUS, tokens[0].type);
+    EXPECT_EQ(TokenType::MINUS, tokens[1].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[2].type);
+    EXPECT_EQ(TokenType::DIVIDE, tokens[3].type);
+    EXPECT_EQ(TokenType::POWER, tokens[4].type);
+}
+
 } // namespace formula::test

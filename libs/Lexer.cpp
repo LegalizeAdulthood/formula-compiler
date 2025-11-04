@@ -54,6 +54,8 @@ Token Lexer::next_token()
         return Token(TokenType::MULTIPLY, start, 1);
     case '/':
         return Token(TokenType::DIVIDE, start, 1);
+    case '^':
+        return Token(TokenType::POWER, start, 1);
     default:
         // Unknown character
         return Token(TokenType::INVALID, start, 1);
