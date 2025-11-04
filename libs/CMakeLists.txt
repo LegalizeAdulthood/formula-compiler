@@ -11,6 +11,7 @@ add_library(formula
     include/formula/Formula.h Formula.cpp
     functions.h functions.cpp
     include/formula/Interpreter.h Interpreter.cpp
+    include/formula/Lexer.h Lexer.cpp
     include/formula/Node.h Node.cpp
     parser.h parser.cpp
     include/formula/Simplifier.h Simplifier.cpp

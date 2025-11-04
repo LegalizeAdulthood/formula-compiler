@@ -12,6 +12,7 @@ add_executable("test-formula"
     "function-call.h" "function-call.cpp"
     "compile-test.cpp"
     "interpreter-test.cpp"
+    "lexer-test.cpp"
     "parse-test.cpp"
     "simplifier-test.cpp"
 )
