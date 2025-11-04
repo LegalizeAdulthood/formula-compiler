@@ -21,6 +21,7 @@ enum class TokenType
     MULTIPLY,
     DIVIDE,
     POWER,
+    ASSIGN,
     INVALID
 };
 
