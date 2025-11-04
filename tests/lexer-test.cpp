@@ -84,17 +84,21 @@ TEST(TestLexer, scientificNotationUppercaseE)
 TEST(TestLexer, negativeNumber)
 {
     Lexer lexer("-42");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::MINUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
-    EXPECT_DOUBLE_EQ(-42.0, std::get<double>(token.value));
+    EXPECT_DOUBLE_EQ(42.0, std::get<double>(token.value));
 }
 
 TEST(TestLexer, positiveNumber)
 {
     Lexer lexer("+42");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::PLUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(42.0, std::get<double>(token.value));
 }
@@ -102,17 +106,21 @@ TEST(TestLexer, positiveNumber)
 TEST(TestLexer, negativeDecimal)
 {
     Lexer lexer("-3.14");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::MINUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
-    EXPECT_DOUBLE_EQ(-3.14, std::get<double>(token.value));
+    EXPECT_DOUBLE_EQ(3.14, std::get<double>(token.value));
 }
 
 TEST(TestLexer, positiveDecimal)
 {
     Lexer lexer("+2.718");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::PLUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(2.718, std::get<double>(token.value));
 }
@@ -120,17 +128,21 @@ TEST(TestLexer, positiveDecimal)
 TEST(TestLexer, negativeDecimalStartingWithPoint)
 {
     Lexer lexer("-.5");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::MINUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
-    EXPECT_DOUBLE_EQ(-0.5, std::get<double>(token.value));
+    EXPECT_DOUBLE_EQ(0.5, std::get<double>(token.value));
 }
 
 TEST(TestLexer, positiveDecimalStartingWithPoint)
 {
     Lexer lexer("+.75");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::PLUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(0.75, std::get<double>(token.value));
 }
@@ -138,17 +150,21 @@ TEST(TestLexer, positiveDecimalStartingWithPoint)
 TEST(TestLexer, negativeScientificNotation)
 {
     Lexer lexer("-1.5e10");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::MINUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
-    EXPECT_DOUBLE_EQ(-1.5e10, std::get<double>(token.value));
+    EXPECT_DOUBLE_EQ(1.5e10, std::get<double>(token.value));
 }
 
 TEST(TestLexer, positiveScientificNotation)
 {
     Lexer lexer("+2.5e-3");
+    Token op = lexer.next_token();
     Token token = lexer.next_token();
 
+    EXPECT_EQ(TokenType::PLUS, op.type);
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(2.5e-3, std::get<double>(token.value));
 }
@@ -220,7 +236,7 @@ TEST(TestLexer, skipsTrailingWhitespace)
 
 TEST(TestLexer, multipleNumbers)
 {
-    Lexer lexer("1 2.5 -3");
+    Lexer lexer("1 2.5 3");
     Token token1 = lexer.next_token();
     Token token2 = lexer.next_token();
     Token token3 = lexer.next_token();
@@ -231,7 +247,7 @@ TEST(TestLexer, multipleNumbers)
     EXPECT_EQ(TokenType::NUMBER, token2.type);
     EXPECT_DOUBLE_EQ(2.5, std::get<double>(token2.value));
     EXPECT_EQ(TokenType::NUMBER, token3.type);
-    EXPECT_DOUBLE_EQ(-3.0, std::get<double>(token3.value));
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token3.value));
     EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
 }
 
@@ -296,6 +312,148 @@ TEST(TestLexer, fractionWithoutInteger)
 
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(0.25, std::get<double>(token.value));
+}
+
+TEST(TestLexer, plusOperator)
+{
+    Lexer lexer("1+2");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::PLUS, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, minusOperator)
+{
+    Lexer lexer("5-3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::MINUS, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, multiplyOperator)
+{
+    Lexer lexer("4*6");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::MULTIPLY, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(6.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, divideOperator)
+{
+    Lexer lexer("8/2");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(8.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::DIVIDE, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, operatorsWithSpaces)
+{
+    Lexer lexer("10 + 20");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(10.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::PLUS, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(20.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, complexExpression)
+{
+    Lexer lexer("1+2*3-4/2");
+    Token tokens[9];
+    for (int i = 0; i < 9; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::MINUS, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[6].value));
+    EXPECT_EQ(TokenType::DIVIDE, tokens[7].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[8].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[8].value));
+}
+
+TEST(TestLexer, negativeNumberAfterOperator)
+{
+    Lexer lexer("5*-3");
+    Token token1 = lexer.next_token();
+    Token op1 = lexer.next_token();
+    Token op2 = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::MULTIPLY, op1.type);
+    EXPECT_EQ(TokenType::MINUS, op2.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, positiveNumberAfterOperator)
+{
+    Lexer lexer("7/+2");
+    Token token1 = lexer.next_token();
+    Token op1 = lexer.next_token();
+    Token op2 = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(7.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::DIVIDE, op1.type);
+    EXPECT_EQ(TokenType::PLUS, op2.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, standaloneOperators)
+{
+    Lexer lexer("+ - * /");
+    Token tokens[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::PLUS, tokens[0].type);
+    EXPECT_EQ(TokenType::MINUS, tokens[1].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[2].type);
+    EXPECT_EQ(TokenType::DIVIDE, tokens[3].type);
 }
 
 } // namespace formula::test

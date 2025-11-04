@@ -32,15 +32,32 @@ Token Lexer::next_token()
         return Token(TokenType::END_OF_INPUT, m_position, 0);
     }
 
+    char ch = current_char();
+
+    // Check if this is the start of a number
     if (is_number_start())
     {
         return lex_number();
     }
 
-    // Unknown character
-    Token token(TokenType::INVALID, m_position, 1);
+    // Check for operators
+    size_t start = m_position;
     advance();
-    return token;
+
+    switch (ch)
+    {
+    case '+':
+        return Token(TokenType::PLUS, start, 1);
+    case '-':
+        return Token(TokenType::MINUS, start, 1);
+    case '*':
+        return Token(TokenType::MULTIPLY, start, 1);
+    case '/':
+        return Token(TokenType::DIVIDE, start, 1);
+    default:
+        // Unknown character
+        return Token(TokenType::INVALID, start, 1);
+    }
 }
 
 Token Lexer::peek_token()
@@ -81,24 +98,6 @@ bool Lexer::is_number_start() const
         return true;
     }
 
-    // Check for sign followed by digit or decimal
-    if ((ch == '+' || ch == '-') && m_position + 1 < m_input.length())
-    {
-        char next_ch = m_input[m_position + 1];
-
-        // Sign followed by digit
-        if (is_digit(next_ch))
-        {
-            return true;
-        }
-
-        // Sign followed by decimal point and digit
-        if (next_ch == '.' && m_position + 2 < m_input.length() && is_digit(m_input[m_position + 2]))
-        {
-            return true;
-        }
-    }
-
     return false;
 }
 
@@ -106,13 +105,6 @@ Token Lexer::lex_number()
 {
     size_t start = m_position;
     std::string number_str;
-
-    // Handle optional leading sign
-    if (current_char() == '+' || current_char() == '-')
-    {
-        number_str += current_char();
-        advance();
-    }
 
     // Integer part
     while (m_position < m_input.length() && std::isdigit(static_cast<unsigned char>(current_char())))

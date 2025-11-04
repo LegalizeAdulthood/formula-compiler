@@ -16,6 +16,10 @@ enum class TokenType
 {
     END_OF_INPUT,
     NUMBER,
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
     INVALID
 };
 
