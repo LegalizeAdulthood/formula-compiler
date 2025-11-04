@@ -1501,30 +1501,53 @@ TEST(TestLexer, keywordsAsPartOfIdentifier)
     EXPECT_EQ("endif_func", std::get<std::string>(tokens[4].value));
 }
 
-TEST(TestLexer, nestedIfStatement)
+// Parameterized test for all builtin variables
+struct BuiltinVariableParam
 {
-    Lexer lexer("if (x>0) y=1 endif");
-    Token tokens[10];
-    for (int i = 0; i < 10; ++i)
-    {
-        tokens[i] = lexer.next_token();
-    }
+    std::string input;
+    TokenType expected_type;
+};
 
-    EXPECT_EQ(TokenType::IF, tokens[0].type);
-    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
-    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
-    EXPECT_EQ("x", std::get<std::string>(tokens[2].value));
-    EXPECT_EQ(TokenType::GREATER_THAN, tokens[3].type);
-    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
-    EXPECT_DOUBLE_EQ(0.0, std::get<double>(tokens[4].value));
-    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[5].type);
-    EXPECT_EQ(TokenType::IDENT, tokens[6].type);
-    EXPECT_EQ("y", std::get<std::string>(tokens[6].value));
-    EXPECT_EQ(TokenType::ASSIGN, tokens[7].type);
-    EXPECT_EQ(TokenType::NUMBER, tokens[8].type);
-    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[8].value));
-    EXPECT_EQ(TokenType::END_IF, tokens[9].type);
+void PrintTo(const BuiltinVariableParam &param, std::ostream *os)
+{
+    *os << param.input;
 }
+
+class BuiltinVariable : public TestWithParam<BuiltinVariableParam>
+{
+};
+
+TEST_P(BuiltinVariable, recognized)
+{
+    const auto &test_case = GetParam();
+
+    Lexer lexer(test_case.input);
+    const Token token = lexer.next_token();
+
+    EXPECT_EQ(test_case.expected_type, token.type);
+    EXPECT_EQ(0, token.position);
+    EXPECT_EQ(test_case.input.length(), token.length);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestLexing, BuiltinVariable,
+    Values(BuiltinVariableParam{"p1", TokenType::P1},             //
+        BuiltinVariableParam{"p2", TokenType::P2},                //
+        BuiltinVariableParam{"p3", TokenType::P3},                //
+        BuiltinVariableParam{"p4", TokenType::P4},                //
+        BuiltinVariableParam{"p5", TokenType::P5},                //
+        BuiltinVariableParam{"pixel", TokenType::PIXEL},          //
+        BuiltinVariableParam{"lastsqr", TokenType::LAST_SQR},     //
+        BuiltinVariableParam{"rand", TokenType::RAND},            //
+        BuiltinVariableParam{"pi", TokenType::PI},                //
+        BuiltinVariableParam{"e", TokenType::E},                  //
+        BuiltinVariableParam{"maxit", TokenType::MAX_ITER},       //
+        BuiltinVariableParam{"scrnmax", TokenType::SCREEN_MAX},   //
+        BuiltinVariableParam{"scrnpix", TokenType::SCREEN_PIXEL}, //
+        BuiltinVariableParam{"whitesq", TokenType::WHITE_SQUARE}, //
+        BuiltinVariableParam{"ismand", TokenType::IS_MAND},       //
+        BuiltinVariableParam{"center", TokenType::CENTER},        //
+        BuiltinVariableParam{"magxmag", TokenType::MAG_X_MAG},    //
+        BuiltinVariableParam{"rotskew", TokenType::ROT_SKEW}));
 
 TEST(TestLexer, allKeywords)
 {

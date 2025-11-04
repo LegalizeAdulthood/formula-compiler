@@ -4,6 +4,7 @@
 //
 #include <formula/Lexer.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 
@@ -253,25 +254,46 @@ Token Lexer::lex_identifier()
 
     size_t length = m_position - start;
 
-    // Check for keywords (case-sensitive)
-    if (identifier == "if")
+    // Check for keywords and builtin variables (case-sensitive)
+    struct TextTokenType
     {
-        return {TokenType::IF, start, length};
-    }
-    if (identifier == "elseif")
+        std::string_view text;
+        TokenType type;
+    };
+
+    static constexpr TextTokenType reserved[] = {
+        {"if", TokenType::IF},                // keywords
+        {"elseif", TokenType::ELSE_IF},       //
+        {"else", TokenType::ELSE},            //
+        {"endif", TokenType::END_IF},         //
+        {"p1", TokenType::P1},                // Built-in variables
+        {"p2", TokenType::P2},                //
+        {"p3", TokenType::P3},                //
+        {"p4", TokenType::P4},                //
+        {"p5", TokenType::P5},                //
+        {"pixel", TokenType::PIXEL},          //
+        {"lastsqr", TokenType::LAST_SQR},     //
+        {"rand", TokenType::RAND},            //
+        {"pi", TokenType::PI},                //
+        {"e", TokenType::E},                  //
+        {"maxit", TokenType::MAX_ITER},       //
+        {"scrnmax", TokenType::SCREEN_MAX},   //
+        {"scrnpix", TokenType::SCREEN_PIXEL}, //
+        {"whitesq", TokenType::WHITE_SQUARE}, //
+        {"ismand", TokenType::IS_MAND},       //
+        {"center", TokenType::CENTER},        //
+        {"magxmag", TokenType::MAG_X_MAG},    //
+        {"rotskew", TokenType::ROT_SKEW},     //
+    };
+
+    if (auto it = std::find_if(std::begin(reserved), std::end(reserved),
+            [&identifier](const TextTokenType &kw) { return kw.text == identifier; });
+        it != std::end(reserved))
     {
-        return {TokenType::ELSE_IF, start, length};
-    }
-    if (identifier == "else")
-    {
-        return {TokenType::ELSE, start, length};
-    }
-    if (identifier == "endif")
-    {
-        return {TokenType::END_IF, start, length};
+        return {it->type, start, length};
     }
 
-    // Not a keyword, return as identifier
+    // Not a reserved word, return as identifier
     return {TokenType::IDENT, identifier, start, length};
 }
 

@@ -36,6 +36,25 @@ enum class TokenType
     ELSE_IF,
     ELSE,
     END_IF,
+    // Builtin variables
+    P1,
+    P2,
+    P3,
+    P4,
+    P5,
+    PIXEL,
+    LAST_SQR,
+    RAND,
+    PI,
+    E,
+    MAX_ITER,
+    SCREEN_MAX,
+    SCREEN_PIXEL,
+    WHITE_SQUARE,
+    IS_MAND,
+    CENTER,
+    MAG_X_MAG,
+    ROT_SKEW,
     INVALID
 };
 
