@@ -30,6 +30,8 @@ enum class TokenType
     NOT_EQUAL,
     MODULUS,
     IDENT,
+    LEFT_PAREN,
+    RIGHT_PAREN,
     INVALID
 };
 

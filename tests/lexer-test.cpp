@@ -1173,4 +1173,184 @@ TEST(TestLexer, mixedCaseIdentifier)
     EXPECT_EQ("camelCase", std::get<std::string>(token.value));
 }
 
+TEST(TestLexer, leftParenthesis)
+{
+    Lexer lexer("(");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(1u, token.length);
+}
+
+TEST(TestLexer, rightParenthesis)
+{
+    Lexer lexer(")");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::RIGHT_PAREN, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(1u, token.length);
+}
+
+TEST(TestLexer, matchingParentheses)
+{
+    Lexer lexer("()");
+    Token left = lexer.next_token();
+    Token right = lexer.next_token();
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, left.type);
+    EXPECT_EQ(TokenType::RIGHT_PAREN, right.type);
+}
+
+TEST(TestLexer, parenthesesWithSpaces)
+{
+    Lexer lexer("( )");
+    Token left = lexer.next_token();
+    Token right = lexer.next_token();
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, left.type);
+    EXPECT_EQ(TokenType::RIGHT_PAREN, right.type);
+}
+
+TEST(TestLexer, parenthesesInExpression)
+{
+    Lexer lexer("(1+2)*3");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[0].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[1].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[1].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[2].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[3].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[3].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[4].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[6].value));
+}
+
+TEST(TestLexer, nestedParentheses)
+{
+    Lexer lexer("((1+2)*3)");
+    Token tokens[9];
+    for (int i = 0; i < 9; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[0].type);
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[5].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[6].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[7].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[7].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[8].type);
+}
+
+TEST(TestLexer, parenthesesWithIdentifiers)
+{
+    Lexer lexer("f(x)");
+    Token tokens[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("f", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[3].type);
+}
+
+TEST(TestLexer, functionCallWithMultipleArgs)
+{
+    Lexer lexer("func(a, b)");
+    Token tokens[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("func", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("a", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::INVALID, tokens[3].type); // comma not yet recognized
+    EXPECT_EQ(TokenType::IDENT, tokens[4].type);
+    EXPECT_EQ("b", std::get<std::string>(tokens[4].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[5].type);
+}
+
+TEST(TestLexer, emptyParentheses)
+{
+    Lexer lexer("f()");
+    Token tokens[3];
+    for (int i = 0; i < 3; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("f", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[2].type);
+}
+
+TEST(TestLexer, parenthesesWithComparison)
+{
+    Lexer lexer("(x>y)");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[0].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[2].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[4].type);
+}
+
+TEST(TestLexer, multipleParenthesisGroups)
+{
+    Lexer lexer("(a+b)*(c+d)");
+    Token tokens[11];
+    for (int i = 0; i < 11; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[0].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("a", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[2].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("b", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[4].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[5].type);
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[6].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[7].type);
+    EXPECT_EQ("c", std::get<std::string>(tokens[7].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[8].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[9].type);
+    EXPECT_EQ("d", std::get<std::string>(tokens[9].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[10].type);
+}
+
 } // namespace formula::test

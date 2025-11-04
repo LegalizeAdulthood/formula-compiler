@@ -95,6 +95,10 @@ Token Lexer::next_token()
         }
         // Single ! is not recognized
         return Token(TokenType::INVALID, start, 1);
+    case '(':
+        return Token(TokenType::LEFT_PAREN, start, 1);
+    case ')':
+        return Token(TokenType::RIGHT_PAREN, start, 1);
     case '|':
         return Token(TokenType::MODULUS, start, 1);
     default:
