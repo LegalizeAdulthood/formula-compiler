@@ -22,6 +22,12 @@ enum class TokenType
     DIVIDE,
     POWER,
     ASSIGN,
+    LESS_THAN,
+    GREATER_THAN,
+    LESS_EQUAL,
+    GREATER_EQUAL,
+    EQUAL,
+    NOT_EQUAL,
     INVALID
 };
 

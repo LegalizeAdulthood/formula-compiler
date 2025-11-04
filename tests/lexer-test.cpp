@@ -623,4 +623,307 @@ TEST(TestLexer, allOperatorsWithAssignment)
     EXPECT_EQ(TokenType::ASSIGN, tokens[5].type);
 }
 
+TEST(TestLexer, lessThanOperator)
+{
+    Lexer lexer("3<5");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::LESS_THAN, op.type);
+    EXPECT_EQ(1u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, greaterThanOperator)
+{
+    Lexer lexer("5>3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::GREATER_THAN, op.type);
+    EXPECT_EQ(1u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, lessEqualOperator)
+{
+    Lexer lexer("3<=5");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::LESS_EQUAL, op.type);
+    EXPECT_EQ(2u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, greaterEqualOperator)
+{
+    Lexer lexer("5>=3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::GREATER_EQUAL, op.type);
+    EXPECT_EQ(2u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, equalOperator)
+{
+    Lexer lexer("5==5");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::EQUAL, op.type);
+    EXPECT_EQ(2u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, relationalOperatorsWithSpaces)
+{
+    Lexer lexer("10 < 20");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(10.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::LESS_THAN, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(20.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, chainedComparisons)
+{
+    Lexer lexer("1<2<=3>4>=5==6");
+    Token tokens[11];
+    for (int i = 0; i < 11; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::LESS_THAN, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::LESS_EQUAL, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[6].value));
+    EXPECT_EQ(TokenType::GREATER_EQUAL, tokens[7].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[8].type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(tokens[8].value));
+    EXPECT_EQ(TokenType::EQUAL, tokens[9].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[10].type);
+    EXPECT_DOUBLE_EQ(6.0, std::get<double>(tokens[10].value));
+}
+
+TEST(TestLexer, allRelationalOperators)
+{
+    Lexer lexer("< > <= >= == !=");
+    Token tokens[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LESS_THAN, tokens[0].type);
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[1].type);
+    EXPECT_EQ(TokenType::LESS_EQUAL, tokens[2].type);
+    EXPECT_EQ(TokenType::GREATER_EQUAL, tokens[3].type);
+    EXPECT_EQ(TokenType::EQUAL, tokens[4].type);
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[5].type);
+}
+
+TEST(TestLexer, mixedArithmeticAndRelational)
+{
+    Lexer lexer("1+2<3*4");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::LESS_THAN, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[6].value));
+}
+
+TEST(TestLexer, assignmentVsEquality)
+{
+    Lexer lexer("x=5 y==5");
+    Token tokens[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::INVALID, tokens[0].type); // 'x' not recognized
+    EXPECT_EQ(TokenType::ASSIGN, tokens[1].type);
+    EXPECT_EQ(1u, tokens[1].length);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::INVALID, tokens[3].type); // 'y' not recognized
+    EXPECT_EQ(TokenType::EQUAL, tokens[4].type);
+    EXPECT_EQ(2u, tokens[4].length);
+    EXPECT_EQ(TokenType::NUMBER, tokens[5].type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(tokens[5].value));
+}
+
+TEST(TestLexer, notEqualOperator)
+{
+    Lexer lexer("5!=3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, op.type);
+    EXPECT_EQ(2u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, notEqualWithSpaces)
+{
+    Lexer lexer("10 != 20");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(10.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, op.type);
+    EXPECT_EQ(2u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(20.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, equalityOperators)
+{
+    Lexer lexer("1==2 3!=4");
+    Token tokens[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::EQUAL, tokens[1].type);
+    EXPECT_EQ(2u, tokens[1].length);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::NUMBER, tokens[3].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[3].value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[4].type);
+    EXPECT_EQ(2u, tokens[4].length);
+    EXPECT_EQ(TokenType::NUMBER, tokens[5].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[5].value));
+}
+
+TEST(TestLexer, notEqualInExpression)
+{
+    Lexer lexer("1+2!=3*4");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[5].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[6].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[6].value));
+}
+
+TEST(TestLexer, allComparisonOperators)
+{
+    Lexer lexer("< > <= >= == !=");
+    Token tokens[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::LESS_THAN, tokens[0].type);
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[1].type);
+    EXPECT_EQ(TokenType::LESS_EQUAL, tokens[2].type);
+    EXPECT_EQ(TokenType::GREATER_EQUAL, tokens[3].type);
+    EXPECT_EQ(TokenType::EQUAL, tokens[4].type);
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[5].type);
+}
+
+TEST(TestLexer, singleExclamationInvalid)
+{
+    Lexer lexer("1!2");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::INVALID, op.type);
+    EXPECT_EQ(1u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, chainedNotEqual)
+{
+    Lexer lexer("1!=2!=3");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::NOT_EQUAL, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+}
+
 } // namespace formula::test

@@ -57,7 +57,38 @@ Token Lexer::next_token()
     case '^':
         return Token(TokenType::POWER, start, 1);
     case '=':
+        // Check for == (EQUAL) vs = (ASSIGN)
+        if (current_char() == '=')
+        {
+            advance();
+            return Token(TokenType::EQUAL, start, 2);
+        }
         return Token(TokenType::ASSIGN, start, 1);
+    case '<':
+        // Check for <= (LESS_EQUAL) vs < (LESS_THAN)
+        if (current_char() == '=')
+        {
+            advance();
+            return Token(TokenType::LESS_EQUAL, start, 2);
+        }
+        return Token(TokenType::LESS_THAN, start, 1);
+    case '>':
+        // Check for >= (GREATER_EQUAL) vs > (GREATER_THAN)
+        if (current_char() == '=')
+        {
+            advance();
+            return Token(TokenType::GREATER_EQUAL, start, 2);
+        }
+        return Token(TokenType::GREATER_THAN, start, 1);
+    case '!':
+        // Check for != (NOT_EQUAL)
+        if (current_char() == '=')
+        {
+            advance();
+            return Token(TokenType::NOT_EQUAL, start, 2);
+        }
+        // Single ! is not recognized
+        return Token(TokenType::INVALID, start, 1);
     default:
         // Unknown character
         return Token(TokenType::INVALID, start, 1);
