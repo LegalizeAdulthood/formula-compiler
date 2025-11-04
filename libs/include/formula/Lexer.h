@@ -28,6 +28,7 @@ enum class TokenType
     GREATER_EQUAL,
     EQUAL,
     NOT_EQUAL,
+    MODULUS,
     INVALID
 };
 

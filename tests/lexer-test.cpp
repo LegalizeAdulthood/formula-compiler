@@ -800,6 +800,92 @@ TEST(TestLexer, assignmentVsEquality)
     EXPECT_DOUBLE_EQ(5.0, std::get<double>(tokens[5].value));
 }
 
+TEST(TestLexer, modulusOperator)
+{
+    Lexer lexer("5|3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::MODULUS, op.type);
+    EXPECT_EQ(1u, op.length);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, modulusWithSpaces)
+{
+    Lexer lexer("10 | 3");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_DOUBLE_EQ(10.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::MODULUS, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, doubleModulus)
+{
+    Lexer lexer("|-5|");
+    Token op1 = lexer.next_token();
+    Token op2 = lexer.next_token();
+    Token num = lexer.next_token();
+    Token op3 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::MODULUS, op1.type);
+    EXPECT_EQ(TokenType::MINUS, op2.type);
+    EXPECT_EQ(TokenType::NUMBER, num.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(num.value));
+    EXPECT_EQ(TokenType::MODULUS, op3.type);
+}
+
+TEST(TestLexer, modulusInExpression)
+{
+    Lexer lexer("1+|2-3|*4");
+    Token tokens[9];
+    for (int i = 0; i < 9; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::MODULUS, tokens[2].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[3].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[3].value));
+    EXPECT_EQ(TokenType::MINUS, tokens[4].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[5].type);
+    EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[5].value));
+    EXPECT_EQ(TokenType::MODULUS, tokens[6].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[7].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[8].type);
+    EXPECT_DOUBLE_EQ(4.0, std::get<double>(tokens[8].value));
+}
+
+TEST(TestLexer, allOperatorsWithModulus)
+{
+    Lexer lexer("+ - * / ^ = |");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::PLUS, tokens[0].type);
+    EXPECT_EQ(TokenType::MINUS, tokens[1].type);
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[2].type);
+    EXPECT_EQ(TokenType::DIVIDE, tokens[3].type);
+    EXPECT_EQ(TokenType::POWER, tokens[4].type);
+    EXPECT_EQ(TokenType::ASSIGN, tokens[5].type);
+    EXPECT_EQ(TokenType::MODULUS, tokens[6].type);
+}
+
 TEST(TestLexer, notEqualOperator)
 {
     Lexer lexer("5!=3");
