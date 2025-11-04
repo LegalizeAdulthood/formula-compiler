@@ -29,6 +29,7 @@ enum class TokenType
     EQUAL,
     NOT_EQUAL,
     MODULUS,
+    IDENT,
     INVALID
 };
 
@@ -53,9 +54,16 @@ struct Token
         length(len)
     {
     }
+    Token(TokenType t, std::string str_val, size_t pos, size_t len) :
+        type(t),
+        value(std::move(str_val)),
+        position(pos),
+        length(len)
+    {
+    }
 
     TokenType type;
-    std::variant<double> value;
+    std::variant<double, std::string> value;
     size_t position;
     size_t length;
 };
@@ -80,6 +88,9 @@ private:
     void skip_whitespace();
     Token lex_number();
     bool is_number_start() const;
+    Token lex_identifier();
+    bool is_identifier_start() const;
+    bool is_identifier_continue(char c) const;
     char current_char() const;
     char peek_char(size_t offset = 1) const;
     void advance(size_t count = 1);

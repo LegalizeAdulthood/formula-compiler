@@ -40,6 +40,12 @@ Token Lexer::next_token()
         return lex_number();
     }
 
+    // Check if this is the start of an identifier
+    if (is_identifier_start())
+    {
+        return lex_identifier();
+    }
+
     // Check for operators
     size_t start = m_position;
     advance();
@@ -212,6 +218,37 @@ char Lexer::peek_char(size_t offset) const
 void Lexer::advance(size_t count)
 {
     m_position += count;
+}
+
+bool Lexer::is_identifier_start() const
+{
+    char ch = current_char();
+    return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
+}
+
+bool Lexer::is_identifier_continue(char c) const
+{
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+}
+
+Token Lexer::lex_identifier()
+{
+    size_t start = m_position;
+    std::string identifier;
+
+    // Start with letter or underscore
+    identifier += current_char();
+    advance();
+
+    // Continue with letters, digits, or underscores
+    while (m_position < m_input.length() && is_identifier_continue(current_char()))
+    {
+        identifier += current_char();
+        advance();
+    }
+
+    size_t length = m_position - start;
+    return Token(TokenType::IDENT, identifier, start, length);
 }
 
 } // namespace formula

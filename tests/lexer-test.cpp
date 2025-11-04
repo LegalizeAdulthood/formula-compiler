@@ -548,7 +548,8 @@ TEST(TestLexer, assignmentOperator)
     Token op = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::INVALID, token1.type); // 'x' is not recognized yet
+    EXPECT_EQ(TokenType::IDENT, token1.type);
+    EXPECT_EQ("x", std::get<std::string>(token1.value));
     EXPECT_EQ(TokenType::ASSIGN, op.type);
     EXPECT_EQ(TokenType::NUMBER, token2.type);
     EXPECT_DOUBLE_EQ(5.0, std::get<double>(token2.value));
@@ -788,12 +789,14 @@ TEST(TestLexer, assignmentVsEquality)
         tokens[i] = lexer.next_token();
     }
 
-    EXPECT_EQ(TokenType::INVALID, tokens[0].type); // 'x' not recognized
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[0].value));
     EXPECT_EQ(TokenType::ASSIGN, tokens[1].type);
     EXPECT_EQ(1u, tokens[1].length);
     EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
     EXPECT_DOUBLE_EQ(5.0, std::get<double>(tokens[2].value));
-    EXPECT_EQ(TokenType::INVALID, tokens[3].type); // 'y' not recognized
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[3].value));
     EXPECT_EQ(TokenType::EQUAL, tokens[4].type);
     EXPECT_EQ(2u, tokens[4].length);
     EXPECT_EQ(TokenType::NUMBER, tokens[5].type);
@@ -1010,6 +1013,164 @@ TEST(TestLexer, chainedNotEqual)
     EXPECT_EQ(TokenType::NOT_EQUAL, tokens[3].type);
     EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
     EXPECT_DOUBLE_EQ(3.0, std::get<double>(tokens[4].value));
+}
+
+TEST(TestLexer, simpleIdentifier)
+{
+    Lexer lexer("x");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("x", std::get<std::string>(token.value));
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(1u, token.length);
+}
+
+TEST(TestLexer, longerIdentifier)
+{
+    Lexer lexer("variable");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("variable", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, identifierWithDigits)
+{
+    Lexer lexer("var123");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("var123", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, identifierWithUnderscore)
+{
+    Lexer lexer("my_var");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("my_var", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, identifierStartingWithUnderscore)
+{
+    Lexer lexer("_private");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("_private", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, multipleIdentifiers)
+{
+    Lexer lexer("x y z");
+    Token tokens[3];
+    for (int i = 0; i < 3; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("z", std::get<std::string>(tokens[2].value));
+}
+
+TEST(TestLexer, identifierInAssignment)
+{
+    Lexer lexer("x=5");
+    Token token1 = lexer.next_token();
+    Token op = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token1.type);
+    EXPECT_EQ("x", std::get<std::string>(token1.value));
+    EXPECT_EQ(TokenType::ASSIGN, op.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_DOUBLE_EQ(5.0, std::get<double>(token2.value));
+}
+
+TEST(TestLexer, identifiersInExpression)
+{
+    Lexer lexer("a+b*c");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("a", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("b", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::MULTIPLY, tokens[3].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[4].type);
+    EXPECT_EQ("c", std::get<std::string>(tokens[4].value));
+}
+
+TEST(TestLexer, mixedIdentifiersAndNumbers)
+{
+    Lexer lexer("x1 + 2y");
+    Token tokens[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("x1", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::PLUS, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_DOUBLE_EQ(2.0, std::get<double>(tokens[2].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[3].value));
+}
+
+TEST(TestLexer, identifierWithComparison)
+{
+    Lexer lexer("x==y");
+    Token tokens[3];
+    for (int i = 0; i < 3; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::EQUAL, tokens[1].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[2].value));
+}
+
+TEST(TestLexer, longIdentifier)
+{
+    Lexer lexer("very_long_variable_name_123");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("very_long_variable_name_123", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, upperCaseIdentifier)
+{
+    Lexer lexer("CONSTANT");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("CONSTANT", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, mixedCaseIdentifier)
+{
+    Lexer lexer("camelCase");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENT, token.type);
+    EXPECT_EQ("camelCase", std::get<std::string>(token.value));
 }
 
 } // namespace formula::test
