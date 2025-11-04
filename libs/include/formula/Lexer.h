@@ -32,6 +32,10 @@ enum class TokenType
     IDENT,
     LEFT_PAREN,
     RIGHT_PAREN,
+    IF,
+    ELSE_IF,
+    ELSE,
+    END_IF,
     INVALID
 };
 

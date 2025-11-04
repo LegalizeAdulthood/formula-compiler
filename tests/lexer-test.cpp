@@ -1353,4 +1353,192 @@ TEST(TestLexer, multipleParenthesisGroups)
     EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[10].type);
 }
 
+TEST(TestLexer, ifKeyword)
+{
+    Lexer lexer("if");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IF, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(2u, token.length);
+}
+
+TEST(TestLexer, elseifKeyword)
+{
+    Lexer lexer("elseif");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::ELSE_IF, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(6u, token.length);
+}
+
+TEST(TestLexer, elseKeyword)
+{
+    Lexer lexer("else");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::ELSE, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(4u, token.length);
+}
+
+TEST(TestLexer, endifKeyword)
+{
+    Lexer lexer("endif");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::END_IF, token.type);
+    EXPECT_EQ(0u, token.position);
+    EXPECT_EQ(5u, token.length);
+}
+
+TEST(TestLexer, ifStatement)
+{
+    Lexer lexer("if x>0");
+    Token tokens[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IF, tokens[0].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[2].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[3].type);
+    EXPECT_DOUBLE_EQ(0.0, std::get<double>(tokens[3].value));
+}
+
+TEST(TestLexer, ifElseEndif)
+{
+    Lexer lexer("if x else y endif");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IF, tokens[0].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::ELSE, tokens[2].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::END_IF, tokens[4].type);
+}
+
+TEST(TestLexer, ifElseifElseEndif)
+{
+    Lexer lexer("if a elseif b else c endif");
+    Token tokens[7];
+    for (int i = 0; i < 7; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IF, tokens[0].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("a", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::ELSE_IF, tokens[2].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("b", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::ELSE, tokens[4].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[5].type);
+    EXPECT_EQ("c", std::get<std::string>(tokens[5].value));
+    EXPECT_EQ(TokenType::END_IF, tokens[6].type);
+}
+
+TEST(TestLexer, keywordsAreCaseSensitive)
+{
+    Lexer lexer("IF If iF Elseif ELSEIF Else ELSE Endif ENDIF");
+    Token tokens[9];
+    for (int i = 0; i < 9; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    // All uppercase/mixed case should be identifiers
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("IF", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("If", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("iF", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("Elseif", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[4].type);
+    EXPECT_EQ("ELSEIF", std::get<std::string>(tokens[4].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[5].type);
+    EXPECT_EQ("Else", std::get<std::string>(tokens[5].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[6].type);
+    EXPECT_EQ("ELSE", std::get<std::string>(tokens[6].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[7].type);
+    EXPECT_EQ("Endif", std::get<std::string>(tokens[7].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[8].type);
+    EXPECT_EQ("ENDIF", std::get<std::string>(tokens[8].value));
+}
+
+TEST(TestLexer, keywordsAsPartOfIdentifier)
+{
+    Lexer lexer("ifx xif elseif2 myelse endif_func");
+    Token tokens[5];
+    for (int i = 0; i < 5; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    // Keywords as part of larger identifiers should remain identifiers
+    EXPECT_EQ(TokenType::IDENT, tokens[0].type);
+    EXPECT_EQ("ifx", std::get<std::string>(tokens[0].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[1].type);
+    EXPECT_EQ("xif", std::get<std::string>(tokens[1].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("elseif2", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[3].type);
+    EXPECT_EQ("myelse", std::get<std::string>(tokens[3].value));
+    EXPECT_EQ(TokenType::IDENT, tokens[4].type);
+    EXPECT_EQ("endif_func", std::get<std::string>(tokens[4].value));
+}
+
+TEST(TestLexer, nestedIfStatement)
+{
+    Lexer lexer("if (x>0) y=1 endif");
+    Token tokens[10];
+    for (int i = 0; i < 10; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IF, tokens[0].type);
+    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[2].type);
+    EXPECT_EQ("x", std::get<std::string>(tokens[2].value));
+    EXPECT_EQ(TokenType::GREATER_THAN, tokens[3].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[4].type);
+    EXPECT_DOUBLE_EQ(0.0, std::get<double>(tokens[4].value));
+    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[5].type);
+    EXPECT_EQ(TokenType::IDENT, tokens[6].type);
+    EXPECT_EQ("y", std::get<std::string>(tokens[6].value));
+    EXPECT_EQ(TokenType::ASSIGN, tokens[7].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[8].type);
+    EXPECT_DOUBLE_EQ(1.0, std::get<double>(tokens[8].value));
+    EXPECT_EQ(TokenType::END_IF, tokens[9].type);
+}
+
+TEST(TestLexer, allKeywords)
+{
+    Lexer lexer("if elseif else endif");
+    Token tokens[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        tokens[i] = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::IF, tokens[0].type);
+    EXPECT_EQ(TokenType::ELSE_IF, tokens[1].type);
+    EXPECT_EQ(TokenType::ELSE, tokens[2].type);
+    EXPECT_EQ(TokenType::END_IF, tokens[3].type);
+}
+
 } // namespace formula::test

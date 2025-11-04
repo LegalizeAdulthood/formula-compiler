@@ -29,7 +29,7 @@ Token Lexer::next_token()
 
     if (at_end())
     {
-        return Token(TokenType::END_OF_INPUT, m_position, 0);
+        return {TokenType::END_OF_INPUT, m_position, 0};
     }
 
     char ch = current_char();
@@ -53,57 +53,57 @@ Token Lexer::next_token()
     switch (ch)
     {
     case '+':
-        return Token(TokenType::PLUS, start, 1);
+        return {TokenType::PLUS, start, 1};
     case '-':
-        return Token(TokenType::MINUS, start, 1);
+        return {TokenType::MINUS, start, 1};
     case '*':
-        return Token(TokenType::MULTIPLY, start, 1);
+        return {TokenType::MULTIPLY, start, 1};
     case '/':
-        return Token(TokenType::DIVIDE, start, 1);
+        return {TokenType::DIVIDE, start, 1};
     case '^':
-        return Token(TokenType::POWER, start, 1);
+        return {TokenType::POWER, start, 1};
     case '=':
         // Check for == (EQUAL) vs = (ASSIGN)
         if (current_char() == '=')
         {
             advance();
-            return Token(TokenType::EQUAL, start, 2);
+            return {TokenType::EQUAL, start, 2};
         }
-        return Token(TokenType::ASSIGN, start, 1);
+        return {TokenType::ASSIGN, start, 1};
     case '<':
         // Check for <= (LESS_EQUAL) vs < (LESS_THAN)
         if (current_char() == '=')
         {
             advance();
-            return Token(TokenType::LESS_EQUAL, start, 2);
+            return {TokenType::LESS_EQUAL, start, 2};
         }
-        return Token(TokenType::LESS_THAN, start, 1);
+        return {TokenType::LESS_THAN, start, 1};
     case '>':
         // Check for >= (GREATER_EQUAL) vs > (GREATER_THAN)
         if (current_char() == '=')
         {
             advance();
-            return Token(TokenType::GREATER_EQUAL, start, 2);
+            return {TokenType::GREATER_EQUAL, start, 2};
         }
-        return Token(TokenType::GREATER_THAN, start, 1);
+        return {TokenType::GREATER_THAN, start, 1};
     case '!':
         // Check for != (NOT_EQUAL)
         if (current_char() == '=')
         {
             advance();
-            return Token(TokenType::NOT_EQUAL, start, 2);
+            return {TokenType::NOT_EQUAL, start, 2};
         }
         // Single ! is not recognized
-        return Token(TokenType::INVALID, start, 1);
+        return {TokenType::INVALID, start, 1};
     case '(':
-        return Token(TokenType::LEFT_PAREN, start, 1);
+        return {TokenType::LEFT_PAREN, start, 1};
     case ')':
-        return Token(TokenType::RIGHT_PAREN, start, 1);
+        return {TokenType::RIGHT_PAREN, start, 1};
     case '|':
-        return Token(TokenType::MODULUS, start, 1);
+        return {TokenType::MODULUS, start, 1};
     default:
         // Unknown character
-        return Token(TokenType::INVALID, start, 1);
+        return {TokenType::INVALID, start, 1};
     }
 }
 
@@ -197,7 +197,7 @@ Token Lexer::lex_number()
     double value = std::strtod(number_str.c_str(), &end);
 
     size_t length = m_position - start;
-    return Token(value, start, length);
+    return {value, start, length};
 }
 
 char Lexer::current_char() const
@@ -252,7 +252,27 @@ Token Lexer::lex_identifier()
     }
 
     size_t length = m_position - start;
-    return Token(TokenType::IDENT, identifier, start, length);
+
+    // Check for keywords (case-sensitive)
+    if (identifier == "if")
+    {
+        return {TokenType::IF, start, length};
+    }
+    if (identifier == "elseif")
+    {
+        return {TokenType::ELSE_IF, start, length};
+    }
+    if (identifier == "else")
+    {
+        return {TokenType::ELSE, start, length};
+    }
+    if (identifier == "endif")
+    {
+        return {TokenType::END_IF, start, length};
+    }
+
+    // Not a keyword, return as identifier
+    return {TokenType::IDENT, identifier, start, length};
 }
 
 } // namespace formula
