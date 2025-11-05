@@ -207,6 +207,43 @@ static TextTokenParam s_params[]{
     {"center", "center", TokenType::CENTER},                                  //
     {"magxmag", "magxmag", TokenType::MAG_X_MAG},                             //
     {"rotskew", "rotskew", TokenType::ROT_SKEW},                              //
+    {"sinh", "sinh", TokenType::SINH},                                        //
+    {"cosh", "cosh", TokenType::COSH},                                        //
+    {"cosxx", "cosxx", TokenType::COSXX},                                     //
+    {"sin", "sin", TokenType::SIN},                                           //
+    {"cos", "cos", TokenType::COS},                                           //
+    {"cotanh", "cotanh", TokenType::COTANH},                                  //
+    {"cotan", "cotan", TokenType::COTAN},                                     //
+    {"tanh", "tanh", TokenType::TANH},                                        //
+    {"tan", "tan", TokenType::TAN},                                           //
+    {"sqrt", "sqrt", TokenType::SQRT},                                        //
+    {"log", "log", TokenType::LOG},                                           //
+    {"exp", "exp", TokenType::EXP},                                           //
+    {"abs", "abs", TokenType::ABS},                                           //
+    {"conj", "conj", TokenType::CONJ},                                        //
+    {"real", "real", TokenType::REAL},                                        //
+    {"imag", "imag", TokenType::IMAG},                                        //
+    {"flip", "flip", TokenType::FLIP},                                        //
+    {"fn1", "fn1", TokenType::FN1},                                           //
+    {"fn2", "fn2", TokenType::FN2},                                           //
+    {"fn3", "fn3", TokenType::FN3},                                           //
+    {"fn4", "fn4", TokenType::FN4},                                           //
+    {"srand", "srand", TokenType::SRAND},                                     //
+    {"asinh", "asinh", TokenType::ASINH},                                     //
+    {"acosh", "acosh", TokenType::ACOSH},                                     //
+    {"asin", "asin", TokenType::ASIN},                                        //
+    {"acos", "acos", TokenType::ACOS},                                        //
+    {"atanh", "atanh", TokenType::ATANH},                                     //
+    {"atan", "atan", TokenType::ATAN},                                        //
+    {"cabs", "cabs", TokenType::CABS},                                        //
+    {"sqr", "sqr", TokenType::SQR},                                           //
+    {"floor", "floor", TokenType::FLOOR},                                     //
+    {"ceil", "ceil", TokenType::CEIL},                                        //
+    {"trunc", "trunc", TokenType::TRUNC},                                     //
+    {"round", "round", TokenType::ROUND},                                     //
+    {"ident", "ident", TokenType::IDENT},                                     //
+    {"one", "one", TokenType::ONE},                                           //
+    {"zero", "zero", TokenType::ZERO},                                        //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

@@ -37,25 +37,61 @@ enum class TokenType
     ELSE_IF,
     ELSE,
     END_IF,
-    // Builtin variables
-    P1,
-    P2,
-    P3,
-    P4,
-    P5,
-    PIXEL,
-    LAST_SQR,
-    RAND,
-    PI,
-    E,
-    MAX_ITER,
-    SCREEN_MAX,
-    SCREEN_PIXEL,
-    WHITE_SQUARE,
-    IS_MAND,
-    CENTER,
-    MAG_X_MAG,
-    ROT_SKEW,
+    P1,           // Builtin variables
+    P2,           //
+    P3,           //
+    P4,           //
+    P5,           //
+    PIXEL,        //
+    LAST_SQR,     // lastsqr
+    RAND,         //
+    PI,           //
+    E,            //
+    MAX_ITER,     // maxit
+    SCREEN_MAX,   // scrnmax
+    SCREEN_PIXEL, // scrnpix
+    WHITE_SQUARE, // whitesq
+    IS_MAND,      // ismand
+    CENTER,       //
+    MAG_X_MAG,    // magxmag
+    ROT_SKEW,     // rotskew
+    SINH,         // Builtin functions
+    COSH,
+    COSXX,
+    SIN,
+    COS,
+    COTANH,
+    COTAN,
+    TANH,
+    TAN,
+    SQRT,
+    LOG,
+    EXP,
+    ABS,
+    CONJ,
+    REAL,
+    IMAG,
+    FLIP,
+    FN1,
+    FN2,
+    FN3,
+    FN4,
+    SRAND,
+    ASINH,
+    ACOSH,
+    ASIN,
+    ACOS,
+    ATANH,
+    ATAN,
+    CABS,
+    SQR,
+    FLOOR,
+    CEIL,
+    TRUNC,
+    ROUND,
+    IDENT,
+    ONE,
+    ZERO,
     INVALID
 };
 

@@ -284,6 +284,43 @@ Token Lexer::lex_identifier()
         {"center", TokenType::CENTER},        //
         {"magxmag", TokenType::MAG_X_MAG},    //
         {"rotskew", TokenType::ROT_SKEW},     //
+        {"sinh", TokenType::SINH},            // Built-in functions
+        {"cosh", TokenType::COSH},            //
+        {"cosxx", TokenType::COSXX},          //
+        {"sin", TokenType::SIN},              //
+        {"cos", TokenType::COS},              //
+        {"cotanh", TokenType::COTANH},        //
+        {"cotan", TokenType::COTAN},          //
+        {"tanh", TokenType::TANH},            //
+        {"tan", TokenType::TAN},              //
+        {"sqrt", TokenType::SQRT},            //
+        {"log", TokenType::LOG},              //
+        {"exp", TokenType::EXP},              //
+        {"abs", TokenType::ABS},              //
+        {"conj", TokenType::CONJ},            //
+        {"real", TokenType::REAL},            //
+        {"imag", TokenType::IMAG},            //
+        {"flip", TokenType::FLIP},            //
+        {"fn1", TokenType::FN1},              //
+        {"fn2", TokenType::FN2},              //
+        {"fn3", TokenType::FN3},              //
+        {"fn4", TokenType::FN4},              //
+        {"srand", TokenType::SRAND},          //
+        {"asinh", TokenType::ASINH},          //
+        {"acosh", TokenType::ACOSH},          //
+        {"asin", TokenType::ASIN},            //
+        {"acos", TokenType::ACOS},            //
+        {"atanh", TokenType::ATANH},          //
+        {"atan", TokenType::ATAN},            //
+        {"cabs", TokenType::CABS},            //
+        {"sqr", TokenType::SQR},              //
+        {"floor", TokenType::FLOOR},          //
+        {"ceil", TokenType::CEIL},            //
+        {"trunc", TokenType::TRUNC},          //
+        {"round", TokenType::ROUND},          //
+        {"ident", TokenType::IDENT},          //
+        {"one", TokenType::ONE},              //
+        {"zero", TokenType::ZERO},            //
     };
 
     if (auto it = std::find_if(std::begin(reserved), std::end(reserved),
