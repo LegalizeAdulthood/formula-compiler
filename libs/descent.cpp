@@ -28,6 +28,7 @@ public:
 
 private:
     Expr expression();
+    Expr assignment();
     Expr additive();
     Expr term();
     Expr unary();
@@ -36,6 +37,7 @@ private:
     void advance();
     bool match(TokenType type);
     bool check(TokenType type) const;
+    bool is_user_identifier(const Expr &expr) const;
 
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
@@ -69,10 +71,47 @@ bool Descent::check(TokenType type) const
     return m_curr.type == type;
 }
 
+bool Descent::is_user_identifier(const Expr &expr) const
+{
+    // Only allow IdentifierNode for assignment target
+    return dynamic_cast<const IdentifierNode *>(expr.get()) != nullptr;
+}
+
 Expr Descent::expression()
 {
     advance();
-    return additive();
+    return assignment();
+}
+
+Expr Descent::assignment()
+{
+    Expr left = additive();
+
+    // Assignment is right-associative and has lowest precedence
+    if (left && check(TokenType::ASSIGN))
+    {
+        // Validate that left side is a user identifier
+        if (!is_user_identifier(left))
+        {
+            // Left side must be a user identifier, not a reserved word or expression
+            return nullptr;
+        }
+
+        // Get the variable name from the IdentifierNode
+        const IdentifierNode *id_node = static_cast<const IdentifierNode *>(left.get());
+        std::string var_name = id_node->name();
+
+        advance();                 // consume '='
+        Expr right = assignment(); // Right-associative: recursive call
+        if (!right)
+        {
+            return nullptr;
+        }
+
+        return std::make_shared<AssignmentNode>(var_name, right);
+    }
+
+    return left;
 }
 
 Expr Descent::additive()
@@ -167,8 +206,8 @@ Expr Descent::primary()
 
     if (m_curr.type == TokenType::LEFT_PAREN)
     {
-        advance(); // consume '('
-        Expr expr = additive();
+        advance();                // consume '('
+        Expr expr = assignment(); // Allow full expressions including assignment in parens
         if (expr && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume ')'
