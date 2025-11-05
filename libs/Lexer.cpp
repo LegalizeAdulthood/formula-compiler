@@ -119,6 +119,10 @@ Token Lexer::next_token()
         return {TokenType::COMMA, start, 1};
     case '|':
         return {TokenType::MODULUS, start, 1};
+    case '\\':
+        // Backslash here means it wasn't part of a line continuation
+        // (those are handled in skip_whitespace)
+        return {TokenType::INVALID, start, 1};
     default:
         // Unknown character
         return {TokenType::INVALID, start, 1};
@@ -144,6 +148,34 @@ void Lexer::skip_whitespace()
         if (ch == ' ' || ch == '\t' || ch == '\r')
         {
             ++m_position;
+        }
+        else if (ch == '\\')
+        {
+            // Check for line continuation: backslash followed by newline
+            if (m_position + 1 < m_input.length())
+            {
+                char next_ch = m_input[m_position + 1];
+                if (next_ch == '\n')
+                {
+                    // Skip backslash and newline
+                    m_position += 2;
+                }
+                else if (next_ch == '\r' && m_position + 2 < m_input.length() && m_input[m_position + 2] == '\n')
+                {
+                    // Skip backslash, CR, and LF
+                    m_position += 3;
+                }
+                else
+                {
+                    // Backslash not followed by newline, stop skipping whitespace
+                    break;
+                }
+            }
+            else
+            {
+                // Backslash at end of input, stop skipping whitespace
+                break;
+            }
         }
         else if (ch == ';')
         {

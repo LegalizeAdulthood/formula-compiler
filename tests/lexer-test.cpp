@@ -96,6 +96,60 @@ TEST(TestLexer, peekDoesNotAdvance)
     EXPECT_DOUBLE_EQ(3.14, std::get<double>(token2.value));
 }
 
+TEST(TestLexer, lineContinuationWithLF)
+{
+    Lexer lexer("1\\\n2");
+
+    const Token token1 = lexer.next_token();
+    const Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+}
+
+TEST(TestLexer, lineContinuationWithCRLF)
+{
+    Lexer lexer("1\\\r\n2");
+
+    Token token1 = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+}
+
+TEST(TestLexer, lineContinuationMultiple)
+{
+    Lexer lexer("1\\\n\\\n2");
+    Token token1 = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+}
+
+TEST(TestLexer, lineContinuationWithSpaces)
+{
+    Lexer lexer("1 \\\n  2");
+    Token token1 = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+}
+
+TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
+{
+    Lexer lexer("1\\2");
+    Token token1 = lexer.next_token();
+    Token invalid = lexer.next_token();
+    Token token2 = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::INVALID, invalid.type);
+    EXPECT_EQ(TokenType::NUMBER, token2.type);
+}
+
 TEST(TestLexer, positionTracking)
 {
     Lexer lexer("  42  ");
@@ -286,6 +340,7 @@ static TextTokenParam s_params[]{
     {"zero", "zero", TokenType::ZERO},                                        //
     {"commentAfter", "1;this is a comment", TokenType::NUMBER, 0, 1},         //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
+    {"continuation", "\\\n1", TokenType::NUMBER, 2, 1},                       //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));
