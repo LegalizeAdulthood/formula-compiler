@@ -29,6 +29,7 @@ public:
 private:
     Expr expression();
     Expr assignment();
+    Expr conjunctive();
     Expr comparative();
     Expr additive();
     Expr term();
@@ -86,7 +87,7 @@ bool Descent::is_user_identifier(const Expr &expr) const
 Expr Descent::expression()
 {
     advance();
-    return comparative();
+    return conjunctive();
 }
 
 Expr Descent::assignment()
@@ -120,6 +121,37 @@ Expr Descent::assignment()
     return left;
 }
 
+Expr Descent::conjunctive()
+{
+    Expr left = comparative();
+
+    // Handle logical operators: && and ||
+    // Left-associative
+    while (left && (check(TokenType::LOGICAL_AND) || check(TokenType::LOGICAL_OR)))
+    {
+        std::string op;
+        if (m_curr.type == TokenType::LOGICAL_AND)
+        {
+            op = "&&";
+        }
+        else if (m_curr.type == TokenType::LOGICAL_OR)
+        {
+            op = "||";
+        }
+
+        advance();
+        Expr right = comparative();
+        if (!right)
+        {
+            return nullptr;
+        }
+
+        left = std::make_shared<BinaryOpNode>(left, op, right);
+    }
+
+    return left;
+}
+
 // Handle relational operators: <, <=, >, >=, ==, !=
 Expr Descent::comparative()
 {
@@ -132,29 +164,17 @@ Expr Descent::comparative()
     {
         std::string op;
         if (m_curr.type == TokenType::LESS_THAN)
-        {
             op = "<";
-        }
         else if (m_curr.type == TokenType::LESS_EQUAL)
-        {
             op = "<=";
-        }
         else if (m_curr.type == TokenType::GREATER_THAN)
-        {
             op = ">";
-        }
         else if (m_curr.type == TokenType::GREATER_EQUAL)
-        {
             op = ">=";
-        }
         else if (m_curr.type == TokenType::EQUAL)
-        {
             op = "==";
-        }
         else if (m_curr.type == TokenType::NOT_EQUAL)
-        {
             op = "!=";
-        }
 
         advance();
         Expr right = assignment();
