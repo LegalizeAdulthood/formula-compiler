@@ -255,6 +255,7 @@ static TextTokenParam s_params[]{
     {"colon", ":", TokenType::COLON},                                         //
     {"comma", ",", TokenType::COMMA},                                         //
     {"newline", "\n", TokenType::TERMINATOR},                                 //
+    {"invalidIdentifier", "1a", TokenType::INVALID},                          //
     {"simpleIdentifier", "x", TokenType::IDENTIFIER},                         //
     {"longerIdentifier", "variable", TokenType::IDENTIFIER},                  //
     {"identifierWithDigits", "var123", TokenType::IDENTIFIER},                //

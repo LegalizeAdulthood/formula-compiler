@@ -270,6 +270,23 @@ Token Lexer::lex_number()
         }
     }
 
+    // Check if number is immediately followed by a letter or underscore (invalid)
+    if (m_position < m_input.length())
+    {
+        char next_ch = current_char();
+        if (std::isalpha(static_cast<unsigned char>(next_ch)) || next_ch == '_')
+        {
+            // Invalid: number followed directly by identifier character
+            // Consume all remaining identifier characters to make the entire sequence one INVALID token
+            while (m_position < m_input.length() && is_identifier_continue(current_char()))
+            {
+                advance();
+            }
+            size_t length = m_position - start;
+            return {TokenType::INVALID, start, length};
+        }
+    }
+
     // Convert to double
     char *end;
     double value = std::strtod(number_str.c_str(), &end);
