@@ -28,6 +28,9 @@ public:
 
 private:
     Expr expression();
+    Expr statement();
+    Expr if_statement();
+    Expr block();
     Expr assignment();
     Expr conjunctive();
     Expr comparative();
@@ -40,6 +43,8 @@ private:
     bool match(TokenType type);
     bool check(TokenType type) const;
     bool is_user_identifier(const Expr &expr) const;
+    void skip_newlines();
+    bool require_newlines();
 
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
@@ -84,10 +89,114 @@ bool Descent::is_user_identifier(const Expr &expr) const
     return dynamic_cast<const IdentifierNode *>(expr.get()) != nullptr;
 }
 
+void Descent::skip_newlines()
+{
+    while (match(TokenType::TERMINATOR))
+    {
+        // Skip all newlines
+    }
+}
+
+bool Descent::require_newlines()
+{
+    if (!match(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    skip_newlines();
+    return true;
+}
+
 Expr Descent::expression()
 {
     advance();
+    return statement();
+}
+
+Expr Descent::statement()
+{
+    if (check(TokenType::IF))
+    {
+        return if_statement();
+    }
     return conjunctive();
+}
+
+Expr Descent::if_statement()
+{
+    if (!match(TokenType::IF))
+    {
+        return nullptr;
+    }
+
+    // Parse condition in parentheses
+    if (!match(TokenType::LEFT_PAREN))
+    {
+        return nullptr;
+    }
+
+    Expr condition = conjunctive();
+    if (!condition)
+    {
+        return nullptr;
+    }
+
+    if (!match(TokenType::RIGHT_PAREN))
+    {
+        return nullptr;
+    }
+
+    // Require newline after condition
+    if (!require_newlines())
+    {
+        return nullptr;
+    }
+
+    // Parse then block
+    Expr then_block = block();
+
+    // Parse else block (elseif or else or empty)
+    Expr else_block = nullptr;
+
+    if (check(TokenType::ELSE_IF))
+    {
+        // Recursively parse elseif as another if statement
+        else_block = if_statement();
+        if (!else_block)
+        {
+            return nullptr;
+        }
+    }
+    else if (match(TokenType::ELSE))
+    {
+        if (!require_newlines())
+        {
+            return nullptr;
+        }
+        else_block = block();
+    }
+
+    // Require endif
+    if (!match(TokenType::END_IF))
+    {
+        return nullptr;
+    }
+
+    return std::make_shared<IfStatementNode>(condition, then_block, else_block);
+}
+
+Expr Descent::block()
+{
+    // A block can be empty or contain statements
+    // Check if we're at endif, else, or elseif - that means empty block
+    if (check(TokenType::END_IF) || check(TokenType::ELSE) || check(TokenType::ELSE_IF))
+    {
+        return nullptr; // Empty block
+    }
+
+    // For now, handle only empty blocks
+    // TODO: Parse statement sequences when needed
+    return nullptr;
 }
 
 Expr Descent::assignment()
