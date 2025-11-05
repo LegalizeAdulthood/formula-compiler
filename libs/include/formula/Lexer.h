@@ -34,6 +34,7 @@ enum class TokenType
     LEFT_PAREN,
     RIGHT_PAREN,
     COLON,
+    COMMA,
     TERMINATOR,
     IF,
     ELSE_IF,

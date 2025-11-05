@@ -199,6 +199,7 @@ static TextTokenParam s_params[]{
     {"equal", "==", TokenType::EQUAL},                                        //
     {"notEqual", "!=", TokenType::NOT_EQUAL},                                 //
     {"colon", ":", TokenType::COLON},                                         //
+    {"comma", ",", TokenType::COMMA},                                         //
     {"newline", "\n", TokenType::TERMINATOR},                                 //
     {"simpleIdentifier", "x", TokenType::IDENTIFIER},                         //
     {"longerIdentifier", "variable", TokenType::IDENTIFIER},                  //

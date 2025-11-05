@@ -115,6 +115,8 @@ Token Lexer::next_token()
         return {TokenType::RIGHT_PAREN, start, 1};
     case ':':
         return {TokenType::COLON, start, 1};
+    case ',':
+        return {TokenType::COMMA, start, 1};
     case '|':
         return {TokenType::MODULUS, start, 1};
     default:
