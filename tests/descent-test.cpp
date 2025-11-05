@@ -34,7 +34,7 @@ class DescentSimpleExpressions : public TestWithParam<SimpleExpressionParam>
 static SimpleExpressionParam s_simple_expressions[]{
     {"constant", "1"},
     {"identifier", "z2"},
-    //{"parenExpr", "(z)"},
+    {"parenExpr", "(z)"},
     //{"add", "1+2"},
     //{"subtract", "1-2"},
     //{"multiply", "1*2"},

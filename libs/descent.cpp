@@ -27,7 +27,11 @@ public:
     FormulaSectionsPtr parse();
 
 private:
-    Expr formula();
+    Expr expression();
+    Expr primary();
+    void advance();
+    bool match(TokenType type);
+    bool check(TokenType type) const;
 
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
@@ -37,21 +41,62 @@ private:
 
 FormulaSectionsPtr Descent::parse()
 {
-    m_ast->bailout = formula();
+    m_ast->bailout = expression();
     return m_ast;
 }
 
-Expr Descent::formula()
+void Descent::advance()
 {
     m_curr = m_lexer.next_token();
+}
 
+bool Descent::match(TokenType type)
+{
+    if (check(type))
+    {
+        advance();
+        return true;
+    }
+    return false;
+}
+
+bool Descent::check(TokenType type) const
+{
+    return m_curr.type == type;
+}
+
+Expr Descent::expression()
+{
+    advance();
+    return primary();
+}
+
+Expr Descent::primary()
+{
     if (m_curr.type == TokenType::NUMBER)
     {
-        return std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+        Expr result = std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+        advance(); // consume the number
+        return result;
     }
+
     if (m_curr.type == TokenType::IDENTIFIER)
     {
-        return std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        advance(); // consume the identifier
+        return result;
+    }
+
+    if (m_curr.type == TokenType::LEFT_PAREN)
+    {
+        advance(); // consume '('
+        Expr expr = primary();
+        if (expr && check(TokenType::RIGHT_PAREN))
+        {
+            advance(); // consume ')'
+            return expr;
+        }
+        return nullptr; // missing closing parenthesis
     }
 
     return nullptr;
