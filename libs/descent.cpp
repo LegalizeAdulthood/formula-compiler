@@ -31,6 +31,7 @@ private:
     Expr additive();
     Expr term();
     Expr unary();
+    Expr power();
     Expr primary();
     void advance();
     bool match(TokenType type);
@@ -126,7 +127,26 @@ Expr Descent::unary()
         return std::make_shared<UnaryOpNode>(op, operand);
     }
 
-    return primary();
+    return power();
+}
+
+Expr Descent::power()
+{
+    Expr left = primary();
+
+    // Right-associative: parse from right to left
+    if (left && check(TokenType::POWER))
+    {
+        advance();            // consume '^'
+        Expr right = power(); // Recursive call for right associativity
+        if (!right)
+        {
+            return nullptr;
+        }
+        return std::make_shared<BinaryOpNode>(left, '^', right);
+    }
+
+    return left;
 }
 
 Expr Descent::primary()
