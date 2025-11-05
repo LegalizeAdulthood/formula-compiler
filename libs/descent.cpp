@@ -224,7 +224,20 @@ Expr Descent::primary()
             advance(); // consume ')'
             return expr;
         }
-        // missing closing parenthesis
+        return nullptr; // missing closing parenthesis
+    }
+
+    // Handle modulus operator |expr|
+    if (m_curr.type == TokenType::MODULUS)
+    {
+        advance();                // consume '|'
+        Expr expr = assignment(); // Parse the inner expression
+        if (expr && check(TokenType::MODULUS))
+        {
+            advance(); // consume closing '|'
+            return std::make_shared<UnaryOpNode>('|', expr);
+        }
+        return nullptr; // missing closing '|'
     }
 
     return nullptr;

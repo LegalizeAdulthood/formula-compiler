@@ -52,7 +52,7 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"chainedPower", "2^2^2"},
     {"assignment", "z=4"},
     {"assignmentLongVariable", "this_is_another4_variable_name2=4"},
-    //{"modulus", "|-3.0|"},
+    {"modulus", "|-3.0|"},
     //{"compareLess", "4<3"},
     //{"compareLessPrecedence", "3<z=4"},
     //{"compareLessEqual", "4<=3"},
