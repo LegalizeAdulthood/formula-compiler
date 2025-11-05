@@ -103,15 +103,13 @@ TEST_P(DescentSimpleExpressions, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DescentSimpleExpressions, ValuesIn(s_simple_expressions));
 
-//TEST(TestDescentParse, invalidIdentifier)
-//{
-//    const FormulaPtr result1{create_descent_formula("1a")};
-//    const FormulaPtr result2{create_descent_formula("_a")};
-//
-//    EXPECT_FALSE(result1);
-//    EXPECT_FALSE(result2);
-//}
-//
+TEST(TestDescentParse, invalidIdentifier)
+{
+    const FormulaPtr result{create_descent_formula("1a")};
+
+    EXPECT_FALSE(result);
+}
+
 //struct MultiStatementParam
 //{
 //    std::string_view name;

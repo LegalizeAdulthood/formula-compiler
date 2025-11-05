@@ -48,6 +48,11 @@ private:
 FormulaSectionsPtr Descent::parse()
 {
     m_ast->bailout = expression();
+    // If parsing failed, return nullptr instead of partially constructed AST
+    if (!m_ast->bailout)
+    {
+        return nullptr;
+    }
     return m_ast;
 }
 
@@ -190,6 +195,12 @@ Expr Descent::power()
 
 Expr Descent::primary()
 {
+    // Check for invalid tokens first
+    if (m_curr.type == TokenType::INVALID)
+    {
+        return nullptr;
+    }
+
     if (m_curr.type == TokenType::NUMBER)
     {
         Expr result = std::make_shared<NumberNode>(std::get<double>(m_curr.value));
@@ -213,7 +224,7 @@ Expr Descent::primary()
             advance(); // consume ')'
             return expr;
         }
-        return nullptr; // missing closing parenthesis
+        // missing closing parenthesis
     }
 
     return nullptr;
