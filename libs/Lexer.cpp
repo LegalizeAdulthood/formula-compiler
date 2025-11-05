@@ -109,6 +109,24 @@ Token Lexer::next_token()
         }
         // Single ! is not recognized
         return {TokenType::INVALID, start, 1};
+    case '&':
+        // Check for && (LOGICAL_AND)
+        if (current_char() == '&')
+        {
+            advance();
+            return {TokenType::LOGICAL_AND, start, 2};
+        }
+        // Single & is not recognized
+        return {TokenType::INVALID, start, 1};
+    case '|':
+        // Check for || (LOGICAL_OR) vs | (MODULUS)
+        if (current_char() == '|')
+        {
+            advance();
+            return {TokenType::LOGICAL_OR, start, 2};
+        }
+        // Single | is MODULUS
+        return {TokenType::MODULUS, start, 1};
     case '(':
         return {TokenType::LEFT_PAREN, start, 1};
     case ')':
@@ -117,8 +135,6 @@ Token Lexer::next_token()
         return {TokenType::COLON, start, 1};
     case ',':
         return {TokenType::COMMA, start, 1};
-    case '|':
-        return {TokenType::MODULUS, start, 1};
     case '\\':
         // Backslash here means it wasn't part of a line continuation
         // (those are handled in skip_whitespace)

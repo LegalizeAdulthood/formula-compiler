@@ -252,6 +252,8 @@ static TextTokenParam s_params[]{
     {"greaterEqual", ">=", TokenType::GREATER_EQUAL},                         //
     {"equal", "==", TokenType::EQUAL},                                        //
     {"notEqual", "!=", TokenType::NOT_EQUAL},                                 //
+    {"logicalAnd", "&&", TokenType::LOGICAL_AND},                             //
+    {"logicalOr", "||", TokenType::LOGICAL_OR},                               //
     {"colon", ":", TokenType::COLON},                                         //
     {"comma", ",", TokenType::COMMA},                                         //
     {"newline", "\n", TokenType::TERMINATOR},                                 //

@@ -29,6 +29,8 @@ enum class TokenType
     GREATER_EQUAL,
     EQUAL,
     NOT_EQUAL,
+    LOGICAL_AND,
+    LOGICAL_OR,
     MODULUS,
     IDENTIFIER,
     LEFT_PAREN,
