@@ -29,6 +29,7 @@ public:
 private:
     Expr expression();
     Expr assignment();
+    Expr comparative();
     Expr additive();
     Expr term();
     Expr unary();
@@ -85,7 +86,7 @@ bool Descent::is_user_identifier(const Expr &expr) const
 Expr Descent::expression()
 {
     advance();
-    return assignment();
+    return comparative();
 }
 
 Expr Descent::assignment()
@@ -114,6 +115,55 @@ Expr Descent::assignment()
         }
 
         return std::make_shared<AssignmentNode>(var_name, right);
+    }
+
+    return left;
+}
+
+// Handle relational operators: <, <=, >, >=, ==, !=
+Expr Descent::comparative()
+{
+    Expr left = assignment();
+
+    while (left &&
+        (check(TokenType::LESS_THAN) || check(TokenType::LESS_EQUAL)             //
+            || check(TokenType::GREATER_THAN) || check(TokenType::GREATER_EQUAL) //
+            || check(TokenType::EQUAL) || check(TokenType::NOT_EQUAL)))
+    {
+        std::string op;
+        if (m_curr.type == TokenType::LESS_THAN)
+        {
+            op = "<";
+        }
+        else if (m_curr.type == TokenType::LESS_EQUAL)
+        {
+            op = "<=";
+        }
+        else if (m_curr.type == TokenType::GREATER_THAN)
+        {
+            op = ">";
+        }
+        else if (m_curr.type == TokenType::GREATER_EQUAL)
+        {
+            op = ">=";
+        }
+        else if (m_curr.type == TokenType::EQUAL)
+        {
+            op = "==";
+        }
+        else if (m_curr.type == TokenType::NOT_EQUAL)
+        {
+            op = "!=";
+        }
+
+        advance();
+        Expr right = assignment();
+        if (!right)
+        {
+            return nullptr;
+        }
+
+        left = std::make_shared<BinaryOpNode>(left, op, right);
     }
 
     return left;
