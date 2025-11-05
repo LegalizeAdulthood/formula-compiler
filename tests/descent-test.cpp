@@ -66,24 +66,103 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},
     {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},
     {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},
-    {"ifEmptyBody", "if(0)\nendif", "if_statement:( number:0 ) { } endif"},
-    //{"ifBlankLinesBody", "if(0)\n\nendif"},
-    //{"ifThenBody", "if(0)\n1\nendif"},
-    //{"ifThenComplexBody", "if(0)\nx=1\ny=2\nendif"},
-    //{"ifComparisonCondition", "if(1<2)\nendif"},
-    //{"ifConjunctiveCondition", "if(1&&2)\nendif"},
-    //{"ifElseEmptyBody", "if(0)\nelse\nendif"},
-    //{"ifElseBlankLinesBody", "if(0)\n\nelse\n\nendif"},
-    //{"ifThenElseBody", "if(0)\nelse\n1\nendif"},
-    //{"ifThenBodyElse", "if(0)\n1\nelse\nendif"},
-    //{"ifThenElseComplexBody", "if(0)\nx=1\ny=2\nelse\nz=3\nq=4\nendif"},
-    //{"ifElseIfEmptyBody", "if(0)\nelseif(1)\nelse\nendif"},
-    //{"ifMultipleElseIfEmptyBody", "if(0)\nelseif(0)\nelseif(0)\nelse\nendif"},
-    //{"ifElseIfBlankLinesBody", "if(0)\n\nelseif(0)\n\nelse\n\nendif"},
-    //{"ifThenElseIfBody", "if(0)\nelseif(0)\n1\nendif"},
-    //{"ifThenBodyElseIf", "if(0)\n1\nelseif(0)\nendif"},
-    //{"ifThenElseIfComplexBody", "if(0)\nx=1\ny=2\nelseif(1)\nz=3\nq=4\nendif"},
-    //{"backslashContinuesStatement", "if(\\\n0)\nendif"},
+    {"ifEmptyBody",
+        "if(0)\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    //{"ifThenBody",
+    //    "if(0)\n"
+    //    "1\n"
+    //    "endif",
+    //    "if_statement:( number:0 ) { number:1 } endif"},
+    //{"ifThenComplexBody",
+    //    "if(0)\n"
+    //    "x=1\n"
+    //    "y=2\n"
+    //    "endif"},
+    {"ifComparisonCondition",
+        "if(1<2)\n"
+        "endif",
+        "if_statement:( binary_op:< number:1 number:2 ) { } endif"},
+    {"ifConjunctiveCondition",
+        "if(1&&2)\n"
+        "endif",
+        "if_statement:( binary_op:&& number:1 number:2 ) { } endif"},
+    {"ifElseEmptyBody",
+        "if(0)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    //{"ifElseBlankLinesBody",
+    //    "if(0)\n"
+    //    "\n"
+    //    "else\n"
+    //    "\n"
+    //    "endif"},
+    //{"ifThenElseBody",
+    //    "if(0)\n"
+    //    "else\n"
+    //    "1\n"
+    //    "endif"},
+    //{"ifThenBodyElse",
+    //    "if(0)\n"
+    //    "1\n"
+    //    "else\n"
+    //    "endif"},
+    //{"ifThenElseComplexBody",
+    //    "if(0)\n"
+    //    "x=1\n"
+    //    "y=2\n"
+    //    "else\n"
+    //    "z=3\n"
+    //    "q=4\n"
+    //    "endif"},
+    //{"ifElseIfEmptyBody",
+    //    "if(0)\n"
+    //    "elseif(1)\n"
+    //    "else\n"
+    //    "endif"},
+    //{"ifMultipleElseIfEmptyBody",
+    //    "if(0)\n"
+    //    "elseif(0)\n"
+    //    "elseif(0)\n"
+    //    "else\n"
+    //    "endif"},
+    //{"ifElseIfBlankLinesBody",
+    //    "if(0)\n"
+    //    "\n"
+    //    "elseif(0)\n"
+    //    "\n"
+    //    "else\n"
+    //    "\n"
+    //    "endif"},
+    //{"ifThenElseIfBody",
+    //    "if(0)\n"
+    //    "elseif(0)\n"
+    //    "1\n"
+    //    "endif"},
+    //{"ifThenBodyElseIf",
+    //    "if(0)\n"
+    //    "1\n"
+    //    "elseif(0)\n"
+    //    "endif"},
+    //{"ifThenElseIfComplexBody",
+    //    "if(0)\n"
+    //    "x=1\n"
+    //    "y=2\n"
+    //    "elseif(1)\n"
+    //    "z=3\n"
+    //    "q=4\n"
+    //    "endif"},
+    //{"backslashContinuesStatement",
+    //    "if(\\\n"
+    //    "0)\n"
+    //    "endif"},
 };
 
 TEST_P(DescentSimpleExpressions, parse)
