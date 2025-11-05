@@ -30,6 +30,7 @@ private:
     Expr expression();
     Expr additive();
     Expr term();
+    Expr unary();
     Expr primary();
     void advance();
     bool match(TokenType type);
@@ -94,13 +95,13 @@ Expr Descent::additive()
 
 Expr Descent::term()
 {
-    Expr left = primary();
+    Expr left = unary();
 
     while (left && (check(TokenType::MULTIPLY) || check(TokenType::DIVIDE)))
     {
         char op = (m_curr.type == TokenType::MULTIPLY) ? '*' : '/';
         advance(); // consume operator
-        Expr right = primary();
+        Expr right = unary();
         if (!right)
         {
             return nullptr;
@@ -109,6 +110,23 @@ Expr Descent::term()
     }
 
     return left;
+}
+
+Expr Descent::unary()
+{
+    if (check(TokenType::PLUS) || check(TokenType::MINUS))
+    {
+        char op = (m_curr.type == TokenType::PLUS) ? '+' : '-';
+        advance();              // consume operator
+        Expr operand = unary(); // Allow chaining: --1
+        if (!operand)
+        {
+            return nullptr;
+        }
+        return std::make_shared<UnaryOpNode>(op, operand);
+    }
+
+    return primary();
 }
 
 Expr Descent::primary()
