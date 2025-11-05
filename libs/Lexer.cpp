@@ -145,8 +145,27 @@ void Lexer::skip_whitespace()
         {
             ++m_position;
         }
+        else if (ch == ';')
+        {
+            skip_comment();
+        }
         else
         {
+            break;
+        }
+    }
+}
+
+void Lexer::skip_comment()
+{
+    // Skip from semicolon to end of line, not including the newline
+    while (m_position < m_input.length())
+    {
+        char ch = m_input[m_position];
+        ++m_position;
+        if (ch == '\n')
+        {
+            --m_position;
             break;
         }
     }

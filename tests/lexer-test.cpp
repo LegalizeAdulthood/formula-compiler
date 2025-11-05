@@ -284,6 +284,8 @@ static TextTokenParam s_params[]{
     {"ident", "ident", TokenType::IDENT},                                     //
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
+    {"commentAfter", "1;this is a comment", TokenType::NUMBER, 0, 1},         //
+    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

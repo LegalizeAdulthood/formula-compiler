@@ -161,6 +161,7 @@ public:
 
 private:
     void skip_whitespace();
+    void skip_comment();
     Token lex_number();
     bool is_number_start() const;
     Token lex_identifier();
