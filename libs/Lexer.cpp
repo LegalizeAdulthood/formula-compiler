@@ -35,6 +35,19 @@ Token Lexer::next_token()
 
     char ch = current_char();
 
+    // Check for end-of-line (newline) as separator
+    if (ch == '\n')
+    {
+        size_t start = m_position;
+        advance();
+        return {TokenType::TERMINATOR, start, 1};
+    }
+
+    // Also handle standalone \r followed by \n (handled above) or as separator on its own
+    // This is needed for the test case where \r\n is treated as a single separator
+    // The \r is already consumed by skip_whitespace, so this won't be reached
+    // unless there's a standalone \r without \n following
+
     // Check if this is the start of a number
     if (is_number_start())
     {
@@ -122,9 +135,18 @@ Token Lexer::peek_token()
 
 void Lexer::skip_whitespace()
 {
-    while (m_position < m_input.length() && std::isspace(static_cast<unsigned char>(m_input[m_position])))
+    while (m_position < m_input.length())
     {
-        ++m_position;
+        char ch = m_input[m_position];
+        // Skip only spaces and tabs, not newlines
+        if (ch == ' ' || ch == '\t' || ch == '\r')
+        {
+            ++m_position;
+        }
+        else
+        {
+            break;
+        }
     }
 }
 

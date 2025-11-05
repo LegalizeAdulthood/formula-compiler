@@ -44,10 +44,38 @@ TEST(TestLexer, multipleNumbers)
 
 TEST(TestLexer, whitespaceOnly)
 {
-    Lexer lexer("   \t\n\r  ");
+    Lexer lexer("   \t  ");
     Token token = lexer.next_token();
 
     EXPECT_EQ(TokenType::END_OF_INPUT, token.type);
+}
+
+TEST(TestLexer, terminatorLF)
+{
+    Lexer lexer("1\n2");
+    Token tokens[3];
+    for (Token &t : tokens)
+    {
+        t = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_EQ(TokenType::TERMINATOR, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+}
+
+TEST(TestLexer, terminatorCRLF)
+{
+    Lexer lexer("1\r\n2");
+    Token tokens[3];
+    for (Token &t : tokens)
+    {
+        t = lexer.next_token();
+    }
+
+    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_EQ(TokenType::TERMINATOR, tokens[1].type);
+    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
 }
 
 TEST(TestLexer, peekDoesNotAdvance)
@@ -171,6 +199,7 @@ static TextTokenParam s_params[]{
     {"equal", "==", TokenType::EQUAL},                                        //
     {"notEqual", "!=", TokenType::NOT_EQUAL},                                 //
     {"colon", ":", TokenType::COLON},                                         //
+    {"newline", "\n", TokenType::TERMINATOR},                                 //
     {"simpleIdentifier", "x", TokenType::IDENTIFIER},                         //
     {"longerIdentifier", "variable", TokenType::IDENTIFIER},                  //
     {"identifierWithDigits", "var123", TokenType::IDENTIFIER},                //
