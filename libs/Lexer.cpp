@@ -294,7 +294,7 @@ Token Lexer::lex_identifier()
     }
 
     // Not a reserved word, return as identifier
-    return {TokenType::IDENT, identifier, start, length};
+    return {TokenType::IDENTIFIER, identifier, start, length};
 }
 
 } // namespace formula

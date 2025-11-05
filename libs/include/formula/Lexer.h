@@ -14,7 +14,8 @@ namespace formula
 
 enum class TokenType
 {
-    END_OF_INPUT,
+    NONE = 0,
+    END_OF_INPUT = 1,
     NUMBER,
     PLUS,
     MINUS,
@@ -29,7 +30,7 @@ enum class TokenType
     EQUAL,
     NOT_EQUAL,
     MODULUS,
-    IDENT,
+    IDENTIFIER,
     LEFT_PAREN,
     RIGHT_PAREN,
     IF,
