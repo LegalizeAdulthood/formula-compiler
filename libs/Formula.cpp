@@ -2,10 +2,12 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "formula/Formula.h"
+#include <formula/Formula.h>
 
-#include "formula/Compiler.h"
-#include "formula/Interpreter.h"
+#include <formula/Compiler.h>
+#include <formula/Interpreter.h>
+
+#include "descent.h"
 #include "parser.h"
 
 #include <cstdint>
@@ -308,6 +310,15 @@ bool valid_sections(const FormulaSectionsPtr &ast)
 FormulaPtr create_formula(std::string_view text)
 {
     if (FormulaSectionsPtr sections = parse(text); valid_sections(sections))
+    {
+        return std::make_shared<ParsedFormula>(sections);
+    }
+    return {};
+}
+
+FormulaPtr create_descent_formula(std::string_view text)
+{
+    if (FormulaSectionsPtr sections = descent::parse(text); valid_sections(sections))
     {
         return std::make_shared<ParsedFormula>(sections);
     }

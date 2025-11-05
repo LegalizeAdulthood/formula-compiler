@@ -54,5 +54,6 @@ public:
 using FormulaPtr = std::shared_ptr<Formula>;
 
 FormulaPtr create_formula(std::string_view text);
+FormulaPtr create_descent_formula(std::string_view text);
 
 } // namespace formula

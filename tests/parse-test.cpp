@@ -17,6 +17,9 @@ using namespace testing;
 namespace formula::test
 {
 
+namespace
+{
+
 struct SimpleExpressionParam
 {
     std::string_view name;
@@ -27,6 +30,112 @@ inline void PrintTo(const SimpleExpressionParam &param, std::ostream *os)
 {
     *os << param.name;
 }
+
+class SimpleExpressions : public TestWithParam<SimpleExpressionParam>
+{
+};
+
+struct MultiStatementParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const MultiStatementParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class MultiStatements : public TestWithParam<MultiStatementParam>
+{
+};
+
+class ReadOnlyVariables : public TestWithParam<std::string>
+{
+};
+
+class ReservedWords : public TestWithParam<std::string>
+{
+};
+
+class Functions : public TestWithParam<std::string>
+{
+};
+
+struct ParseFailureParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class ParseFailures : public TestWithParam<ParseFailureParam>
+{
+};
+
+struct SingleSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+    Section section;
+};
+
+inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class SingleSections : public TestWithParam<SingleSectionParam>
+{
+};
+
+struct DefaultSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+    std::string_view expected;
+};
+
+inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class DefaultSection : public TestWithParam<DefaultSectionParam>
+{
+};
+
+struct InvalidSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const InvalidSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+struct BuiltinDisallowsParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const BuiltinDisallowsParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
+{
+};
+
+} // namespace
 
 static SimpleExpressionParam s_simple_expressions[]{
     {"constant", "1"},
@@ -86,10 +195,6 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"backslashContinuesStatement", "if(\\\n0)\nendif"},
 };
 
-class SimpleExpressions : public TestWithParam<SimpleExpressionParam>
-{
-};
-
 TEST_P(SimpleExpressions, parse)
 {
     const SimpleExpressionParam &param{GetParam()};
@@ -113,17 +218,6 @@ TEST(TestFormulaParse, invalidIdentifier)
     EXPECT_FALSE(result2);
 }
 
-struct MultiStatementParam
-{
-    std::string_view name;
-    std::string_view text;
-};
-
-inline void PrintTo(const MultiStatementParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
 static MultiStatementParam s_multi_statements[]{
     {"statements", "3\n4\n"},
     {"assignmentStatements", "z=3\nz=4\n"},
@@ -133,10 +227,6 @@ static MultiStatementParam s_multi_statements[]{
     {"commaSeparatedAssignmentStatements", "z=3,z=4"},
     {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},
     {"commaWithSpaces", "3 , 4"},
-};
-
-class MultiStatements : public TestWithParam<MultiStatementParam>
-{
 };
 
 TEST_P(MultiStatements, parse)
@@ -179,10 +269,6 @@ static std::vector<std::string> s_read_only_vars{
     "center", "magxmag", "rotskew",                     //
 };
 
-class ReadOnlyVariables : public TestWithParam<std::string>
-{
-};
-
 TEST_P(ReadOnlyVariables, notAssignable)
 {
     const FormulaPtr result{create_formula(GetParam() + "=1")};
@@ -203,10 +289,6 @@ static std::vector<std::string> s_functions{
     "one", "zero",                              //
 };
 
-class Functions : public TestWithParam<std::string>
-{
-};
-
 TEST_P(Functions, notAssignable)
 {
     const FormulaPtr result{create_formula(GetParam() + "=1")};
@@ -223,10 +305,6 @@ TEST_P(Functions, functionOne)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
-
-class ReservedWords : public TestWithParam<std::string>
-{
-};
 
 TEST_P(ReservedWords, notAssignable)
 {
@@ -247,27 +325,12 @@ static std::string s_reserved_words[]{
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
-struct ParseFailureParam
-{
-    std::string_view name;
-    std::string_view text;
-};
-
-inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
 static ParseFailureParam s_parse_failures[]{
     {"ifWithoutEndIf", "if(1)"},
     {"ifElseWithoutEndIf", "if(1)\nelse"},
     {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
     {"builtinSectionBogus", "builtin:type=0"},
-};
-
-class ParseFailures : public TestWithParam<ParseFailureParam>
-{
 };
 
 TEST_P(ParseFailures, parse)
@@ -280,18 +343,6 @@ TEST_P(ParseFailures, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
 
-struct SingleSectionParam
-{
-    std::string_view name;
-    std::string_view text;
-    Section section;
-};
-
-inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
 static SingleSectionParam s_single_sections[]{
     {"globalSection", "global:1", Section::PER_IMAGE},
     {"initSection", "init:1", Section::INITIALIZE},
@@ -301,10 +352,6 @@ static SingleSectionParam s_single_sections[]{
     {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
     {"defaultSection", "default:angle=0", Section::DEFAULT},
     {"switchSection", "switch:1", Section::SWITCH},
-};
-
-class SingleSections : public TestWithParam<SingleSectionParam>
-{
 };
 
 TEST_P(SingleSections, parse)
@@ -337,18 +384,6 @@ TEST(TestFormulaParse, builtinSectionJulia)
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
     EXPECT_TRUE(builtin);
     EXPECT_EQ("setting:type=2\n", to_string(builtin));
-}
-
-struct DefaultSectionParam
-{
-    std::string_view name;
-    std::string_view text;
-    std::string_view expected;
-};
-
-inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
-{
-    *os << param.name;
 }
 
 static DefaultSectionParam s_default_values[]{
@@ -391,10 +426,6 @@ static DefaultSectionParam s_default_values[]{
         "}\n"}, //
 };
 
-class DefaultSection : public TestWithParam<DefaultSectionParam>
-{
-};
-
 TEST_P(DefaultSection, parse)
 {
     const DefaultSectionParam &param{GetParam()};
@@ -408,17 +439,6 @@ TEST_P(DefaultSection, parse)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormualParse, DefaultSection, ValuesIn(s_default_values));
-
-struct InvalidSectionParam
-{
-    std::string_view name;
-    std::string_view text;
-};
-
-inline void PrintTo(const InvalidSectionParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
 
 static InvalidSectionParam s_invalid_sections[]{
     {"unknownSection",
@@ -513,17 +533,6 @@ TEST(TestFormulaParse, builtinSections)
     EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
-struct BuiltinDisallowsParam
-{
-    std::string_view name;
-    std::string_view text;
-};
-
-inline void PrintTo(const BuiltinDisallowsParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
 static BuiltinDisallowsParam s_builtin_disallows[]{
     {"global",
         "global:1\n"
@@ -553,10 +562,6 @@ static BuiltinDisallowsParam s_builtin_disallows[]{
         "perturbloop:1\n"
         "default:angle=0\n"
         "switch:1\n"},
-};
-
-class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
-{
 };
 
 TEST_P(BuiltinDisallows, parse)
