@@ -28,6 +28,8 @@ public:
 
 private:
     Expr expression();
+    Expr additive();
+    Expr term();
     Expr primary();
     void advance();
     bool match(TokenType type);
@@ -68,7 +70,45 @@ bool Descent::check(TokenType type) const
 Expr Descent::expression()
 {
     advance();
-    return primary();
+    return additive();
+}
+
+Expr Descent::additive()
+{
+    Expr left = term();
+
+    while (left && (check(TokenType::PLUS) || check(TokenType::MINUS)))
+    {
+        char op = (m_curr.type == TokenType::PLUS) ? '+' : '-';
+        advance(); // consume operator
+        Expr right = term();
+        if (!right)
+        {
+            return nullptr;
+        }
+        left = std::make_shared<BinaryOpNode>(left, op, right);
+    }
+
+    return left;
+}
+
+Expr Descent::term()
+{
+    Expr left = primary();
+
+    while (left && (check(TokenType::MULTIPLY) || check(TokenType::DIVIDE)))
+    {
+        char op = (m_curr.type == TokenType::MULTIPLY) ? '*' : '/';
+        advance(); // consume operator
+        Expr right = primary();
+        if (!right)
+        {
+            return nullptr;
+        }
+        left = std::make_shared<BinaryOpNode>(left, op, right);
+    }
+
+    return left;
 }
 
 Expr Descent::primary()
@@ -90,7 +130,7 @@ Expr Descent::primary()
     if (m_curr.type == TokenType::LEFT_PAREN)
     {
         advance(); // consume '('
-        Expr expr = primary();
+        Expr expr = additive();
         if (expr && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume ')'
