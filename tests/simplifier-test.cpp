@@ -7,9 +7,9 @@
 #include "function-call.h"
 #include "node-builders.h"
 #include "NodeFormatter.h"
+#include "trim_ws.h"
 
 #include <formula/Node.h>
-#include <formula/Visitor.h>
 
 #include <gtest/gtest.h>
 
@@ -53,19 +53,6 @@ struct FunctionSimplifyTestParam
 inline void PrintTo(const SimplifierParam &param, std::ostream *os)
 {
     *os << param.name;
-}
-
-static std::string trim_ws(std::string s)
-{
-    for (auto nl = s.find('\n'); nl != std::string::npos; nl = s.find('\n', nl))
-    {
-        s[nl] = ' ';
-    }
-    while (s.back() == '\n' || s.back() == ' ')
-    {
-        s.pop_back();
-    }
-    return s;
 }
 
 void PrintTo(const BinaryOpTestParam &param, std::ostream *os)

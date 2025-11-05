@@ -14,9 +14,8 @@ namespace formula::test
 
 void NodeFormatter::visit(const ast::AssignmentNode &node)
 {
-    m_str << "assignment:" << node.variable() << "=(\n";
+    m_str << "assignment:" << node.variable() << '\n';
     node.expression()->visit(*this);
-    m_str << ")\n";
 }
 
 void NodeFormatter::visit(const ast::BinaryOpNode &node)

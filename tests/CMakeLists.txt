@@ -16,6 +16,7 @@ add_executable("test-formula"
     "lexer-test.cpp"
     "parse-test.cpp"
     "simplifier-test.cpp"
+    "trim_ws.h" "trim_ws.cpp"
 )
 target_link_libraries(test-formula PUBLIC formula GTest::gtest_main)
 target_folder(test-formula "Tests")
