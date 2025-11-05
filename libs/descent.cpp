@@ -44,7 +44,17 @@ FormulaSectionsPtr Descent::parse()
 Expr Descent::formula()
 {
     m_curr = m_lexer.next_token();
-    return std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+
+    if (m_curr.type == TokenType::NUMBER)
+    {
+        return std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+    }
+    if (m_curr.type == TokenType::IDENTIFIER)
+    {
+        return std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+    }
+
+    return nullptr;
 }
 
 } // namespace
