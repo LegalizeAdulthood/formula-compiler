@@ -170,6 +170,7 @@ static TextTokenParam s_params[]{
     {"greaterEqual", ">=", TokenType::GREATER_EQUAL},                         //
     {"equal", "==", TokenType::EQUAL},                                        //
     {"notEqual", "!=", TokenType::NOT_EQUAL},                                 //
+    {"colon", ":", TokenType::COLON},                                         //
     {"simpleIdentifier", "x", TokenType::IDENTIFIER},                         //
     {"longerIdentifier", "variable", TokenType::IDENTIFIER},                  //
     {"identifierWithDigits", "var123", TokenType::IDENTIFIER},                //
@@ -189,6 +190,15 @@ static TextTokenParam s_params[]{
     {"elseIfPrefix", "elseif2", TokenType::IDENTIFIER},                       //
     {"elseSuffix", "myelse", TokenType::IDENTIFIER},                          //
     {"endIfPrefix", "endif_func", TokenType::IDENTIFIER},                     //
+    {"global", "global", TokenType::GLOBAL},                                  //
+    {"builtin", "builtin", TokenType::BUILTIN},                               //
+    {"init", "init", TokenType::INIT},                                        //
+    {"loop", "loop", TokenType::LOOP},                                        //
+    {"bailout", "bailout", TokenType::BAILOUT},                               //
+    {"perturbinit", "perturbinit", TokenType::PERTURB_INIT},                  //
+    {"perturbloop", "perturbloop", TokenType::PERTURB_LOOP},                  //
+    {"default", "default", TokenType::DEFAULT},                               //
+    {"switch", "switch", TokenType::SWITCH},                                  //
     {"p1", "p1", TokenType::P1},                                              //
     {"p2", "p2", TokenType::P2},                                              //
     {"p3", "p3", TokenType::P3},                                              //

@@ -33,10 +33,21 @@ enum class TokenType
     IDENTIFIER,
     LEFT_PAREN,
     RIGHT_PAREN,
+    COLON,
     IF,
     ELSE_IF,
     ELSE,
     END_IF,
+    // Section names
+    GLOBAL,
+    BUILTIN,
+    INIT,
+    LOOP,
+    BAILOUT,
+    PERTURB_INIT,
+    PERTURB_LOOP,
+    DEFAULT,
+    SWITCH,
     P1,           // Builtin variables
     P2,           //
     P3,           //
