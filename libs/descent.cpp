@@ -27,7 +27,6 @@ public:
     FormulaSectionsPtr parse();
 
 private:
-    Expr expression();
     Expr sequence();
     Expr statement();
     Expr if_statement();
@@ -54,10 +53,11 @@ private:
     Token m_curr;
 };
 
+// If parsing failed, return nullptr instead of partially constructed AST
 FormulaSectionsPtr Descent::parse()
 {
-    Expr result = expression();
-    // If parsing failed, return nullptr instead of partially constructed AST
+    advance();
+    Expr result = sequence();
     if (!result)
     {
         return nullptr;
@@ -139,12 +139,6 @@ bool Descent::require_newlines()
     }
     skip_newlines();
     return true;
-}
-
-Expr Descent::expression()
-{
-    advance();
-    return sequence();
 }
 
 Expr Descent::sequence()
