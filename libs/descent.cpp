@@ -28,6 +28,7 @@ public:
 
 private:
     Expr expression();
+    Expr sequence();
     Expr statement();
     Expr if_statement();
     Expr if_statement_no_endif();
@@ -111,7 +112,47 @@ bool Descent::require_newlines()
 Expr Descent::expression()
 {
     advance();
-    return statement();
+    return sequence();
+}
+
+Expr Descent::sequence()
+{
+    // Parse the first statement
+    Expr first = statement();
+    if (!first)
+    {
+        return nullptr;
+    }
+
+    // Check if we have comma-separated statements
+    if (!check(TokenType::COMMA))
+    {
+        // No comma, return single statement
+        return first;
+    }
+
+    // We have commas, collect all statements
+    std::vector<Expr> statements;
+    statements.push_back(first);
+
+    while (match(TokenType::COMMA))
+    {
+        // Skip any whitespace after comma
+        while (check(TokenType::TERMINATOR))
+        {
+            advance();
+        }
+
+        Expr stmt = statement();
+        if (!stmt)
+        {
+            return nullptr;
+        }
+        statements.push_back(stmt);
+    }
+
+    // Return a StatementSeqNode with all the statements
+    return std::make_shared<StatementSeqNode>(statements);
 }
 
 Expr Descent::statement()
@@ -226,6 +267,18 @@ Expr Descent::block()
         }
 
         statements.push_back(stmt);
+
+        // Check for comma separator
+        if (match(TokenType::COMMA))
+        {
+            // Skip any whitespace after comma
+            while (check(TokenType::TERMINATOR))
+            {
+                advance();
+            }
+            // Continue parsing more statements
+            continue;
+        }
 
         // After the statement, skip any newlines
         if (check(TokenType::TERMINATOR))

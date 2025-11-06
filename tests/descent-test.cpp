@@ -211,6 +211,27 @@ static SimpleExpressionParam s_simple_expressions[]{
         "0)\n"
         "endif",
         "if_statement:( number:0 ) { } endif"},
+    {"sequence", "1,2", "statement_seq:2 { number:1 number:2 }"},
+    {"ifSequence",
+        "if(0)\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
+    {"elseSequence",
+        "if(0)\n"
+        "else\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { statement_seq:2 { number:1 number:2 } } endif"},
+    {"elseIfSequence",
+        "if(0)\n"
+        "elseif(3)\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { "
+        "if_statement:( number:3 ) { statement_seq:2 { number:1 number:2 } } "
+        "endif } "
+        "endif"},
 };
 
 TEST_P(DescentSimpleExpressions, parse)
