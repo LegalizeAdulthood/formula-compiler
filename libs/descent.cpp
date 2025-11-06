@@ -194,20 +194,50 @@ Expr Descent::block()
         return nullptr; // Empty block
     }
 
-    // Parse a single statement
-    Expr stmt = statement();
-    if (!stmt)
+    // Parse statements in the block
+    std::vector<Expr> statements;
+
+    while (!check(TokenType::END_IF) && !check(TokenType::ELSE) && !check(TokenType::ELSE_IF))
+    {
+        Expr stmt = statement();
+        if (!stmt)
+        {
+            // If we failed to parse a statement but have no statements yet, return nullptr
+            // If we have statements, we might be at the end of the block
+            if (statements.empty())
+            {
+                return nullptr;
+            }
+            break;
+        }
+
+        statements.push_back(stmt);
+
+        // After the statement, skip any newlines
+        if (check(TokenType::TERMINATOR))
+        {
+            skip_newlines();
+        }
+        else
+        {
+            // No newline means we should be at block end
+            break;
+        }
+    }
+
+    // Return appropriate node based on statement count
+    if (statements.empty())
     {
         return nullptr;
     }
-
-    // After the statement, require newlines or end of block
-    if (check(TokenType::TERMINATOR))
+    else if (statements.size() == 1)
     {
-        skip_newlines();
+        return statements[0];
     }
-
-    return stmt;
+    else
+    {
+        return std::make_shared<StatementSeqNode>(statements);
+    }
 }
 
 Expr Descent::assignment()

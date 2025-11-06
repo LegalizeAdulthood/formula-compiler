@@ -80,11 +80,12 @@ static SimpleExpressionParam s_simple_expressions[]{
         "1\n"
         "endif",
         "if_statement:( number:0 ) { number:1 } endif"},
-    //{"ifThenComplexBody",
-    //    "if(0)\n"
-    //    "x=1\n"
-    //    "y=2\n"
-    //    "endif"},
+    {"ifThenComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
     {"ifComparisonCondition",
         "if(1<2)\n"
         "endif",
@@ -117,14 +118,16 @@ static SimpleExpressionParam s_simple_expressions[]{
         "else\n"
         "endif",
         "if_statement:( number:0 ) { number:1 } endif"},
-    //{"ifThenElseComplexBody",
-    //    "if(0)\n"
-    //    "x=1\n"
-    //    "y=2\n"
-    //    "else\n"
-    //    "z=3\n"
-    //    "q=4\n"
-    //    "endif"},
+    {"ifThenElseComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "else\n"
+        "3\n"
+        "4\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } "
+        "} else { statement_seq:2 { number:3 number:4 } } endif"},
     //{"ifElseIfEmptyBody",
     //    "if(0)\n"
     //    "elseif(1)\n"
