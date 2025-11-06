@@ -53,6 +53,28 @@ private:
     Token m_curr;
 };
 
+void split_iterate_bailout(FormulaSections &result, const Expr &expr)
+{
+    if (const auto *seq = dynamic_cast<StatementSeqNode *>(expr.get()); seq)
+    {
+        if (seq->statements().size() > 1)
+        {
+            std::vector<Expr> statements = seq->statements();
+            result.bailout = statements.back();
+            statements.pop_back();
+            result.iterate = std::make_shared<StatementSeqNode>(statements);
+        }
+        else
+        {
+            result.bailout = expr;
+        }
+    }
+    else
+    {
+        result.bailout = expr;
+    }
+}
+
 // If parsing failed, return nullptr instead of partially constructed AST
 FormulaSectionsPtr Descent::parse()
 {
@@ -64,35 +86,7 @@ FormulaSectionsPtr Descent::parse()
     }
 
     // Check if we have multiple top-level newline-separated statements (StatementSeqNode)
-    if (auto *seq = dynamic_cast<StatementSeqNode *>(result.get()))
-    {
-        const auto &statements = seq->statements();
-        if (statements.size() > 1)
-        {
-            // All but last go to iterate section
-            std::vector<Expr> iterate_stmts(statements.begin(), statements.end() - 1);
-            if (iterate_stmts.size() == 1)
-            {
-                m_ast->iterate = iterate_stmts[0];
-            }
-            else
-            {
-                m_ast->iterate = std::make_shared<StatementSeqNode>(iterate_stmts);
-            }
-            // Last statement goes to bailout section
-            m_ast->bailout = statements.back();
-        }
-        else
-        {
-            // Single statement in sequence, just use it as bailout
-            m_ast->bailout = statements[0];
-        }
-    }
-    else
-    {
-        // Single statement, goes to bailout
-        m_ast->bailout = result;
-    }
+    split_iterate_bailout(*m_ast, result);
 
     return m_ast;
 }
