@@ -157,14 +157,13 @@ Expr Descent::sequence()
     }
 
     // Collect all comma-separated statements
-    std::vector<Expr> comma_statements;
-    comma_statements.push_back(first);
+    std::vector<Expr> seq;
+    seq.push_back(first);
 
-    // Parse comma-separated statements
-    while (match(TokenType::COMMA))
+    // Parse sequence of statements separated by COMMA or TERMINATOR (eol)
+    while (check(TokenType::COMMA) || check(TokenType::TERMINATOR))
     {
-        // Skip any whitespace/newlines after comma
-        while (check(TokenType::TERMINATOR))
+        while (check(TokenType::COMMA) || check(TokenType::TERMINATOR))
         {
             advance();
         }
@@ -180,88 +179,18 @@ Expr Descent::sequence()
         {
             return nullptr;
         }
-        comma_statements.push_back(stmt);
-    }
-
-    // Create a node for the comma-separated statements
-    Expr comma_seq;
-    if (comma_statements.size() == 1)
-    {
-        comma_seq = comma_statements[0];
-    }
-    else
-    {
-        comma_seq = std::make_shared<StatementSeqNode>(comma_statements);
-    }
-
-    // Now check for newline-separated sequences of comma-separated statements
-    std::vector<Expr> newline_statements;
-    newline_statements.push_back(comma_seq);
-
-    while (match(TokenType::TERMINATOR))
-    {
-        // Skip additional newlines
-        while (check(TokenType::TERMINATOR))
-        {
-            advance();
-        }
-
-        // Check if we've reached end of input
-        if (check(TokenType::END_OF_INPUT))
-        {
-            break;
-        }
-
-        // Try to parse another statement (or comma-separated sequence)
-        Expr stmt = statement();
-        if (!stmt)
-        {
-            break;
-        }
-
-        // Check for comma-separated statements after this statement
-        std::vector<Expr> more_comma_stmts;
-        more_comma_stmts.push_back(stmt);
-
-        while (match(TokenType::COMMA))
-        {
-            while (check(TokenType::TERMINATOR))
-            {
-                advance();
-            }
-
-            if (check(TokenType::END_OF_INPUT))
-            {
-                break;
-            }
-
-            Expr more_stmt = statement();
-            if (!more_stmt)
-            {
-                break;
-            }
-            more_comma_stmts.push_back(more_stmt);
-        }
-
-        if (more_comma_stmts.size() == 1)
-        {
-            newline_statements.push_back(more_comma_stmts[0]);
-        }
-        else
-        {
-            newline_statements.push_back(std::make_shared<StatementSeqNode>(more_comma_stmts));
-        }
+        seq.push_back(stmt);
     }
 
     // Return appropriate node based on statement count
-    if (newline_statements.size() == 1)
+    if (seq.size() == 1)
     {
-        return newline_statements[0];
+        return seq[0];
     }
 
     // Multiple newline-separated statements - return as a special StatementSeqNode
     // that will be split into iterate + bailout
-    return std::make_shared<StatementSeqNode>(newline_statements);
+    return std::make_shared<StatementSeqNode>(std::move(seq));
 }
 
 Expr Descent::statement()
