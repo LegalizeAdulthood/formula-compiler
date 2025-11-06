@@ -323,11 +323,6 @@ BOOST_PARSER_DEFINE_RULES(number, variable, function_call, unary_op,            
     default_param_block,                                                        //
     section_formula);
 
-bool valid_sections(const FormulaSections &ast)
-{
-    return ast.builtin ? !(ast.per_image || ast.initialize || ast.iterate || ast.bailout) : true;
-}
-
 } // namespace
 
 FormulaSectionsPtr parse(std::string_view text)
