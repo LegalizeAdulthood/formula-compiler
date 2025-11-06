@@ -362,38 +362,38 @@ TEST_P(DReadOnlyVariables, notAssignable)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DReadOnlyVariables, ValuesIn(s_read_only_vars));
 
-// static std::vector<std::string> s_functions{
-//     "sin", "cos", "sinh", "cosh", "cosxx",      //
-//     "tan", "cotan", "tanh", "cotanh", "sqr",    //
-//     "log", "exp", "abs", "conj", "real",        //
-//     "imag", "flip", "fn1", "fn2", "fn3",        //
-//     "fn4", "srand", "asin", "acos", "asinh",    //
-//     "acosh", "atan", "atanh", "sqrt", "cabs",   //
-//     "floor", "ceil", "trunc", "round", "ident", //
-//     "one", "zero",                              //
-// };
-//
-// class Functions : public TestWithParam<std::string>
-//{
-// };
-//
-// TEST_P(Functions, notAssignable)
-//{
-//     const FormulaPtr result{create_descent_formula(GetParam() + "=1")};
-//
-//     ASSERT_FALSE(result);
-// }
-//
-// TEST_P(Functions, functionOne)
+static std::vector<std::string> s_functions{
+    "sin", "cos", "sinh", "cosh", "cosxx",      //
+    "tan", "cotan", "tanh", "cotanh", "sqr",    //
+    "log", "exp", "abs", "conj", "real",        //
+    "imag", "flip", "fn1", "fn2", "fn3",        //
+    "fn4", "srand", "asin", "acos", "asinh",    //
+    "acosh", "atan", "atanh", "sqrt", "cabs",   //
+    "floor", "ceil", "trunc", "round", "ident", //
+    "one", "zero",                              //
+};
+
+class DFunctions : public TestWithParam<std::string>
+{
+};
+
+TEST_P(DFunctions, notAssignable)
+{
+    const FormulaPtr result{create_descent_formula(GetParam() + "=1")};
+
+    ASSERT_FALSE(result);
+}
+
+// TEST_P(DFunctions, functionOne)
 //{
 //     const FormulaPtr result{create_descent_formula(GetParam() + "(1)")};
 //
 //     ASSERT_TRUE(result);
 //     EXPECT_TRUE(result->get_section(Section::BAILOUT));
 // }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, Functions, ValuesIn(s_functions));
-//
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DFunctions, ValuesIn(s_functions));
+
 // class ReservedWords : public TestWithParam<std::string>
 //{
 // };
