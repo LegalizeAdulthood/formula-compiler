@@ -194,9 +194,20 @@ Expr Descent::block()
         return nullptr; // Empty block
     }
 
-    // For now, handle only empty blocks
-    // TODO: Parse statement sequences when needed
-    return nullptr;
+    // Parse a single statement
+    Expr stmt = statement();
+    if (!stmt)
+    {
+        return nullptr;
+    }
+
+    // After the statement, require newlines or end of block
+    if (check(TokenType::TERMINATOR))
+    {
+        skip_newlines();
+    }
+
+    return stmt;
 }
 
 Expr Descent::assignment()

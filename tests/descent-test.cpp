@@ -75,11 +75,11 @@ static SimpleExpressionParam s_simple_expressions[]{
         "\n"
         "endif",
         "if_statement:( number:0 ) { } endif"},
-    //{"ifThenBody",
-    //    "if(0)\n"
-    //    "1\n"
-    //    "endif",
-    //    "if_statement:( number:0 ) { number:1 } endif"},
+    {"ifThenBody",
+        "if(0)\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } endif"},
     //{"ifThenComplexBody",
     //    "if(0)\n"
     //    "x=1\n"
@@ -98,22 +98,25 @@ static SimpleExpressionParam s_simple_expressions[]{
         "else\n"
         "endif",
         "if_statement:( number:0 ) { } endif"},
-    //{"ifElseBlankLinesBody",
-    //    "if(0)\n"
-    //    "\n"
-    //    "else\n"
-    //    "\n"
-    //    "endif"},
-    //{"ifThenElseBody",
-    //    "if(0)\n"
-    //    "else\n"
-    //    "1\n"
-    //    "endif"},
-    //{"ifThenBodyElse",
-    //    "if(0)\n"
-    //    "1\n"
-    //    "else\n"
-    //    "endif"},
+    {"ifElseBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "else\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifThenElseBody",
+        "if(0)\n"
+        "else\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { number:1 } endif"},
+    {"ifThenBodyElse",
+        "if(0)\n"
+        "1\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } endif"},
     //{"ifThenElseComplexBody",
     //    "if(0)\n"
     //    "x=1\n"
@@ -126,7 +129,8 @@ static SimpleExpressionParam s_simple_expressions[]{
     //    "if(0)\n"
     //    "elseif(1)\n"
     //    "else\n"
-    //    "endif"},
+    //    "endif",
+    //    "if_statement:( number:0 ) { } else { if_statement:( number:1 ) { } endif } endif"},
     //{"ifMultipleElseIfEmptyBody",
     //    "if(0)\n"
     //    "elseif(0)\n"
@@ -159,10 +163,11 @@ static SimpleExpressionParam s_simple_expressions[]{
     //    "z=3\n"
     //    "q=4\n"
     //    "endif"},
-    //{"backslashContinuesStatement",
-    //    "if(\\\n"
-    //    "0)\n"
-    //    "endif"},
+    {"backslashContinuesStatement",
+        "if(\\\n"
+        "0)\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
 };
 
 TEST_P(DescentSimpleExpressions, parse)
