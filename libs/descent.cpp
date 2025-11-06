@@ -611,6 +611,83 @@ Expr Descent::primary()
         return result;
     }
 
+    // Handle builtin variables - they should be treated as identifiers
+    // Builtin tokens don't store string values, so map TokenType to name
+    if (m_curr.type == TokenType::P1 || m_curr.type == TokenType::P2 || m_curr.type == TokenType::P3 ||
+        m_curr.type == TokenType::P4 || m_curr.type == TokenType::P5 || m_curr.type == TokenType::PIXEL ||
+        m_curr.type == TokenType::LAST_SQR || m_curr.type == TokenType::RAND || m_curr.type == TokenType::PI ||
+        m_curr.type == TokenType::E || m_curr.type == TokenType::MAX_ITER || m_curr.type == TokenType::SCREEN_MAX ||
+        m_curr.type == TokenType::SCREEN_PIXEL || m_curr.type == TokenType::WHITE_SQUARE ||
+        m_curr.type == TokenType::IS_MAND || m_curr.type == TokenType::CENTER || m_curr.type == TokenType::MAG_X_MAG ||
+        m_curr.type == TokenType::ROT_SKEW)
+    {
+        // Map token type to variable name
+        std::string name;
+        switch (m_curr.type)
+        {
+        case TokenType::P1:
+            name = "p1";
+            break;
+        case TokenType::P2:
+            name = "p2";
+            break;
+        case TokenType::P3:
+            name = "p3";
+            break;
+        case TokenType::P4:
+            name = "p4";
+            break;
+        case TokenType::P5:
+            name = "p5";
+            break;
+        case TokenType::PIXEL:
+            name = "pixel";
+            break;
+        case TokenType::LAST_SQR:
+            name = "lastsqr";
+            break;
+        case TokenType::RAND:
+            name = "rand";
+            break;
+        case TokenType::PI:
+            name = "pi";
+            break;
+        case TokenType::E:
+            name = "e";
+            break;
+        case TokenType::MAX_ITER:
+            name = "maxit";
+            break;
+        case TokenType::SCREEN_MAX:
+            name = "scrnmax";
+            break;
+        case TokenType::SCREEN_PIXEL:
+            name = "scrnpix";
+            break;
+        case TokenType::WHITE_SQUARE:
+            name = "whitesq";
+            break;
+        case TokenType::IS_MAND:
+            name = "ismand";
+            break;
+        case TokenType::CENTER:
+            name = "center";
+            break;
+        case TokenType::MAG_X_MAG:
+            name = "magxmag";
+            break;
+        case TokenType::ROT_SKEW:
+            name = "rotskew";
+            break;
+        default:
+            return nullptr; // Shouldn't reach here
+        }
+
+        Expr result = std::make_shared<IdentifierNode>(name);
+        advance(); // consume the builtin variable
+        return result;
+    }
+
     if (m_curr.type == TokenType::LEFT_PAREN)
     {
         advance();

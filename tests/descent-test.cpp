@@ -74,6 +74,24 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},                                 //
     {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},                             //
     {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},                                //
+    {"builtinVariableP1", "p1", "identifier:p1"},                                                               //
+    {"builtinVariableP2", "p2", "identifier:p2"},                                                               //
+    {"builtinVariableP3", "p3", "identifier:p3"},                                                               //
+    {"builtinVariableP4", "p4", "identifier:p4"},                                                               //
+    {"builtinVariableP5", "p5", "identifier:p5"},                                                               //
+    {"builtinVariablePixel", "pixel", "identifier:pixel"},                                                      //
+    {"builtinVariableLastsqr", "lastsqr", "identifier:lastsqr"},                                                //
+    {"builtinVariableRand", "rand", "identifier:rand"},                                                         //
+    {"builtinVariablePi", "pi", "identifier:pi"},                                                               //
+    {"builtinVariableE", "e", "identifier:e"},                                                                  //
+    {"builtinVariableMaxit", "maxit", "identifier:maxit"},                                                      //
+    {"builtinVariableScrnmax", "scrnmax", "identifier:scrnmax"},                                                //
+    {"builtinVariableScrnpix", "scrnpix", "identifier:scrnpix"},                                                //
+    {"builtinVariableWhitesq", "whitesq", "identifier:whitesq"},                                                //
+    {"builtinVariableIsmand", "ismand", "identifier:ismand"},                                                   //
+    {"builtinVariableCenter", "center", "identifier:center"},                                                   //
+    {"builtinVariableMagxmag", "magxmag", "identifier:magxmag"},                                                //
+    {"builtinVariableRotskew", "rotskew", "identifier:rotskew"},                                                //
     {"ifEmptyBody",
         "if(0)\n"
         "endif",
