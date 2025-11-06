@@ -85,6 +85,16 @@ FormulaSectionsPtr Descent::parse()
         return nullptr;
     }
 
+    if (match(TokenType::COLON))
+    {
+        m_ast->initialize = result;
+        result = sequence();
+        if (!result)
+        {
+            return nullptr;
+        }
+    }
+
     // Check if we have multiple top-level newline-separated statements (StatementSeqNode)
     split_iterate_bailout(*m_ast, result);
 

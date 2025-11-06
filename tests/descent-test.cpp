@@ -322,26 +322,26 @@ TEST_P(DMultiStatements, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DMultiStatements, ValuesIn(s_multi_statements));
 
-// TEST(TestDescentParse, initializeIterateBailout)
-//{
-//     const FormulaPtr result{create_descent_formula("z=pixel:z=z*z+pixel,|z|>4")};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::BAILOUT));
-// }
-//
-// TEST(TestDescentParse, statementSequenceInitialize)
-//{
-//     const FormulaPtr result{create_descent_formula("z=pixel,d=0:z=z*z+pixel,|z|>4")};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::BAILOUT));
-// }
-//
+TEST(TestDescentParse, initializeIterateBailout)
+{
+    const FormulaPtr result{create_descent_formula("z=pixel:z=z*z+pixel,|z|>4")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
+
+TEST(TestDescentParse, statementSequenceInitialize)
+{
+    const FormulaPtr result{create_descent_formula("z=pixel,d=0:z=z*z+pixel,|z|>4")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
+
 // static std::vector<std::string> s_read_only_vars{
 //     "p1", "p2", "p3", "p4", "p5",                       //
 //     "pixel", "lastsqr", "rand", "pi", "e",              //
