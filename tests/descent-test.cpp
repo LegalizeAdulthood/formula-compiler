@@ -342,26 +342,26 @@ TEST(TestDescentParse, statementSequenceInitialize)
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
 }
 
-// static std::vector<std::string> s_read_only_vars{
-//     "p1", "p2", "p3", "p4", "p5",                       //
-//     "pixel", "lastsqr", "rand", "pi", "e",              //
-//     "maxit", "scrnmax", "scrnpix", "whitesq", "ismand", //
-//     "center", "magxmag", "rotskew",                     //
-// };
-//
-// class ReadOnlyVariables : public TestWithParam<std::string>
-//{
-// };
-//
-// TEST_P(ReadOnlyVariables, notAssignable)
-//{
-//     const FormulaPtr result{create_descent_formula(GetParam() + "=1")};
-//
-//     ASSERT_FALSE(result);
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, ReadOnlyVariables, ValuesIn(s_read_only_vars));
-//
+static std::vector<std::string> s_read_only_vars{
+    "p1", "p2", "p3", "p4", "p5",                       //
+    "pixel", "lastsqr", "rand", "pi", "e",              //
+    "maxit", "scrnmax", "scrnpix", "whitesq", "ismand", //
+    "center", "magxmag", "rotskew",                     //
+};
+
+class DReadOnlyVariables : public TestWithParam<std::string>
+{
+};
+
+TEST_P(DReadOnlyVariables, notAssignable)
+{
+    const FormulaPtr result{create_descent_formula(GetParam() + "=1")};
+
+    ASSERT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DReadOnlyVariables, ValuesIn(s_read_only_vars));
+
 // static std::vector<std::string> s_functions{
 //     "sin", "cos", "sinh", "cosh", "cosxx",      //
 //     "tan", "cotan", "tanh", "cotanh", "sqr",    //

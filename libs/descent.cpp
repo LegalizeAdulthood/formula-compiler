@@ -121,10 +121,35 @@ bool Descent::check(TokenType type) const
     return m_curr.type == type;
 }
 
+// Only allow IdentifierNode for assignment target
 bool Descent::is_user_identifier(const Expr &expr) const
 {
-    // Only allow IdentifierNode for assignment target
-    return dynamic_cast<const IdentifierNode *>(expr.get()) != nullptr;
+    if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
+    {
+        // Built-in variables
+        static constexpr std::string_view builtins[]{
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "pixel",
+            "lastsqr",
+            "rand",
+            "pi",
+            "e",
+            "maxit",
+            "scrnmax",
+            "scrnpix",
+            "whitesq",
+            "ismand",
+            "center",
+            "magxmag",
+            "rotskew",
+        };
+        return std::find(std::begin(builtins), std::end(builtins), node->name()) == std::end(builtins);
+    }
+    return false;
 }
 
 void Descent::skip_newlines()
