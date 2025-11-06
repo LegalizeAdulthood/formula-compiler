@@ -128,44 +128,84 @@ static SimpleExpressionParam s_simple_expressions[]{
         "endif",
         "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } "
         "} else { statement_seq:2 { number:3 number:4 } } endif"},
-    //{"ifElseIfEmptyBody",
-    //    "if(0)\n"
-    //    "elseif(1)\n"
-    //    "else\n"
-    //    "endif",
-    //    "if_statement:( number:0 ) { } else { if_statement:( number:1 ) { } endif } endif"},
-    //{"ifMultipleElseIfEmptyBody",
-    //    "if(0)\n"
-    //    "elseif(0)\n"
-    //    "elseif(0)\n"
-    //    "else\n"
-    //    "endif"},
-    //{"ifElseIfBlankLinesBody",
-    //    "if(0)\n"
-    //    "\n"
-    //    "elseif(0)\n"
-    //    "\n"
-    //    "else\n"
-    //    "\n"
-    //    "endif"},
-    //{"ifThenElseIfBody",
-    //    "if(0)\n"
-    //    "elseif(0)\n"
-    //    "1\n"
-    //    "endif"},
-    //{"ifThenBodyElseIf",
-    //    "if(0)\n"
-    //    "1\n"
-    //    "elseif(0)\n"
-    //    "endif"},
-    //{"ifThenElseIfComplexBody",
-    //    "if(0)\n"
-    //    "x=1\n"
-    //    "y=2\n"
-    //    "elseif(1)\n"
-    //    "z=3\n"
-    //    "q=4\n"
-    //    "endif"},
+    {"ifElseIfEmptyBody",
+        "if(0)\n"
+        "elseif(1)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { if_statement:( number:1 ) { } endif } endif"},
+    {"ifMultipleElseIfEmptyBody",
+        "if(0)\n"
+        "elseif(0)\n"
+        "elseif(0)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif } "
+        "endif"},
+    {"ifElseIfBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "elseif(0)\n"
+        "\n"
+        "else\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif"},
+    {"ifThenElseIfBody",
+        "if(0)\n"
+        "elseif(0)\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { number:1 } "
+        "endif } "
+        "endif"},
+    {"ifThenBodyElseIf",
+        "if(0)\n"
+        "1\n"
+        "elseif(0)\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif"},
+    {"ifThenElseIfComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "elseif(1)\n"
+        "3\n"
+        "4\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } "
+        "else { if_statement:( number:1 ) { statement_seq:2 { number:3 number:4 } } "
+        "endif } "
+        "endif"},
+    {"chainedElseIf",
+        "if(0)\n"
+        "1\n"
+        "elseif(2)\n"
+        "3\n"
+        "elseif(4)\n"
+        "5\n"
+        "elseif(6)\n"
+        "7\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } "
+        "else { if_statement:( number:2 ) { number:3 } "
+        "else { if_statement:( number:4 ) { number:5 } "
+        "else { if_statement:( number:6 ) { number:7 } "
+        "endif } "
+        "endif } "
+        "endif } "
+        "endif"},
     {"backslashContinuesStatement",
         "if(\\\n"
         "0)\n"

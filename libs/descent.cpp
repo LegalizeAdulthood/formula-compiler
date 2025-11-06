@@ -30,6 +30,7 @@ private:
     Expr expression();
     Expr statement();
     Expr if_statement();
+    Expr if_statement_no_endif();
     Expr block();
     Expr assignment();
     Expr conjunctive();
@@ -124,7 +125,25 @@ Expr Descent::statement()
 
 Expr Descent::if_statement()
 {
-    if (!match(TokenType::IF))
+    Expr result = if_statement_no_endif();
+    if (!result)
+    {
+        return nullptr;
+    }
+
+    // Consume the endif token
+    if (!match(TokenType::END_IF))
+    {
+        return nullptr;
+    }
+
+    return result;
+}
+
+Expr Descent::if_statement_no_endif()
+{
+    // Handle both 'if' and 'elseif' tokens
+    if (!match(TokenType::IF) && !match(TokenType::ELSE_IF))
     {
         return nullptr;
     }
@@ -160,8 +179,8 @@ Expr Descent::if_statement()
 
     if (check(TokenType::ELSE_IF))
     {
-        // Recursively parse elseif as another if statement
-        else_block = if_statement();
+        // Recursively parse elseif as a nested if statement without consuming endif
+        else_block = if_statement_no_endif();
         if (!else_block)
         {
             return nullptr;
@@ -176,12 +195,7 @@ Expr Descent::if_statement()
         else_block = block();
     }
 
-    // Require endif
-    if (!match(TokenType::END_IF))
-    {
-        return nullptr;
-    }
-
+    // Don't consume endif here - let the caller handle it
     return std::make_shared<IfStatementNode>(condition, then_block, else_block);
 }
 
