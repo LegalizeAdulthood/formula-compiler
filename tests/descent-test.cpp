@@ -36,36 +36,44 @@ class DescentSimpleExpressions : public TestWithParam<SimpleExpressionParam>
 } // namespace
 
 static SimpleExpressionParam s_simple_expressions[]{
-    {"constant", "1", "number:1"}, {"identifier", "z2", "identifier:z2"}, {"parenExpr", "(z)", "identifier:z"},
-    {"add", "1+2", "binary_op:+ number:1 number:2"}, {"subtract", "1-2", "binary_op:- number:1 number:2"},
-    {"multiply", "1*2", "binary_op:* number:1 number:2"}, {"divide", "1/2", "binary_op:/ number:1 number:2"},
-    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},
-    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"},
-    {"unaryMinus", "-(1)", "unary_op:- number:1"}, {"unaryPlus", "+(1)", "unary_op:+ number:1"},
-    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},
-    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},
-    {"capitalLetterInIdentifier", "A", "identifier:A"}, {"numberInIdentifier", "a1", "identifier:a1"},
-    {"underscoreInIdentifier", "A_1", "identifier:A_1"}, {"power", "2^3", "binary_op:^ number:2 number:3"},
-    {"chainedPower", "1^2^3", "binary_op:^ number:1 binary_op:^ number:2 number:3"},
-    {"assignment", "z=4", "assignment:z number:4"},
+    {"constant", "1", "number:1"},                                                        //
+    {"identifier", "z2", "identifier:z2"},                                                //
+    {"parenExpr", "(z)", "identifier:z"},                                                 //
+    {"add", "1+2", "binary_op:+ number:1 number:2"},                                      //
+    {"subtract", "1-2", "binary_op:- number:1 number:2"},                                 //
+    {"multiply", "1*2", "binary_op:* number:1 number:2"},                                 //
+    {"divide", "1/2", "binary_op:/ number:1 number:2"},                                   //
+    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},       //
+    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"}, //
+    {"unaryMinus", "-(1)", "unary_op:- number:1"},                                        //
+    {"unaryPlus", "+(1)", "unary_op:+ number:1"},                                         //
+    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},                   //
+    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},         //
+    {"capitalLetterInIdentifier", "A", "identifier:A"},                                   //
+    {"numberInIdentifier", "a1", "identifier:a1"},                                        //
+    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                  //
+    {"power", "2^3", "binary_op:^ number:2 number:3"},                                    //
+    {"chainedPower", "1^2^3", "binary_op:^ number:1 binary_op:^ number:2 number:3"},      //
+    {"assignment", "z=4", "assignment:z number:4"},                                       //
     {"assignmentLongVariable", "this_is_another4_variable_name2=4",
-        "assignment:this_is_another4_variable_name2 number:4"},
-    {"modulus", "|-3.0|", "unary_op:| unary_op:- number:3"}, {"compareLess", "4<3", "binary_op:< number:4 number:3"},
-    {"compareLessPrecedence", "3<z=4", "binary_op:< number:3 assignment:z number:4"},
-    {"compareLessEqual", "4<=3", "binary_op:<= number:4 number:3"},
-    {"compareGreater", "4>3", "binary_op:> number:4 number:3"},
-    {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> number:4 number:3 number:4"},
-    {"compareGreaterEqual", "4>=3", "binary_op:>= number:4 number:3"},
-    {"compareEqual", "4==3", "binary_op:== number:4 number:3"},
-    {"compareNotEqual", "4!=3", "binary_op:!= number:4 number:3"},
-    {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== number:4 number:3 binary_op:== number:5 number:6"},
-    {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== number:4 number:3 binary_op:== number:5 number:6"},
-    {"ignoreComments", "3; z=6 oh toodlee doo", "number:3"},
-    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "number:3"},
-    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "number:3"},
-    {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},
-    {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},
-    {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},
+        "assignment:this_is_another4_variable_name2 number:4"},                                                 //
+    {"modulus", "|-3.0|", "unary_op:| unary_op:- number:3"},                                                    //
+    {"compareLess", "4<3", "binary_op:< number:4 number:3"},                                                    //
+    {"compareLessPrecedence", "3<z=4", "binary_op:< number:3 assignment:z number:4"},                           //
+    {"compareLessEqual", "4<=3", "binary_op:<= number:4 number:3"},                                             //
+    {"compareGreater", "4>3", "binary_op:> number:4 number:3"},                                                 //
+    {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> number:4 number:3 number:4"},                   //
+    {"compareGreaterEqual", "4>=3", "binary_op:>= number:4 number:3"},                                          //
+    {"compareEqual", "4==3", "binary_op:== number:4 number:3"},                                                 //
+    {"compareNotEqual", "4!=3", "binary_op:!= number:4 number:3"},                                              //
+    {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== number:4 number:3 binary_op:== number:5 number:6"}, //
+    {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== number:4 number:3 binary_op:== number:5 number:6"},  //
+    {"ignoreComments", "3; z=6 oh toodlee doo", "number:3"},                                                    //
+    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "number:3"},                                                //
+    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "number:3"},                                            //
+    {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},                                 //
+    {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},                             //
+    {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},                                //
     {"ifEmptyBody",
         "if(0)\n"
         "endif",
@@ -211,7 +219,6 @@ static SimpleExpressionParam s_simple_expressions[]{
         "0)\n"
         "endif",
         "if_statement:( number:0 ) { } endif"},
-    {"sequence", "1,2", "statement_seq:2 { number:1 number:2 }"},
     {"ifSequence",
         "if(0)\n"
         "1,2\n"
@@ -257,45 +264,46 @@ TEST(TestDescentParse, invalidIdentifier)
     EXPECT_FALSE(result);
 }
 
-// struct MultiStatementParam
-//{
-//     std::string_view name;
-//     std::string_view text;
-// };
-//
-// inline void PrintTo(const MultiStatementParam &param, std::ostream *os)
-//{
-//     *os << param.name;
-// }
-//
-// static MultiStatementParam s_multi_statements[]{
-//     {"statements", "3\n4\n"},
-//     {"assignmentStatements", "z=3\nz=4\n"},
-//     {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},
-//     {"assignmentWithBlankLines", "z=3; comment\n\r\n\nz=4; another comment\n"},
-//     {"commaSeparatedStatements", "3,4"},
-//     {"commaSeparatedAssignmentStatements", "z=3,z=4"},
-//     {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},
-//     {"commaWithSpaces", "3 , 4"},
-// };
-//
-// class MultiStatements : public TestWithParam<MultiStatementParam>
-//{
-// };
-//
-// TEST_P(MultiStatements, parse)
-//{
-//     const MultiStatementParam &param{GetParam()};
-//     const FormulaPtr result{create_descent_formula(param.text)};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::BAILOUT));
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, MultiStatements, ValuesIn(s_multi_statements));
-//
+struct DMultiStatementParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const DMultiStatementParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static DMultiStatementParam s_multi_statements[]{
+    {"sequence", "3,4"},                                                        //
+    {"statements", "3\n4\n"},                                                   //
+    {"assignmentStatements", "z=3\nz=4\n"},                                     //
+    {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},         //
+    {"assignmentWithBlankLines", "z=3; comment\n\r\n\nz=4; another comment\n"}, //
+    {"commaSeparatedStatements", "3,4"},                                        //
+    {"commaSeparatedAssignmentStatements", "z=3,z=4"},                          //
+    {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},                         //
+    {"commaWithSpaces", "3 , 4"},
+};
+
+class DMultiStatements : public TestWithParam<DMultiStatementParam>
+{
+};
+
+TEST_P(DMultiStatements, parse)
+{
+    const DMultiStatementParam &param{GetParam()};
+    const FormulaPtr result{create_descent_formula(param.text)};
+
+    ASSERT_TRUE(result);
+    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DMultiStatements, ValuesIn(s_multi_statements));
+
 // TEST(TestDescentParse, initializeIterateBailout)
 //{
 //     const FormulaPtr result{create_descent_formula("z=pixel:z=z*z+pixel,|z|>4")};

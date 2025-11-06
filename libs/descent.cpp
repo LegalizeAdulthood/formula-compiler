@@ -56,12 +56,44 @@ private:
 
 FormulaSectionsPtr Descent::parse()
 {
-    m_ast->bailout = expression();
+    Expr result = expression();
     // If parsing failed, return nullptr instead of partially constructed AST
-    if (!m_ast->bailout)
+    if (!result)
     {
         return nullptr;
     }
+
+    // Check if we have multiple top-level newline-separated statements (StatementSeqNode)
+    if (auto *seq = dynamic_cast<StatementSeqNode *>(result.get()))
+    {
+        const auto &statements = seq->statements();
+        if (statements.size() > 1)
+        {
+            // All but last go to iterate section
+            std::vector<Expr> iterate_stmts(statements.begin(), statements.end() - 1);
+            if (iterate_stmts.size() == 1)
+            {
+                m_ast->iterate = iterate_stmts[0];
+            }
+            else
+            {
+                m_ast->iterate = std::make_shared<StatementSeqNode>(iterate_stmts);
+            }
+            // Last statement goes to bailout section
+            m_ast->bailout = statements.back();
+        }
+        else
+        {
+            // Single statement in sequence, just use it as bailout
+            m_ast->bailout = statements[0];
+        }
+    }
+    else
+    {
+        // Single statement, goes to bailout
+        m_ast->bailout = result;
+    }
+
     return m_ast;
 }
 
@@ -124,23 +156,23 @@ Expr Descent::sequence()
         return nullptr;
     }
 
-    // Check if we have comma-separated statements
-    if (!check(TokenType::COMMA))
-    {
-        // No comma, return single statement
-        return first;
-    }
+    // Collect all comma-separated statements
+    std::vector<Expr> comma_statements;
+    comma_statements.push_back(first);
 
-    // We have commas, collect all statements
-    std::vector<Expr> statements;
-    statements.push_back(first);
-
+    // Parse comma-separated statements
     while (match(TokenType::COMMA))
     {
-        // Skip any whitespace after comma
+        // Skip any whitespace/newlines after comma
         while (check(TokenType::TERMINATOR))
         {
             advance();
+        }
+
+        // Check if we've reached end of input
+        if (check(TokenType::END_OF_INPUT))
+        {
+            break;
         }
 
         Expr stmt = statement();
@@ -148,11 +180,88 @@ Expr Descent::sequence()
         {
             return nullptr;
         }
-        statements.push_back(stmt);
+        comma_statements.push_back(stmt);
     }
 
-    // Return a StatementSeqNode with all the statements
-    return std::make_shared<StatementSeqNode>(statements);
+    // Create a node for the comma-separated statements
+    Expr comma_seq;
+    if (comma_statements.size() == 1)
+    {
+        comma_seq = comma_statements[0];
+    }
+    else
+    {
+        comma_seq = std::make_shared<StatementSeqNode>(comma_statements);
+    }
+
+    // Now check for newline-separated sequences of comma-separated statements
+    std::vector<Expr> newline_statements;
+    newline_statements.push_back(comma_seq);
+
+    while (match(TokenType::TERMINATOR))
+    {
+        // Skip additional newlines
+        while (check(TokenType::TERMINATOR))
+        {
+            advance();
+        }
+
+        // Check if we've reached end of input
+        if (check(TokenType::END_OF_INPUT))
+        {
+            break;
+        }
+
+        // Try to parse another statement (or comma-separated sequence)
+        Expr stmt = statement();
+        if (!stmt)
+        {
+            break;
+        }
+
+        // Check for comma-separated statements after this statement
+        std::vector<Expr> more_comma_stmts;
+        more_comma_stmts.push_back(stmt);
+
+        while (match(TokenType::COMMA))
+        {
+            while (check(TokenType::TERMINATOR))
+            {
+                advance();
+            }
+
+            if (check(TokenType::END_OF_INPUT))
+            {
+                break;
+            }
+
+            Expr more_stmt = statement();
+            if (!more_stmt)
+            {
+                break;
+            }
+            more_comma_stmts.push_back(more_stmt);
+        }
+
+        if (more_comma_stmts.size() == 1)
+        {
+            newline_statements.push_back(more_comma_stmts[0]);
+        }
+        else
+        {
+            newline_statements.push_back(std::make_shared<StatementSeqNode>(more_comma_stmts));
+        }
+    }
+
+    // Return appropriate node based on statement count
+    if (newline_statements.size() == 1)
+    {
+        return newline_statements[0];
+    }
+
+    // Multiple newline-separated statements - return as a special StatementSeqNode
+    // that will be split into iterate + bailout
+    return std::make_shared<StatementSeqNode>(newline_statements);
 }
 
 Expr Descent::statement()
@@ -504,7 +613,7 @@ Expr Descent::primary()
 
     if (m_curr.type == TokenType::LEFT_PAREN)
     {
-        advance();                // consume '('
+        advance();
         Expr expr = assignment(); // Allow full expressions including assignment in parens
         if (expr && check(TokenType::RIGHT_PAREN))
         {
@@ -517,7 +626,7 @@ Expr Descent::primary()
     // Handle modulus operator |expr|
     if (m_curr.type == TokenType::MODULUS)
     {
-        advance();                // consume '|'
+        advance();
         Expr expr = assignment(); // Parse the inner expression
         if (expr && check(TokenType::MODULUS))
         {
