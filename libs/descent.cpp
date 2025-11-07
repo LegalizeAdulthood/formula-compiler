@@ -35,6 +35,7 @@ public:
     FormulaSectionsPtr parse();
 
 private:
+    bool section_formula();
     Expr sequence();
     Expr statement();
     Expr if_statement();
@@ -88,10 +89,83 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
     }
 }
 
+constexpr std::array<TokenType, 9> s_sections{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
+bool Descent::section_formula()
+{
+    if (const auto it =
+            std::find_if(s_sections.begin(), s_sections.end(), [this](TokenType tok) { return check(tok); });
+        it != s_sections.end())
+    {
+        advance(); // consume section name
+        if (!check(TokenType::COLON))
+        {
+            return false;
+        }
+
+        advance(); // consume colon
+        if (Expr result = sequence())
+        {
+            switch (*it)
+            {
+            case TokenType::GLOBAL:
+                m_ast->per_image = result;
+                break;
+
+            case TokenType::BUILTIN:
+                m_ast->builtin = result;
+                break;
+
+            case TokenType::INIT:
+                m_ast->initialize = result;
+                break;
+
+            case TokenType::LOOP:
+                m_ast->iterate = result;
+                break;
+
+            case TokenType::BAILOUT:
+                m_ast->bailout = result;
+                break;
+
+            case TokenType::PERTURB_INIT:
+                m_ast->perturb_initialize = result;
+                break;
+
+            case TokenType::PERTURB_LOOP:
+                m_ast->perturb_iterate = result;
+                break;
+
+            case TokenType::DEFAULT:
+                m_ast->defaults = result;
+                break;
+
+            case TokenType::SWITCH:
+                m_ast->type_switch = result;
+                break;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // If parsing failed, return nullptr instead of partially constructed AST
 FormulaSectionsPtr Descent::parse()
 {
     advance();
+
+    if (section_formula())
+    {
+        return m_ast;
+    }
+
     Expr result = sequence();
     if (!result)
     {
@@ -593,12 +667,6 @@ Expr Descent::builtin_function()
     }
     return nullptr;
 }
-
-constexpr TokenType s_sections[]{
-    TokenType::GLOBAL, TokenType::BUILTIN,                //
-    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-    TokenType::DEFAULT, TokenType::SWITCH,                //
-};
 
 Expr Descent::function_call()
 {

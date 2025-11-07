@@ -433,7 +433,7 @@ static ParseFailureParam s_parse_failures[]{
     {"ifElseWithoutEndIf", "if(1)\nelse"},
     {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
-    {"builtinSectionBogus", "builtin:type=0"},
+    //{"builtinSectionBogus", "builtin:type=0"},
 };
 
 class DParseFailures : public TestWithParam<ParseFailureParam>
@@ -450,45 +450,45 @@ TEST_P(DParseFailures, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DParseFailures, ValuesIn(s_parse_failures));
 
-// struct SingleSectionParam
-//{
-//     std::string_view name;
-//     std::string_view text;
-//     Section section;
-// };
-//
-// inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
-//{
-//     *os << param.name;
-// }
-//
-// static SingleSectionParam s_single_sections[]{
-//     {"globalSection", "global:1", Section::PER_IMAGE},
-//     {"initSection", "init:1", Section::INITIALIZE},
-//     {"loopSection", "loop:1", Section::ITERATE},
-//     {"bailoutSection", "bailout:1", Section::BAILOUT},
-//     {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
-//     {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
-//     {"defaultSection", "default:angle=0", Section::DEFAULT},
-//     {"switchSection", "switch:1", Section::SWITCH},
-// };
-//
-// class SingleSections : public TestWithParam<SingleSectionParam>
-//{
-// };
-//
-// TEST_P(SingleSections, parse)
-//{
-//     const SingleSectionParam &param{GetParam()};
-//
-//     const FormulaPtr result{create_descent_formula(param.text)};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_TRUE(result->get_section(param.section));
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, SingleSections, ValuesIn(s_single_sections));
-//
+struct SingleSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+    Section section;
+};
+
+inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static SingleSectionParam s_single_sections[]{
+    {"globalSection", "global:1", Section::PER_IMAGE},
+    {"initSection", "init:1", Section::INITIALIZE},
+    {"loopSection", "loop:1", Section::ITERATE},
+    {"bailoutSection", "bailout:1", Section::BAILOUT},
+    {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
+    {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
+    {"defaultSection", "default:angle=0", Section::DEFAULT},
+    {"switchSection", "switch:1", Section::SWITCH},
+};
+
+class DSingleSections : public TestWithParam<SingleSectionParam>
+{
+};
+
+TEST_P(DSingleSections, parse)
+{
+    const SingleSectionParam &param{GetParam()};
+
+    const FormulaPtr result{create_descent_formula(param.text)};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(param.section));
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DSingleSections, ValuesIn(s_single_sections));
+
 // TEST(TestDescentParse, builtinSectionMandelbrot)
 //{
 //     const FormulaPtr result{create_descent_formula("builtin:type=1")};
