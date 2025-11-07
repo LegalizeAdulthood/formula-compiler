@@ -446,7 +446,7 @@ Token Lexer::lex_identifier()
             [&identifier](const TextTokenType &kw) { return kw.text == identifier; });
         it != std::end(reserved))
     {
-        return {it->type, start, length};
+        return {it->type, std::string{it->text}, start, length};
     }
 
     // Not a reserved word, return as identifier

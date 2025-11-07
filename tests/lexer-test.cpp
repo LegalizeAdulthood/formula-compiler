@@ -176,6 +176,18 @@ TEST(TestLexer, singleExclamationInvalid)
     EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
 }
 
+TEST(TestLexer, builtinVariablsHaveNameValue)
+{
+    Lexer lexer("maxit");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::MAX_ITER, token.type);
+    EXPECT_EQ("maxit", std::get<std::string>(token.value));
+    EXPECT_EQ(0, token.position);
+    EXPECT_EQ(5, token.length);
+}
+
 TEST(TestLexer, parenthesesWithIdentifiers)
 {
     Lexer lexer("f(x)");
