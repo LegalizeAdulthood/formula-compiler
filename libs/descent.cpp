@@ -39,6 +39,7 @@ private:
     Expr term();
     Expr unary();
     Expr power();
+    Expr function_call();
     Expr primary();
     void advance();
     bool match(TokenType type);
@@ -540,6 +541,34 @@ constexpr TokenType s_builtin_vars[]{
     TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
 };
 
+constexpr TokenType s_builtin_fns[]{
+    TokenType::SINH, TokenType::COSH, TokenType::COSXX, TokenType::SIN,   //
+    TokenType::COS, TokenType::COTANH, TokenType::COTAN, TokenType::TANH, //
+    TokenType::TAN, TokenType::SQRT, TokenType::LOG, TokenType::EXP,      //
+    TokenType::ABS, TokenType::CONJ, TokenType::REAL, TokenType::IMAG,    //
+    TokenType::FLIP, TokenType::FN1, TokenType::FN2, TokenType::FN3,      //
+    TokenType::FN4, TokenType::SRAND, TokenType::ASINH, TokenType::ACOSH, //
+    TokenType::ASIN, TokenType::ACOS, TokenType::ATANH, TokenType::ATAN,  //
+    TokenType::CABS, TokenType::SQR, TokenType::FLOOR, TokenType::CEIL,   //
+    TokenType::TRUNC, TokenType::ROUND, TokenType::IDENT, TokenType::ONE, //
+    TokenType::ZERO,                                                      //
+};
+
+Expr Descent::function_call()
+{
+    if (check(TokenType::LEFT_PAREN))
+    {
+        advance(); // consume left paren
+        Expr args = assignment();
+        if (check(TokenType::RIGHT_PAREN))
+        {
+            advance(); // consume right paren
+            return args;
+        }
+    }
+    return nullptr;
+}
+
 Expr Descent::primary()
 {
     // Check for invalid tokens first
@@ -562,14 +591,24 @@ Expr Descent::primary()
         return result;
     }
 
-    // Handle builtin variables - they should be treated as identifiers
-    // Builtin tokens don't store string values, so map TokenType to name
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
     {
         Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
         advance(); // consume the builtin variable
         return result;
+    }
+
+    if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
+        it != std::end(s_builtin_fns))
+    {
+        const std::string name{std::get<std::string>(m_curr.value)};
+        advance(); // consume the function name
+        if (Expr args = function_call())
+        {
+            advance(); // consume cosing paren
+            return std::make_shared<FunctionCallNode>(name, args);
+        }
     }
 
     if (m_curr.type == TokenType::LEFT_PAREN)

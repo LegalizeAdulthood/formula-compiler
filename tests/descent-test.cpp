@@ -384,72 +384,72 @@ TEST_P(DFunctions, notAssignable)
     ASSERT_FALSE(result);
 }
 
-// TEST_P(DFunctions, functionOne)
-//{
-//     const FormulaPtr result{create_descent_formula(GetParam() + "(1)")};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_TRUE(result->get_section(Section::BAILOUT));
-// }
+TEST_P(DFunctions, functionOne)
+{
+    const FormulaPtr result{create_descent_formula(GetParam() + "(1)")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DFunctions, ValuesIn(s_functions));
 
-// class ReservedWords : public TestWithParam<std::string>
-//{
-// };
-//
-// TEST_P(ReservedWords, notAssignable)
-//{
-//     const FormulaPtr result1{create_descent_formula(GetParam() + "=1")};
-//     const FormulaPtr result2{create_descent_formula(GetParam() + "2=1")};
-//
-//     ASSERT_FALSE(result1);
-//     ASSERT_TRUE(result2);
-//     ASSERT_TRUE(result2->get_section(Section::BAILOUT));
-// }
-//
-// static std::string s_reserved_words[]{
-//     "if",
-//     "else",
-//     "elseif",
-//     "endif",
-// };
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, ReservedWords, ValuesIn(s_reserved_words));
-//
-// struct ParseFailureParam
-//{
-//     std::string_view name;
-//     std::string_view text;
-// };
-//
-// inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
-//{
-//     *os << param.name;
-// }
-//
-// static ParseFailureParam s_parse_failures[]{
-//     {"ifWithoutEndIf", "if(1)"},
-//     {"ifElseWithoutEndIf", "if(1)\nelse"},
-//     {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
-//     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
-//     {"builtinSectionBogus", "builtin:type=0"},
-// };
-//
-// class ParseFailures : public TestWithParam<ParseFailureParam>
-//{
-// };
-//
-// TEST_P(ParseFailures, parse)
-//{
-//     const ParseFailureParam &param{GetParam()};
-//     const FormulaPtr result{create_descent_formula(param.text)};
-//
-//     EXPECT_FALSE(result);
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, ParseFailures, ValuesIn(s_parse_failures));
-//
+class DReservedWords : public TestWithParam<std::string>
+{
+};
+
+TEST_P(DReservedWords, notAssignable)
+{
+    const FormulaPtr result1{create_descent_formula(GetParam() + "=1")};
+    const FormulaPtr result2{create_descent_formula(GetParam() + "2=1")};
+
+    ASSERT_FALSE(result1);
+    ASSERT_TRUE(result2);
+    ASSERT_TRUE(result2->get_section(Section::BAILOUT));
+}
+
+static std::string s_reserved_words[]{
+    "if",
+    "else",
+    "elseif",
+    "endif",
+};
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DReservedWords, ValuesIn(s_reserved_words));
+
+struct ParseFailureParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static ParseFailureParam s_parse_failures[]{
+    {"ifWithoutEndIf", "if(1)"},
+    {"ifElseWithoutEndIf", "if(1)\nelse"},
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
+    {"builtinSectionBogus", "builtin:type=0"},
+};
+
+class DParseFailures : public TestWithParam<ParseFailureParam>
+{
+};
+
+TEST_P(DParseFailures, parse)
+{
+    const ParseFailureParam &param{GetParam()};
+    const FormulaPtr result{create_descent_formula(param.text)};
+
+    EXPECT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DParseFailures, ValuesIn(s_parse_failures));
+
 // struct SingleSectionParam
 //{
 //     std::string_view name;
