@@ -126,26 +126,20 @@ bool Descent::is_user_identifier(const Expr &expr) const
 {
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
-        // Built-in variables
+        // Built-in variables and functions are not user identifiers
         static constexpr std::string_view builtins[]{
-            "p1",
-            "p2",
-            "p3",
-            "p4",
-            "p5",
-            "pixel",
-            "lastsqr",
-            "rand",
-            "pi",
-            "e",
-            "maxit",
-            "scrnmax",
-            "scrnpix",
-            "whitesq",
-            "ismand",
-            "center",
-            "magxmag",
-            "rotskew",
+            "p1", "p2", "p3", "p4", "p5",               //
+            "pixel", "lastsqr", "rand", "pi", "e",      //
+            "maxit", "scrnmax", "scrnpix", "whitesq",   //
+            "ismand", "center", "magxmag", "rotskew",   //
+            "sin", "cos", "sinh", "cosh", "cosxx",      //
+            "tan", "cotan", "tanh", "cotanh", "sqr",    //
+            "log", "exp", "abs", "conj", "real",        //
+            "imag", "flip", "fn1", "fn2", "fn3",        //
+            "fn4", "srand", "asin", "acos", "asinh",    //
+            "acosh", "atan", "atanh", "sqrt", "cabs",   //
+            "floor", "ceil", "trunc", "round", "ident", //
+            "one", "zero",                              //
         };
         return std::find(std::begin(builtins), std::end(builtins), node->name()) == std::end(builtins);
     }
@@ -541,6 +535,33 @@ Expr Descent::power()
     return left;
 }
 
+struct TokenName
+{
+    TokenType token;
+    std::string_view name;
+};
+
+constexpr TokenName s_builtin_vars[]{
+    {TokenType::P1, "p1"},
+    {TokenType::P2, "p2"},
+    {TokenType::P3, "p3"},
+    {TokenType::P4, "p4"},
+    {TokenType::P5, "p5"},
+    {TokenType::PIXEL, "pixel"},
+    {TokenType::LAST_SQR, "lastsqr"},
+    {TokenType::RAND, "rand"},
+    {TokenType::PI, "pi"},
+    {TokenType::E, "e"},
+    {TokenType::MAX_ITER, "maxit"},
+    {TokenType::SCREEN_MAX, "scrnmax"},
+    {TokenType::SCREEN_PIXEL, "scrnpix"},
+    {TokenType::WHITE_SQUARE, "whitesq"},
+    {TokenType::IS_MAND, "ismand"},
+    {TokenType::CENTER, "center"},
+    {TokenType::MAG_X_MAG, "magxmag"},
+    {TokenType::ROT_SKEW, "rotskew"},
+};
+
 Expr Descent::primary()
 {
     // Check for invalid tokens first
@@ -565,77 +586,11 @@ Expr Descent::primary()
 
     // Handle builtin variables - they should be treated as identifiers
     // Builtin tokens don't store string values, so map TokenType to name
-    if (m_curr.type == TokenType::P1 || m_curr.type == TokenType::P2 || m_curr.type == TokenType::P3 ||
-        m_curr.type == TokenType::P4 || m_curr.type == TokenType::P5 || m_curr.type == TokenType::PIXEL ||
-        m_curr.type == TokenType::LAST_SQR || m_curr.type == TokenType::RAND || m_curr.type == TokenType::PI ||
-        m_curr.type == TokenType::E || m_curr.type == TokenType::MAX_ITER || m_curr.type == TokenType::SCREEN_MAX ||
-        m_curr.type == TokenType::SCREEN_PIXEL || m_curr.type == TokenType::WHITE_SQUARE ||
-        m_curr.type == TokenType::IS_MAND || m_curr.type == TokenType::CENTER || m_curr.type == TokenType::MAG_X_MAG ||
-        m_curr.type == TokenType::ROT_SKEW)
+    if (const auto it = std::find_if(std::begin(s_builtin_vars), std::end(s_builtin_vars),
+            [&](const TokenName &pair) { return pair.token == m_curr.type; });
+        it != std::end(s_builtin_vars))
     {
-        // Map token type to variable name
-        std::string name;
-        switch (m_curr.type)
-        {
-        case TokenType::P1:
-            name = "p1";
-            break;
-        case TokenType::P2:
-            name = "p2";
-            break;
-        case TokenType::P3:
-            name = "p3";
-            break;
-        case TokenType::P4:
-            name = "p4";
-            break;
-        case TokenType::P5:
-            name = "p5";
-            break;
-        case TokenType::PIXEL:
-            name = "pixel";
-            break;
-        case TokenType::LAST_SQR:
-            name = "lastsqr";
-            break;
-        case TokenType::RAND:
-            name = "rand";
-            break;
-        case TokenType::PI:
-            name = "pi";
-            break;
-        case TokenType::E:
-            name = "e";
-            break;
-        case TokenType::MAX_ITER:
-            name = "maxit";
-            break;
-        case TokenType::SCREEN_MAX:
-            name = "scrnmax";
-            break;
-        case TokenType::SCREEN_PIXEL:
-            name = "scrnpix";
-            break;
-        case TokenType::WHITE_SQUARE:
-            name = "whitesq";
-            break;
-        case TokenType::IS_MAND:
-            name = "ismand";
-            break;
-        case TokenType::CENTER:
-            name = "center";
-            break;
-        case TokenType::MAG_X_MAG:
-            name = "magxmag";
-            break;
-        case TokenType::ROT_SKEW:
-            name = "rotskew";
-            break;
-        default:
-            return nullptr; // Shouldn't reach here
-        }
-
-        Expr result = std::make_shared<IdentifierNode>(name);
+        Expr result = std::make_shared<IdentifierNode>(std::string{it->name});
         advance(); // consume the builtin variable
         return result;
     }
