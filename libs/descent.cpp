@@ -35,6 +35,7 @@ public:
     FormulaSectionsPtr parse();
 
 private:
+    bool builtin_section();
     bool section_formula();
     Expr sequence();
     Expr statement();
@@ -60,6 +61,15 @@ private:
     bool is_user_identifier(const Expr &expr) const;
     void skip_newlines();
     bool require_newlines();
+
+    const std::string &str() const
+    {
+        return std::get<std::string>(m_curr.value);
+    }
+    double num() const
+    {
+        return std::get<double>(m_curr.value);
+    }
 
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
@@ -96,6 +106,35 @@ constexpr std::array<TokenType, 9> s_sections{
     TokenType::DEFAULT, TokenType::SWITCH,                //
 };
 
+bool Descent::builtin_section()
+{
+    if (!check(TokenType::IDENTIFIER) || str() != "type")
+    {
+        return false;
+    }
+    advance(); // advance past type parameter name
+
+    if (!check(TokenType::ASSIGN))
+    {
+        return false;
+    }
+    advance(); // advance past assignment token
+
+    if (!check(TokenType::NUMBER))
+    {
+        return false;
+    }
+
+    const double value{num()};
+    if (value != 1.0 && value != 2.0)
+    {
+        return false;
+    }
+
+    m_ast->builtin = std::make_shared<SettingNode>("type", static_cast<int>(value));
+    return true;
+}
+
 bool Descent::section_formula()
 {
     if (const auto it =
@@ -109,6 +148,11 @@ bool Descent::section_formula()
         }
 
         advance(); // consume colon
+        if (*it == TokenType::BUILTIN)
+        {
+            return builtin_section();
+        }
+
         if (Expr result = sequence())
         {
             switch (*it)
@@ -632,7 +676,7 @@ Expr Descent::builtin_var()
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
     {
-        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the builtin variable
         return result;
     }
@@ -657,7 +701,7 @@ Expr Descent::builtin_function()
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
     {
-        const std::string name{std::get<std::string>(m_curr.value)};
+        const std::string name{str()};
         advance(); // consume the function name
         if (Expr args = function_call())
         {
@@ -686,7 +730,7 @@ Expr Descent::number()
 {
     if (check(TokenType::NUMBER))
     {
-        Expr result = std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+        Expr result = std::make_shared<NumberNode>(num());
         advance(); // consume the number
         return result;
     }
@@ -697,7 +741,7 @@ Expr Descent::identifier()
 {
     if (check(TokenType::IDENTIFIER))
     {
-        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the identifier
         return result;
     }

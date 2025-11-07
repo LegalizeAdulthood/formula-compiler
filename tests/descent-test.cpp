@@ -429,9 +429,7 @@ inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
 }
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithoutEndIf", "if(1)"},
-    {"ifElseWithoutEndIf", "if(1)\nelse"},
-    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
+    {"ifWithoutEndIf", "if(1)"}, {"ifElseWithoutEndIf", "if(1)\nelse"}, {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
     //{"builtinSectionBogus", "builtin:type=0"},
 };
@@ -489,26 +487,26 @@ TEST_P(DSingleSections, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DSingleSections, ValuesIn(s_single_sections));
 
-// TEST(TestDescentParse, builtinSectionMandelbrot)
-//{
-//     const FormulaPtr result{create_descent_formula("builtin:type=1")};
-//
-//     ASSERT_TRUE(result);
-//     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
-//     EXPECT_TRUE(builtin);
-//     EXPECT_EQ("setting:type=1\n", to_string(builtin));
-// }
-//
-// TEST(TestDescentParse, builtinSectionJulia)
-//{
-//     const FormulaPtr result{create_descent_formula("builtin:type=2")};
-//
-//     ASSERT_TRUE(result);
-//     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
-//     EXPECT_TRUE(builtin);
-//     EXPECT_EQ("setting:type=2\n", to_string(builtin));
-// }
-//
+TEST(TestDescentParse, builtinSectionMandelbrot)
+{
+    const FormulaPtr result{create_descent_formula("builtin:type=1")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("setting:type=1\n", to_string(builtin));
+}
+
+TEST(TestDescentParse, builtinSectionJulia)
+{
+    const FormulaPtr result{create_descent_formula("builtin:type=2")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("setting:type=2\n", to_string(builtin));
+}
+
 // struct DefaultSectionParam
 //{
 //     std::string_view name;
