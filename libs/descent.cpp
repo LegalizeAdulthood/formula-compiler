@@ -39,7 +39,11 @@ private:
     Expr term();
     Expr unary();
     Expr power();
+    Expr builtin_var();
     Expr function_call();
+    Expr number();
+    Expr identifier();
+    Expr builtin_function();
     Expr primary();
     void advance();
     bool match(TokenType type);
@@ -400,11 +404,11 @@ Expr Descent::conjunctive()
     while (left && (check(TokenType::LOGICAL_AND) || check(TokenType::LOGICAL_OR)))
     {
         std::string op;
-        if (m_curr.type == TokenType::LOGICAL_AND)
+        if (check(TokenType::LOGICAL_AND))
         {
             op = "&&";
         }
-        else if (m_curr.type == TokenType::LOGICAL_OR)
+        else if (check(TokenType::LOGICAL_OR))
         {
             op = "||";
         }
@@ -433,17 +437,17 @@ Expr Descent::comparative()
             || check(TokenType::EQUAL) || check(TokenType::NOT_EQUAL)))
     {
         std::string op;
-        if (m_curr.type == TokenType::LESS_THAN)
+        if (check(TokenType::LESS_THAN))
             op = "<";
-        else if (m_curr.type == TokenType::LESS_EQUAL)
+        else if (check(TokenType::LESS_EQUAL))
             op = "<=";
-        else if (m_curr.type == TokenType::GREATER_THAN)
+        else if (check(TokenType::GREATER_THAN))
             op = ">";
-        else if (m_curr.type == TokenType::GREATER_EQUAL)
+        else if (check(TokenType::GREATER_EQUAL))
             op = ">=";
-        else if (m_curr.type == TokenType::EQUAL)
+        else if (check(TokenType::EQUAL))
             op = "==";
-        else if (m_curr.type == TokenType::NOT_EQUAL)
+        else if (check(TokenType::NOT_EQUAL))
             op = "!=";
 
         advance();
@@ -465,7 +469,7 @@ Expr Descent::additive()
 
     while (left && (check(TokenType::PLUS) || check(TokenType::MINUS)))
     {
-        char op = (m_curr.type == TokenType::PLUS) ? '+' : '-';
+        char op = (check(TokenType::PLUS)) ? '+' : '-';
         advance(); // consume operator
         Expr right = term();
         if (!right)
@@ -484,7 +488,7 @@ Expr Descent::term()
 
     while (left && (check(TokenType::MULTIPLY) || check(TokenType::DIVIDE)))
     {
-        char op = (m_curr.type == TokenType::MULTIPLY) ? '*' : '/';
+        char op = (check(TokenType::MULTIPLY)) ? '*' : '/';
         advance(); // consume operator
         Expr right = unary();
         if (!right)
@@ -501,7 +505,7 @@ Expr Descent::unary()
 {
     if (check(TokenType::PLUS) || check(TokenType::MINUS))
     {
-        char op = (m_curr.type == TokenType::PLUS) ? '+' : '-';
+        char op = (check(TokenType::PLUS)) ? '+' : '-';
         advance();              // consume operator
         Expr operand = unary(); // Allow chaining: --1
         if (!operand)
@@ -541,6 +545,18 @@ constexpr TokenType s_builtin_vars[]{
     TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
 };
 
+Expr Descent::builtin_var()
+{
+    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
+        it != std::end(s_builtin_vars))
+    {
+        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        advance(); // consume the builtin variable
+        return result;
+    }
+    return nullptr;
+}
+
 constexpr TokenType s_builtin_fns[]{
     TokenType::SINH, TokenType::COSH, TokenType::COSXX, TokenType::SIN,   //
     TokenType::COS, TokenType::COTANH, TokenType::COTAN, TokenType::TANH, //
@@ -554,51 +570,8 @@ constexpr TokenType s_builtin_fns[]{
     TokenType::ZERO,                                                      //
 };
 
-Expr Descent::function_call()
+Expr Descent::builtin_function()
 {
-    if (check(TokenType::LEFT_PAREN))
-    {
-        advance(); // consume left paren
-        Expr args = assignment();
-        if (check(TokenType::RIGHT_PAREN))
-        {
-            advance(); // consume right paren
-            return args;
-        }
-    }
-    return nullptr;
-}
-
-Expr Descent::primary()
-{
-    // Check for invalid tokens first
-    if (m_curr.type == TokenType::INVALID)
-    {
-        return nullptr;
-    }
-
-    if (m_curr.type == TokenType::NUMBER)
-    {
-        Expr result = std::make_shared<NumberNode>(std::get<double>(m_curr.value));
-        advance(); // consume the number
-        return result;
-    }
-
-    if (m_curr.type == TokenType::IDENTIFIER)
-    {
-        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
-        advance(); // consume the identifier
-        return result;
-    }
-
-    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
-        it != std::end(s_builtin_vars))
-    {
-        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
-        advance(); // consume the builtin variable
-        return result;
-    }
-
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
     {
@@ -610,8 +583,80 @@ Expr Descent::primary()
             return std::make_shared<FunctionCallNode>(name, args);
         }
     }
+    return nullptr;
+}
 
-    if (m_curr.type == TokenType::LEFT_PAREN)
+constexpr TokenType s_sections[]{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
+Expr Descent::function_call()
+{
+    if (check(TokenType::LEFT_PAREN))
+    {
+        advance(); // consume left paren
+        if (const Expr args = assignment(); args && check(TokenType::RIGHT_PAREN))
+        {
+            advance(); // consume right paren
+            return args;
+        }
+    }
+    return nullptr;
+}
+
+Expr Descent::number()
+{
+    if (check(TokenType::NUMBER))
+    {
+        Expr result = std::make_shared<NumberNode>(std::get<double>(m_curr.value));
+        advance(); // consume the number
+        return result;
+    }
+    return nullptr;
+}
+
+Expr Descent::identifier()
+{
+    if (check(TokenType::IDENTIFIER))
+    {
+        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
+        advance(); // consume the identifier
+        return result;
+    }
+    return nullptr;
+}
+
+Expr Descent::primary()
+{
+    // Check for invalid tokens first
+    if (check(TokenType::INVALID))
+    {
+        return nullptr;
+    }
+
+    if (Expr result = number())
+    {
+        return result;
+    }
+
+    if (Expr result = identifier())
+    {
+        return result;
+    }
+
+    if (Expr result = builtin_var())
+    {
+        return result;
+    }
+
+    if (Expr result = builtin_function())
+    {
+        return result;
+    }
+
+    if (check(TokenType::LEFT_PAREN))
     {
         advance();
         Expr expr = assignment(); // Allow full expressions including assignment in parens
@@ -624,7 +669,7 @@ Expr Descent::primary()
     }
 
     // Handle modulus operator |expr|
-    if (m_curr.type == TokenType::MODULUS)
+    if (check(TokenType::MODULUS))
     {
         advance();
         Expr expr = assignment(); // Parse the inner expression
