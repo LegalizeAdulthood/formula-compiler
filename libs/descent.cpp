@@ -36,6 +36,7 @@ public:
 
 private:
     bool builtin_section();
+    bool default_section();
     bool section_formula();
     Expr sequence();
     Expr statement();
@@ -135,6 +136,41 @@ bool Descent::builtin_section()
     return true;
 }
 
+bool Descent::default_section()
+{
+    if (!check(TokenType::IDENTIFIER))
+    {
+        return false;
+    }
+
+    const std::string name{str()};
+    advance(); // consume setting name
+    if (!check(TokenType::ASSIGN))
+    {
+        return false;
+    }
+
+    advance(); // consume assignment operator
+    const bool prefix_op = check(TokenType::PLUS) || check(TokenType::MINUS);
+    if (!(check(TokenType::NUMBER) || prefix_op))
+    {
+        return false;
+    }
+    const double sign = check(TokenType::PLUS) ? 1.0 : -1.0;
+    if (prefix_op)
+    {
+        advance(); // consume prefix sign
+        if (!check(TokenType::NUMBER))
+        {
+            return false;
+        }
+    }
+
+    const double value{sign*num()};
+    m_ast->defaults = std::make_shared<SettingNode>(name, value);
+    return false;
+}
+
 bool Descent::section_formula()
 {
     if (const auto it =
@@ -151,6 +187,10 @@ bool Descent::section_formula()
         if (*it == TokenType::BUILTIN)
         {
             return builtin_section();
+        }
+        if (*it == TokenType::DEFAULT)
+        {
+            return default_section();
         }
 
         if (Expr result = sequence())
