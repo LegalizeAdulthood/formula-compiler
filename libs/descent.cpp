@@ -6,6 +6,14 @@
 
 #include <formula/Lexer.h>
 
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
+
 using namespace formula::ast;
 
 namespace formula::descent
