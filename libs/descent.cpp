@@ -352,14 +352,11 @@ Expr Descent::block()
     {
         return nullptr;
     }
-    else if (statements.size() == 1)
+    if (statements.size() == 1)
     {
         return statements[0];
     }
-    else
-    {
-        return std::make_shared<StatementSeqNode>(statements);
-    }
+    return std::make_shared<StatementSeqNode>(statements);
 }
 
 Expr Descent::assignment()
@@ -535,31 +532,12 @@ Expr Descent::power()
     return left;
 }
 
-struct TokenName
-{
-    TokenType token;
-    std::string_view name;
-};
-
-constexpr TokenName s_builtin_vars[]{
-    {TokenType::P1, "p1"},
-    {TokenType::P2, "p2"},
-    {TokenType::P3, "p3"},
-    {TokenType::P4, "p4"},
-    {TokenType::P5, "p5"},
-    {TokenType::PIXEL, "pixel"},
-    {TokenType::LAST_SQR, "lastsqr"},
-    {TokenType::RAND, "rand"},
-    {TokenType::PI, "pi"},
-    {TokenType::E, "e"},
-    {TokenType::MAX_ITER, "maxit"},
-    {TokenType::SCREEN_MAX, "scrnmax"},
-    {TokenType::SCREEN_PIXEL, "scrnpix"},
-    {TokenType::WHITE_SQUARE, "whitesq"},
-    {TokenType::IS_MAND, "ismand"},
-    {TokenType::CENTER, "center"},
-    {TokenType::MAG_X_MAG, "magxmag"},
-    {TokenType::ROT_SKEW, "rotskew"},
+constexpr TokenType s_builtin_vars[]{
+    TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
+    TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
+    TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
+    TokenType::SCREEN_PIXEL, TokenType::WHITE_SQUARE, TokenType::IS_MAND,    //
+    TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
 };
 
 Expr Descent::primary()
@@ -586,11 +564,10 @@ Expr Descent::primary()
 
     // Handle builtin variables - they should be treated as identifiers
     // Builtin tokens don't store string values, so map TokenType to name
-    if (const auto it = std::find_if(std::begin(s_builtin_vars), std::end(s_builtin_vars),
-            [&](const TokenName &pair) { return pair.token == m_curr.type; });
+    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
     {
-        Expr result = std::make_shared<IdentifierNode>(std::string{it->name});
+        Expr result = std::make_shared<IdentifierNode>(std::get<std::string>(m_curr.value));
         advance(); // consume the builtin variable
         return result;
     }
