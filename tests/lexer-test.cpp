@@ -356,6 +356,15 @@ static TextTokenParam s_params[]{
     {"commentAfter", "1;this is a comment", TokenType::NUMBER, 0, 1},         //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
     {"continuation", "\\\n1", TokenType::NUMBER, 2, 1},                       //
+    {"global", "global:", TokenType::GLOBAL, 0, 6},                           //
+    {"builtin", "builtin:", TokenType::BUILTIN, 0, 7},                        //
+    {"init", "init:", TokenType::INIT, 0, 4},                                 //
+    {"loop", "loop:", TokenType::LOOP, 0, 4},                                 //
+    {"bailout", "bailout:", TokenType::BAILOUT, 0, 7},                        //
+    {"perturbationInit", "perturbinit:", TokenType::PERTURB_INIT, 0, 11},     //
+    {"perturbationLoop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 11},     //
+    {"default", "default:", TokenType::DEFAULT, 0, 7},                        //
+    {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

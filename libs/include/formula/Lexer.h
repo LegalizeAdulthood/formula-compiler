@@ -42,16 +42,15 @@ enum class TokenType
     ELSE_IF,
     ELSE,
     END_IF,
-    // Section names
-    GLOBAL,
-    BUILTIN,
-    INIT,
-    LOOP,
-    BAILOUT,
-    PERTURB_INIT,
-    PERTURB_LOOP,
-    DEFAULT,
-    SWITCH,
+    GLOBAL,       // Section names global:
+    BUILTIN,      // builtin:
+    INIT,         // init:
+    LOOP,         // loop:
+    BAILOUT,      // bailout:
+    PERTURB_INIT, // perturbinit:
+    PERTURB_LOOP, // perturbloop:
+    DEFAULT,      // default:
+    SWITCH,       // switch:
     P1,           // Builtin variables
     P2,           //
     P3,           //
