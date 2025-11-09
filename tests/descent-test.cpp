@@ -468,7 +468,7 @@ static SingleSectionParam s_single_sections[]{
     {"perturbInitSection", "perturbinit:\n1", Section::PERTURB_INITIALIZE},
     {"perturbLoopSection", "perturbloop:\n1", Section::PERTURB_ITERATE},
     {"defaultSection", "default:\nangle=0", Section::DEFAULT},
-    {"switchSection", "switch:\n1", Section::SWITCH},
+    {"switchSection", "switch:\ntype=\"Julia\"", Section::SWITCH},
 };
 
 class DSingleSections : public TestWithParam<SingleSectionParam>

@@ -55,6 +55,7 @@ private:
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
     bool default_param_block();
     bool default_section();
+    bool switch_section();
     bool section_formula();
     Expr sequence();
     Expr statement();
@@ -620,6 +621,35 @@ bool Descent::default_section()
     return false;
 }
 
+bool Descent::switch_section()
+{
+    if (!check(TokenType::IDENTIFIER))
+    {
+        return false;
+    }
+    const std::string name{str()};
+    advance();
+
+    if (!check(TokenType::ASSIGN))
+    {
+        return false;
+    }
+    advance();
+
+    if (name == "type")
+    {
+        if (!check(TokenType::STRING))
+        {
+            return false;
+        }
+
+        m_ast->type_switch = std::make_shared<SettingNode>("type", str());
+        advance();
+        return true;
+    }
+    return false;
+}
+
 bool Descent::section_formula()
 {
     if (const auto it =
@@ -647,6 +677,10 @@ bool Descent::section_formula()
         if (*it == TokenType::DEFAULT)
         {
             return default_section();
+        }
+        if (*it == TokenType::SWITCH)
+        {
+            return switch_section();
         }
 
         if (Expr result = sequence())
