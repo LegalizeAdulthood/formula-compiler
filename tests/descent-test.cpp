@@ -780,65 +780,85 @@ TEST(TestDescentParse, switchParameter)
     EXPECT_EQ("setting:seed=pixel\n", to_string(section));
 }
 
-// struct InvalidSectionParam
-//{
-//     std::string_view name;
-//     std::string_view text;
-// };
-//
-// inline void PrintTo(const InvalidSectionParam &param, std::ostream *os)
-//{
-//     *os << param.name;
-// }
-//
-// static InvalidSectionParam s_invalid_sections[]{
-//     {"unknownSection",
-//         "global:1\n"
-//         "unknown:1"},
-//     {"globalSectionFirst",
-//         "builtin:1\n"
-//         "global:1"},
-//     {"builtinBeforeInit",
-//         "init:1\n"
-//         "builtin:1"},
-//     {"initAfterLoop",
-//         "loop:1\n"
-//         "init:1"},
-//     {"initAfterBailout",
-//         "bailout:1\n"
-//         "init:1"},
-//     {"loopAfterBailout",
-//         "bailout:1\n"
-//         "loop:1"},
-//     {"bailoutAfterPerturbInit",
-//         "perturbinit:1\n"
-//         "bailout:1"},
-//     {"perturbInitAfterPerturbLoop",
-//         "perturbloop:1\n"
-//         "perturbinit:1"},
-//     {"perturbLoopAfterDefault",
-//         "default:angle=0\n"
-//         "perturbloop:1"},
-//     {"defaultAfterSwitch",
-//         "switch:1\n"
-//         "default:angle=0"},
-// };
-//
-// class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
-//{
-// };
-//
-// TEST_P(InvalidSectionOrdering, parse)
-//{
-//     const InvalidSectionParam &param{GetParam()};
-//
-//     const FormulaPtr result{create_descent_formula(param.text)};
-//
-//     ASSERT_FALSE(result);
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, InvalidSectionOrdering, ValuesIn(s_invalid_sections));
-//
+ struct DInvalidSectionParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const DInvalidSectionParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static DInvalidSectionParam s_invalid_sections[]{
+    {"unknownSection",
+        "global:\n"
+        "1\n"
+        "unknown:\n"
+        "1\n"},
+    {"globalSectionFirst",
+        "builtin:\n"
+        "1\n"
+        "global:\n1"
+        "\n"},
+    {"builtinBeforeInit",
+        "init:\n"
+        "1\n"
+        "builtin:\n"
+        "1\n"},
+    {"initAfterLoop",
+        "loop:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
+    {"initAfterBailout",
+        "bailout:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
+    {"loopAfterBailout",
+        "bailout:\n"
+        "1\n"
+        "loop:\n"
+        "1\n"},
+    {"bailoutAfterPerturbInit",
+        "perturbinit:\n"
+        "1\n"
+        "bailout:\n"
+        "1\n"},
+    {"perturbInitAfterPerturbLoop",
+        "perturbloop:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"},
+    {"perturbLoopAfterDefault",
+        "default:\n"
+        "angle=0\n"
+        "perturbloop:\n"
+        "1\n"},
+    {"defaultAfterSwitch",
+        "switch:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"},
+};
+
+class DInvalidSectionOrdering : public TestWithParam<DInvalidSectionParam>
+{
+};
+
+TEST_P(DInvalidSectionOrdering, parse)
+{
+    const DInvalidSectionParam &param{GetParam()};
+
+    const FormulaPtr result{create_descent_formula(param.text)};
+
+    ASSERT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_invalid_sections));
+
 // TEST(TestDescentParse, maximumSections)
 //{
 //     const FormulaPtr result{create_descent_formula("global:1\n"

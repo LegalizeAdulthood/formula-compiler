@@ -31,6 +31,13 @@ constexpr TokenType s_builtin_vars[]{
     TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
 };
 
+constexpr std::array<TokenType, 9> s_sections{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
 class Descent
 {
 public:
@@ -64,7 +71,7 @@ private:
     bool default_param_block();
     bool default_section();
     bool switch_section();
-    bool section_formula();
+    std::optional<bool> section_formula();
     Expr sequence();
     Expr statement();
     Expr if_statement();
@@ -131,13 +138,6 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
     }
 }
 
-constexpr std::array<TokenType, 9> s_sections{
-    TokenType::GLOBAL, TokenType::BUILTIN,                //
-    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-    TokenType::DEFAULT, TokenType::SWITCH,                //
-};
-
 bool Descent::builtin_section()
 {
     if (!check(TokenType::IDENTIFIER) || str() != "type")
@@ -156,8 +156,9 @@ bool Descent::builtin_section()
     {
         return false;
     }
-
     const double value{num()};
+    advance();
+
     if (value != 1.0 && value != 2.0)
     {
         return false;
@@ -187,8 +188,10 @@ std::optional<double> Descent::signed_number()
             return {};
         }
     }
+    const double value{num()};
+    advance();
 
-    return {sign * num()};
+    return {sign * value};
 }
 
 bool Descent::default_number_setting(const std::string name)
@@ -221,7 +224,6 @@ std::optional<Complex> Descent::complex_number()
     {
         return {};
     }
-    advance();
 
     if (!check(TokenType::COMMA))
     {
@@ -234,7 +236,6 @@ std::optional<Complex> Descent::complex_number()
     {
         return {};
     }
-    advance();
 
     if (!check(TokenType::RIGHT_PAREN))
     {
@@ -263,8 +264,10 @@ bool Descent::default_string_setting(const std::string name)
     {
         return false;
     }
+    const std::string value{str()};
+    advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, str());
+    m_ast->defaults = std::make_shared<SettingNode>(name, value);
     return true;
 }
 
@@ -686,12 +689,16 @@ bool Descent::switch_section()
     return true;
 }
 
-bool Descent::section_formula()
+std::optional<bool> Descent::section_formula()
 {
-    if (const auto it =
-            std::find_if(s_sections.begin(), s_sections.end(), [this](TokenType tok) { return check(tok); });
-        it != s_sections.end())
+    const auto is_token = [this](TokenType tok) { return check(tok); };
+    const auto is_section = [is_token]
     {
+        return std::find_if(s_sections.begin(), s_sections.end(), is_token) != s_sections.end();
+    };
+    while (is_section())
+    {
+        TokenType section{m_curr.type};
         advance(); // consume section name
 
         if (!check(TokenType::COLON))
@@ -706,64 +713,129 @@ bool Descent::section_formula()
         }
         advance(); // consume newline
 
-        if (*it == TokenType::BUILTIN)
+        if (section == TokenType::BUILTIN)
         {
-            return builtin_section();
+            if (m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                || m_ast->defaults || m_ast->type_switch //
+                || !builtin_section())
+            {
+                return false;
+            }
         }
-        if (*it == TokenType::DEFAULT)
+        else if (section == TokenType::DEFAULT)
         {
-            return default_section();
+            if (m_ast->type_switch //
+                || !default_section())
+            {
+                return false;
+            }
         }
-        if (*it == TokenType::SWITCH)
+        else if (section == TokenType::SWITCH)
         {
-            return switch_section();
+            if (!switch_section())
+            {
+                return false;
+            }
         }
-
-        if (Expr result = sequence())
+        else if (Expr result = sequence())
         {
-            switch (*it)
+            switch (section)
             {
             case TokenType::GLOBAL:
+                if (m_ast->builtin                                           //
+                    || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate   //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->per_image = result;
                 break;
 
             case TokenType::BUILTIN:
+                if (m_ast->initialize || m_ast->iterate || m_ast->bailout  //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->builtin = result;
                 break;
 
             case TokenType::INIT:
+                if (m_ast->builtin                                         //
+                    || m_ast->iterate || m_ast->bailout                    //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->initialize = result;
                 break;
 
             case TokenType::LOOP:
+                if (m_ast->builtin                                         //
+                    || m_ast->bailout                                      //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->iterate = result;
                 break;
 
             case TokenType::BAILOUT:
+                if (m_ast->builtin                                         //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->bailout = result;
                 break;
 
             case TokenType::PERTURB_INIT:
+                if (m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->perturb_initialize = result;
                 break;
 
             case TokenType::PERTURB_LOOP:
+                if (m_ast->defaults || m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->perturb_iterate = result;
                 break;
 
             case TokenType::DEFAULT:
+                if (m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->defaults = result;
                 break;
 
             case TokenType::SWITCH:
                 m_ast->type_switch = result;
                 break;
+
+            default:
+                return false;
             }
-            return true;
         }
     }
 
-    return false;
+    if (check(TokenType::END_OF_INPUT))
+    {
+        return true;
+    }
+
+    return {}; // wasn't a section-ized formula
 }
 
 // If parsing failed, return nullptr instead of partially constructed AST
@@ -771,9 +843,9 @@ FormulaSectionsPtr Descent::parse()
 {
     advance();
 
-    if (section_formula())
+    if (const std::optional result = section_formula(); result)
     {
-        return m_ast;
+        return result.value() ? m_ast : nullptr;
     }
 
     Expr result = sequence();
@@ -891,7 +963,7 @@ Expr Descent::sequence()
         Expr stmt = statement();
         if (!stmt)
         {
-            return nullptr;
+            break;
         }
         seq.push_back(stmt);
     }
