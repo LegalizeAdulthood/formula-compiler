@@ -365,6 +365,8 @@ static TextTokenParam s_params[]{
     {"perturbationLoop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 11},     //
     {"default", "default:", TokenType::DEFAULT, 0, 7},                        //
     {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
+    {"true", "true", TokenType::TRUE},                                        //
+    {"false", "false", TokenType::FALSE},                                     //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

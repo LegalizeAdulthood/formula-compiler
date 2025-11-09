@@ -106,7 +106,9 @@ enum class TokenType
     IDENT,
     ONE,
     ZERO,
-    INVALID
+    INVALID,
+    TRUE,  // boolean value
+    FALSE, // boolean value
 };
 
 struct Token

@@ -376,6 +376,8 @@ Token Lexer::lex_identifier()
         {"elseif", TokenType::ELSE_IF},           //
         {"else", TokenType::ELSE},                //
         {"endif", TokenType::END_IF},             //
+        {"false", TokenType::FALSE},              // boolean values
+        {"true", TokenType::TRUE},                //
         {"global", TokenType::GLOBAL},            // Section names
         {"builtin", TokenType::BUILTIN},          //
         {"init", TokenType::INIT},                //
