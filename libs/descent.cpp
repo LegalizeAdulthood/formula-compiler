@@ -456,6 +456,7 @@ std::optional<Expr> Descent::param_number(const std::string &type, const std::st
         }
         return std::make_shared<SettingNode>(name, value.value());
     }
+    return {};
 }
 
 bool Descent::default_param_block()
@@ -515,7 +516,7 @@ bool Descent::default_param_block()
         {
             value = param_enum();
         }
-        else if (setting == "expanded" || setting == "exponential")
+        else if (setting == "expanded" || setting == "exponential" || setting == "selectable")
         {
             value = param_bool(setting);
         }

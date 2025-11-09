@@ -728,6 +728,13 @@ static DefaultSectionParam s_default_values[]{
         "param_block:complex,foo {\n"
         "setting:max=(4.5,4.5)\n"
         "}\n"},
+    {"selectableParamBlock",
+        "default:bool param foo\n"
+        "selectable=false\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:selectable=false\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>
