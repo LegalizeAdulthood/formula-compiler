@@ -655,6 +655,16 @@ static DefaultSectionParam s_default_values[]{
         "number:3\n"
         "}\n"
         "}\n"},
+    {"enumParamBlock",
+        "default:int param foo\n"
+        "enum = \"Choice 1\" \"Choice 2\"\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:enum={\n"
+        "\"Choice 1\"\n"
+        "\"Choice 2\"\n"
+        "}\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

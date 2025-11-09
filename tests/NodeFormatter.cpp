@@ -114,6 +114,14 @@ void NodeFormatter::visit(const ast::SettingNode &node)
         std::get<ast::Expr>(node.value())->visit(*this);
         m_str << '}';
         break;
+    case 7:
+        m_str << "{\n";
+        for (const std::string &str : std::get<7>(node.value()))
+        {
+            m_str << '"' << str << "\"\n";
+        }
+        m_str << '}';
+        break;
     default:
         throw std::runtime_error("ValueType variant index out of range");
     }

@@ -49,6 +49,8 @@ private:
     bool default_render_setting();
     std::optional<Expr> param_caption();
     std::optional<Expr> param_default(const std::string &type);
+    std::optional<Expr> param_enabled();
+    std::optional<Expr> param_enum();
     bool default_param_block();
     bool default_section();
     bool section_formula();
@@ -387,6 +389,31 @@ std::optional<Expr> Descent::param_default(const std::string &type)
     return {};
 }
 
+std::optional<Expr> Descent::param_enabled()
+{
+    Expr expr = conjunctive();
+    if (!expr)
+    {
+        return {};
+    }
+    return std::make_shared<SettingNode>("enabled", expr);
+}
+
+std::optional<Expr> Descent::param_enum()
+{
+    std::vector<std::string> values;
+    while (check(TokenType::STRING))
+    {
+        values.push_back(str());
+        advance();
+    }
+    if (values.empty())
+    {
+        return {};
+    }
+    return std::make_shared<SettingNode>("enum", values);
+}
+
 bool Descent::default_param_block()
 {
     std::string type;
@@ -438,12 +465,11 @@ bool Descent::default_param_block()
         }
         else if (setting == "enabled")
         {
-            Expr expr = conjunctive();
-            if (!expr)
-            {
-                return false;
-            }
-            value = std::make_shared<SettingNode>(setting, expr);
+            value = param_enabled();
+        }
+        else if (setting == "enum")
+        {
+            value = param_enum();
         }
         if (!value)
         {
