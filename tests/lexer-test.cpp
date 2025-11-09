@@ -436,6 +436,11 @@ static TextTokenParam s_params[]{
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
+    {"boolType", "bool", TokenType::TYPE_BOOL},                               //
+    {"intType", "int", TokenType::TYPE_INT},                                  //
+    {"floatType", "float", TokenType::TYPE_FLOAT},                            //
+    {"complexType", "complex", TokenType::TYPE_COMPLEX},                      //
+    {"colorType", "color", TokenType::TYPE_COLOR},                            //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

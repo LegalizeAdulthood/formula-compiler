@@ -107,9 +107,14 @@ enum class TokenType
     ONE,
     ZERO,
     INVALID,
-    TRUE,   // boolean value
-    FALSE,  // boolean value
-    STRING, // quoted string
+    TRUE,         // boolean value
+    FALSE,        // boolean value
+    STRING,       // quoted string
+    TYPE_BOOL,    // bool type name
+    TYPE_INT,     // int type name
+    TYPE_FLOAT,   // float type name
+    TYPE_COMPLEX, // complex type name
+    TYPE_COLOR,   // color type name
 };
 
 struct Token

@@ -384,6 +384,11 @@ Token Lexer::lex_identifier()
         {"endif", TokenType::END_IF},             //
         {"false", TokenType::FALSE},              // boolean values
         {"true", TokenType::TRUE},                //
+        {"bool", TokenType::TYPE_BOOL},           // type names
+        {"int", TokenType::TYPE_INT},             //
+        {"float", TokenType::TYPE_FLOAT},         //
+        {"complex", TokenType::TYPE_COMPLEX},     //
+        {"color", TokenType::TYPE_COLOR},         //
         {"global", TokenType::GLOBAL},            // Section names
         {"builtin", TokenType::BUILTIN},          //
         {"init", TokenType::INIT},                //
