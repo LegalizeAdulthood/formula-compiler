@@ -574,7 +574,7 @@ static DefaultSectionParam s_default_values[]{
     {"renderFalse", "default:render=false", "setting:render=false\n"},                                //
     {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //
     {"stretch", "default:stretch=4.5", "setting:stretch=4.5\n"},                                      //
-    //{"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
+    {"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
     //{"boolParamBlock",
     //    "default:bool param foo\n"
     //    "endparam",

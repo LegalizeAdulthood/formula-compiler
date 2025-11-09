@@ -337,7 +337,7 @@ bool Descent::default_section()
         return default_complex_setting(name);
     }
 
-    if (name == "helpfile" || name == "helptopic")
+    if (name == "helpfile" || name == "helptopic" || name == "title")
     {
         return default_string_setting(name);
     }
