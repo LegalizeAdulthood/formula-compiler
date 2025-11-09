@@ -344,7 +344,7 @@ bool Descent::default_param_block()
     advance();
 
     Expr body;
-    if (check(TokenType::IDENTIFIER))
+    if (check({TokenType::IDENTIFIER, TokenType::DEFAULT}))
     {
         const std::string setting{str()};
         advance();
@@ -355,11 +355,22 @@ bool Descent::default_param_block()
         }
         advance();
 
-        if (!check(TokenType::STRING))
+        if (setting == "caption")
         {
-            return false;
+            if (!check(TokenType::STRING))
+            {
+                return false;
+            }
+            body = std::make_shared<SettingNode>(setting, str());
         }
-        body = std::make_shared<SettingNode>(setting, str());
+        else if (setting == "default")
+        {
+            if (!check({TokenType::TRUE, TokenType::FALSE}))
+            {
+                return false;
+            }
+            body= std::make_shared<SettingNode>(setting, check(TokenType::TRUE));
+        }
         advance();
     }
 

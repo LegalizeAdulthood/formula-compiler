@@ -612,6 +612,13 @@ static DefaultSectionParam s_default_values[]{
         "endparam",
         "param_block:foo {\n"
         "}\n"},
+    {"defaultParamBlock",
+        "default:bool param foo\n"
+        "default=true\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:default=true\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>
