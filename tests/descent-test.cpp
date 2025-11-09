@@ -735,6 +735,13 @@ static DefaultSectionParam s_default_values[]{
         "param_block:bool,foo {\n"
         "setting:selectable=false\n"
         "}\n"},
+    {"textParamBlock",
+        "default:bool param foo\n"
+        "text=\"Well hello there, pardner.\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:text=\"Well hello there, pardner.\"\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

@@ -500,7 +500,7 @@ bool Descent::default_param_block()
         advance();
 
         std::optional<Expr> value;
-        if (setting == "caption" || setting == "hint")
+        if (setting == "caption" || setting == "hint" || setting == "text")
         {
             value = param_string(setting);
         }
