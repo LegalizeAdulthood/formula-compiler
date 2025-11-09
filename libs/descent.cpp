@@ -201,6 +201,11 @@ bool Descent::default_number_setting(const std::string name)
     {
         return false;
     }
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
 
     m_ast->defaults = std::make_shared<SettingNode>(name, num.value());
     return true;
@@ -253,6 +258,11 @@ bool Descent::default_complex_setting(const std::string name)
     {
         return false;
     }
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
 
     m_ast->defaults = std::make_shared<SettingNode>(name, value.value());
     return true;
@@ -265,6 +275,12 @@ bool Descent::default_string_setting(const std::string name)
         return false;
     }
     const std::string value{str()};
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
     advance();
 
     m_ast->defaults = std::make_shared<SettingNode>(name, value);
@@ -283,6 +299,13 @@ bool Descent::default_method_setting()
         return false;
     }
     advance(); // consume method value
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
     m_ast->defaults = std::make_shared<SettingNode>("method", EnumName{method});
     return true;
 }
@@ -292,6 +315,12 @@ bool Descent::default_perturb_setting()
     if (check({TokenType::TRUE, TokenType::FALSE}))
     {
         const bool value{check(TokenType::TRUE)};
+        advance();
+
+        if (!check(TokenType::TERMINATOR))
+        {
+            return false;
+        }
         advance();
 
         m_ast->defaults = std::make_shared<SettingNode>("perturb", value);
@@ -304,6 +333,12 @@ bool Descent::default_perturb_setting()
         return false;
     }
 
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
     m_ast->defaults = std::make_shared<SettingNode>("perturb", expr);
     return true;
 }
@@ -315,6 +350,12 @@ bool Descent::default_precision_setting()
     {
         return false;
     }
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
 
     m_ast->defaults = std::make_shared<SettingNode>("precision", expr);
     return true;
@@ -331,6 +372,13 @@ bool Descent::default_rating_setting()
     {
         const std::string rating{str()};
         advance(); // consume rating value
+
+        if (!check(TokenType::TERMINATOR))
+        {
+            return false;
+        }
+        advance();
+
         m_ast->defaults = std::make_shared<SettingNode>("rating", EnumName{rating});
         return true;
     }
@@ -346,6 +394,13 @@ bool Descent::default_render_setting()
 
     const bool value{check(TokenType::TRUE)};
     advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
     m_ast->defaults = std::make_shared<SettingNode>("render", value);
     return true;
 }

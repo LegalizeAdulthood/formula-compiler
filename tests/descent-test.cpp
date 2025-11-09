@@ -461,13 +461,13 @@ inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
 }
 
 static SingleSectionParam s_single_sections[]{
-    {"globalSection", "global:\n1", Section::PER_IMAGE},
-    {"initSection", "init:\n1", Section::INITIALIZE},
-    {"loopSection", "loop:\n1", Section::ITERATE},
-    {"bailoutSection", "bailout:\n1", Section::BAILOUT},
-    {"perturbInitSection", "perturbinit:\n1", Section::PERTURB_INITIALIZE},
-    {"perturbLoopSection", "perturbloop:\n1", Section::PERTURB_ITERATE},
-    {"defaultSection", "default:\nangle=0", Section::DEFAULT},
+    {"globalSection", "global:\n1\n", Section::PER_IMAGE},
+    {"initSection", "init:\n1\n", Section::INITIALIZE},
+    {"loopSection", "loop:\n1\n", Section::ITERATE},
+    {"bailoutSection", "bailout:\n1\n", Section::BAILOUT},
+    {"perturbInitSection", "perturbinit:\n1\n", Section::PERTURB_INITIALIZE},
+    {"perturbLoopSection", "perturbloop:\n1\n", Section::PERTURB_ITERATE},
+    {"defaultSection", "default:\nangle=0\n", Section::DEFAULT},
     {"switchSection", "switch:\ntype=\"Julia\"\n", Section::SWITCH},
 };
 
@@ -756,7 +756,12 @@ class DDefaultSection : public TestWithParam<ParseParam>
 TEST_P(DDefaultSection, parse)
 {
     const ParseParam &param{GetParam()};
-    const std::string text{"default:\n" + std::string{param.text}};
+    std::string text{"default:\n"};
+    text.append(param.text);
+    if (text.back() != '\n')
+    {
+        text.append(1, '\n');
+    }
 
     const FormulaPtr result{create_descent_formula(text)};
 
@@ -859,29 +864,37 @@ TEST_P(DInvalidSectionOrdering, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_invalid_sections));
 
-// TEST(TestDescentParse, maximumSections)
-//{
-//     const FormulaPtr result{create_descent_formula("global:1\n"
-//                                   "init:1\n"
-//                                   "loop:1\n"
-//                                   "bailout:1\n"
-//                                   "perturbinit:1\n"
-//                                   "perturbloop:1\n"
-//                                   "default:angle=0\n"
-//                                   "switch:1\n")};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
-//     EXPECT_FALSE(result->get_section(Section::BUILTIN));
-//     EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::BAILOUT));
-//     EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::DEFAULT));
-//     EXPECT_TRUE(result->get_section(Section::SWITCH));
-// }
-//
+ TEST(TestDescentParse, maximumSections)
+{
+     const FormulaPtr result{create_descent_formula("global:\n"
+                                                    "1\n"
+                                                    "init:\n"
+                                                    "1\n"
+                                                    "loop:\n"
+                                                    "1\n"
+                                                    "bailout:\n"
+                                                    "1\n"
+                                                    "perturbinit:\n"
+                                                    "1\n"
+                                                    "perturbloop:\n"
+                                                    "1\n"
+                                                    "default:\n"
+                                                    "angle=0\n"
+                                                    "switch:\n"
+                                                    "type=\"Julia\"\n")};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
+    EXPECT_FALSE(result->get_section(Section::BUILTIN));
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
+    EXPECT_TRUE(result->get_section(Section::DEFAULT));
+    EXPECT_TRUE(result->get_section(Section::SWITCH));
+}
+
 // TEST(TestDescentParse, builtinSections)
 //{
 //     const FormulaPtr result{create_descent_formula("builtin:type=1\n"
