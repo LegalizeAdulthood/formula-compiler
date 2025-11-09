@@ -17,25 +17,25 @@ namespace formula::test
 namespace
 {
 
-struct SimpleExpressionParam
+struct ParseParam
 {
     std::string_view name;
     std::string_view text;
     std::string_view expected;
 };
 
-inline void PrintTo(const SimpleExpressionParam &param, std::ostream *os)
+inline void PrintTo(const ParseParam &param, std::ostream *os)
 {
     *os << param.name;
 }
 
-class DescentSimpleExpressions : public TestWithParam<SimpleExpressionParam>
+class DescentSimpleExpressions : public TestWithParam<ParseParam>
 {
 };
 
 } // namespace
 
-static SimpleExpressionParam s_simple_expressions[]{
+static ParseParam s_simple_expressions[]{
     {"constant", "1", "number:1"},                                                        //
     {"identifier", "z2", "identifier:z2"},                                                //
     {"parenExpr", "(z)", "identifier:z"},                                                 //
@@ -261,7 +261,7 @@ static SimpleExpressionParam s_simple_expressions[]{
 
 TEST_P(DescentSimpleExpressions, parse)
 {
-    const SimpleExpressionParam &param{GetParam()};
+    const ParseParam &param{GetParam()};
 
     const FormulaPtr result{create_descent_formula(param.text)};
 
@@ -507,19 +507,7 @@ TEST(TestDescentParse, builtinSectionJulia)
     EXPECT_EQ("setting:type=2\n", to_string(builtin));
 }
 
-struct DefaultSectionParam
-{
-    std::string_view name;
-    std::string_view text;
-    std::string_view expected;
-};
-
-inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
-static DefaultSectionParam s_default_values[]{
+static ParseParam s_default_values[]{
     {"angle", "default:angle=0", "setting:angle=0\n"},                  //
     {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
     {"helpFile", R"(default:helpfile="HelpFile.html")",
@@ -759,13 +747,13 @@ static DefaultSectionParam s_default_values[]{
         "}\n"},
 };
 
-class DDefaultSection : public TestWithParam<DefaultSectionParam>
+class DDefaultSection : public TestWithParam<ParseParam>
 {
 };
 
 TEST_P(DDefaultSection, parse)
 {
-    const DefaultSectionParam &param{GetParam()};
+    const ParseParam &param{GetParam()};
 
     const FormulaPtr result{create_descent_formula(param.text)};
 
