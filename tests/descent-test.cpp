@@ -522,14 +522,14 @@ inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
 static DefaultSectionParam s_default_values[]{
     {"angle", "default:angle=0", "setting:angle=0\n"},                  //
     {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
-    //{"helpFile", R"(default:helpfile="HelpFile.html")",
-    //    R"(setting:helpfile="HelpFile.html")"
-    //    "\n"},
-    //{"helpTopic", R"(default:helptopic="DivideBrot5")",
-    //    R"(setting:helptopic="DivideBrot5")"
-    //    "\n"},
-    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},                            //
-    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"},                   //
+    {"helpFile", R"(default:helpfile="HelpFile.html")",
+        R"(setting:helpfile="HelpFile.html")"
+        "\n"},
+    {"helpTopic", R"(default:helptopic="DivideBrot5")",
+        R"(setting:helptopic="DivideBrot5")"
+        "\n"},
+    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},          //
+    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"}, //
     //{"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
     //{"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
     //{"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //

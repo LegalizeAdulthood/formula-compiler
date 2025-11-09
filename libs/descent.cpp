@@ -38,6 +38,8 @@ public:
 private:
     bool builtin_section();
     std::optional<double> signed_number();
+    bool default_number_setting(std::string name);
+    bool default_complex_setting(std::string name);
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -162,6 +164,55 @@ std::optional<double> Descent::signed_number()
     return {sign * num()};
 }
 
+bool Descent::default_number_setting(const std::string name)
+{
+    const std::optional num{signed_number()};
+    if (!num)
+    {
+        return false;
+    }
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, num.value());
+    return true;
+}
+
+bool Descent::default_complex_setting(const std::string name)
+{
+    if (!check(TokenType::LEFT_PAREN))
+    {
+        return false;
+    }
+    advance();
+
+    const std::optional real{signed_number()};
+    if (!real)
+    {
+        return false;
+    }
+    advance();
+
+    if (!check(TokenType::COMMA))
+    {
+        return false;
+    }
+    advance();
+
+    const std::optional imag{signed_number()};
+    if (!imag)
+    {
+        return false;
+    }
+    advance();
+
+    if (!check(TokenType::RIGHT_PAREN))
+    {
+        return false;
+    }
+    advance();
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
+    return true;
+}
 bool Descent::default_section()
 {
     const bool is_center{check(TokenType::CENTER)};
@@ -178,54 +229,25 @@ bool Descent::default_section()
     }
     advance(); // consume assignment operator
 
-    if (auto it = std::find(std::begin(s_default_number_settings), std::end(s_default_number_settings), name);
-        it != std::end(s_default_number_settings))
+    if (std::find(std::begin(s_default_number_settings), std::end(s_default_number_settings), name) !=
+        std::end(s_default_number_settings))
     {
-        const std::optional num{signed_number()};
-        if (!num)
-        {
-            return false;
-        }
-
-        m_ast->defaults = std::make_shared<SettingNode>(name, num.value());
-        return true;
+        return default_number_setting(name);
     }
 
     if (is_center)
     {
-        if (!check(TokenType::LEFT_PAREN))
+        return default_complex_setting(name);
+    }
+
+    if (name == "helpfile" || name == "helptopic")
+    {
+        if (!check(TokenType::STRING))
         {
             return false;
         }
-        advance();
 
-        const std::optional real{signed_number()};
-        if (!real)
-        {
-            return false;
-        }
-        advance();
-
-        if (!check(TokenType::COMMA))
-        {
-            return false;
-        }
-        advance();
-
-        const std::optional imag{signed_number()};
-        if (!imag)
-        {
-            return false;
-        }
-        advance();
-
-        if (!check(TokenType::RIGHT_PAREN))
-        {
-            return false;
-        }
-        advance();
-
-        m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
+        m_ast->defaults = std::make_shared<SettingNode>(name, str());
         return true;
     }
 
