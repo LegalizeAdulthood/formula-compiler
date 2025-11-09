@@ -566,7 +566,7 @@ static DefaultSectionParam s_default_values[]{
         "function_call:log(\n"
         "number:10\n"
         ")\n"
-        "}\n"}, //
+        "}\n"},                                                                                       //
     {"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
     {"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
     {"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
@@ -671,6 +671,13 @@ static DefaultSectionParam s_default_values[]{
         "endparam",
         "param_block:int,foo {\n"
         "setting:expanded=false\n"
+        "}\n"},
+    {"exponentialParamBlock",
+        "default:int param foo\n"
+        "exponential = true\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:exponential=true\n"
         "}\n"},
 };
 
