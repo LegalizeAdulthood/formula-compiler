@@ -47,7 +47,7 @@ private:
     bool default_precision_setting();
     bool default_rating_setting();
     bool default_render_setting();
-    std::optional<Expr> param_caption();
+    std::optional<Expr> param_string(const std::string &name);
     std::optional<Expr> param_default(const std::string &type);
     std::optional<Expr> param_enabled();
     std::optional<Expr> param_enum();
@@ -337,13 +337,13 @@ bool Descent::default_render_setting()
     return true;
 }
 
-std::optional<Expr> Descent::param_caption()
+std::optional<Expr> Descent::param_string(const std::string &name)
 {
     if (!check(TokenType::STRING))
     {
         return {};
     }
-    Expr body = std::make_shared<SettingNode>("caption", str());
+    Expr body = std::make_shared<SettingNode>(name, str());
     advance();
     return body;
 }
@@ -421,9 +421,9 @@ std::optional<Expr> Descent::param_bool(const std::string &name)
     {
         return {};
     }
-    const bool value = check(TokenType::TRUE);
+    Expr body = std::make_shared<SettingNode>(name, check(TokenType::TRUE));
     advance();
-    return std::make_shared<SettingNode>(name, value);
+    return body;
 }
 
 bool Descent::default_param_block()
@@ -467,9 +467,9 @@ bool Descent::default_param_block()
         advance();
 
         std::optional<Expr> value;
-        if (setting == "caption")
+        if (setting == "caption" || setting == "hint")
         {
-            value = param_caption();
+            value = param_string(setting);
         }
         else if (setting == "default")
         {

@@ -679,6 +679,13 @@ static DefaultSectionParam s_default_values[]{
         "param_block:int,foo {\n"
         "setting:exponential=true\n"
         "}\n"},
+    {"hintParamBlock",
+        "default:bool param foo\n"
+        "hint=\"look behind you\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:hint=\"look behind you\"\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>
