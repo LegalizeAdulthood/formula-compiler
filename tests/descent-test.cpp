@@ -600,6 +600,13 @@ static DefaultSectionParam s_default_values[]{
         "endparam",
         "param_block:color,foo {\n"
         "}\n"}, //
+    {"captionParamBlock",
+        "default:bool param foo\n"
+        "caption=\"My parameter\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:caption=\"My parameter\"\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

@@ -340,16 +340,37 @@ bool Descent::default_param_block()
     advance();
 
     Expr body;
-    if (!check(TokenType::END_PARAM))
+    if (check(TokenType::IDENTIFIER))
     {
-        body = sequence();
-        if (!body)
+        const std::string setting{str()};
+        advance();
+
+        if(!check(TokenType::ASSIGN))
         {
             return false;
         }
+        advance();
+
+        if (!check(TokenType::STRING))
+        {
+            return false;
+        }
+        body = std::make_shared<SettingNode>(setting, str());
+        advance();
+    }
+
+    while (check(TokenType::TERMINATOR))
+    {
+        advance();
     }
 
     if (!check(TokenType::END_PARAM))
+    {
+        return false;
+    }
+    advance();
+
+    if (!check({TokenType::TERMINATOR, TokenType::END_OF_INPUT}))
     {
         return false;
     }
