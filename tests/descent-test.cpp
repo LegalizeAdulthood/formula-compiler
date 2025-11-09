@@ -665,6 +665,13 @@ static DefaultSectionParam s_default_values[]{
         "\"Choice 2\"\n"
         "}\n"
         "}\n"},
+    {"expandedParamBlock",
+        "default:int param foo\n"
+        "expanded = false\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:expanded=false\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

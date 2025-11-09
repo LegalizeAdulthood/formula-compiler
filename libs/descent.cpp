@@ -51,6 +51,7 @@ private:
     std::optional<Expr> param_default(const std::string &type);
     std::optional<Expr> param_enabled();
     std::optional<Expr> param_enum();
+    std::optional<Expr> param_expanded();
     bool default_param_block();
     bool default_section();
     bool section_formula();
@@ -414,6 +415,15 @@ std::optional<Expr> Descent::param_enum()
     return std::make_shared<SettingNode>("enum", values);
 }
 
+std::optional<Expr> Descent::param_expanded()
+{
+    if (!check({TokenType::TRUE, TokenType::FALSE}))
+    {
+        return {};
+    }
+    return std::make_shared<SettingNode>("expanded", check(TokenType::TRUE));
+}
+
 bool Descent::default_param_block()
 {
     std::string type;
@@ -470,6 +480,10 @@ bool Descent::default_param_block()
         else if (setting == "enum")
         {
             value = param_enum();
+        }
+        else if (setting == "expanded")
+        {
+            value = param_expanded();
         }
         if (!value)
         {
