@@ -285,7 +285,7 @@ struct EnumName
 class SettingNode : public Node
 {
 public:
-    using ValueType = std::variant<double, Complex, std::string, int, EnumName, bool>;
+    using ValueType = std::variant<double, Complex, std::string, int, EnumName, bool, Expr>;
 
     SettingNode(std::string key, int value) :
         m_key(std::move(key)),
@@ -315,6 +315,11 @@ public:
     SettingNode(std::string key, bool value) :
         m_key(std::move(key)),
         m_value(value)
+    {
+    }
+    SettingNode(std::string key, Expr value) :
+        m_key(std::move(key)),
+        m_value(std::move(value))
     {
     }
     ~SettingNode() override = default;

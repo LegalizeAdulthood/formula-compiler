@@ -76,35 +76,39 @@ void NodeFormatter::visit(const ast::ParamBlockNode &node)
 void NodeFormatter::visit(const ast::SettingNode &node)
 {
     m_str << "setting:" << node.key() << "=";
-    if (node.value().index() == 0)
+    switch (node.value().index())
     {
+    case 0:
         m_str << std::get<0>(node.value());
-    }
-    else if (node.value().index() == 1)
+        break;
+
+    case 1:
     {
         const Complex &value{std::get<1>(node.value())};
         m_str << '(' << value.re << ',' << value.im << ')';
+        break;
     }
-    else if (node.value().index() == 2)
-    {
+    case 2:
         m_str << '"' << std::get<2>(node.value()) << '"';
-    }
-    else if (node.value().index() == 3)
-    {
+        break;
+    case 3:
         m_str << std::get<3>(node.value());
-    }
-    else if (node.value().index() == 4)
-    {
+        break;
+    case 4:
         m_str << std::get<4>(node.value()).name;
-    }
-    else if (node.value().index() == 5)
-    {
+        break;
+    case 5:
         m_str << (std::get<5>(node.value()) ? "true" : "false");
-    }
-    else
-    {
+        break;
+    case 6:
+        m_str << "{\n";
+        std::get<ast::Expr>(node.value())->visit(*this);
+        m_str << '}';
+        break;
+    default:
         throw std::runtime_error("ValueType variant index out of range");
     }
+
     m_str << '\n';
 }
 

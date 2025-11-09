@@ -539,8 +539,20 @@ static DefaultSectionParam s_default_values[]{
     {"periodicity3", "default:periodicity=3", "setting:periodicity=3\n"},          //
     {"perturbFalse", "default:perturb=false", "setting:perturb=false\n"},          //
     {"perturbTrue", "default:perturb=true", "setting:perturb=true\n"},             //
-    //{"perturbExpr", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
-    //    "setting:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
+    {"perturbExpr", "default:perturb=power==2 || power == 3 || power == 4",
+        "setting:perturb={\n"
+        "binary_op:||\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:4\n"
+        "}\n"}, //
     //{"precisionNumber", "default:precision=30", "setting:precision=\"30\"\n"},        //
     //{"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
     //    "setting:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //

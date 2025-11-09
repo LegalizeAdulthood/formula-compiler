@@ -42,6 +42,7 @@ private:
     bool default_complex_setting(std::string name);
     bool default_string_setting(std::string name);
     bool default_method_setting();
+    bool default_perturb_setting(std::string name);
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -215,6 +216,7 @@ bool Descent::default_complex_setting(const std::string name)
     m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
     return true;
 }
+
 bool Descent::default_string_setting(const std::string name)
 {
     if (!check(TokenType::STRING))
@@ -225,6 +227,7 @@ bool Descent::default_string_setting(const std::string name)
     m_ast->defaults = std::make_shared<SettingNode>(name, str());
     return true;
 }
+
 bool Descent::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
@@ -240,6 +243,28 @@ bool Descent::default_method_setting()
     m_ast->defaults = std::make_shared<SettingNode>("method", EnumName{method});
     return true;
 }
+
+bool Descent::default_perturb_setting(const std::string name)
+{
+    if (check(TokenType::TRUE) || check(TokenType::FALSE))
+    {
+        const bool value{check(TokenType::TRUE)};
+        advance();
+
+        m_ast->defaults = std::make_shared<SettingNode>(name, value);
+        return true;
+    }
+
+    Expr expr = conjunctive();
+    if (!expr)
+    {
+        return false;
+    }
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, expr);
+    return true;
+}
+
 bool Descent::default_section()
 {
     const bool is_center{check(TokenType::CENTER)};
@@ -279,15 +304,7 @@ bool Descent::default_section()
 
     if (name == "perturb")
     {
-        if (!(check(TokenType::TRUE) || check(TokenType::FALSE)))
-        {
-            return false;
-        }
-        const bool value{check(TokenType::TRUE)};
-        advance();
-
-        m_ast->defaults = std::make_shared<SettingNode>(name, value);
-        return true;
+        return default_perturb_setting(name);
     }
 
     return false;
