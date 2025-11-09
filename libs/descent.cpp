@@ -752,7 +752,10 @@ bool Descent::switch_section()
 
 std::optional<bool> Descent::section_formula()
 {
-    const auto is_token = [this](TokenType tok) { return check(tok); };
+    const auto is_token = [this](TokenType tok)
+    {
+        return check(tok);
+    };
     const auto is_section = [is_token]
     {
         return std::find_if(s_sections.begin(), s_sections.end(), is_token) != s_sections.end();
@@ -776,7 +779,7 @@ std::optional<bool> Descent::section_formula()
 
         if (section == TokenType::BUILTIN)
         {
-            if (m_ast->per_image                                         //
+            if (m_ast->per_image || m_ast->builtin                       //
                 || m_ast->initialize || m_ast->iterate || m_ast->bailout //
                 || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                 || m_ast->defaults || m_ast->type_switch                 //
@@ -787,7 +790,7 @@ std::optional<bool> Descent::section_formula()
         }
         else if (section == TokenType::DEFAULT)
         {
-            if (m_ast->type_switch //
+            if (m_ast->defaults || m_ast->type_switch //
                 || !default_section())
             {
                 return false;
@@ -795,7 +798,8 @@ std::optional<bool> Descent::section_formula()
         }
         else if (section == TokenType::SWITCH)
         {
-            if (!switch_section())
+            if (m_ast->type_switch //
+                || !switch_section())
             {
                 return false;
             }
@@ -805,7 +809,7 @@ std::optional<bool> Descent::section_formula()
             switch (section)
             {
             case TokenType::GLOBAL:
-                if (m_ast->builtin                                           //
+                if (m_ast->per_image || m_ast->builtin                       //
                     || m_ast->initialize || m_ast->iterate || m_ast->bailout //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
@@ -816,8 +820,9 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::BUILTIN:
-                if (m_ast->initialize || m_ast->iterate || m_ast->bailout  //
-                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                if (m_ast->builtin                                           //
+                    || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     return false;
@@ -826,9 +831,9 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::INIT:
-                if (m_ast->builtin                                         //
-                    || m_ast->iterate || m_ast->bailout                    //
-                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                if (m_ast->builtin                                           //
+                    || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     return false;
@@ -838,7 +843,7 @@ std::optional<bool> Descent::section_formula()
 
             case TokenType::LOOP:
                 if (m_ast->builtin                                         //
-                    || m_ast->bailout                                      //
+                    || m_ast->iterate || m_ast->bailout                    //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
@@ -849,6 +854,7 @@ std::optional<bool> Descent::section_formula()
 
             case TokenType::BAILOUT:
                 if (m_ast->builtin                                         //
+                    || m_ast->bailout                                      //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
@@ -858,7 +864,7 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::PERTURB_INIT:
-                if (m_ast->perturb_iterate //
+                if (m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     return false;
@@ -867,7 +873,8 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::PERTURB_LOOP:
-                if (m_ast->defaults || m_ast->type_switch)
+                if (m_ast->perturb_iterate //
+                    || m_ast->defaults || m_ast->type_switch)
                 {
                     return false;
                 }
@@ -875,7 +882,7 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::DEFAULT:
-                if (m_ast->type_switch)
+                if (m_ast->defaults || m_ast->type_switch)
                 {
                     return false;
                 }
@@ -883,6 +890,10 @@ std::optional<bool> Descent::section_formula()
                 break;
 
             case TokenType::SWITCH:
+                if (m_ast->type_switch)
+                {
+                    return false;
+                }
                 m_ast->type_switch = result;
                 break;
 
@@ -890,6 +901,12 @@ std::optional<bool> Descent::section_formula()
                 return false;
             }
         }
+    }
+
+    if (check(TokenType::COLON))
+    {
+        // unrecognized section name
+        return false;
     }
 
     if (check(TokenType::END_OF_INPUT))

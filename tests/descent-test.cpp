@@ -429,9 +429,11 @@ inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
 }
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithoutEndIf", "if(1)"}, {"ifElseWithoutEndIf", "if(1)\nelse"}, {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
-    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
-    //{"builtinSectionBogus", "builtin:type=0"},
+    {"ifWithoutEndIf", "if(1)"},                            //
+    {"ifElseWithoutEndIf", "if(1)\nelse"},                  //
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},           //
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"}, //
+    {"builtinSectionBogus", "builtin:\ntype=0\n"},
 };
 
 class DParseFailures : public TestWithParam<ParseFailureParam>
@@ -556,7 +558,7 @@ static ParseParam s_default_values[]{
         "function_call:log(\n"
         "number:10\n"
         ")\n"
-        "}\n"},                                                                                       //
+        "}\n"},                                                                               //
     {"ratingRecommended", "rating=recommended", "setting:rating=recommended\n"},              //
     {"ratingAverage", "rating=average", "setting:rating=average\n"},                          //
     {"ratingNotRecommended", "rating=notRecommended", "setting:rating=notRecommended\n"},     //
@@ -773,7 +775,6 @@ TEST_P(DDefaultSection, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DDefaultSection, ValuesIn(s_default_values));
 
-
 TEST(TestDescentParse, switchParameter)
 {
     const FormulaPtr result{create_descent_formula("switch:\n"
@@ -785,7 +786,7 @@ TEST(TestDescentParse, switchParameter)
     EXPECT_EQ("setting:seed=pixel\n", to_string(section));
 }
 
- struct DInvalidSectionParam
+struct DInvalidSectionParam
 {
     std::string_view name;
     std::string_view text;
@@ -804,14 +805,14 @@ static DInvalidSectionParam s_invalid_sections[]{
         "1\n"},
     {"globalSectionFirst",
         "builtin:\n"
-        "1\n"
+        "type=1\n"
         "global:\n1"
         "\n"},
     {"builtinBeforeInit",
         "init:\n"
         "1\n"
         "builtin:\n"
-        "1\n"},
+        "type=1\n"},
     {"initAfterLoop",
         "loop:\n"
         "1\n"
@@ -847,6 +848,51 @@ static DInvalidSectionParam s_invalid_sections[]{
         "1\n"
         "default:\n"
         "angle=0\n"},
+    {"globalTwice",
+        "global:\n"
+        "1\n"
+        "global:\n"
+        "1\n"},
+    {"builtinTwice",
+        "builtin:\n"
+        "type=1\n"
+        "builtin:\n"
+        "type=1\n"},
+    {"initTwice",
+        "init:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
+    {"loopTwice",
+        "loop:\n"
+        "1\n"
+        "loop:\n"
+        "1\n"},
+    {"bailoutTwice",
+        "bailout:\n"
+        "1\n"
+        "bailout:\n"
+        "1\n"},
+    {"perturbInitTwice",
+        "perturbinit:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"},
+    {"perturbLoopTwice",
+        "perturbloop:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"},
+    {"defaultTwice",
+        "default:\n"
+        "angle=120\n"
+        "default:\n"
+        "angle=120\n"},
+    {"switchTwice",
+        "switch:\n"
+        "foo=foo\n"
+        "switch:\n"
+        "foo=foo\n"},
 };
 
 class DInvalidSectionOrdering : public TestWithParam<DInvalidSectionParam>
@@ -864,24 +910,24 @@ TEST_P(DInvalidSectionOrdering, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_invalid_sections));
 
- TEST(TestDescentParse, maximumSections)
+TEST(TestDescentParse, maximumSections)
 {
-     const FormulaPtr result{create_descent_formula("global:\n"
-                                                    "1\n"
-                                                    "init:\n"
-                                                    "1\n"
-                                                    "loop:\n"
-                                                    "1\n"
-                                                    "bailout:\n"
-                                                    "1\n"
-                                                    "perturbinit:\n"
-                                                    "1\n"
-                                                    "perturbloop:\n"
-                                                    "1\n"
-                                                    "default:\n"
-                                                    "angle=0\n"
-                                                    "switch:\n"
-                                                    "type=\"Julia\"\n")};
+    const FormulaPtr result{create_descent_formula("global:\n"
+                                                   "1\n"
+                                                   "init:\n"
+                                                   "1\n"
+                                                   "loop:\n"
+                                                   "1\n"
+                                                   "bailout:\n"
+                                                   "1\n"
+                                                   "perturbinit:\n"
+                                                   "1\n"
+                                                   "perturbloop:\n"
+                                                   "1\n"
+                                                   "default:\n"
+                                                   "angle=0\n"
+                                                   "switch:\n"
+                                                   "type=\"Julia\"\n")};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
@@ -922,7 +968,7 @@ TEST(TestDescentParse, builtinSections)
     EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
- struct DBuiltinDisallowsParam
+struct DBuiltinDisallowsParam
 {
     std::string_view name;
     std::string_view text;
