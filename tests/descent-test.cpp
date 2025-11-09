@@ -640,6 +640,21 @@ static DefaultSectionParam s_default_values[]{
         "param_block:complex,foo {\n"
         "setting:default=(4,5)\n"
         "}\n"},
+    {"enabledParamBlock",
+        "default:bool param foo\n"
+        "enabled=power==2 || power == 3\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:enabled={\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "}\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

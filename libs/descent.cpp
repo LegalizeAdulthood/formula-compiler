@@ -436,6 +436,15 @@ bool Descent::default_param_block()
         {
             value = param_default(type);
         }
+        else if (setting == "enabled")
+        {
+            Expr expr = conjunctive();
+            if (!expr)
+            {
+                return false;
+            }
+            value = std::make_shared<SettingNode>(setting, expr);
+        }
         if (!value)
         {
             return false;
