@@ -307,6 +307,17 @@ bool Descent::default_section()
         return default_perturb_setting(name);
     }
 
+    if (name == "precision")
+    {
+        if (!check(TokenType::NUMBER))
+        {
+            return false;
+        }
+
+        m_ast->defaults = std::make_shared<SettingNode>(name, num());
+        return true;
+    }
+
     return false;
 }
 

@@ -552,8 +552,8 @@ static DefaultSectionParam s_default_values[]{
         "binary_op:==\n"
         "identifier:power\n"
         "number:4\n"
-        "}\n"}, //
-    //{"precisionNumber", "default:precision=30", "setting:precision=\"30\"\n"},        //
+        "}\n"},                                                                //
+    {"precisionNumber", "default:precision=30", "setting:precision=30\n"}, //
     //{"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
     //    "setting:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //
     //{"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
