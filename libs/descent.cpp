@@ -156,7 +156,7 @@ bool Descent::default_section()
     {
         return false;
     }
-    const double sign = check(TokenType::PLUS) ? 1.0 : -1.0;
+    const double sign = !check(TokenType::MINUS) ? 1.0 : -1.0;
     if (prefix_op)
     {
         advance(); // consume prefix sign
