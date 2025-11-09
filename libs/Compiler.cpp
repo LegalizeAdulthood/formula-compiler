@@ -100,7 +100,7 @@ private:
 
 void Compiler::visit(const NumberNode &node)
 {
-    asmjit::Label label = get_constant_label(comp, state.data.constants, {node.value(), 0.0});
+    asmjit::Label label = get_constant_label(comp, state.data.constants, {std::get<double>(node.value()), 0.0});
     ASMJIT_STORE(comp.movlpd(m_result.back(), asmjit::x86::ptr(label)));
     ASMJIT_STORE(comp.movhpd(m_result.back(), asmjit::x86::ptr(label, sizeof(double))));
 }

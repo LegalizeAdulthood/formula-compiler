@@ -116,13 +116,13 @@ void Simplifier::visit(const BinaryOpNode &node)
     if (left)
     {
         // short-circuit and
-        if (node.op() == "&&" && left->value() == 0.0)
+        if (node.op() == "&&" && std::get<double>(left->value()) == 0.0)
         {
             m_result.push_back(std::make_shared<NumberNode>(0.0));
             return;
         }
         // short-circuit or
-        if (node.op() == "||" && left->value() != 0.0)
+        if (node.op() == "||" && std::get<double>(left->value()) != 0.0)
         {
             m_result.push_back(std::make_shared<NumberNode>(1.0));
             return;
@@ -132,8 +132,8 @@ void Simplifier::visit(const BinaryOpNode &node)
     Expr rhs{visit_result(node.right())};
     if (auto right = dynamic_cast<NumberNode *>(rhs.get()))
     {
-        const double left_value = left->value();
-        const double right_value = right->value();
+        const double left_value = std::get<double>(left->value());
+        const double right_value = std::get<double>(right->value());
         const std::string &op{node.op()};
         if (op == "+")
         {
@@ -210,7 +210,7 @@ void Simplifier::visit(const FunctionCallNode &node)
     Expr arg{visit_result(node.arg())};
     if (const auto number = dynamic_cast<NumberNode *>(arg.get()))
     {
-        const double result_value = evaluate(node.name(), number->value());
+        const double result_value = evaluate(node.name(), std::get<double>(number->value()));
         m_result.push_back(std::make_shared<NumberNode>(result_value));
         return;
     }
@@ -247,7 +247,7 @@ void Simplifier::visit(const IfStatementNode &node)
     if (auto number = dynamic_cast<NumberNode *>(condition.get()))
     {
         // Non-zero condition: simplify to then block (or 1.0 if no then block)
-        if (number->value() != 0.0)
+        if (std::get<double>(number->value()) != 0.0)
         {
             if (node.has_then_block())
             {
@@ -293,7 +293,7 @@ void Simplifier::visit(const IfStatementNode &node)
 
 void Simplifier::visit(const NumberNode &node)
 {
-    m_result.push_back(std::make_shared<NumberNode>(node.value()));
+    m_result.push_back(std::make_shared<NumberNode>(std::get<double>(node.value())));
 }
 
 void Simplifier::visit(const StatementSeqNode &node)
@@ -333,7 +333,7 @@ void Simplifier::visit(const UnaryOpNode &node)
     Expr op{visit_result(node.operand())};
     if (auto number = dynamic_cast<NumberNode *>(op.get()))
     {
-        double value = number->value();
+        double value = std::get<double>(number->value());
         switch (node.op())
         {
         case '+':

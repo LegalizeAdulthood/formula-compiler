@@ -686,6 +686,48 @@ static DefaultSectionParam s_default_values[]{
         "param_block:bool,foo {\n"
         "setting:hint=\"look behind you\"\n"
         "}\n"},
+    {"minIntParamBlock",
+        "default:int param foo\n"
+        "min=10\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:min=10\n"
+        "}\n"},
+    {"minFloatParamBlock",
+        "default:float param foo\n"
+        "min=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:min=4.5\n"
+        "}\n"},
+    {"minComplexParamBlock",
+        "default:complex param foo\n"
+        "min=(4.5,4.5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:min=(4.5,4.5)\n"
+        "}\n"},
+    {"maxIntParamBlock",
+        "default:int param foo\n"
+        "max=10\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:max=10\n"
+        "}\n"},
+    {"maxFloatParamBlock",
+        "default:float param foo\n"
+        "max=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:max=4.5\n"
+        "}\n"},
+    {"maxComplexParamBlock",
+        "default:complex param foo\n"
+        "max=(4.5,4.5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:max=(4.5,4.5)\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

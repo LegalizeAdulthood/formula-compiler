@@ -60,7 +60,22 @@ void NodeFormatter::visit(const ast::IfStatementNode &node)
 
 void NodeFormatter::visit(const ast::NumberNode &node)
 {
-    m_str << "number:" << node.value() << '\n';
+    m_str << "number:";
+    switch (node.value().index())
+    {
+    case 0:
+        m_str << std::get<int>(node.value());
+        break;
+    case 1:
+        m_str << std::get<double>(node.value());
+        break;
+    case 2:
+        m_str << '(' << std::get<2>(node.value()).re << ',' << std::get<2>(node.value()).im << ')';
+        break;
+    default:
+        throw std::runtime_error("NumberNode value variant index out of range");
+    }
+    m_str << '\n';
 }
 
 void NodeFormatter::visit(const ast::ParamBlockNode &node)

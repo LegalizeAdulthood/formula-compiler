@@ -31,7 +31,16 @@ using Expr = std::shared_ptr<Node>;
 class NumberNode : public Node
 {
 public:
-    NumberNode(double value) :
+    using ValueType = std::variant<int, double, Complex>;
+    explicit NumberNode(int value) :
+        m_value(value)
+    {
+    }
+    explicit NumberNode(double value) :
+        m_value(value)
+    {
+    }
+    explicit NumberNode(Complex value) :
         m_value(value)
     {
     }
@@ -39,13 +48,13 @@ public:
 
     void visit(Visitor &visitor) const override;
 
-    double value() const
+    ValueType value() const
     {
         return m_value;
     }
 
 private:
-    double m_value{};
+    ValueType m_value{};
 };
 
 class IdentifierNode : public Node

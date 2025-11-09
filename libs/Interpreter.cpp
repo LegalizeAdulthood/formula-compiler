@@ -204,7 +204,7 @@ void Interpreter::visit(const IfStatementNode &node)
 
 void Interpreter::visit(const NumberNode &node)
 {
-    back().re = node.value();
+    back().re = std::get<double>(node.value());
 }
 
 void Interpreter::visit(const StatementSeqNode &node)

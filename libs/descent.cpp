@@ -52,6 +52,7 @@ private:
     std::optional<Expr> param_enabled();
     std::optional<Expr> param_enum();
     std::optional<Expr> param_bool(const std::string &name);
+    std::optional<Expr> param_number(const std::string &type, const std::string &name);
     bool default_param_block();
     bool default_section();
     bool section_formula();
@@ -426,6 +427,37 @@ std::optional<Expr> Descent::param_bool(const std::string &name)
     return body;
 }
 
+std::optional<Expr> Descent::param_number(const std::string &type, const std::string &name)
+{
+    if (type == "int")
+    {
+        std::optional<double> value = signed_number();
+        if (!value)
+        {
+            return {};
+        }
+        return std::make_shared<SettingNode>(name, static_cast<int>(value.value()));
+    }
+    if (type == "float")
+    {
+        std::optional<double> value = signed_number();
+        if (!value)
+        {
+            return {};
+        }
+        return std::make_shared<SettingNode>(name, value.value());
+    }
+    if (type == "complex")
+    {
+        std::optional<Complex> value = complex_number();
+        if (!value)
+        {
+            return {};
+        }
+        return std::make_shared<SettingNode>(name, value.value());
+    }
+}
+
 bool Descent::default_param_block()
 {
     std::string type;
@@ -486,6 +518,10 @@ bool Descent::default_param_block()
         else if (setting == "expanded" || setting == "exponential")
         {
             value = param_bool(setting);
+        }
+        else if (setting == "max" || setting == "min")
+        {
+            value = param_number(type, setting);
         }
         if (!value)
         {
