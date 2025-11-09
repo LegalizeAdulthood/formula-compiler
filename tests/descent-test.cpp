@@ -607,6 +607,11 @@ static DefaultSectionParam s_default_values[]{
         "param_block:bool,foo {\n"
         "setting:caption=\"My parameter\"\n"
         "}\n"},
+    {"typelessParamBlock",
+        "default:param foo\n"
+        "endparam",
+        "param_block:foo {\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>

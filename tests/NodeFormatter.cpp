@@ -65,7 +65,16 @@ void NodeFormatter::visit(const ast::NumberNode &node)
 
 void NodeFormatter::visit(const ast::ParamBlockNode &node)
 {
-    m_str << "param_block:" << node.type() << ',' << node.name() << " {\n";
+    m_str << "param_block:";
+    if (node.type().empty())
+    {
+        m_str << node.name();
+    }
+    else
+    {
+        m_str << node.type() << ',' << node.name();
+    }
+    m_str << " {\n";
     if (node.block())
     {
         node.block()->visit(*this);

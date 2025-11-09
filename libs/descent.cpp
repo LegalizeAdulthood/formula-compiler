@@ -317,8 +317,12 @@ bool Descent::default_render_setting()
 
 bool Descent::default_param_block()
 {
-    const std::string type{str()};
-    advance();
+    std::string type;
+    if (!check(TokenType::PARAM))
+    {
+        type = str();
+        advance();
+    }
 
     if (!check(TokenType::PARAM))
     {
@@ -345,7 +349,7 @@ bool Descent::default_param_block()
         const std::string setting{str()};
         advance();
 
-        if(!check(TokenType::ASSIGN))
+        if (!check(TokenType::ASSIGN))
         {
             return false;
         }
@@ -382,9 +386,9 @@ bool Descent::default_param_block()
 
 bool Descent::default_section()
 {
-    if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,    //
+    if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
             TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
-            TokenType::TYPE_COLOR}))
+            TokenType::TYPE_COLOR, TokenType::PARAM}))
     {
         return default_param_block();
     }
@@ -874,7 +878,7 @@ Expr Descent::comparative()
     Expr left = assignment();
 
     while (left &&
-        check({TokenType::LESS_THAN, TokenType::LESS_EQUAL,     //
+        check({TokenType::LESS_THAN, TokenType::LESS_EQUAL,    //
             TokenType::GREATER_THAN, TokenType::GREATER_EQUAL, //
             TokenType::EQUAL, TokenType::NOT_EQUAL}))
     {
