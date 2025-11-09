@@ -461,14 +461,14 @@ inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
 }
 
 static SingleSectionParam s_single_sections[]{
-    {"globalSection", "global:1", Section::PER_IMAGE},
-    {"initSection", "init:1", Section::INITIALIZE},
-    {"loopSection", "loop:1", Section::ITERATE},
-    {"bailoutSection", "bailout:1", Section::BAILOUT},
-    {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
-    {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
-    {"defaultSection", "default:angle=0", Section::DEFAULT},
-    {"switchSection", "switch:1", Section::SWITCH},
+    {"globalSection", "global:\n1", Section::PER_IMAGE},
+    {"initSection", "init:\n1", Section::INITIALIZE},
+    {"loopSection", "loop:\n1", Section::ITERATE},
+    {"bailoutSection", "bailout:\n1", Section::BAILOUT},
+    {"perturbInitSection", "perturbinit:\n1", Section::PERTURB_INITIALIZE},
+    {"perturbLoopSection", "perturbloop:\n1", Section::PERTURB_ITERATE},
+    {"defaultSection", "default:\nangle=0", Section::DEFAULT},
+    {"switchSection", "switch:\n1", Section::SWITCH},
 };
 
 class DSingleSections : public TestWithParam<SingleSectionParam>
@@ -489,7 +489,8 @@ INSTANTIATE_TEST_SUITE_P(TestDescentParse, DSingleSections, ValuesIn(s_single_se
 
 TEST(TestDescentParse, builtinSectionMandelbrot)
 {
-    const FormulaPtr result{create_descent_formula("builtin:type=1")};
+    const FormulaPtr result{create_descent_formula("builtin:\n"
+                                                   "type=1")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -499,7 +500,8 @@ TEST(TestDescentParse, builtinSectionMandelbrot)
 
 TEST(TestDescentParse, builtinSectionJulia)
 {
-    const FormulaPtr result{create_descent_formula("builtin:type=2")};
+    const FormulaPtr result{create_descent_formula("builtin:\n"
+                                                   "type=2")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -508,26 +510,26 @@ TEST(TestDescentParse, builtinSectionJulia)
 }
 
 static ParseParam s_default_values[]{
-    {"angle", "default:angle=0", "setting:angle=0\n"},                  //
-    {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
-    {"helpFile", R"(default:helpfile="HelpFile.html")",
+    {"angle", "angle=0", "setting:angle=0\n"},                  //
+    {"center", "center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
+    {"helpFile", R"(helpfile="HelpFile.html")",
         R"(setting:helpfile="HelpFile.html")"
         "\n"},
-    {"helpTopic", R"(default:helptopic="DivideBrot5")",
+    {"helpTopic", R"(helptopic="DivideBrot5")",
         R"(setting:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},                            //
-    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"},                   //
-    {"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
-    {"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
-    {"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //
-    {"periodicity0", "default:periodicity=0", "setting:periodicity=0\n"},          //
-    {"periodicity1", "default:periodicity=1", "setting:periodicity=1\n"},          //
-    {"periodicity2", "default:periodicity=2", "setting:periodicity=2\n"},          //
-    {"periodicity3", "default:periodicity=3", "setting:periodicity=3\n"},          //
-    {"perturbFalse", "default:perturb=false", "setting:perturb=false\n"},          //
-    {"perturbTrue", "default:perturb=true", "setting:perturb=true\n"},             //
-    {"perturbExpr", "default:perturb=power==2 || power == 3 || power == 4",
+    {"magn", "magn=4.5", "setting:magn=4.5\n"},                            //
+    {"maxIter", "maxiter=256", "setting:maxiter=256\n"},                   //
+    {"methodGuessing", "method=guessing", "setting:method=guessing\n"},    //
+    {"methodMultiPass", "method=multipass", "setting:method=multipass\n"}, //
+    {"methodOnePass", "method=onepass", "setting:method=onepass\n"},       //
+    {"periodicity0", "periodicity=0", "setting:periodicity=0\n"},          //
+    {"periodicity1", "periodicity=1", "setting:periodicity=1\n"},          //
+    {"periodicity2", "periodicity=2", "setting:periodicity=2\n"},          //
+    {"periodicity3", "periodicity=3", "setting:periodicity=3\n"},          //
+    {"perturbFalse", "perturb=false", "setting:perturb=false\n"},          //
+    {"perturbTrue", "perturb=true", "setting:perturb=true\n"},             //
+    {"perturbExpr", "perturb=power==2 || power == 3 || power == 4",
         "setting:perturb={\n"
         "binary_op:||\n"
         "binary_op:||\n"
@@ -541,11 +543,11 @@ static ParseParam s_default_values[]{
         "identifier:power\n"
         "number:4\n"
         "}\n"}, //
-    {"precisionNumber", "default:precision=30",
+    {"precisionNumber", "precision=30",
         "setting:precision={\n"
         "number:30\n"
         "}\n"}, //
-    {"precisionExpr", "default:precision=log(fracmagn) / log(10)",
+    {"precisionExpr", "precision=log(fracmagn) / log(10)",
         "setting:precision={\n"
         "binary_op:/\n"
         "function_call:log(\n"
@@ -555,81 +557,81 @@ static ParseParam s_default_values[]{
         "number:10\n"
         ")\n"
         "}\n"},                                                                                       //
-    {"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
-    {"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
-    {"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
-    {"renderTrue", "default:render=true", "setting:render=true\n"},                                   //
-    {"renderFalse", "default:render=false", "setting:render=false\n"},                                //
-    {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //
-    {"stretch", "default:stretch=4.5", "setting:stretch=4.5\n"},                                      //
-    {"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
+    {"ratingRecommended", "rating=recommended", "setting:rating=recommended\n"},              //
+    {"ratingAverage", "rating=average", "setting:rating=average\n"},                          //
+    {"ratingNotRecommended", "rating=notRecommended", "setting:rating=notRecommended\n"},     //
+    {"renderTrue", "render=true", "setting:render=true\n"},                                   //
+    {"renderFalse", "render=false", "setting:render=false\n"},                                //
+    {"skew", "skew=-4.5", "setting:skew=-4.5\n"},                                             //
+    {"stretch", "stretch=4.5", "setting:stretch=4.5\n"},                                      //
+    {"title", R"(title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
     {"emptyBoolParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "endparam",
         "param_block:bool,foo {\n"
         "}\n"}, //
     {"emptyIntParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "endparam",
         "param_block:int,foo {\n"
         "}\n"}, //
     {"emptyFloatParamBlock",
-        "default:float param foo\n"
+        "float param foo\n"
         "endparam",
         "param_block:float,foo {\n"
         "}\n"}, //
     {"emptyComplexParamBlock",
-        "default:complex param foo\n"
+        "complex param foo\n"
         "endparam",
         "param_block:complex,foo {\n"
         "}\n"}, //
     {"emptyColorParamBlock",
-        "default:color param foo\n"
+        "color param foo\n"
         "endparam",
         "param_block:color,foo {\n"
         "}\n"}, //
     {"captionParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "caption=\"My parameter\"\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:caption=\"My parameter\"\n"
         "}\n"},
     {"typelessParamBlock",
-        "default:param foo\n"
+        "param foo\n"
         "endparam",
         "param_block:foo {\n"
         "}\n"},
     {"defaultBoolParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "default=true\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:default=true\n"
         "}\n"},
     {"defaultIntParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "default=1964\n"
         "endparam",
         "param_block:int,foo {\n"
         "setting:default=1964\n"
         "}\n"},
     {"defaultFloatParamBlock",
-        "default:float param foo\n"
+        "float param foo\n"
         "default=4.5\n"
         "endparam",
         "param_block:float,foo {\n"
         "setting:default=4.5\n"
         "}\n"},
     {"defaultComplexParamBlock",
-        "default:complex param foo\n"
+        "complex param foo\n"
         "default=(4,5)\n"
         "endparam",
         "param_block:complex,foo {\n"
         "setting:default=(4,5)\n"
         "}\n"},
     {"enabledParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "enabled=power==2 || power == 3\n"
         "endparam",
         "param_block:bool,foo {\n"
@@ -644,7 +646,7 @@ static ParseParam s_default_values[]{
         "}\n"
         "}\n"},
     {"enumParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "enum = \"Choice 1\" \"Choice 2\"\n"
         "endparam",
         "param_block:int,foo {\n"
@@ -654,84 +656,84 @@ static ParseParam s_default_values[]{
         "}\n"
         "}\n"},
     {"expandedParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "expanded = false\n"
         "endparam",
         "param_block:int,foo {\n"
         "setting:expanded=false\n"
         "}\n"},
     {"exponentialParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "exponential = true\n"
         "endparam",
         "param_block:int,foo {\n"
         "setting:exponential=true\n"
         "}\n"},
     {"hintParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "hint=\"look behind you\"\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:hint=\"look behind you\"\n"
         "}\n"},
     {"minIntParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "min=10\n"
         "endparam",
         "param_block:int,foo {\n"
         "setting:min=10\n"
         "}\n"},
     {"minFloatParamBlock",
-        "default:float param foo\n"
+        "float param foo\n"
         "min=4.5\n"
         "endparam",
         "param_block:float,foo {\n"
         "setting:min=4.5\n"
         "}\n"},
     {"minComplexParamBlock",
-        "default:complex param foo\n"
+        "complex param foo\n"
         "min=(4.5,4.5)\n"
         "endparam",
         "param_block:complex,foo {\n"
         "setting:min=(4.5,4.5)\n"
         "}\n"},
     {"maxIntParamBlock",
-        "default:int param foo\n"
+        "int param foo\n"
         "max=10\n"
         "endparam",
         "param_block:int,foo {\n"
         "setting:max=10\n"
         "}\n"},
     {"maxFloatParamBlock",
-        "default:float param foo\n"
+        "float param foo\n"
         "max=4.5\n"
         "endparam",
         "param_block:float,foo {\n"
         "setting:max=4.5\n"
         "}\n"},
     {"maxComplexParamBlock",
-        "default:complex param foo\n"
+        "complex param foo\n"
         "max=(4.5,4.5)\n"
         "endparam",
         "param_block:complex,foo {\n"
         "setting:max=(4.5,4.5)\n"
         "}\n"},
     {"selectableParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "selectable=false\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:selectable=false\n"
         "}\n"},
     {"textParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "text=\"Well hello there, pardner.\"\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:text=\"Well hello there, pardner.\"\n"
         "}\n"},
     {"visibleParamBlock",
-        "default:bool param foo\n"
+        "bool param foo\n"
         "visible=power == 2 || power == 3\n"
         "endparam",
         "param_block:bool,foo {\n"
@@ -754,8 +756,9 @@ class DDefaultSection : public TestWithParam<ParseParam>
 TEST_P(DDefaultSection, parse)
 {
     const ParseParam &param{GetParam()};
+    const std::string text{"default:\n" + std::string{param.text}};
 
-    const FormulaPtr result{create_descent_formula(param.text)};
+    const FormulaPtr result{create_descent_formula(text)};
 
     ASSERT_TRUE(result);
     const ast::Expr &section{result->get_section(Section::DEFAULT)};

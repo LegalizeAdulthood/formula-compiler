@@ -627,12 +627,19 @@ bool Descent::section_formula()
         it != s_sections.end())
     {
         advance(); // consume section name
+
         if (!check(TokenType::COLON))
         {
             return false;
         }
-
         advance(); // consume colon
+
+        if (!check(TokenType::TERMINATOR))
+        {
+            return false;
+        }
+        advance(); // consume newline
+
         if (*it == TokenType::BUILTIN)
         {
             return builtin_section();
