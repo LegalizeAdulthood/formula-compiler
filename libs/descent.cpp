@@ -47,6 +47,8 @@ private:
     bool default_precision_setting();
     bool default_rating_setting();
     bool default_render_setting();
+    std::optional<Expr> param_caption();
+    std::optional<Expr> param_default(const std::string &type);
     bool default_param_block();
     bool default_section();
     bool section_formula();
@@ -332,6 +334,59 @@ bool Descent::default_render_setting()
     return true;
 }
 
+std::optional<Expr> Descent::param_caption()
+{
+    if (!check(TokenType::STRING))
+    {
+        return {};
+    }
+    Expr body = std::make_shared<SettingNode>("caption", str());
+    advance();
+    return body;
+}
+
+std::optional<Expr> Descent::param_default(const std::string &type)
+{
+    if (type == "bool")
+    {
+        if (!check({TokenType::TRUE, TokenType::FALSE}))
+        {
+            return {};
+        }
+        Expr body = std::make_shared<SettingNode>("default", check(TokenType::TRUE));
+        advance();
+        return body;
+    }
+    if (type == "int")
+    {
+        if (!check(TokenType::NUMBER))
+        {
+            return {};
+        }
+        Expr body = std::make_shared<SettingNode>("default", static_cast<int>(num()));
+        advance();
+        return body;
+    }
+    if (type == "float")
+    {
+        if (!check(TokenType::NUMBER))
+        {
+            return {};
+        }
+        Expr body = std::make_shared<SettingNode>("default", num());
+        advance();
+        return body;
+    }
+    if (type == "complex")
+    {
+        if (const std::optional value{complex_number()})
+        {
+            return std::make_shared<SettingNode>("default", value.value());
+        }
+    }
+    return {};
+}
+
 bool Descent::default_param_block()
 {
     std::string type;
@@ -372,54 +427,20 @@ bool Descent::default_param_block()
         }
         advance();
 
+        std::optional<Expr> value;
         if (setting == "caption")
         {
-            if (!check(TokenType::STRING))
-            {
-                return false;
-            }
-            body = std::make_shared<SettingNode>(setting, str());
-            advance();
+            value = param_caption();
         }
         else if (setting == "default")
         {
-            if (type == "bool")
-            {
-                if (!check({TokenType::TRUE, TokenType::FALSE}))
-                {
-                    return false;
-                }
-                body = std::make_shared<SettingNode>(setting, check(TokenType::TRUE));
-                advance();
-            }
-            else if (type == "int")
-            {
-                if (!check(TokenType::NUMBER))
-                {
-                    return false;
-                }
-                body = std::make_shared<SettingNode>(setting, static_cast<int>(num()));
-                advance();
-            }
-            else if (type == "float")
-            {
-                if (!check(TokenType::NUMBER))
-                {
-                    return false;
-                }
-                body = std::make_shared<SettingNode>(setting, num());
-                advance();
-            }
-            else if (type == "complex")
-            {
-                std::optional value{complex_number()};
-                if (!value)
-                {
-                    return false;
-                }
-                body = std::make_shared<SettingNode>(setting, value.value());
-            }
+            value = param_default(type);
         }
+        if (!value)
+        {
+            return false;
+        }
+        body = value.value();
         advance();
     }
 
