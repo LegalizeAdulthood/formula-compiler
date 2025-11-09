@@ -39,6 +39,7 @@ private:
     bool builtin_section();
     std::optional<double> signed_number();
     bool default_number_setting(std::string name);
+    std::optional<Complex> complex_number();
     bool default_complex_setting(std::string name);
     bool default_string_setting(std::string name);
     bool default_method_setting();
@@ -187,41 +188,57 @@ bool Descent::default_number_setting(const std::string name)
     return true;
 }
 
-bool Descent::default_complex_setting(const std::string name)
+std::optional<Complex> Descent::complex_number()
 {
+    if (std::optional value{signed_number()})
+    {
+        return Complex{value.value(), 0.0};
+    }
+
     if (!check(TokenType::LEFT_PAREN))
     {
-        return false;
+        return {};
     }
     advance();
 
     const std::optional real{signed_number()};
     if (!real)
     {
-        return false;
+        return {};
     }
     advance();
 
     if (!check(TokenType::COMMA))
     {
-        return false;
+        return {};
     }
     advance();
 
     const std::optional imag{signed_number()};
     if (!imag)
     {
-        return false;
+        return {};
     }
     advance();
 
     if (!check(TokenType::RIGHT_PAREN))
     {
-        return false;
+        return {};
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
+    return Complex{real.value(), imag.value()};
+}
+
+bool Descent::default_complex_setting(const std::string name)
+{
+    std::optional value{complex_number()};
+    if (!value)
+    {
+        return false;
+    }
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, value.value());
     return true;
 }
 
@@ -362,14 +379,46 @@ bool Descent::default_param_block()
                 return false;
             }
             body = std::make_shared<SettingNode>(setting, str());
+            advance();
         }
         else if (setting == "default")
         {
-            if (!check({TokenType::TRUE, TokenType::FALSE}))
+            if (type == "bool")
             {
-                return false;
+                if (!check({TokenType::TRUE, TokenType::FALSE}))
+                {
+                    return false;
+                }
+                body = std::make_shared<SettingNode>(setting, check(TokenType::TRUE));
+                advance();
             }
-            body= std::make_shared<SettingNode>(setting, check(TokenType::TRUE));
+            else if (type == "int")
+            {
+                if (!check(TokenType::NUMBER))
+                {
+                    return false;
+                }
+                body = std::make_shared<SettingNode>(setting, static_cast<int>(num()));
+                advance();
+            }
+            else if (type == "float")
+            {
+                if (!check(TokenType::NUMBER))
+                {
+                    return false;
+                }
+                body = std::make_shared<SettingNode>(setting, num());
+                advance();
+            }
+            else if (type == "complex")
+            {
+                std::optional value{complex_number()};
+                if (!value)
+                {
+                    return false;
+                }
+                body = std::make_shared<SettingNode>(setting, value.value());
+            }
         }
         advance();
     }

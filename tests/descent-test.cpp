@@ -612,12 +612,33 @@ static DefaultSectionParam s_default_values[]{
         "endparam",
         "param_block:foo {\n"
         "}\n"},
-    {"defaultParamBlock",
+    {"defaultBoolParamBlock",
         "default:bool param foo\n"
         "default=true\n"
         "endparam",
         "param_block:bool,foo {\n"
         "setting:default=true\n"
+        "}\n"},
+    {"defaultIntParamBlock",
+        "default:int param foo\n"
+        "default=1964\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:default=1964\n"
+        "}\n"},
+    {"defaultFloatParamBlock",
+        "default:float param foo\n"
+        "default=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:default=4.5\n"
+        "}\n"},
+    {"defaultComplexParamBlock",
+        "default:complex param foo\n"
+        "default=(4,5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:default=(4,5)\n"
         "}\n"},
 };
 
