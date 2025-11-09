@@ -664,28 +664,16 @@ bool Descent::switch_section()
     }
 
     // dest_param = builtin
+    const std::string value{str()};
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
     {
-        std::string value = str();
-        advance();
-
-        if (!check(TokenType::TERMINATOR))
-        {
-            return false;
-        }
-        advance();
-
-        m_ast->type_switch = std::make_shared<SettingNode>(name, SwitchParam{value});
-        return true;
     }
-
     // dest_param = param
-    if (!check(TokenType::IDENTIFIER))
+    else if (!check(TokenType::IDENTIFIER))
     {
         return false;
     }
-    const std::string value{str()};
     advance();
 
     if (!check(TokenType::TERMINATOR))
