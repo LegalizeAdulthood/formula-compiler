@@ -43,6 +43,7 @@ private:
     bool default_string_setting(std::string name);
     bool default_method_setting();
     bool default_perturb_setting(std::string name);
+    bool default_precision_setting(std::string name);
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -265,6 +266,18 @@ bool Descent::default_perturb_setting(const std::string name)
     return true;
 }
 
+bool Descent::default_precision_setting(const std::string name)
+{
+    Expr expr = conjunctive();
+    if (!expr)
+    {
+        return false;
+    }
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, expr);
+    return true;
+}
+
 bool Descent::default_section()
 {
     const bool is_center{check(TokenType::CENTER)};
@@ -309,13 +322,7 @@ bool Descent::default_section()
 
     if (name == "precision")
     {
-        if (!check(TokenType::NUMBER))
-        {
-            return false;
-        }
-
-        m_ast->defaults = std::make_shared<SettingNode>(name, num());
-        return true;
+        return default_precision_setting(name);
     }
 
     return false;
@@ -895,7 +902,6 @@ Expr Descent::builtin_function()
         advance(); // consume the function name
         if (Expr args = function_call())
         {
-            advance(); // consume cosing paren
             return std::make_shared<FunctionCallNode>(name, args);
         }
     }

@@ -552,10 +552,21 @@ static DefaultSectionParam s_default_values[]{
         "binary_op:==\n"
         "identifier:power\n"
         "number:4\n"
-        "}\n"},                                                                //
-    {"precisionNumber", "default:precision=30", "setting:precision=30\n"}, //
-    //{"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
-    //    "setting:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //
+        "}\n"}, //
+    {"precisionNumber", "default:precision=30",
+        "setting:precision={\n"
+        "number:30\n"
+        "}\n"}, //
+    {"precisionExpr", "default:precision=log(fracmagn) / log(10)",
+        "setting:precision={\n"
+        "binary_op:/\n"
+        "function_call:log(\n"
+        "identifier:fracmagn\n"
+        ")\n"
+        "function_call:log(\n"
+        "number:10\n"
+        ")\n"
+        "}\n"}, //
     //{"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
     //{"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
     //{"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
