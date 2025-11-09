@@ -468,7 +468,7 @@ static SingleSectionParam s_single_sections[]{
     {"perturbInitSection", "perturbinit:\n1", Section::PERTURB_INITIALIZE},
     {"perturbLoopSection", "perturbloop:\n1", Section::PERTURB_ITERATE},
     {"defaultSection", "default:\nangle=0", Section::DEFAULT},
-    {"switchSection", "switch:\ntype=\"Julia\"", Section::SWITCH},
+    {"switchSection", "switch:\ntype=\"Julia\"\n", Section::SWITCH},
 };
 
 class DSingleSections : public TestWithParam<SingleSectionParam>
@@ -767,6 +767,18 @@ TEST_P(DDefaultSection, parse)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestDescentParse, DDefaultSection, ValuesIn(s_default_values));
+
+
+TEST(TestDescentParse, switchParameter)
+{
+    const FormulaPtr result{create_descent_formula("switch:\n"
+                                                   "seed=pixel\n")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &section{result->get_section(Section::SWITCH)};
+    ASSERT_TRUE(section);
+    EXPECT_EQ("setting:seed=pixel\n", to_string(section));
+}
 
 // struct InvalidSectionParam
 //{

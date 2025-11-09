@@ -291,10 +291,16 @@ struct EnumName
     std::string name;
 };
 
+struct SwitchParam
+{
+    std::string src;
+};
+
 class SettingNode : public Node
 {
 public:
-    using ValueType = std::variant<double, Complex, std::string, int, EnumName, bool, Expr, std::vector<std::string>>;
+    using ValueType = std::variant<double, Complex, std::string, int, //
+        EnumName, bool, Expr, std::vector<std::string>, SwitchParam>;
 
     SettingNode(std::string key, int value) :
         m_key(std::move(key)),
@@ -332,6 +338,11 @@ public:
     {
     }
     SettingNode(std::string key, std::vector<std::string> value) :
+        m_key(std::move(key)),
+        m_value(std::move(value))
+    {
+    }
+    SettingNode(std::string key, SwitchParam value) :
         m_key(std::move(key)),
         m_value(std::move(value))
     {

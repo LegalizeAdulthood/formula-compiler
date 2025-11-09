@@ -23,6 +23,14 @@ namespace formula::descent
 namespace
 {
 
+constexpr TokenType s_builtin_vars[]{
+    TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
+    TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
+    TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
+    TokenType::SCREEN_PIXEL, TokenType::WHITE_SQUARE, TokenType::IS_MAND,    //
+    TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
+};
+
 class Descent
 {
 public:
@@ -642,12 +650,52 @@ bool Descent::switch_section()
         {
             return false;
         }
-
-        m_ast->type_switch = std::make_shared<SettingNode>("type", str());
+        const std::string value{str()};
         advance();
+
+        if (!check(TokenType::TERMINATOR))
+        {
+            return false;
+        }
+        advance();
+
+        m_ast->type_switch = std::make_shared<SettingNode>(name, value);
         return true;
     }
-    return false;
+
+    // dest_param = builtin
+    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
+        it != std::end(s_builtin_vars))
+    {
+        std::string value = str();
+        advance();
+
+        if (!check(TokenType::TERMINATOR))
+        {
+            return false;
+        }
+        advance();
+
+        m_ast->type_switch = std::make_shared<SettingNode>(name, SwitchParam{value});
+        return true;
+    }
+
+    // dest_param = param
+    if (!check(TokenType::IDENTIFIER))
+    {
+        return false;
+    }
+    const std::string value{str()};
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
+    m_ast->type_switch = std::make_shared<SettingNode>(name, SwitchParam{value});
+    return true;
 }
 
 bool Descent::section_formula()
@@ -1192,14 +1240,6 @@ Expr Descent::power()
 
     return left;
 }
-
-constexpr TokenType s_builtin_vars[]{
-    TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
-    TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
-    TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
-    TokenType::SCREEN_PIXEL, TokenType::WHITE_SQUARE, TokenType::IS_MAND,    //
-    TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
-};
 
 Expr Descent::builtin_var()
 {
