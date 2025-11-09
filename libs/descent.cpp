@@ -49,7 +49,7 @@ private:
     bool default_render_setting();
     std::optional<Expr> param_string(const std::string &name);
     std::optional<Expr> param_default(const std::string &type);
-    std::optional<Expr> param_enabled();
+    std::optional<Expr> param_bool_expr(const std::string &name);
     std::optional<Expr> param_enum();
     std::optional<Expr> param_bool(const std::string &name);
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
@@ -391,14 +391,14 @@ std::optional<Expr> Descent::param_default(const std::string &type)
     return {};
 }
 
-std::optional<Expr> Descent::param_enabled()
+std::optional<Expr> Descent::param_bool_expr(const std::string &name)
 {
     Expr expr = conjunctive();
     if (!expr)
     {
         return {};
     }
-    return std::make_shared<SettingNode>("enabled", expr);
+    return std::make_shared<SettingNode>(name, expr);
 }
 
 std::optional<Expr> Descent::param_enum()
@@ -508,9 +508,9 @@ bool Descent::default_param_block()
         {
             value = param_default(type);
         }
-        else if (setting == "enabled")
+        else if (setting == "enabled" || setting == "visible")
         {
-            value = param_enabled();
+            value = param_bool_expr(setting);
         }
         else if (setting == "enum")
         {

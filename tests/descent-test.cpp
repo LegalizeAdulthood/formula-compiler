@@ -742,6 +742,21 @@ static DefaultSectionParam s_default_values[]{
         "param_block:bool,foo {\n"
         "setting:text=\"Well hello there, pardner.\"\n"
         "}\n"},
+    {"visibleParamBlock",
+        "default:bool param foo\n"
+        "visible=power == 2 || power == 3\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:visible={\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "}\n"
+        "}\n"},
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>
