@@ -45,6 +45,7 @@ private:
     bool default_perturb_setting();
     bool default_precision_setting();
     bool default_rating_setting();
+    bool default_render_setting();
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -296,6 +297,19 @@ bool Descent::default_rating_setting()
     return false;
 }
 
+bool Descent::default_render_setting()
+{
+    if (!check(TokenType::TRUE) && !check(TokenType::FALSE))
+    {
+        return false;
+    }
+
+    const bool value{check(TokenType::TRUE)};
+    advance();
+    m_ast->defaults = std::make_shared<SettingNode>("render", value);
+    return true;
+}
+
 bool Descent::default_section()
 {
     const bool is_center{check(TokenType::CENTER)};
@@ -346,6 +360,11 @@ bool Descent::default_section()
     if (name == "rating")
     {
         return default_rating_setting();
+    }
+
+    if (name == "render")
+    {
+        return default_render_setting();
     }
 
     return false;
