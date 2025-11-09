@@ -922,61 +922,85 @@ TEST(TestDescentParse, builtinSections)
     EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
-// struct BuiltinDisallowsParam
-//{
-//     std::string_view name;
-//     std::string_view text;
-// };
-//
-// inline void PrintTo(const BuiltinDisallowsParam &param, std::ostream *os)
-//{
-//     *os << param.name;
-// }
-//
-// static BuiltinDisallowsParam s_builtin_disallows[]{
-//     {"global",
-//         "global:1\n"
-//         "builtin:type=1\n"
-//         "perturbinit:1\n"
-//         "perturbloop:1\n"
-//         "default:angle=0\n"
-//         "switch:1\n"},
-//     {"init",
-//         "builtin:type=1\n"
-//         "init:1\n"
-//         "perturbinit:1\n"
-//         "perturbloop:1\n"
-//         "default:angle=0\n"
-//         "switch:1\n"},
-//     {"loop",
-//         "builtin:type=1\n"
-//         "loop:1\n"
-//         "perturbinit:1\n"
-//         "perturbloop:1\n"
-//         "default:angle=0\n"
-//         "switch:1\n"},
-//     {"bailout",
-//         "builtin:type=1\n"
-//         "bailout:1\n"
-//         "perturbinit:1\n"
-//         "perturbloop:1\n"
-//         "default:angle=0\n"
-//         "switch:1\n"},
-// };
-//
-// class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
-//{
-// };
-//
-// TEST_P(BuiltinDisallows, parse)
-//{
-//     const BuiltinDisallowsParam &param{GetParam()};
-//
-//     const FormulaPtr result{create_descent_formula(param.text)};
-//
-//     ASSERT_FALSE(result);
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestDescentParse, BuiltinDisallows, ValuesIn(s_builtin_disallows));
+ struct DBuiltinDisallowsParam
+{
+    std::string_view name;
+    std::string_view text;
+};
+
+inline void PrintTo(const DBuiltinDisallowsParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+static DBuiltinDisallowsParam s_builtin_disallows[]{
+    {"global",
+        "global:\n"
+        "1\n"
+        "builtin:\n"
+        "type=1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
+    {"init",
+        "builtin:\n"
+        "type=1\n"
+        "init:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
+    {"loop",
+        "builtin:\n"
+        "type=1\n"
+        "loop:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
+    {"bailout",
+        "builtin:\n"
+        "type=1\n"
+        "bailout:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
+};
+
+class DBuiltinDisallows : public TestWithParam<DBuiltinDisallowsParam>
+{
+};
+
+TEST_P(DBuiltinDisallows, parse)
+{
+    const DBuiltinDisallowsParam &param{GetParam()};
+
+    const FormulaPtr result{create_descent_formula(param.text)};
+
+    ASSERT_FALSE(result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DBuiltinDisallows, ValuesIn(s_builtin_disallows));
 
 } // namespace formula::test
