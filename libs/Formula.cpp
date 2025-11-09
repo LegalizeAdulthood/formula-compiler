@@ -318,7 +318,7 @@ FormulaPtr create_formula(std::string_view text)
 
 FormulaPtr create_descent_formula(std::string_view text)
 {
-    if (FormulaSectionsPtr sections = descent::parse(text); valid_sections(sections))
+    if (FormulaSectionsPtr sections = descent::parse(text))
     {
         return std::make_shared<ParsedFormula>(sections);
     }

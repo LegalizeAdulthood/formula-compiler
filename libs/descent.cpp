@@ -776,9 +776,10 @@ std::optional<bool> Descent::section_formula()
 
         if (section == TokenType::BUILTIN)
         {
-            if (m_ast->initialize || m_ast->iterate || m_ast->bailout //
-                || m_ast->perturb_initialize || m_ast->perturb_iterate //
-                || m_ast->defaults || m_ast->type_switch //
+            if (m_ast->per_image                                         //
+                || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                || m_ast->perturb_initialize || m_ast->perturb_iterate   //
+                || m_ast->defaults || m_ast->type_switch                 //
                 || !builtin_section())
             {
                 return false;

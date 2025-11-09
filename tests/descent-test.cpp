@@ -938,53 +938,21 @@ static DBuiltinDisallowsParam s_builtin_disallows[]{
         "global:\n"
         "1\n"
         "builtin:\n"
-        "type=1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
-        "1\n"},
+        "type=1\n"},
     {"init",
         "builtin:\n"
         "type=1\n"
         "init:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
     {"loop",
         "builtin:\n"
         "type=1\n"
         "loop:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
     {"bailout",
         "builtin:\n"
         "type=1\n"
         "bailout:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
 };
 
