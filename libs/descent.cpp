@@ -46,6 +46,7 @@ private:
     bool default_precision_setting();
     bool default_rating_setting();
     bool default_render_setting();
+    bool default_param_block();
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -69,6 +70,10 @@ private:
     void advance();
     bool match(TokenType type);
     bool check(TokenType type) const;
+    bool check(std::initializer_list<TokenType> types) const
+    {
+        return std::any_of(types.begin(), types.end(), [this](TokenType t) { return check(t); });
+    }
     bool is_user_identifier(const Expr &expr) const;
     void skip_newlines();
     bool require_newlines();
@@ -152,7 +157,7 @@ std::string_view s_default_number_settings[]{
 
 std::optional<double> Descent::signed_number()
 {
-    const bool prefix_op = check(TokenType::PLUS) || check(TokenType::MINUS);
+    const bool prefix_op = check({TokenType::PLUS, TokenType::MINUS});
     if (!(check(TokenType::NUMBER) || prefix_op))
     {
         return {};
@@ -249,7 +254,7 @@ bool Descent::default_method_setting()
 
 bool Descent::default_perturb_setting()
 {
-    if (check(TokenType::TRUE) || check(TokenType::FALSE))
+    if (check({TokenType::TRUE, TokenType::FALSE}))
     {
         const bool value{check(TokenType::TRUE)};
         advance();
@@ -299,7 +304,7 @@ bool Descent::default_rating_setting()
 
 bool Descent::default_render_setting()
 {
-    if (!check(TokenType::TRUE) && !check(TokenType::FALSE))
+    if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
         return false;
     }
@@ -310,8 +315,59 @@ bool Descent::default_render_setting()
     return true;
 }
 
+bool Descent::default_param_block()
+{
+    const std::string type{str()};
+    advance();
+
+    if (!check(TokenType::PARAM))
+    {
+        return false;
+    }
+    advance();
+
+    if (!check(TokenType::IDENTIFIER))
+    {
+        return false;
+    }
+    const std::string name{str()};
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
+    Expr body;
+    if (!check(TokenType::END_PARAM))
+    {
+        body = sequence();
+        if (!body)
+        {
+            return false;
+        }
+    }
+
+    if (!check(TokenType::END_PARAM))
+    {
+        return false;
+    }
+    advance();
+
+    m_ast->defaults = std::make_shared<ParamBlockNode>(type, name, body);
+    return true;
+}
+
 bool Descent::default_section()
 {
+    if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,    //
+            TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
+            TokenType::TYPE_COLOR}))
+    {
+        return default_param_block();
+    }
+
     const bool is_center{check(TokenType::CENTER)};
     if (!(check(TokenType::IDENTIFIER) || is_center))
     {
@@ -548,9 +604,9 @@ Expr Descent::sequence()
     seq.push_back(first);
 
     // Parse sequence of statements separated by COMMA or TERMINATOR (eol)
-    while (check(TokenType::COMMA) || check(TokenType::TERMINATOR))
+    while (check({TokenType::COMMA, TokenType::TERMINATOR}))
     {
-        while (check(TokenType::COMMA) || check(TokenType::TERMINATOR))
+        while (check({TokenType::COMMA, TokenType::TERMINATOR}))
         {
             advance();
         }
@@ -669,7 +725,7 @@ Expr Descent::block()
 {
     // A block can be empty or contain statements
     // Check if we're at endif, else, or elseif - that means empty block
-    if (check(TokenType::END_IF) || check(TokenType::ELSE) || check(TokenType::ELSE_IF))
+    if (check({TokenType::END_IF, TokenType::ELSE, TokenType::ELSE_IF}))
     {
         return nullptr; // Empty block
     }
@@ -677,7 +733,7 @@ Expr Descent::block()
     // Parse statements in the block
     std::vector<Expr> statements;
 
-    while (!check(TokenType::END_IF) && !check(TokenType::ELSE) && !check(TokenType::ELSE_IF))
+    while (!check({TokenType::END_IF, TokenType::ELSE, TokenType::ELSE_IF}))
     {
         Expr stmt = statement();
         if (!stmt)
@@ -766,7 +822,7 @@ Expr Descent::conjunctive()
 
     // Handle logical operators: && and ||
     // Left-associative
-    while (left && (check(TokenType::LOGICAL_AND) || check(TokenType::LOGICAL_OR)))
+    while (left && check({TokenType::LOGICAL_AND, TokenType::LOGICAL_OR}))
     {
         std::string op;
         if (check(TokenType::LOGICAL_AND))
@@ -797,9 +853,9 @@ Expr Descent::comparative()
     Expr left = assignment();
 
     while (left &&
-        (check(TokenType::LESS_THAN) || check(TokenType::LESS_EQUAL)             //
-            || check(TokenType::GREATER_THAN) || check(TokenType::GREATER_EQUAL) //
-            || check(TokenType::EQUAL) || check(TokenType::NOT_EQUAL)))
+        check({TokenType::LESS_THAN, TokenType::LESS_EQUAL,     //
+            TokenType::GREATER_THAN, TokenType::GREATER_EQUAL, //
+            TokenType::EQUAL, TokenType::NOT_EQUAL}))
     {
         std::string op;
         if (check(TokenType::LESS_THAN))
@@ -832,7 +888,7 @@ Expr Descent::additive()
 {
     Expr left = term();
 
-    while (left && (check(TokenType::PLUS) || check(TokenType::MINUS)))
+    while (left && check({TokenType::PLUS, TokenType::MINUS}))
     {
         char op = (check(TokenType::PLUS)) ? '+' : '-';
         advance(); // consume operator
@@ -851,9 +907,9 @@ Expr Descent::term()
 {
     Expr left = unary();
 
-    while (left && (check(TokenType::MULTIPLY) || check(TokenType::DIVIDE)))
+    while (left && check({TokenType::MULTIPLY, TokenType::DIVIDE}))
     {
-        char op = (check(TokenType::MULTIPLY)) ? '*' : '/';
+        char op = check(TokenType::MULTIPLY) ? '*' : '/';
         advance(); // consume operator
         Expr right = unary();
         if (!right)
@@ -868,9 +924,9 @@ Expr Descent::term()
 
 Expr Descent::unary()
 {
-    if (check(TokenType::PLUS) || check(TokenType::MINUS))
+    if (check({TokenType::PLUS, TokenType::MINUS}))
     {
-        char op = (check(TokenType::PLUS)) ? '+' : '-';
+        char op = check(TokenType::PLUS) ? '+' : '-';
         advance();              // consume operator
         Expr operand = unary(); // Allow chaining: --1
         if (!operand)

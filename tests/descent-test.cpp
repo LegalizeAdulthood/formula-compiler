@@ -575,11 +575,31 @@ static DefaultSectionParam s_default_values[]{
     {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //
     {"stretch", "default:stretch=4.5", "setting:stretch=4.5\n"},                                      //
     {"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
-    //{"boolParamBlock",
-    //    "default:bool param foo\n"
-    //    "endparam",
-    //    "param_block:bool,foo {\n"
-    //    "}\n"}, //
+    {"emptyBoolParamBlock",
+        "default:bool param foo\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "}\n"}, //
+    {"emptyIntParamBlock",
+        "default:int param foo\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "}\n"}, //
+    {"emptyFloatParamBlock",
+        "default:float param foo\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "}\n"}, //
+    {"emptyComplexParamBlock",
+        "default:complex param foo\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "}\n"}, //
+    {"emptyColorParamBlock",
+        "default:color param foo\n"
+        "endparam",
+        "param_block:color,foo {\n"
+        "}\n"}, //
 };
 
 class DDefaultSection : public TestWithParam<DefaultSectionParam>
