@@ -567,9 +567,9 @@ static DefaultSectionParam s_default_values[]{
         "number:10\n"
         ")\n"
         "}\n"}, //
-    //{"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
-    //{"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
-    //{"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
+    {"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
+    {"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
+    {"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
     //{"renderTrue", "default:render=true", "setting:render=true\n"},                                   //
     //{"renderFalse", "default:render=false", "setting:render=false\n"},                                //
     {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //

@@ -42,8 +42,9 @@ private:
     bool default_complex_setting(std::string name);
     bool default_string_setting(std::string name);
     bool default_method_setting();
-    bool default_perturb_setting(std::string name);
-    bool default_precision_setting(std::string name);
+    bool default_perturb_setting();
+    bool default_precision_setting();
+    bool default_rating_setting();
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -245,14 +246,14 @@ bool Descent::default_method_setting()
     return true;
 }
 
-bool Descent::default_perturb_setting(const std::string name)
+bool Descent::default_perturb_setting()
 {
     if (check(TokenType::TRUE) || check(TokenType::FALSE))
     {
         const bool value{check(TokenType::TRUE)};
         advance();
 
-        m_ast->defaults = std::make_shared<SettingNode>(name, value);
+        m_ast->defaults = std::make_shared<SettingNode>("perturb", value);
         return true;
     }
 
@@ -262,11 +263,11 @@ bool Descent::default_perturb_setting(const std::string name)
         return false;
     }
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, expr);
+    m_ast->defaults = std::make_shared<SettingNode>("perturb", expr);
     return true;
 }
 
-bool Descent::default_precision_setting(const std::string name)
+bool Descent::default_precision_setting()
 {
     Expr expr = conjunctive();
     if (!expr)
@@ -274,8 +275,25 @@ bool Descent::default_precision_setting(const std::string name)
         return false;
     }
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, expr);
+    m_ast->defaults = std::make_shared<SettingNode>("precision", expr);
     return true;
+}
+
+bool Descent::default_rating_setting()
+{
+    if (!check(TokenType::IDENTIFIER))
+    {
+        return false;
+    }
+
+    if (str() == "recommended" || str() == "average" || str() == "notRecommended")
+    {
+        const std::string rating{str()};
+        advance(); // consume rating value
+        m_ast->defaults = std::make_shared<SettingNode>("rating", EnumName{rating});
+        return true;
+    }
+    return false;
 }
 
 bool Descent::default_section()
@@ -317,12 +335,17 @@ bool Descent::default_section()
 
     if (name == "perturb")
     {
-        return default_perturb_setting(name);
+        return default_perturb_setting();
     }
 
     if (name == "precision")
     {
-        return default_precision_setting(name);
+        return default_precision_setting();
+    }
+
+    if (name == "rating")
+    {
+        return default_rating_setting();
     }
 
     return false;
