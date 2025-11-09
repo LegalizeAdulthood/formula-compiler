@@ -164,6 +164,12 @@ bool Descent::builtin_section()
         return false;
     }
 
+    if (!check(TokenType::TERMINATOR))
+    {
+        return false;
+    }
+    advance();
+
     m_ast->builtin = std::make_shared<SettingNode>("type", static_cast<int>(value));
     return true;
 }

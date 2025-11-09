@@ -490,7 +490,7 @@ INSTANTIATE_TEST_SUITE_P(TestDescentParse, DSingleSections, ValuesIn(s_single_se
 TEST(TestDescentParse, builtinSectionMandelbrot)
 {
     const FormulaPtr result{create_descent_formula("builtin:\n"
-                                                   "type=1")};
+                                                   "type=1\n")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -501,7 +501,7 @@ TEST(TestDescentParse, builtinSectionMandelbrot)
 TEST(TestDescentParse, builtinSectionJulia)
 {
     const FormulaPtr result{create_descent_formula("builtin:\n"
-                                                   "type=2")};
+                                                   "type=2\n")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -895,28 +895,33 @@ INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_i
     EXPECT_TRUE(result->get_section(Section::SWITCH));
 }
 
-// TEST(TestDescentParse, builtinSections)
-//{
-//     const FormulaPtr result{create_descent_formula("builtin:type=1\n"
-//                                   "perturbinit:1\n"
-//                                   "perturbloop:1\n"
-//                                   "default:angle=0\n"
-//                                   "switch:1\n")};
-//
-//     ASSERT_TRUE(result);
-//     EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
-//     ast::Expr builtin = result->get_section(Section::BUILTIN);
-//     EXPECT_TRUE(builtin);
-//     EXPECT_EQ("setting:type=1\n", to_string(builtin));
-//     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-//     EXPECT_FALSE(result->get_section(Section::ITERATE));
-//     EXPECT_FALSE(result->get_section(Section::BAILOUT));
-//     EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
-//     EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
-//     EXPECT_TRUE(result->get_section(Section::DEFAULT));
-//     EXPECT_TRUE(result->get_section(Section::SWITCH));
-// }
-//
+TEST(TestDescentParse, builtinSections)
+{
+    const FormulaPtr result{create_descent_formula("builtin:\n"
+                                                   "type=1\n"
+                                                   "perturbinit:\n"
+                                                   "1\n"
+                                                   "perturbloop:\n"
+                                                   "1\n"
+                                                   "default:\n"
+                                                   "angle=0\n"
+                                                   "switch:\n"
+                                                   "type=\"Julia\"\n")};
+
+    ASSERT_TRUE(result);
+    EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
+    ast::Expr builtin = result->get_section(Section::BUILTIN);
+    EXPECT_TRUE(builtin);
+    EXPECT_EQ("setting:type=1\n", to_string(builtin));
+    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
+    EXPECT_FALSE(result->get_section(Section::ITERATE));
+    EXPECT_FALSE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
+    EXPECT_TRUE(result->get_section(Section::DEFAULT));
+    EXPECT_TRUE(result->get_section(Section::SWITCH));
+}
+
 // struct BuiltinDisallowsParam
 //{
 //     std::string_view name;
