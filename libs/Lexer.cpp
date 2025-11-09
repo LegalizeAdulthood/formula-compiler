@@ -60,6 +60,12 @@ Token Lexer::next_token()
         return lex_identifier();
     }
 
+    // Check for quoted strings
+    if (ch == '"')
+    {
+        return lex_string();
+    }
+
     // Check for operators
     size_t start = m_position;
     advance();
@@ -453,6 +459,73 @@ Token Lexer::lex_identifier()
 
     // Not a reserved word, return as identifier
     return {TokenType::IDENTIFIER, identifier, start, length};
+}
+
+Token Lexer::lex_string()
+{
+    size_t start = m_position;
+    std::string str_value;
+
+    // Skip opening quote
+    advance();
+
+    while (!at_end())
+    {
+        char ch = current_char();
+
+        if (ch == '\\')
+        {
+            // Escape sequence
+            advance();
+            if (at_end())
+            {
+                // Unterminated string (backslash at end)
+                size_t length = m_position - start;
+                return {TokenType::INVALID, start, length};
+            }
+
+            char escaped_ch = current_char();
+            if (escaped_ch == '"')
+            {
+                // Escaped quote
+                str_value.append(1, '"');
+            }
+            else if (escaped_ch == '\\')
+            {
+                // Escaped backslash
+                str_value.append(1, '\\');
+            }
+            else
+            {
+                // Unknown escape sequence - treat as literal
+                str_value.append(1, escaped_ch);
+            }
+            advance();
+        }
+        else if (ch == '"')
+        {
+            // End of string
+            advance(); // Skip closing quote
+            size_t length = m_position - start;
+            return {TokenType::STRING, str_value, start, length};
+        }
+        else if (ch == '\n')
+        {
+            // Unterminated string (newline before closing quote)
+            size_t length = m_position - start;
+            return {TokenType::INVALID, start, length};
+        }
+        else
+        {
+            // Regular character
+            str_value += ch;
+            advance();
+        }
+    }
+
+    // Reached end of input without closing quote
+    size_t length = m_position - start;
+    return {TokenType::INVALID, start, length};
 }
 
 } // namespace formula

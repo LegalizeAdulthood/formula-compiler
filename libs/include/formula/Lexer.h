@@ -107,8 +107,9 @@ enum class TokenType
     ONE,
     ZERO,
     INVALID,
-    TRUE,  // boolean value
-    FALSE, // boolean value
+    TRUE,   // boolean value
+    FALSE,  // boolean value
+    STRING, // quoted string
 };
 
 struct Token
@@ -168,6 +169,7 @@ private:
     Token lex_number();
     bool is_number_start() const;
     Token lex_identifier();
+    Token lex_string();
     bool is_identifier_start() const;
     bool is_identifier_continue(char c) const;
     char current_char() const;

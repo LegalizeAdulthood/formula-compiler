@@ -205,6 +205,74 @@ TEST(TestLexer, parenthesesWithIdentifiers)
     EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[3].type);
 }
 
+TEST(TestLexer, stringWithEscapedQuotes)
+{
+    Lexer lexer(R"text("He said \"Hello\" to me")text");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(R"text(He said "Hello" to me)text", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, stringWithMultipleEscapedQuotes)
+{
+    Lexer lexer(R"text("She said \"Hello, Doctor Frankenstein\" and he laughed.")text");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(R"text(She said "Hello, Doctor Frankenstein" and he laughed.)text", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, emptyString)
+{
+    Lexer lexer(R"text("")text");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ("", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, stringUnterminatedInvalid)
+{
+    Lexer lexer(R"text("unterminated)text");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::INVALID, token.type);
+}
+
+TEST(TestLexer, stringWithNewlineInvalid)
+{
+    Lexer lexer("\"line1\nline2\"");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::INVALID, token.type);
+}
+
+TEST(TestLexer, stringWithEscapedChar)
+{
+    Lexer lexer(R"text("line1\nline2")text");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(R"text(line1nline2)text", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, stringWithEscapedBackslash)
+{
+    Lexer lexer(R"("path\\to\\file")");
+
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(R"(path\to\file)", std::get<std::string>(token.value));
+}
+
 // Parameterized test for all builtin variables
 struct TextTokenParam
 {
@@ -367,6 +435,7 @@ static TextTokenParam s_params[]{
     {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
+    {"string", R"text("Some text.")text", TokenType::STRING},                 //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));
