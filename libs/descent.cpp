@@ -40,6 +40,7 @@ private:
     std::optional<double> signed_number();
     bool default_number_setting(std::string name);
     bool default_complex_setting(std::string name);
+    bool default_string_setting(std::string name);
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -213,6 +214,16 @@ bool Descent::default_complex_setting(const std::string name)
     m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
     return true;
 }
+bool Descent::default_string_setting(const std::string name)
+{
+    if (!check(TokenType::STRING))
+    {
+        return false;
+    }
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, str());
+    return true;
+}
 bool Descent::default_section()
 {
     const bool is_center{check(TokenType::CENTER)};
@@ -242,12 +253,22 @@ bool Descent::default_section()
 
     if (name == "helpfile" || name == "helptopic")
     {
-        if (!check(TokenType::STRING))
+        return default_string_setting(name);
+    }
+
+    if (name == "method")
+    {
+        if (!check(TokenType::IDENTIFIER))
         {
             return false;
         }
-
-        m_ast->defaults = std::make_shared<SettingNode>(name, str());
+        const std::string method{str()};
+        if (method != "guessing" && method != "multipass" && method != "onepass")
+        {
+            return false;
+        }
+        advance(); // consume method value
+        m_ast->defaults = std::make_shared<SettingNode>("method", EnumName{method});
         return true;
     }
 

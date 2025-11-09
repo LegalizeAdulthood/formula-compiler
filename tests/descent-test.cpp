@@ -528,11 +528,11 @@ static DefaultSectionParam s_default_values[]{
     {"helpTopic", R"(default:helptopic="DivideBrot5")",
         R"(setting:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},          //
-    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"}, //
-    //{"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
-    //{"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
-    //{"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //
+    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},                            //
+    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"},                   //
+    {"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
+    {"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
+    {"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //
     {"periodicity0", "default:periodicity=0", "setting:periodicity=0\n"},          //
     {"periodicity1", "default:periodicity=1", "setting:periodicity=1\n"},          //
     {"periodicity2", "default:periodicity=2", "setting:periodicity=2\n"},          //
