@@ -10,6 +10,7 @@
 #include <array>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -36,6 +37,7 @@ public:
 
 private:
     bool builtin_section();
+    std::optional<double> signed_number();
     bool default_section();
     bool section_formula();
     Expr sequence();
@@ -136,25 +138,16 @@ bool Descent::builtin_section()
     return true;
 }
 
-bool Descent::default_section()
+std::string_view s_default_number_settings[]{
+    "angle", "magn", "maxiter", "periodicity", "skew", "stretch", //
+};
+
+std::optional<double> Descent::signed_number()
 {
-    if (!check(TokenType::IDENTIFIER))
-    {
-        return false;
-    }
-
-    const std::string name{str()};
-    advance(); // consume setting name
-    if (!check(TokenType::ASSIGN))
-    {
-        return false;
-    }
-
-    advance(); // consume assignment operator
     const bool prefix_op = check(TokenType::PLUS) || check(TokenType::MINUS);
     if (!(check(TokenType::NUMBER) || prefix_op))
     {
-        return false;
+        return {};
     }
     const double sign = !check(TokenType::MINUS) ? 1.0 : -1.0;
     if (prefix_op)
@@ -162,12 +155,80 @@ bool Descent::default_section()
         advance(); // consume prefix sign
         if (!check(TokenType::NUMBER))
         {
-            return false;
+            return {};
         }
     }
 
-    const double value{sign*num()};
-    m_ast->defaults = std::make_shared<SettingNode>(name, value);
+    return {sign * num()};
+}
+
+bool Descent::default_section()
+{
+    const bool is_center{check(TokenType::CENTER)};
+    if (!(check(TokenType::IDENTIFIER) || is_center))
+    {
+        return false;
+    }
+    const std::string name{str()};
+    advance(); // consume setting name
+
+    if (!check(TokenType::ASSIGN))
+    {
+        return false;
+    }
+    advance(); // consume assignment operator
+
+    if (auto it = std::find(std::begin(s_default_number_settings), std::end(s_default_number_settings), name);
+        it != std::end(s_default_number_settings))
+    {
+        const std::optional num{signed_number()};
+        if (!num)
+        {
+            return false;
+        }
+
+        m_ast->defaults = std::make_shared<SettingNode>(name, num.value());
+        return true;
+    }
+
+    if (is_center)
+    {
+        if (!check(TokenType::LEFT_PAREN))
+        {
+            return false;
+        }
+        advance();
+
+        const std::optional real{signed_number()};
+        if (!real)
+        {
+            return false;
+        }
+        advance();
+
+        if (!check(TokenType::COMMA))
+        {
+            return false;
+        }
+        advance();
+
+        const std::optional imag{signed_number()};
+        if (!imag)
+        {
+            return false;
+        }
+        advance();
+
+        if (!check(TokenType::RIGHT_PAREN))
+        {
+            return false;
+        }
+        advance();
+
+        m_ast->defaults = std::make_shared<SettingNode>(name, Complex{real.value(), imag.value()});
+        return true;
+    }
+
     return false;
 }
 

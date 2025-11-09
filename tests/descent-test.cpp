@@ -521,7 +521,7 @@ inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
 
 static DefaultSectionParam s_default_values[]{
     {"angle", "default:angle=0", "setting:angle=0\n"},                  //
-    //{"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
+    {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
     //{"helpFile", R"(default:helpfile="HelpFile.html")",
     //    R"(setting:helpfile="HelpFile.html")"
     //    "\n"},
