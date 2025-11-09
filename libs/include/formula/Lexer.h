@@ -115,6 +115,8 @@ enum class TokenType
     TYPE_FLOAT,   // float type name
     TYPE_COMPLEX, // complex type name
     TYPE_COLOR,   // color type name
+    PARAM,        // parameter block
+    END_PARAM,    //
 };
 
 struct Token

@@ -441,6 +441,8 @@ static TextTokenParam s_params[]{
     {"floatType", "float", TokenType::TYPE_FLOAT},                            //
     {"complexType", "complex", TokenType::TYPE_COMPLEX},                      //
     {"colorType", "color", TokenType::TYPE_COLOR},                            //
+    {"beginParam", "param", TokenType::PARAM},                                //
+    {"endParam", "endparam", TokenType::END_PARAM},                           //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

@@ -382,6 +382,8 @@ Token Lexer::lex_identifier()
         {"elseif", TokenType::ELSE_IF},           //
         {"else", TokenType::ELSE},                //
         {"endif", TokenType::END_IF},             //
+        {"param", TokenType::PARAM},              //
+        {"endparam", TokenType::END_PARAM},       //
         {"false", TokenType::FALSE},              // boolean values
         {"true", TokenType::TRUE},                //
         {"bool", TokenType::TYPE_BOOL},           // type names
