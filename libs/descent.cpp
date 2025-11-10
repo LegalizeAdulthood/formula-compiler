@@ -1365,16 +1365,16 @@ Expr Descent::power()
 {
     Expr left = primary();
 
-    // Right-associative: parse from right to left
-    if (left && check(TokenType::POWER))
+    // Left-associative: parse from left to right using a loop
+    while (left && check(TokenType::POWER))
     {
-        advance();            // consume '^'
-        Expr right = power(); // Recursive call for right associativity
+        advance();              // consume '^'
+        Expr right = primary(); // Parse the next primary, not recursive power()
         if (!right)
         {
             return nullptr;
         }
-        return std::make_shared<BinaryOpNode>(left, '^', right);
+        left = std::make_shared<BinaryOpNode>(left, '^', right);
     }
 
     return left;

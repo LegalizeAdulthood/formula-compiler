@@ -155,7 +155,7 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"numberInIdentifier", "a1"},
     {"underscoreInIdentifier", "A_1"},
     {"power", "2^3"},
-    {"chainedPower", "2^2^2"},
+    {"powerLeftAssociative", "2^2^2"},
     {"assignment", "z=4"},
     {"assignmentLongVariable", "this_is_another4_variable_name2=4"},
     {"modulus", "|-3.0|"},

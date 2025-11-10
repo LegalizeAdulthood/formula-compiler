@@ -36,25 +36,25 @@ class DescentSimpleExpressions : public TestWithParam<ParseParam>
 } // namespace
 
 static ParseParam s_simple_expressions[]{
-    {"constant", "1", "number:1"},                                                        //
-    {"identifier", "z2", "identifier:z2"},                                                //
-    {"parenExpr", "(z)", "identifier:z"},                                                 //
-    {"add", "1+2", "binary_op:+ number:1 number:2"},                                      //
-    {"subtract", "1-2", "binary_op:- number:1 number:2"},                                 //
-    {"multiply", "1*2", "binary_op:* number:1 number:2"},                                 //
-    {"divide", "1/2", "binary_op:/ number:1 number:2"},                                   //
-    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},       //
-    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"}, //
-    {"unaryMinus", "-(1)", "unary_op:- number:1"},                                        //
-    {"unaryPlus", "+(1)", "unary_op:+ number:1"},                                         //
-    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},                   //
-    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},         //
-    {"capitalLetterInIdentifier", "A", "identifier:A"},                                   //
-    {"numberInIdentifier", "a1", "identifier:a1"},                                        //
-    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                  //
-    {"power", "2^3", "binary_op:^ number:2 number:3"},                                    //
-    {"chainedPower", "1^2^3", "binary_op:^ number:1 binary_op:^ number:2 number:3"},      //
-    {"assignment", "z=4", "assignment:z number:4"},                                       //
+    {"constant", "1", "number:1"},                                                           //
+    {"identifier", "z2", "identifier:z2"},                                                   //
+    {"parenExpr", "(z)", "identifier:z"},                                                    //
+    {"add", "1+2", "binary_op:+ number:1 number:2"},                                         //
+    {"subtract", "1-2", "binary_op:- number:1 number:2"},                                    //
+    {"multiply", "1*2", "binary_op:* number:1 number:2"},                                    //
+    {"divide", "1/2", "binary_op:/ number:1 number:2"},                                      //
+    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},          //
+    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"},    //
+    {"unaryMinus", "-(1)", "unary_op:- number:1"},                                           //
+    {"unaryPlus", "+(1)", "unary_op:+ number:1"},                                            //
+    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},                      //
+    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},            //
+    {"capitalLetterInIdentifier", "A", "identifier:A"},                                      //
+    {"numberInIdentifier", "a1", "identifier:a1"},                                           //
+    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                     //
+    {"power", "2^3", "binary_op:^ number:2 number:3"},                                       //
+    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ number:1 number:2 number:3"}, //
+    {"assignment", "z=4", "assignment:z number:4"},                                          //
     {"assignmentLongVariable", "this_is_another4_variable_name2=4",
         "assignment:this_is_another4_variable_name2 number:4"},                                                 //
     {"modulus", "|-3.0|", "unary_op:| unary_op:- number:3"},                                                    //
@@ -786,18 +786,18 @@ TEST(TestDescentParse, switchParameter)
     EXPECT_EQ("setting:seed=pixel\n", to_string(section));
 }
 
-struct DInvalidSectionParam
+struct DInvalidInput
 {
     std::string_view name;
     std::string_view text;
 };
 
-inline void PrintTo(const DInvalidSectionParam &param, std::ostream *os)
+inline void PrintTo(const DInvalidInput &param, std::ostream *os)
 {
     *os << param.name;
 }
 
-static DInvalidSectionParam s_invalid_sections[]{
+static DInvalidInput s_invalid_inputs[]{
     {"unknownSection",
         "global:\n"
         "1\n"
@@ -893,22 +893,24 @@ static DInvalidSectionParam s_invalid_sections[]{
         "foo=foo\n"
         "switch:\n"
         "foo=foo\n"},
+    {"invalidMethod", "default:\n"
+        "method=junk\n"},
 };
 
-class DInvalidSectionOrdering : public TestWithParam<DInvalidSectionParam>
+class DInvalidSectionOrdering : public TestWithParam<DInvalidInput>
 {
 };
 
 TEST_P(DInvalidSectionOrdering, parse)
 {
-    const DInvalidSectionParam &param{GetParam()};
+    const DInvalidInput &param{GetParam()};
 
     const FormulaPtr result{create_descent_formula(param.text)};
 
     ASSERT_FALSE(result);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_invalid_sections));
+INSTANTIATE_TEST_SUITE_P(TestDescentParse, DInvalidSectionOrdering, ValuesIn(s_invalid_inputs));
 
 TEST(TestDescentParse, maximumSections)
 {

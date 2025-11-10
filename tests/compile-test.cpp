@@ -45,7 +45,7 @@ static CompileParam s_compiled_formulas[]{
     {"mulMulMul", "2.2*2.2*2.2", Section::BAILOUT, 10.648, 0.0},
     {"addMulAdd", "1.1+2.2*3.3+4.4", Section::BAILOUT, 12.76, 0.0},
     {"power", "2^3", Section::BAILOUT, 8.0, 0.0},
-    {"chainedPower", "2^3^2", Section::BAILOUT, 64.0, 0.0},
+    {"powerLeftAssociative", "2^3^2", Section::BAILOUT, 64.0, 0.0},
     {"powerPrecedence", "2*3^2", Section::BAILOUT, 18.0, 0.0},
     {"compareLessFalse", "4<3", Section::BAILOUT, 0.0, 0.0},
     {"compareLessTrue", "3<4", Section::BAILOUT, 1.0, 0.0},
