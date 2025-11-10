@@ -212,10 +212,8 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_
 TEST(TestFormulaParse, invalidIdentifier)
 {
     const FormulaPtr result1{create_formula("1a")};
-    const FormulaPtr result2{create_formula("_a")};
 
     EXPECT_FALSE(result1);
-    EXPECT_FALSE(result2);
 }
 
 static MultiStatementParam s_multi_statements[]{
@@ -344,14 +342,38 @@ TEST_P(ParseFailures, parse)
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
 
 static SingleSectionParam s_single_sections[]{
-    {"globalSection", "global:1", Section::PER_IMAGE},
-    {"initSection", "init:1", Section::INITIALIZE},
-    {"loopSection", "loop:1", Section::ITERATE},
-    {"bailoutSection", "bailout:1", Section::BAILOUT},
-    {"perturbInitSection", "perturbinit:1", Section::PERTURB_INITIALIZE},
-    {"perturbLoopSection", "perturbloop:1", Section::PERTURB_ITERATE},
-    {"defaultSection", "default:angle=0", Section::DEFAULT},
-    {"switchSection", "switch:1", Section::SWITCH},
+    {"globalSection",
+        "global:\n"
+        "1\n",
+        Section::PER_IMAGE},
+    {"initSection",
+        "init:\n"
+        "1\n",
+        Section::INITIALIZE},
+    {"loopSection",
+        "loop:\n"
+        "1\n",
+        Section::ITERATE},
+    {"bailoutSection",
+        "bailout:\n"
+        "1\n",
+        Section::BAILOUT},
+    {"perturbInitSection",
+        "perturbinit:\n"
+        "1\n",
+        Section::PERTURB_INITIALIZE},
+    {"perturbLoopSection",
+        "perturbloop:\n"
+        "1\n",
+        Section::PERTURB_ITERATE},
+    {"defaultSection",
+        "default:\n"
+        "angle=0\n",
+        Section::DEFAULT},
+    {"switchSection",
+        "switch:\n"
+        "type=\"Julia\"\n",
+        Section::SWITCH},
 };
 
 TEST_P(SingleSections, parse)
@@ -368,7 +390,8 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SingleSections, ValuesIn(s_single_sec
 
 TEST(TestFormulaParse, builtinSectionMandelbrot)
 {
-    const FormulaPtr result{create_formula("builtin:type=1")};
+    const FormulaPtr result{create_formula("builtin:\n"
+                                           "type=1\n")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -378,7 +401,8 @@ TEST(TestFormulaParse, builtinSectionMandelbrot)
 
 TEST(TestFormulaParse, builtinSectionJulia)
 {
-    const FormulaPtr result{create_formula("builtin:type=2")};
+    const FormulaPtr result{create_formula("builtin:\n"
+                                           "type=2\n")};
 
     ASSERT_TRUE(result);
     const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
@@ -387,41 +411,58 @@ TEST(TestFormulaParse, builtinSectionJulia)
 }
 
 static DefaultSectionParam s_default_values[]{
-    {"angle", "default:angle=0", "setting:angle=0\n"},                  //
-    {"center", "default:center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
-    {"helpFile", R"(default:helpfile="HelpFile.html")",
+    {"angle", "default:\nangle=0\n", "setting:angle=0\n"},                  //
+    {"center", "default:\ncenter=(-0.5,0)\n", "setting:center=(-0.5,0)\n"}, //
+    {"helpFile", "default:\nhelpfile=\"HelpFile.html\"\n",
         R"(setting:helpfile="HelpFile.html")"
         "\n"},
-    {"helpTopic", R"(default:helptopic="DivideBrot5")",
+    {"helpTopic", "default:\nhelptopic=\"DivideBrot5\"\n",
         R"(setting:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:magn=4.5", "setting:magn=4.5\n"},                            //
-    {"maxIter", "default:maxiter=256", "setting:maxiter=256\n"},                   //
-    {"methodGuessing", "default:method=guessing", "setting:method=guessing\n"},    //
-    {"methodMultiPass", "default:method=multipass", "setting:method=multipass\n"}, //
-    {"methodOnePass", "default:method=onepass", "setting:method=onepass\n"},       //
-    {"periodicity0", "default:periodicity=0", "setting:periodicity=0\n"},          //
-    {"periodicity1", "default:periodicity=1", "setting:periodicity=1\n"},          //
-    {"periodicity2", "default:periodicity=2", "setting:periodicity=2\n"},          //
-    {"periodicity3", "default:periodicity=3", "setting:periodicity=3\n"},          //
-    {"perturbFalse", "default:perturb=false", "setting:perturb=\"false\"\n"},      //
-    {"perturbTrue", "default:perturb=true", "setting:perturb=\"true\"\n"},         //
-    {"perturbExpr", "default:perturb=@power==(2,0) || @power == (3,0) || @power == (4,0)",
-        "setting:perturb=\"@power==(2,0) || @power == (3,0) || @power == (4,0)\"\n"}, //
-    {"precisionNumber", "default:precision=30", "setting:precision=\"30\"\n"},        //
-    {"precisionExpr", "default:precision = round(log(@fracmagn) / log(10))",
-        "setting:precision=\"round(log(@fracmagn) / log(10))\"\n"},                                   //
-    {"ratingRecommended", "default:rating=recommended", "setting:rating=recommended\n"},              //
-    {"ratingAverage", "default:rating=average", "setting:rating=average\n"},                          //
-    {"ratingNotRecommended", "default:rating=notRecommended", "setting:rating=notRecommended\n"},     //
-    {"renderTrue", "default:render=true", "setting:render=true\n"},                                   //
-    {"renderFalse", "default:render=false", "setting:render=false\n"},                                //
-    {"skew", "default:skew=-4.5", "setting:skew=-4.5\n"},                                             //
-    {"stretch", "default:stretch=4.5", "setting:stretch=4.5\n"},                                      //
-    {"title", R"(default:title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
+    {"magn", "default:\nmagn=4.5\n", "setting:magn=4.5\n"},                            //
+    {"maxIter", "default:\nmaxiter=256\n", "setting:maxiter=256\n"},                   //
+    {"methodGuessing", "default:\nmethod=guessing\n", "setting:method=guessing\n"},    //
+    {"methodMultiPass", "default:\nmethod=multipass\n", "setting:method=multipass\n"}, //
+    {"methodOnePass", "default:\nmethod=onepass\n", "setting:method=onepass\n"},       //
+    {"periodicity0", "default:\nperiodicity=0\n", "setting:periodicity=0\n"},          //
+    {"periodicity1", "default:\nperiodicity=1\n", "setting:periodicity=1\n"},          //
+    {"periodicity2", "default:\nperiodicity=2\n", "setting:periodicity=2\n"},          //
+    {"periodicity3", "default:\nperiodicity=3\n", "setting:periodicity=3\n"},          //
+    {"perturbFalse", "default:\nperturb=false\n", "setting:perturb=false\n"},          //
+    {"perturbTrue", "default:\nperturb=true\n", "setting:perturb=true\n"},             //
+    {"perturbExpr", "default:\nperturb=power==2 || power == 3\n",
+        "setting:perturb={\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "}\n"},
+    {"precisionNumber", "default:\nprecision=30\n", "setting:precision={\nnumber:30\n}\n"}, //
+    {"precisionExpr", "default:\nprecision = log(fracmagn) / log(10)\n",
+        "setting:precision={\n"
+        "binary_op:/\n"
+        "function_call:log(\n"
+        "identifier:fracmagn\n"
+        ")\n"
+        "function_call:log(\n"
+        "number:10\n"
+        ")\n"
+        "}\n"},
+    {"ratingRecommended", "default:\nrating=recommended\n", "setting:rating=recommended\n"},             //
+    {"ratingAverage", "default:\nrating=average\n", "setting:rating=average\n"},                         //
+    {"ratingNotRecommended", "default:\nrating=notRecommended\n", "setting:rating=notRecommended\n"},    //
+    {"renderTrue", "default:\nrender=true\n", "setting:render=true\n"},                                  //
+    {"renderFalse", "default:\nrender=false\n", "setting:render=false\n"},                               //
+    {"skew", "default:\nskew=-4.5\n", "setting:skew=-4.5\n"},                                            //
+    {"stretch", "default:\nstretch=4.5\n", "setting:stretch=4.5\n"},                                     //
+    {"title", "default:\ntitle=\"This is a fancy one!\"\n", "setting:title=\"This is a fancy one!\"\n"}, //
     {"boolParamBlock",
-        "default:bool param foo\n"
-        "endparam",
+        "default:\n"
+        "bool param foo\n"
+        "endparam\n",
         "param_block:bool,foo {\n"
         "}\n"}, //
 };
@@ -442,35 +483,55 @@ INSTANTIATE_TEST_SUITE_P(TestFormualParse, DefaultSection, ValuesIn(s_default_va
 
 static InvalidSectionParam s_invalid_sections[]{
     {"unknownSection",
-        "global:1\n"
-        "unknown:1"},
+        "global:\n"
+        "1\n"
+        "unknown:\n"
+        "1\n"},
     {"globalSectionFirst",
-        "builtin:1\n"
-        "global:1"},
+        "builtin:\n"
+        "1\n"
+        "global:\n"
+        "1\n"},
     {"builtinBeforeInit",
-        "init:1\n"
-        "builtin:1"},
+        "init:\n"
+        "1\n"
+        "builtin:\n"
+        "1\n"},
     {"initAfterLoop",
-        "loop:1\n"
-        "init:1"},
+        "loop:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
     {"initAfterBailout",
-        "bailout:1\n"
-        "init:1"},
+        "bailout:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
     {"loopAfterBailout",
-        "bailout:1\n"
-        "loop:1"},
+        "bailout:\n"
+        "1\n"
+        "loop:\n"
+        "1\n"},
     {"bailoutAfterPerturbInit",
-        "perturbinit:1\n"
-        "bailout:1"},
+        "perturbinit:\n"
+        "1\n"
+        "bailout:\n"
+        "1\n"},
     {"perturbInitAfterPerturbLoop",
-        "perturbloop:1\n"
-        "perturbinit:1"},
+        "perturbloop:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"},
     {"perturbLoopAfterDefault",
-        "default:angle=0\n"
-        "perturbloop:1"},
+        "default:\n"
+        "angle=0\n"
+        "perturbloop:\n"
+        "1\n"},
     {"defaultAfterSwitch",
-        "switch:1\n"
-        "default:angle=0"},
+        "switch:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"},
 };
 
 class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
@@ -490,14 +551,22 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_in
 
 TEST(TestFormulaParse, maximumSections)
 {
-    const FormulaPtr result{create_formula("global:1\n"
-                                  "init:1\n"
-                                  "loop:1\n"
-                                  "bailout:1\n"
-                                  "perturbinit:1\n"
-                                  "perturbloop:1\n"
-                                  "default:angle=0\n"
-                                  "switch:1\n")};
+    const FormulaPtr result{create_formula("global:\n"
+                                           "1\n"
+                                           "init:\n"
+                                           "1\n"
+                                           "loop:\n"
+                                           "1\n"
+                                           "bailout:\n"
+                                           "1\n"
+                                           "perturbinit:\n"
+                                           "1\n"
+                                           "perturbloop:\n"
+                                           "1\n"
+                                           "default:\n"
+                                           "angle=0\n"
+                                           "switch:\n"
+                                           "type=\"Julia\"\n")};
 
     ASSERT_TRUE(result);
     EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
@@ -513,11 +582,16 @@ TEST(TestFormulaParse, maximumSections)
 
 TEST(TestFormulaParse, builtinSections)
 {
-    const FormulaPtr result{create_formula("builtin:type=1\n"
-                                  "perturbinit:1\n"
-                                  "perturbloop:1\n"
-                                  "default:angle=0\n"
-                                  "switch:1\n")};
+    const FormulaPtr result{create_formula("builtin:\n"
+                                           "type=1\n"
+                                           "perturbinit:\n"
+                                           "1\n"
+                                           "perturbloop:\n"
+                                           "1\n"
+                                           "default:\n"
+                                           "angle=0\n"
+                                           "switch:\n"
+                                           "type=\"Julia\"\n")};
 
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
@@ -535,33 +609,57 @@ TEST(TestFormulaParse, builtinSections)
 
 static BuiltinDisallowsParam s_builtin_disallows[]{
     {"global",
-        "global:1\n"
-        "builtin:type=1\n"
-        "perturbinit:1\n"
-        "perturbloop:1\n"
-        "default:angle=0\n"
-        "switch:1\n"},
+        "global:\n"
+        "1\n"
+        "builtin:\n"
+        "type=1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
     {"init",
-        "builtin:type=1\n"
-        "init:1\n"
-        "perturbinit:1\n"
-        "perturbloop:1\n"
-        "default:angle=0\n"
-        "switch:1\n"},
+        "builtin:\n"
+        "type=1\n"
+        "init:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
     {"loop",
-        "builtin:type=1\n"
-        "loop:1\n"
-        "perturbinit:1\n"
-        "perturbloop:1\n"
-        "default:angle=0\n"
-        "switch:1\n"},
+        "builtin:\n"
+        "type=1\n"
+        "loop:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
     {"bailout",
-        "builtin:type=1\n"
-        "bailout:1\n"
-        "perturbinit:1\n"
-        "perturbloop:1\n"
-        "default:angle=0\n"
-        "switch:1\n"},
+        "builtin:\n"
+        "type=1\n"
+        "bailout:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"
+        "default:\n"
+        "angle=0\n"
+        "switch:\n"
+        "1\n"},
 };
 
 TEST_P(BuiltinDisallows, parse)

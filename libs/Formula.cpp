@@ -309,11 +309,7 @@ bool valid_sections(const FormulaSectionsPtr &ast)
 
 FormulaPtr create_formula(std::string_view text)
 {
-    if (FormulaSectionsPtr sections = parse(text); valid_sections(sections))
-    {
-        return std::make_shared<ParsedFormula>(sections);
-    }
-    return {};
+    return create_descent_formula(text);
 }
 
 FormulaPtr create_descent_formula(std::string_view text)
