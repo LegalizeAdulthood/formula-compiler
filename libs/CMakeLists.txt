@@ -3,12 +3,10 @@
 # Copyright 2025 Richard Thomson
 #
 find_package(asmjit CONFIG REQUIRED)
-find_package(boost_parser CONFIG REQUIRED)
 
 add_library(formula
     include/formula/Compiler.h Compiler.cpp
     include/formula/Complex.h
-    descent.h descent.cpp
     include/formula/Formula.h Formula.cpp
     functions.h functions.cpp
     include/formula/Interpreter.h Interpreter.cpp
@@ -22,5 +20,5 @@ target_compile_options(formula PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
 )
 target_include_directories(formula PUBLIC include)
-target_link_libraries(formula PRIVATE asmjit::asmjit Boost::parser)
+target_link_libraries(formula PRIVATE asmjit::asmjit)
 target_folder(formula "Libraries")

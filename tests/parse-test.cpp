@@ -5,6 +5,7 @@
 #include <formula/Formula.h>
 
 #include "NodeFormatter.h"
+#include "trim_ws.h"
 
 #include <gtest/gtest.h>
 
@@ -24,6 +25,7 @@ struct SimpleExpressionParam
 {
     std::string_view name;
     std::string_view text;
+    std::string_view expected;
 };
 
 inline void PrintTo(const SimpleExpressionParam &param, std::ostream *os)
@@ -77,35 +79,23 @@ class ParseFailures : public TestWithParam<ParseFailureParam>
 {
 };
 
-struct SingleSectionParam
+struct ParseParam
 {
     std::string_view name;
     std::string_view text;
     Section section;
 };
 
-inline void PrintTo(const SingleSectionParam &param, std::ostream *os)
+inline void PrintTo(const ParseParam &param, std::ostream *os)
 {
     *os << param.name;
 }
 
-class SingleSections : public TestWithParam<SingleSectionParam>
+class SingleSections : public TestWithParam<ParseParam>
 {
 };
 
-struct DefaultSectionParam
-{
-    std::string_view name;
-    std::string_view text;
-    std::string_view expected;
-};
-
-inline void PrintTo(const DefaultSectionParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
-class DefaultSection : public TestWithParam<DefaultSectionParam>
+class DefaultSection : public TestWithParam<SimpleExpressionParam>
 {
 };
 
@@ -138,61 +128,227 @@ class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
 } // namespace
 
 static SimpleExpressionParam s_simple_expressions[]{
-    {"constant", "1"},
-    {"identifier", "z2"},
-    {"parenExpr", "(z)"},
-    {"add", "1+2"},
-    {"subtract", "1-2"},
-    {"multiply", "1*2"},
-    {"divide", "1/2"},
-    {"multiplyAdd", "1*2+4"},
-    {"parenthesisExpr", "1*(2+4)"},
-    {"unaryMinus", "-(1)"},
-    {"unaryPlus", "+(1)"},
-    {"unaryMinusNegativeOne", "--1"},
-    {"addAddAdd", "1+1+1"},
-    {"capitalLetterInIdentifier", "A"},
-    {"numberInIdentifier", "a1"},
-    {"underscoreInIdentifier", "A_1"},
-    {"power", "2^3"},
-    {"powerLeftAssociative", "2^2^2"},
-    {"assignment", "z=4"},
-    {"assignmentLongVariable", "this_is_another4_variable_name2=4"},
-    {"modulus", "|-3.0|"},
-    {"compareLess", "4<3"},
-    {"compareLessPrecedence", "3<z=4"},
-    {"compareLessEqual", "4<=3"},
-    {"compareGreater", "4>3"},
-    {"compareAssociatesLeft", "4>3<4"},
-    {"compareGreaterEqual", "4>=3"},
-    {"compareEqual", "4==3"},
-    {"compareNotEqual", "4!=3"},
-    {"logicalAnd", "4==3&&5==6"},
-    {"logicalOr", "4==3||5==6"},
-    {"ignoreComments", "3; z=6 oh toodlee doo"},
-    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n"},
-    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n"},
-    {"reservedVariablePrefixToUserVariable", "e2=1"},
-    {"reservedFunctionPrefixToUserVariable", "sine=1"},
-    {"reservedKeywordPrefixToUserVariable", "if1=1"},
-    {"ifEmptyBody", "if(0)\nendif"},
-    {"ifBlankLinesBody", "if(0)\n\nendif"},
-    {"ifThenBody", "if(0)\n1\nendif"},
-    {"ifThenComplexBody", "if(0)\nx=1\ny=2\nendif"},
-    {"ifComparisonCondition", "if(1<2)\nendif"},
-    {"ifConjunctiveCondition", "if(1&&2)\nendif"},
-    {"ifElseEmptyBody", "if(0)\nelse\nendif"},
-    {"ifElseBlankLinesBody", "if(0)\n\nelse\n\nendif"},
-    {"ifThenElseBody", "if(0)\nelse\n1\nendif"},
-    {"ifThenBodyElse", "if(0)\n1\nelse\nendif"},
-    {"ifThenElseComplexBody", "if(0)\nx=1\ny=2\nelse\nz=3\nq=4\nendif"},
-    {"ifElseIfEmptyBody", "if(0)\nelseif(1)\nelse\nendif"},
-    {"ifMultipleElseIfEmptyBody", "if(0)\nelseif(0)\nelseif(0)\nelse\nendif"},
-    {"ifElseIfBlankLinesBody", "if(0)\n\nelseif(0)\n\nelse\n\nendif"},
-    {"ifThenElseIfBody", "if(0)\nelseif(0)\n1\nendif"},
-    {"ifThenBodyElseIf", "if(0)\n1\nelseif(0)\nendif"},
-    {"ifThenElseIfComplexBody", "if(0)\nx=1\ny=2\nelseif(1)\nz=3\nq=4\nendif"},
-    {"backslashContinuesStatement", "if(\\\n0)\nendif"},
+    {"constant", "1", "number:1"},                                                           //
+    {"identifier", "z2", "identifier:z2"},                                                   //
+    {"parenExpr", "(z)", "identifier:z"},                                                    //
+    {"add", "1+2", "binary_op:+ number:1 number:2"},                                         //
+    {"subtract", "1-2", "binary_op:- number:1 number:2"},                                    //
+    {"multiply", "1*2", "binary_op:* number:1 number:2"},                                    //
+    {"divide", "1/2", "binary_op:/ number:1 number:2"},                                      //
+    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},          //
+    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"},    //
+    {"unaryMinus", "-(1)", "unary_op:- number:1"},                                           //
+    {"unaryPlus", "+(1)", "unary_op:+ number:1"},                                            //
+    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},                      //
+    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},            //
+    {"capitalLetterInIdentifier", "A", "identifier:A"},                                      //
+    {"numberInIdentifier", "a1", "identifier:a1"},                                           //
+    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                     //
+    {"power", "2^3", "binary_op:^ number:2 number:3"},                                       //
+    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ number:1 number:2 number:3"}, //
+    {"assignment", "z=4", "assignment:z number:4"},                                          //
+    {"assignmentLongVariable", "this_is_another4_variable_name2=4",
+        "assignment:this_is_another4_variable_name2 number:4"},                                                 //
+    {"modulus", "|-3.0|", "unary_op:| unary_op:- number:3"},                                                    //
+    {"compareLess", "4<3", "binary_op:< number:4 number:3"},                                                    //
+    {"compareLessPrecedence", "3<z=4", "binary_op:< number:3 assignment:z number:4"},                           //
+    {"compareLessEqual", "4<=3", "binary_op:<= number:4 number:3"},                                             //
+    {"compareGreater", "4>3", "binary_op:> number:4 number:3"},                                                 //
+    {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> number:4 number:3 number:4"},                   //
+    {"compareGreaterEqual", "4>=3", "binary_op:>= number:4 number:3"},                                          //
+    {"compareEqual", "4==3", "binary_op:== number:4 number:3"},                                                 //
+    {"compareNotEqual", "4!=3", "binary_op:!= number:4 number:3"},                                              //
+    {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== number:4 number:3 binary_op:== number:5 number:6"}, //
+    {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== number:4 number:3 binary_op:== number:5 number:6"},  //
+    {"ignoreComments", "3; z=6 oh toodlee doo", "number:3"},                                                    //
+    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "number:3"},                                                //
+    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "number:3"},                                            //
+    {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},                                 //
+    {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},                             //
+    {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},                                //
+    {"builtinVariableP1", "p1", "identifier:p1"},                                                               //
+    {"builtinVariableP2", "p2", "identifier:p2"},                                                               //
+    {"builtinVariableP3", "p3", "identifier:p3"},                                                               //
+    {"builtinVariableP4", "p4", "identifier:p4"},                                                               //
+    {"builtinVariableP5", "p5", "identifier:p5"},                                                               //
+    {"builtinVariablePixel", "pixel", "identifier:pixel"},                                                      //
+    {"builtinVariableLastsqr", "lastsqr", "identifier:lastsqr"},                                                //
+    {"builtinVariableRand", "rand", "identifier:rand"},                                                         //
+    {"builtinVariablePi", "pi", "identifier:pi"},                                                               //
+    {"builtinVariableE", "e", "identifier:e"},                                                                  //
+    {"builtinVariableMaxit", "maxit", "identifier:maxit"},                                                      //
+    {"builtinVariableScrnmax", "scrnmax", "identifier:scrnmax"},                                                //
+    {"builtinVariableScrnpix", "scrnpix", "identifier:scrnpix"},                                                //
+    {"builtinVariableWhitesq", "whitesq", "identifier:whitesq"},                                                //
+    {"builtinVariableIsmand", "ismand", "identifier:ismand"},                                                   //
+    {"builtinVariableCenter", "center", "identifier:center"},                                                   //
+    {"builtinVariableMagxmag", "magxmag", "identifier:magxmag"},                                                //
+    {"builtinVariableRotskew", "rotskew", "identifier:rotskew"},                                                //
+    {"ifEmptyBody",
+        "if(0)\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifThenBody",
+        "if(0)\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } endif"},
+    {"ifThenComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
+    {"ifComparisonCondition",
+        "if(1<2)\n"
+        "endif",
+        "if_statement:( binary_op:< number:1 number:2 ) { } endif"},
+    {"ifConjunctiveCondition",
+        "if(1&&2)\n"
+        "endif",
+        "if_statement:( binary_op:&& number:1 number:2 ) { } endif"},
+    {"ifElseEmptyBody",
+        "if(0)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifElseBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "else\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifThenElseBody",
+        "if(0)\n"
+        "else\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { number:1 } endif"},
+    {"ifThenBodyElse",
+        "if(0)\n"
+        "1\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } endif"},
+    {"ifThenElseComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "else\n"
+        "3\n"
+        "4\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } "
+        "} else { statement_seq:2 { number:3 number:4 } } endif"},
+    {"ifElseIfEmptyBody",
+        "if(0)\n"
+        "elseif(1)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { if_statement:( number:1 ) { } endif } endif"},
+    {"ifMultipleElseIfEmptyBody",
+        "if(0)\n"
+        "elseif(0)\n"
+        "elseif(0)\n"
+        "else\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif } "
+        "endif"},
+    {"ifElseIfBlankLinesBody",
+        "if(0)\n"
+        "\n"
+        "elseif(0)\n"
+        "\n"
+        "else\n"
+        "\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif"},
+    {"ifThenElseIfBody",
+        "if(0)\n"
+        "elseif(0)\n"
+        "1\n"
+        "endif",
+        "if_statement:( number:0 ) { } "
+        "else { if_statement:( number:0 ) { number:1 } "
+        "endif } "
+        "endif"},
+    {"ifThenBodyElseIf",
+        "if(0)\n"
+        "1\n"
+        "elseif(0)\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } "
+        "else { if_statement:( number:0 ) { } "
+        "endif } "
+        "endif"},
+    {"ifThenElseIfComplexBody",
+        "if(0)\n"
+        "1\n"
+        "2\n"
+        "elseif(1)\n"
+        "3\n"
+        "4\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } "
+        "else { if_statement:( number:1 ) { statement_seq:2 { number:3 number:4 } } "
+        "endif } "
+        "endif"},
+    {"chainedElseIf",
+        "if(0)\n"
+        "1\n"
+        "elseif(2)\n"
+        "3\n"
+        "elseif(4)\n"
+        "5\n"
+        "elseif(6)\n"
+        "7\n"
+        "endif",
+        "if_statement:( number:0 ) { number:1 } "
+        "else { if_statement:( number:2 ) { number:3 } "
+        "else { if_statement:( number:4 ) { number:5 } "
+        "else { if_statement:( number:6 ) { number:7 } "
+        "endif } "
+        "endif } "
+        "endif } "
+        "endif"},
+    {"backslashContinuesStatement",
+        "if(\\\n"
+        "0)\n"
+        "endif",
+        "if_statement:( number:0 ) { } endif"},
+    {"ifSequence",
+        "if(0)\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
+    {"elseSequence",
+        "if(0)\n"
+        "else\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { statement_seq:2 { number:1 number:2 } } endif"},
+    {"elseIfSequence",
+        "if(0)\n"
+        "elseif(3)\n"
+        "1,2\n"
+        "endif",
+        "if_statement:( number:0 ) { } else { "
+        "if_statement:( number:3 ) { statement_seq:2 { number:1 number:2 } } "
+        "endif } "
+        "endif"},
 };
 
 TEST_P(SimpleExpressions, parse)
@@ -204,19 +360,22 @@ TEST_P(SimpleExpressions, parse)
     ASSERT_TRUE(result);
     EXPECT_FALSE(result->get_section(Section::INITIALIZE));
     EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    const ast::Expr bailout = result->get_section(Section::BAILOUT);
+    ASSERT_TRUE(bailout);
+    EXPECT_EQ(param.expected, trim_ws(to_string(bailout)));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_expressions));
 
 TEST(TestFormulaParse, invalidIdentifier)
 {
-    const FormulaPtr result1{create_formula("1a")};
+    const FormulaPtr result{create_formula("1a")};
 
-    EXPECT_FALSE(result1);
+    EXPECT_FALSE(result);
 }
 
 static MultiStatementParam s_multi_statements[]{
+    {"sequence", "3,4"},                                                        //
     {"statements", "3\n4\n"},
     {"assignmentStatements", "z=3\nz=4\n"},
     {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},
@@ -341,7 +500,7 @@ TEST_P(ParseFailures, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
 
-static SingleSectionParam s_single_sections[]{
+static ParseParam s_single_sections[]{
     {"globalSection",
         "global:\n"
         "1\n",
@@ -378,7 +537,7 @@ static SingleSectionParam s_single_sections[]{
 
 TEST_P(SingleSections, parse)
 {
-    const SingleSectionParam &param{GetParam()};
+    const ParseParam &param{GetParam()};
 
     const FormulaPtr result{create_formula(param.text)};
 
@@ -410,27 +569,27 @@ TEST(TestFormulaParse, builtinSectionJulia)
     EXPECT_EQ("setting:type=2\n", to_string(builtin));
 }
 
-static DefaultSectionParam s_default_values[]{
-    {"angle", "default:\nangle=0\n", "setting:angle=0\n"},                  //
-    {"center", "default:\ncenter=(-0.5,0)\n", "setting:center=(-0.5,0)\n"}, //
-    {"helpFile", "default:\nhelpfile=\"HelpFile.html\"\n",
+static SimpleExpressionParam s_default_values[]{
+    {"angle", "angle=0", "setting:angle=0\n"},                  //
+    {"center", "center=(-0.5,0)", "setting:center=(-0.5,0)\n"}, //
+    {"helpFile", R"(helpfile="HelpFile.html")",
         R"(setting:helpfile="HelpFile.html")"
         "\n"},
-    {"helpTopic", "default:\nhelptopic=\"DivideBrot5\"\n",
+    {"helpTopic", R"(helptopic="DivideBrot5")",
         R"(setting:helptopic="DivideBrot5")"
         "\n"},
-    {"magn", "default:\nmagn=4.5\n", "setting:magn=4.5\n"},                            //
-    {"maxIter", "default:\nmaxiter=256\n", "setting:maxiter=256\n"},                   //
-    {"methodGuessing", "default:\nmethod=guessing\n", "setting:method=guessing\n"},    //
-    {"methodMultiPass", "default:\nmethod=multipass\n", "setting:method=multipass\n"}, //
-    {"methodOnePass", "default:\nmethod=onepass\n", "setting:method=onepass\n"},       //
-    {"periodicity0", "default:\nperiodicity=0\n", "setting:periodicity=0\n"},          //
-    {"periodicity1", "default:\nperiodicity=1\n", "setting:periodicity=1\n"},          //
-    {"periodicity2", "default:\nperiodicity=2\n", "setting:periodicity=2\n"},          //
-    {"periodicity3", "default:\nperiodicity=3\n", "setting:periodicity=3\n"},          //
-    {"perturbFalse", "default:\nperturb=false\n", "setting:perturb=false\n"},          //
-    {"perturbTrue", "default:\nperturb=true\n", "setting:perturb=true\n"},             //
-    {"perturbExpr", "default:\nperturb=power==2 || power == 3\n",
+    {"magn", "magn=4.5", "setting:magn=4.5\n"},                            //
+    {"maxIter", "maxiter=256", "setting:maxiter=256\n"},                   //
+    {"methodGuessing", "method=guessing", "setting:method=guessing\n"},    //
+    {"methodMultiPass", "method=multipass", "setting:method=multipass\n"}, //
+    {"methodOnePass", "method=onepass", "setting:method=onepass\n"},       //
+    {"periodicity0", "periodicity=0", "setting:periodicity=0\n"},          //
+    {"periodicity1", "periodicity=1", "setting:periodicity=1\n"},          //
+    {"periodicity2", "periodicity=2", "setting:periodicity=2\n"},          //
+    {"periodicity3", "periodicity=3", "setting:periodicity=3\n"},          //
+    {"perturbFalse", "perturb=false", "setting:perturb=false\n"},          //
+    {"perturbTrue", "perturb=true", "setting:perturb=true\n"},             //
+    {"perturbExpr", "perturb=power==2 || power == 3",
         "setting:perturb={\n"
         "binary_op:||\n"
         "binary_op:==\n"
@@ -440,8 +599,11 @@ static DefaultSectionParam s_default_values[]{
         "identifier:power\n"
         "number:3\n"
         "}\n"},
-    {"precisionNumber", "default:\nprecision=30\n", "setting:precision={\nnumber:30\n}\n"}, //
-    {"precisionExpr", "default:\nprecision = log(fracmagn) / log(10)\n",
+    {"precisionNumber", "precision=30",
+        "setting:precision={\n"
+        "number:30\n"
+        "}\n"}, //
+    {"precisionExpr", "precision=log(fracmagn) / log(10)",
         "setting:precision={\n"
         "binary_op:/\n"
         "function_call:log(\n"
@@ -451,27 +613,209 @@ static DefaultSectionParam s_default_values[]{
         "number:10\n"
         ")\n"
         "}\n"},
-    {"ratingRecommended", "default:\nrating=recommended\n", "setting:rating=recommended\n"},             //
-    {"ratingAverage", "default:\nrating=average\n", "setting:rating=average\n"},                         //
-    {"ratingNotRecommended", "default:\nrating=notRecommended\n", "setting:rating=notRecommended\n"},    //
-    {"renderTrue", "default:\nrender=true\n", "setting:render=true\n"},                                  //
-    {"renderFalse", "default:\nrender=false\n", "setting:render=false\n"},                               //
-    {"skew", "default:\nskew=-4.5\n", "setting:skew=-4.5\n"},                                            //
-    {"stretch", "default:\nstretch=4.5\n", "setting:stretch=4.5\n"},                                     //
-    {"title", "default:\ntitle=\"This is a fancy one!\"\n", "setting:title=\"This is a fancy one!\"\n"}, //
-    {"boolParamBlock",
-        "default:\n"
+    {"ratingRecommended", "rating=recommended", "setting:rating=recommended\n"},              //
+    {"ratingAverage", "rating=average", "setting:rating=average\n"},                          //
+    {"ratingNotRecommended", "rating=notRecommended", "setting:rating=notRecommended\n"},     //
+    {"renderTrue", "render=true", "setting:render=true\n"},                                   //
+    {"renderFalse", "render=false", "setting:render=false\n"},                                //
+    {"skew", "skew=-4.5", "setting:skew=-4.5\n"},                                             //
+    {"stretch", "stretch=4.5", "setting:stretch=4.5\n"},                                      //
+    {"title", R"(title="This is a fancy one!")", "setting:title=\"This is a fancy one!\"\n"}, //
+    {"emptyBoolParamBlock",
         "bool param foo\n"
-        "endparam\n",
+        "endparam",
         "param_block:bool,foo {\n"
         "}\n"}, //
+    {"emptyIntParamBlock",
+        "int param foo\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "}\n"}, //
+    {"emptyFloatParamBlock",
+        "float param foo\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "}\n"}, //
+    {"emptyComplexParamBlock",
+        "complex param foo\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "}\n"}, //
+    {"emptyColorParamBlock",
+        "color param foo\n"
+        "endparam",
+        "param_block:color,foo {\n"
+        "}\n"}, //
+    {"captionParamBlock",
+        "bool param foo\n"
+        "caption=\"My parameter\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:caption=\"My parameter\"\n"
+        "}\n"},
+    {"typelessParamBlock",
+        "param foo\n"
+        "endparam",
+        "param_block:foo {\n"
+        "}\n"},
+    {"defaultBoolParamBlock",
+        "bool param foo\n"
+        "default=true\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:default=true\n"
+        "}\n"},
+    {"defaultIntParamBlock",
+        "int param foo\n"
+        "default=1964\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:default=1964\n"
+        "}\n"},
+    {"defaultFloatParamBlock",
+        "float param foo\n"
+        "default=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:default=4.5\n"
+        "}\n"},
+    {"defaultComplexParamBlock",
+        "complex param foo\n"
+        "default=(4,5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:default=(4,5)\n"
+        "}\n"},
+    {"enabledParamBlock",
+        "bool param foo\n"
+        "enabled=power==2 || power == 3\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:enabled={\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "}\n"
+        "}\n"},
+    {"enumParamBlock",
+        "int param foo\n"
+        "enum = \"Choice 1\" \"Choice 2\"\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:enum={\n"
+        "\"Choice 1\"\n"
+        "\"Choice 2\"\n"
+        "}\n"
+        "}\n"},
+    {"expandedParamBlock",
+        "int param foo\n"
+        "expanded = false\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:expanded=false\n"
+        "}\n"},
+    {"exponentialParamBlock",
+        "int param foo\n"
+        "exponential = true\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:exponential=true\n"
+        "}\n"},
+    {"hintParamBlock",
+        "bool param foo\n"
+        "hint=\"look behind you\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:hint=\"look behind you\"\n"
+        "}\n"},
+    {"minIntParamBlock",
+        "int param foo\n"
+        "min=10\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:min=10\n"
+        "}\n"},
+    {"minFloatParamBlock",
+        "float param foo\n"
+        "min=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:min=4.5\n"
+        "}\n"},
+    {"minComplexParamBlock",
+        "complex param foo\n"
+        "min=(4.5,4.5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:min=(4.5,4.5)\n"
+        "}\n"},
+    {"maxIntParamBlock",
+        "int param foo\n"
+        "max=10\n"
+        "endparam",
+        "param_block:int,foo {\n"
+        "setting:max=10\n"
+        "}\n"},
+    {"maxFloatParamBlock",
+        "float param foo\n"
+        "max=4.5\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "setting:max=4.5\n"
+        "}\n"},
+    {"maxComplexParamBlock",
+        "complex param foo\n"
+        "max=(4.5,4.5)\n"
+        "endparam",
+        "param_block:complex,foo {\n"
+        "setting:max=(4.5,4.5)\n"
+        "}\n"},
+    {"selectableParamBlock",
+        "bool param foo\n"
+        "selectable=false\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:selectable=false\n"
+        "}\n"},
+    {"textParamBlock",
+        "bool param foo\n"
+        "text=\"Well hello there, pardner.\"\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:text=\"Well hello there, pardner.\"\n"
+        "}\n"},
+    {"visibleParamBlock",
+        "bool param foo\n"
+        "visible=power == 2 || power == 3\n"
+        "endparam",
+        "param_block:bool,foo {\n"
+        "setting:visible={\n"
+        "binary_op:||\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:2\n"
+        "binary_op:==\n"
+        "identifier:power\n"
+        "number:3\n"
+        "}\n"
+        "}\n"},
 };
 
 TEST_P(DefaultSection, parse)
 {
-    const DefaultSectionParam &param{GetParam()};
+    const SimpleExpressionParam &param{GetParam()};
+    std::string text{"default:\n"};
+    text.append(param.text);
+    if (text.back() != '\n')
+    {
+        text.append(1, '\n');
+    }
 
-    const FormulaPtr result{create_formula(param.text)};
+    const FormulaPtr result{create_formula(text)};
 
     ASSERT_TRUE(result);
     const ast::Expr &section{result->get_section(Section::DEFAULT)};
@@ -481,6 +825,17 @@ TEST_P(DefaultSection, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormualParse, DefaultSection, ValuesIn(s_default_values));
 
+TEST(TestParse, switchParameter)
+{
+    const FormulaPtr result{create_formula("switch:\n"
+                                           "seed=pixel\n")};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &section{result->get_section(Section::SWITCH)};
+    ASSERT_TRUE(section);
+    EXPECT_EQ("setting:seed=pixel\n", to_string(section));
+}
+
 static InvalidSectionParam s_invalid_sections[]{
     {"unknownSection",
         "global:\n"
@@ -489,14 +844,14 @@ static InvalidSectionParam s_invalid_sections[]{
         "1\n"},
     {"globalSectionFirst",
         "builtin:\n"
-        "1\n"
+        "type=1\n"
         "global:\n"
         "1\n"},
     {"builtinBeforeInit",
         "init:\n"
         "1\n"
         "builtin:\n"
-        "1\n"},
+        "type=1\n"},
     {"initAfterLoop",
         "loop:\n"
         "1\n"
@@ -532,6 +887,53 @@ static InvalidSectionParam s_invalid_sections[]{
         "1\n"
         "default:\n"
         "angle=0\n"},
+    {"globalTwice",
+        "global:\n"
+        "1\n"
+        "global:\n"
+        "1\n"},
+    {"builtinTwice",
+        "builtin:\n"
+        "type=1\n"
+        "builtin:\n"
+        "type=1\n"},
+    {"initTwice",
+        "init:\n"
+        "1\n"
+        "init:\n"
+        "1\n"},
+    {"loopTwice",
+        "loop:\n"
+        "1\n"
+        "loop:\n"
+        "1\n"},
+    {"bailoutTwice",
+        "bailout:\n"
+        "1\n"
+        "bailout:\n"
+        "1\n"},
+    {"perturbInitTwice",
+        "perturbinit:\n"
+        "1\n"
+        "perturbinit:\n"
+        "1\n"},
+    {"perturbLoopTwice",
+        "perturbloop:\n"
+        "1\n"
+        "perturbloop:\n"
+        "1\n"},
+    {"defaultTwice",
+        "default:\n"
+        "angle=120\n"
+        "default:\n"
+        "angle=120\n"},
+    {"switchTwice",
+        "switch:\n"
+        "foo=foo\n"
+        "switch:\n"
+        "foo=foo\n"},
+    {"invalidMethod", "default:\n"
+        "method=junk\n"},
 };
 
 class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
@@ -612,53 +1014,21 @@ static BuiltinDisallowsParam s_builtin_disallows[]{
         "global:\n"
         "1\n"
         "builtin:\n"
-        "type=1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
-        "1\n"},
+        "type=1\n"},
     {"init",
         "builtin:\n"
         "type=1\n"
         "init:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
     {"loop",
         "builtin:\n"
         "type=1\n"
         "loop:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
     {"bailout",
         "builtin:\n"
         "type=1\n"
         "bailout:\n"
-        "1\n"
-        "perturbinit:\n"
-        "1\n"
-        "perturbloop:\n"
-        "1\n"
-        "default:\n"
-        "angle=0\n"
-        "switch:\n"
         "1\n"},
 };
 

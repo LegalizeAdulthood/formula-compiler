@@ -7,7 +7,6 @@
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
 
-#include "descent.h"
 #include "parser.h"
 
 #include <cstdint>
@@ -309,12 +308,7 @@ bool valid_sections(const FormulaSectionsPtr &ast)
 
 FormulaPtr create_formula(std::string_view text)
 {
-    return create_descent_formula(text);
-}
-
-FormulaPtr create_descent_formula(std::string_view text)
-{
-    if (FormulaSectionsPtr sections = descent::parse(text))
+    if (FormulaSectionsPtr sections = parser::parse(text))
     {
         return std::make_shared<ParsedFormula>(sections);
     }

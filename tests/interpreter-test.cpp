@@ -280,7 +280,7 @@ TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)
 {
     const FormulaPtr formula{create_formula("q=3\n"
-                                   "z=4\n")};
+                                            "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::ITERATE));
     formula->set_value("q", {-1.0, -1.0});
@@ -301,7 +301,7 @@ TEST(TestFormulaInterpreter, assignmentStatementsIterate)
 TEST(TestFormulaInterpreter, assignmentStatementsBailout)
 {
     const FormulaPtr formula{create_formula("q=3\n"
-                                   "z=4\n")};
+                                            "z=4\n")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("q", {-1.0, -1.0});
@@ -458,7 +458,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormula, InterpreterFunctionCall, ValuesIn(g_calls)
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 {
     const FormulaPtr formula{create_formula("if(5)\n"
-                                   "endif")};
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -471,7 +471,7 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyTrue)
 TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(5<4)\n"
-                                   "endif")};
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -484,8 +484,8 @@ TEST(TestFormulaInterpreter, ifStatementEmptyBodyFalse)
 TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 {
     const FormulaPtr formula{create_formula("if(5)\n"
-                                   "z=3\n"
-                                   "endif")};
+                                            "z=3\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {0.0, 0.0});
@@ -502,8 +502,8 @@ TEST(TestFormulaInterpreter, ifStatementBodyTrue)
 TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(5<4)\n"
-                                   "z=3\n"
-                                   "endif")};
+                                            "z=3\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {5.0, 0.0});
@@ -520,12 +520,12 @@ TEST(TestFormulaInterpreter, ifStatementBodyFalse)
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "x=1\n"
-                                   "y=2\n"
-                                   "else\n"
-                                   "z=3\n"
-                                   "q=4\n"
-                                   "endif")};
+                                            "x=1\n"
+                                            "y=2\n"
+                                            "else\n"
+                                            "z=3\n"
+                                            "q=4\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("x", {0.0, 0.0});
@@ -554,12 +554,12 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionFalse)
 TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 {
     const FormulaPtr formula{create_formula("if(1)\n"
-                                   "x=1\n"
-                                   "y=2\n"
-                                   "else\n"
-                                   "z=3\n"
-                                   "q=4\n"
-                                   "endif")};
+                                            "x=1\n"
+                                            "y=2\n"
+                                            "else\n"
+                                            "z=3\n"
+                                            "q=4\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("x", {0.0, 0.0});
@@ -588,8 +588,8 @@ TEST(TestFormulaInterpreter, ifThenElseComplexBodyConditionTrue)
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "elseif(1)\n"
-                                   "endif")};
+                                            "elseif(1)\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -602,8 +602,8 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyTrue)
 TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "elseif(0)\n"
-                                   "endif")};
+                                            "elseif(0)\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -616,9 +616,9 @@ TEST(TestFormulaInterpreter, ifElseIfStatementEmptyBodyFalse)
 TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "elseif(0)\n"
-                                   "else\n"
-                                   "endif")};
+                                            "elseif(0)\n"
+                                            "else\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
 
@@ -631,10 +631,10 @@ TEST(TestFormulaInterpreter, ifElseIfElseStatementEmptyBodyFalse)
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "z=1\n"
-                                   "elseif(1)\n"
-                                   "z=4\n"
-                                   "endif")};
+                                            "z=1\n"
+                                            "elseif(1)\n"
+                                            "z=4\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {0.0, 0.0});
@@ -652,12 +652,12 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyTrue)
 TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "z=1\n"
-                                   "elseif(0)\n"
-                                   "z=3\n"
-                                   "else\n"
-                                   "z=4\n"
-                                   "endif")};
+                                            "z=1\n"
+                                            "elseif(0)\n"
+                                            "z=3\n"
+                                            "else\n"
+                                            "z=4\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {0.0, 0.0});
@@ -674,14 +674,14 @@ TEST(TestFormulaInterpreter, ifElseIfStatementBodyFalse)
 TEST(TestFormulaInterpreter, ifMultipleElseIfStatementBodyFalse)
 {
     const FormulaPtr formula{create_formula("if(0)\n"
-                                   "z=1\n"
-                                   "elseif(0)\n"
-                                   "z=3\n"
-                                   "elseif(1)\n"
-                                   "z=4\n"
-                                   "else\n"
-                                   "z=5\n"
-                                   "endif")};
+                                            "z=1\n"
+                                            "elseif(0)\n"
+                                            "z=3\n"
+                                            "elseif(1)\n"
+                                            "z=4\n"
+                                            "else\n"
+                                            "z=5\n"
+                                            "endif")};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     formula->set_value("z", {0.0, 0.0});

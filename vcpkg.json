@@ -5,7 +5,6 @@
   "version-semver": "1.0.0",
   "dependencies": [
     "asmjit",
-    "boost-parser",
     "gtest"
   ]
 }
