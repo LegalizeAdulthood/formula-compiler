@@ -252,6 +252,8 @@ Token Lexer::lex_number()
 {
     size_t start = m_position;
     std::string number_str;
+    bool has_decimal_point = false;
+    bool has_exponent = false;
 
     // Integer part
     while (m_position < m_input.length() && std::isdigit(static_cast<unsigned char>(current_char())))
@@ -263,6 +265,7 @@ Token Lexer::lex_number()
     // Decimal part
     if (m_position < m_input.length() && current_char() == '.')
     {
+        has_decimal_point = true;
         number_str += current_char();
         advance();
 
@@ -276,6 +279,7 @@ Token Lexer::lex_number()
     // Exponent part
     if (m_position < m_input.length() && (current_char() == 'e' || current_char() == 'E'))
     {
+        has_exponent = true;
         number_str += current_char();
         advance();
 
@@ -309,12 +313,23 @@ Token Lexer::lex_number()
         }
     }
 
-    // Convert to double
-    char *end;
-    double value = std::strtod(number_str.c_str(), &end);
-
     size_t length = m_position - start;
-    return {value, start, length};
+
+    // Determine if this is an integer or floating-point number
+    if (has_decimal_point || has_exponent)
+    {
+        // Floating-point number
+        char *end;
+        double value = std::strtod(number_str.c_str(), &end);
+        return {value, start, length};
+    }
+    else
+    {
+        // Integer number
+        char *end;
+        int value = static_cast<int>(std::strtol(number_str.c_str(), &end, 10));
+        return {value, start, length};
+    }
 }
 
 char Lexer::current_char() const

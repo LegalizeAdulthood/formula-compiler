@@ -52,7 +52,7 @@ public:
 
 private:
     bool builtin_section();
-    std::optional<double> signed_number();
+    std::optional<double> signed_literal();
     bool default_number_setting(std::string name);
     std::optional<Complex> complex_number();
     bool default_complex_setting(std::string name);
@@ -109,6 +109,10 @@ private:
     {
         return std::get<double>(m_curr.value);
     }
+    int integer() const
+    {
+        return std::get<int>(m_curr.value);
+    }
 
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
@@ -152,14 +156,14 @@ bool Descent::builtin_section()
     }
     advance(); // advance past assignment token
 
-    if (!check(TokenType::NUMBER))
+    if (!check(TokenType::INTEGER))
     {
         return false;
     }
-    const double value{num()};
+    const int value{integer()};
     advance();
 
-    if (value != 1.0 && value != 2.0)
+    if (value != 1 && value != 2)
     {
         return false;
     }
@@ -170,7 +174,7 @@ bool Descent::builtin_section()
     }
     advance();
 
-    m_ast->builtin = std::make_shared<SettingNode>("type", static_cast<int>(value));
+    m_ast->builtin = std::make_shared<SettingNode>("type", value);
     return true;
 }
 
@@ -178,31 +182,36 @@ std::string_view s_default_number_settings[]{
     "angle", "magn", "maxiter", "periodicity", "skew", "stretch", //
 };
 
-std::optional<double> Descent::signed_number()
+std::optional<double> Descent::signed_literal()
 {
     const bool prefix_op = check({TokenType::PLUS, TokenType::MINUS});
-    if (!(check(TokenType::NUMBER) || prefix_op))
+    if (!(check({TokenType::INTEGER, TokenType::NUMBER}) || prefix_op))
     {
         return {};
     }
-    const double sign = !check(TokenType::MINUS) ? 1.0 : -1.0;
+    const bool negative = check(TokenType::MINUS);
     if (prefix_op)
     {
         advance(); // consume prefix sign
-        if (!check(TokenType::NUMBER))
-        {
-            return {};
-        }
     }
-    const double value{num()};
-    advance();
-
-    return {sign * value};
+    if (check(TokenType::INTEGER))
+    {
+        const int value{integer()};
+        advance();
+        return negative ? -value : value;
+    }
+    if (check(TokenType::NUMBER))
+    {
+        const double value{num()};
+        advance();
+        return negative ? -value : value;
+    }
+    return {};
 }
 
 bool Descent::default_number_setting(const std::string name)
 {
-    const std::optional num{signed_number()};
+    const std::optional num{signed_literal()};
     if (!num)
     {
         return false;
@@ -219,9 +228,34 @@ bool Descent::default_number_setting(const std::string name)
 
 std::optional<Complex> Descent::complex_number()
 {
-    if (std::optional value{signed_number()})
+    const auto get_literal = [this]() -> std::optional<double>
     {
-        return Complex{value.value(), 0.0};
+        const bool negative = check(TokenType::MINUS);
+        if (!check({TokenType::PLUS, TokenType::MINUS, TokenType::INTEGER, TokenType::NUMBER}))
+        {
+            return {};
+        }
+        if (check({TokenType::PLUS, TokenType::MINUS}))
+        {
+            advance();
+        }
+        if (check(TokenType::INTEGER))
+        {
+            const int value{integer()};
+            advance();
+            return negative ? -value : value;
+        }
+        if (check(TokenType::NUMBER))
+        {
+            const double value{num()};
+            advance();
+            return negative ? -value : value;
+        }
+        return {};
+    };
+    if (const std::optional literal{get_literal()})
+    {
+        return Complex{literal.value(), 0.0};
     }
 
     if (!check(TokenType::LEFT_PAREN))
@@ -230,7 +264,7 @@ std::optional<Complex> Descent::complex_number()
     }
     advance();
 
-    const std::optional real{signed_number()};
+    const std::optional real{get_literal()};
     if (!real)
     {
         return {};
@@ -242,7 +276,7 @@ std::optional<Complex> Descent::complex_number()
     }
     advance();
 
-    const std::optional imag{signed_number()};
+    const std::optional imag{get_literal()};
     if (!imag)
     {
         return {};
@@ -436,11 +470,11 @@ std::optional<Expr> Descent::param_default(const std::string &type)
     }
     if (type == "int")
     {
-        if (!check(TokenType::NUMBER))
+        if (!check(TokenType::INTEGER))
         {
             return {};
         }
-        Expr body = std::make_shared<SettingNode>("default", static_cast<int>(num()));
+        Expr body = std::make_shared<SettingNode>("default", integer());
         advance();
         return body;
     }
@@ -504,7 +538,7 @@ std::optional<Expr> Descent::param_number(const std::string &type, const std::st
 {
     if (type == "int")
     {
-        std::optional<double> value = signed_number();
+        std::optional<double> value = signed_literal();
         if (!value)
         {
             return {};
@@ -513,7 +547,7 @@ std::optional<Expr> Descent::param_number(const std::string &type, const std::st
     }
     if (type == "float")
     {
-        std::optional<double> value = signed_number();
+        std::optional<double> value = signed_literal();
         if (!value)
         {
             return {};
@@ -1440,6 +1474,12 @@ Expr Descent::number()
     {
         Expr result = std::make_shared<NumberNode>(num());
         advance(); // consume the number
+        return result;
+    }
+    if (check(TokenType::INTEGER))
+    {
+        Expr result = std::make_shared<NumberNode>(std::get<int>(m_curr.value));
+        advance();
         return result;
     }
     return nullptr;

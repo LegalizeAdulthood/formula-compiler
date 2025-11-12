@@ -204,7 +204,23 @@ void Interpreter::visit(const IfStatementNode &node)
 
 void Interpreter::visit(const NumberNode &node)
 {
-    back().re = std::get<double>(node.value());
+    switch (node.value().index())
+    {
+    case 0:
+        back().re = std::get<int>(node.value());
+        break;
+
+    case 1:
+        back().re = std::get<double>(node.value());
+        break;
+
+    case 2:
+        back() = std::get<Complex>(node.value());
+        break;
+
+    default:
+        throw std::runtime_error("Unknown NumberNode variant index " + std::to_string(node.value().index()));
+    }
 }
 
 void Interpreter::visit(const StatementSeqNode &node)

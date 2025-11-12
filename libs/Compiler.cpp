@@ -100,7 +100,25 @@ private:
 
 void Compiler::visit(const NumberNode &node)
 {
-    asmjit::Label label = get_constant_label(comp, state.data.constants, {std::get<double>(node.value()), 0.0});
+    Complex value{};
+    switch (node.value().index())
+    {
+    case 0:
+        value.re = std::get<int>(node.value());
+        break;
+
+    case 1:
+        value.re = std::get<double>(node.value());
+        break;
+
+    case 2:
+        value = std::get<Complex>(node.value());
+        break;
+
+    default:
+        throw std::runtime_error("Unknown NumberNode variant index " + std::to_string(node.value().index()));
+    }
+    asmjit::Label label = get_constant_label(comp, state.data.constants, value);
     ASMJIT_STORE(comp.movlpd(m_result.back(), asmjit::x86::ptr(label)));
     ASMJIT_STORE(comp.movhpd(m_result.back(), asmjit::x86::ptr(label, sizeof(double))));
 }

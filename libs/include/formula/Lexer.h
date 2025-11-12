@@ -16,6 +16,7 @@ enum class TokenType
 {
     NONE = 0,
     END_OF_INPUT = 1,
+    INTEGER,
     NUMBER,
     PLUS,
     MINUS,
@@ -35,13 +36,34 @@ enum class TokenType
     IDENTIFIER,
     LEFT_PAREN,
     RIGHT_PAREN,
+    LEFT_BRACKET,
+    RIGHT_BRACKET,
+    LEFT_BRACE,
+    RIGHT_BRACE,
+    PERIOD,
     COLON,
     COMMA,
     TERMINATOR,
-    IF,
-    ELSE_IF,
-    ELSE,
-    END_IF,
+    IF,           // keywords: if statemetn
+    ELSE_IF,      //
+    ELSE,         //
+    END_IF,       //
+    WHILE,        // while statement
+    END_WHILE,    //
+    REPEAT,       // repeat statement
+    UNTIL,        //
+    FUNC,         // function definition
+    END_FUNC,     //
+    PARAM,        // parameter block
+    END_PARAM,    //
+    HEADING,      // heading block
+    END_HEADING,  //
+    CTX_CONST,    // context-sensitive keywords
+    CTX_IMPORT,   //
+    CTX_NEW,      //
+    CTX_RETURN,   //
+    CTX_STATIC,   //
+    CTX_THIS,     //
     GLOBAL,       // Section names global:
     BUILTIN,      // builtin:
     INIT,         // init:
@@ -115,8 +137,6 @@ enum class TokenType
     TYPE_FLOAT,   // float type name
     TYPE_COMPLEX, // complex type name
     TYPE_COLOR,   // color type name
-    PARAM,        // parameter block
-    END_PARAM,    //
 };
 
 struct Token
@@ -129,6 +149,13 @@ struct Token
     }
     Token(TokenType t, size_t pos, size_t len) :
         type(t),
+        position(pos),
+        length(len)
+    {
+    }
+    Token(int val, size_t pos, size_t len) :
+        type(TokenType::INTEGER),
+        value(val),
         position(pos),
         length(len)
     {
@@ -149,7 +176,7 @@ struct Token
     }
 
     TokenType type;
-    std::variant<double, std::string> value;
+    std::variant<int, double, std::string> value;
     size_t position;
     size_t length;
 };

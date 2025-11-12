@@ -20,8 +20,8 @@ TEST(TestLexer, skipsTrailingWhitespace)
     Token token = lexer.next_token();
     Token end_token = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token.type);
-    EXPECT_DOUBLE_EQ(42.0, std::get<double>(token.value));
+    EXPECT_EQ(TokenType::INTEGER, token.type);
+    EXPECT_EQ(42, std::get<int>(token.value));
     EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
 }
 
@@ -33,12 +33,12 @@ TEST(TestLexer, multipleNumbers)
     Token token3 = lexer.next_token();
     Token end_token = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_DOUBLE_EQ(1.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(1, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::NUMBER, token2.type);
     EXPECT_DOUBLE_EQ(2.5, std::get<double>(token2.value));
-    EXPECT_EQ(TokenType::NUMBER, token3.type);
-    EXPECT_DOUBLE_EQ(3.0, std::get<double>(token3.value));
+    EXPECT_EQ(TokenType::INTEGER, token3.type);
+    EXPECT_EQ(3, std::get<int>(token3.value));
     EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
 }
 
@@ -59,9 +59,9 @@ TEST(TestLexer, terminatorLF)
         t = lexer.next_token();
     }
 
-    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_EQ(TokenType::INTEGER, tokens[0].type);
     EXPECT_EQ(TokenType::TERMINATOR, tokens[1].type);
-    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_EQ(TokenType::INTEGER, tokens[2].type);
 }
 
 TEST(TestLexer, terminatorCRLF)
@@ -73,9 +73,9 @@ TEST(TestLexer, terminatorCRLF)
         t = lexer.next_token();
     }
 
-    EXPECT_EQ(TokenType::NUMBER, tokens[0].type);
+    EXPECT_EQ(TokenType::INTEGER, tokens[0].type);
     EXPECT_EQ(TokenType::TERMINATOR, tokens[1].type);
-    EXPECT_EQ(TokenType::NUMBER, tokens[2].type);
+    EXPECT_EQ(TokenType::INTEGER, tokens[2].type);
 }
 
 TEST(TestLexer, peekDoesNotAdvance)
@@ -86,12 +86,12 @@ TEST(TestLexer, peekDoesNotAdvance)
     Token token1 = lexer.next_token();     // Now actually consume it
     Token token2 = lexer.next_token();     // Next token should be the second number
 
-    EXPECT_EQ(TokenType::NUMBER, peek_token.type);
-    EXPECT_DOUBLE_EQ(42.0, std::get<double>(peek_token.value));
-    EXPECT_EQ(TokenType::NUMBER, peek_again.type);
-    EXPECT_DOUBLE_EQ(42.0, std::get<double>(peek_again.value));
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_DOUBLE_EQ(42.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::INTEGER, peek_token.type);
+    EXPECT_EQ(42, std::get<int>(peek_token.value));
+    EXPECT_EQ(TokenType::INTEGER, peek_again.type);
+    EXPECT_EQ(42, std::get<int>(peek_again.value));
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(42, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::NUMBER, token2.type);
     EXPECT_DOUBLE_EQ(3.14, std::get<double>(token2.value));
 }
@@ -103,8 +103,8 @@ TEST(TestLexer, lineContinuationWithLF)
     const Token token1 = lexer.next_token();
     const Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
 TEST(TestLexer, lineContinuationWithCRLF)
@@ -114,8 +114,8 @@ TEST(TestLexer, lineContinuationWithCRLF)
     Token token1 = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
 TEST(TestLexer, lineContinuationMultiple)
@@ -124,8 +124,8 @@ TEST(TestLexer, lineContinuationMultiple)
     Token token1 = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
 TEST(TestLexer, lineContinuationWithSpaces)
@@ -134,8 +134,8 @@ TEST(TestLexer, lineContinuationWithSpaces)
     Token token1 = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
 TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
@@ -145,9 +145,9 @@ TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
     Token invalid = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INVALID, invalid.type);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
 TEST(TestLexer, positionTracking)
@@ -168,12 +168,12 @@ TEST(TestLexer, singleExclamationInvalid)
     Token op = lexer.next_token();
     Token token2 = lexer.next_token();
 
-    EXPECT_EQ(TokenType::NUMBER, token1.type);
-    EXPECT_DOUBLE_EQ(1.0, std::get<double>(token1.value));
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(1, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::INVALID, op.type);
     EXPECT_EQ(1u, op.length);
-    EXPECT_EQ(TokenType::NUMBER, token2.type);
-    EXPECT_DOUBLE_EQ(2.0, std::get<double>(token2.value));
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(2, std::get<int>(token2.value));
 }
 
 TEST(TestLexer, builtinVariablsHaveNameValue)
@@ -273,6 +273,42 @@ TEST(TestLexer, stringWithEscapedBackslash)
     EXPECT_EQ(R"(path\to\file)", std::get<std::string>(token.value));
 }
 
+TEST(TestLexer, integerLiteral)
+{
+    Lexer lexer("42");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::INTEGER, token.type);
+    EXPECT_EQ(42, std::get<int>(token.value));
+}
+
+TEST(TestLexer, floatingPointLiteral)
+{
+    Lexer lexer("42.5");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token.type);
+    EXPECT_DOUBLE_EQ(42.5, std::get<double>(token.value));
+}
+
+TEST(TestLexer, scientificNotationIsFloat)
+{
+    Lexer lexer("1e10");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token.type);
+    EXPECT_DOUBLE_EQ(1e10, std::get<double>(token.value));
+}
+
+TEST(TestLexer, decimalPointMakesFloat)
+{
+    Lexer lexer("42.0");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::NUMBER, token.type);
+    EXPECT_DOUBLE_EQ(42.0, std::get<double>(token.value));
+}
+
 // Parameterized test for all builtin variables
 struct TextTokenParam
 {
@@ -305,19 +341,19 @@ TEST_P(TokenRecognized, recognized)
 }
 
 static TextTokenParam s_params[]{
-    {"simpleInteger", "1", TokenType::NUMBER},                                //
+    {"simpleInteger", "1", TokenType::INTEGER},                               //
     {"simpleDecimal", "3.14", TokenType::NUMBER},                             //
     {"decimalStartingWithPoint", ".5", TokenType::NUMBER},                    //
     {"scientificNotation", "1.5e10", TokenType::NUMBER},                      //
     {"scientificNotationNegativeExponent", "2.5e-3", TokenType::NUMBER},      //
     {"scientificNotationPositiveExponent", "3.7e+5", TokenType::NUMBER},      //
     {"scientificNotationUppercaseE", "1.2E6", TokenType::NUMBER},             //
-    {"zero", "0", TokenType::NUMBER},                                         //
-    {"integerWithLeadingZeros", "007", TokenType::NUMBER},                    //
+    {"zero", "0", TokenType::INTEGER},                                        //
+    {"integerWithLeadingZeros", "007", TokenType::INTEGER},                   //
     {"decimalWithTrailingZeros", "1.500", TokenType::NUMBER},                 //
     {"veryLargeNumber", "1.7976931348623157e+308", TokenType::NUMBER},        //
     {"verySmallNumber", "2.2250738585072014e-308", TokenType::NUMBER},        //
-    {"skipsLeadingWhitespace", "  42", TokenType::NUMBER, 2, 2},              //
+    {"skipsLeadingWhitespace", "  42", TokenType::INTEGER, 2, 2},             //
     {"emptyInput", "", TokenType::END_OF_INPUT},                              //
     {"plus", "+", TokenType::PLUS},                                           //
     {"minus", "-", TokenType::MINUS},                                         //
@@ -421,9 +457,9 @@ static TextTokenParam s_params[]{
     {"ident", "ident", TokenType::IDENT},                                     //
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
-    {"commentAfter", "1;this is a comment", TokenType::NUMBER, 0, 1},         //
+    {"commentAfter", "1;this is a comment", TokenType::INTEGER, 0, 1},        //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
-    {"continuation", "\\\n1", TokenType::NUMBER, 2, 1},                       //
+    {"continuation", "\\\n1", TokenType::INTEGER, 2, 1},                      //
     {"global", "global:", TokenType::GLOBAL, 0, 6},                           //
     {"builtin", "builtin:", TokenType::BUILTIN, 0, 7},                        //
     {"init", "init:", TokenType::INIT, 0, 4},                                 //
