@@ -58,9 +58,9 @@ void NodeFormatter::visit(const ast::IfStatementNode &node)
     }
 }
 
-void NodeFormatter::visit(const ast::NumberNode &node)
+void NodeFormatter::visit(const ast::LiteralNode &node)
 {
-    m_str << "number:";
+    m_str << "literal:";
     switch (node.value().index())
     {
     case 0:
@@ -73,7 +73,7 @@ void NodeFormatter::visit(const ast::NumberNode &node)
         m_str << '(' << std::get<2>(node.value()).re << ',' << std::get<2>(node.value()).im << ')';
         break;
     default:
-        throw std::runtime_error("NumberNode value variant index out of range");
+        throw std::runtime_error("LiteralNode value variant index out of range");
     }
     m_str << '\n';
 }

@@ -41,7 +41,7 @@ void IfStatementNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void NumberNode::visit(Visitor &visitor) const
+void LiteralNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }

@@ -31,7 +31,7 @@ public:
     void visit(const ast::FunctionCallNode &node) override;
     void visit(const ast::IdentifierNode &node) override;
     void visit(const ast::IfStatementNode &node) override;
-    void visit(const ast::NumberNode &node) override;
+    void visit(const ast::LiteralNode &node) override;
     void visit(const ast::ParamBlockNode &node) override;
     void visit(const ast::SettingNode &node) override;
     void visit(const ast::StatementSeqNode &node) override;

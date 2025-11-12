@@ -28,23 +28,23 @@ public:
 
 using Expr = std::shared_ptr<Node>;
 
-class NumberNode : public Node
+class LiteralNode : public Node
 {
 public:
     using ValueType = std::variant<int, double, Complex>;
-    explicit NumberNode(int value) :
+    explicit LiteralNode(int value) :
         m_value(value)
     {
     }
-    explicit NumberNode(double value) :
+    explicit LiteralNode(double value) :
         m_value(value)
     {
     }
-    explicit NumberNode(Complex value) :
+    explicit LiteralNode(Complex value) :
         m_value(value)
     {
     }
-    ~NumberNode() override = default;
+    ~LiteralNode() override = default;
 
     void visit(Visitor &visitor) const override;
 

@@ -37,7 +37,7 @@ public:
     void visit(const FunctionCallNode &node) override;
     void visit(const IdentifierNode &node) override;
     void visit(const IfStatementNode &node) override;
-    void visit(const NumberNode &node) override;
+    void visit(const LiteralNode &node) override;
     void visit(const StatementSeqNode &node) override;
     void visit(const UnaryOpNode &node) override;
 
@@ -202,7 +202,7 @@ void Interpreter::visit(const IfStatementNode &node)
     }
 }
 
-void Interpreter::visit(const NumberNode &node)
+void Interpreter::visit(const LiteralNode &node)
 {
     switch (node.value().index())
     {
@@ -219,7 +219,7 @@ void Interpreter::visit(const NumberNode &node)
         break;
 
     default:
-        throw std::runtime_error("Unknown NumberNode variant index " + std::to_string(node.value().index()));
+        throw std::runtime_error("Unknown LiteralNode variant index " + std::to_string(node.value().index()));
     }
 }
 

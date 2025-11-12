@@ -128,114 +128,114 @@ class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
 } // namespace
 
 static SimpleExpressionParam s_simple_expressions[]{
-    {"constant", "1", "number:1"},                                                           //
-    {"identifier", "z2", "identifier:z2"},                                                   //
-    {"parenExpr", "(z)", "identifier:z"},                                                    //
-    {"add", "1+2", "binary_op:+ number:1 number:2"},                                         //
-    {"subtract", "1-2", "binary_op:- number:1 number:2"},                                    //
-    {"multiply", "1*2", "binary_op:* number:1 number:2"},                                    //
-    {"divide", "1/2", "binary_op:/ number:1 number:2"},                                      //
-    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* number:1 number:2 number:4"},          //
-    {"parenthesisExpr", "1*(2+4)", "binary_op:* number:1 binary_op:+ number:2 number:4"},    //
-    {"unaryMinus", "-(1)", "unary_op:- number:1"},                                           //
-    {"unaryPlus", "+(1)", "unary_op:+ number:1"},                                            //
-    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- number:1"},                      //
-    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ number:1 number:2 number:3"},            //
-    {"capitalLetterInIdentifier", "A", "identifier:A"},                                      //
-    {"numberInIdentifier", "a1", "identifier:a1"},                                           //
-    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                     //
-    {"power", "2^3", "binary_op:^ number:2 number:3"},                                       //
-    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ number:1 number:2 number:3"}, //
-    {"assignment", "z=4", "assignment:z number:4"},                                          //
+    {"constant", "1", "literal:1"},                                                             //
+    {"identifier", "z2", "identifier:z2"},                                                      //
+    {"parenExpr", "(z)", "identifier:z"},                                                       //
+    {"add", "1+2", "binary_op:+ literal:1 literal:2"},                                          //
+    {"subtract", "1-2", "binary_op:- literal:1 literal:2"},                                     //
+    {"multiply", "1*2", "binary_op:* literal:1 literal:2"},                                     //
+    {"divide", "1/2", "binary_op:/ literal:1 literal:2"},                                       //
+    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* literal:1 literal:2 literal:4"},          //
+    {"parenthesisExpr", "1*(2+4)", "binary_op:* literal:1 binary_op:+ literal:2 literal:4"},    //
+    {"unaryMinus", "-(1)", "unary_op:- literal:1"},                                             //
+    {"unaryPlus", "+(1)", "unary_op:+ literal:1"},                                              //
+    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- literal:1"},                        //
+    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ literal:1 literal:2 literal:3"},            //
+    {"capitalLetterInIdentifier", "A", "identifier:A"},                                         //
+    {"numberInIdentifier", "a1", "identifier:a1"},                                              //
+    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                        //
+    {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                        //
+    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"}, //
+    {"assignment", "z=4", "assignment:z literal:4"},                                            //
     {"assignmentLongVariable", "this_is_another4_variable_name2=4",
-        "assignment:this_is_another4_variable_name2 number:4"},                                                 //
-    {"modulus", "|-3.0|", "unary_op:| unary_op:- number:3"},                                                    //
-    {"compareLess", "4<3", "binary_op:< number:4 number:3"},                                                    //
-    {"compareLessPrecedence", "3<z=4", "binary_op:< number:3 assignment:z number:4"},                           //
-    {"compareLessEqual", "4<=3", "binary_op:<= number:4 number:3"},                                             //
-    {"compareGreater", "4>3", "binary_op:> number:4 number:3"},                                                 //
-    {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> number:4 number:3 number:4"},                   //
-    {"compareGreaterEqual", "4>=3", "binary_op:>= number:4 number:3"},                                          //
-    {"compareEqual", "4==3", "binary_op:== number:4 number:3"},                                                 //
-    {"compareNotEqual", "4!=3", "binary_op:!= number:4 number:3"},                                              //
-    {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== number:4 number:3 binary_op:== number:5 number:6"}, //
-    {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== number:4 number:3 binary_op:== number:5 number:6"},  //
-    {"ignoreComments", "3; z=6 oh toodlee doo", "number:3"},                                                    //
-    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "number:3"},                                                //
-    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "number:3"},                                            //
-    {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 number:1"},                                 //
-    {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine number:1"},                             //
-    {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 number:1"},                                //
-    {"builtinVariableP1", "p1", "identifier:p1"},                                                               //
-    {"builtinVariableP2", "p2", "identifier:p2"},                                                               //
-    {"builtinVariableP3", "p3", "identifier:p3"},                                                               //
-    {"builtinVariableP4", "p4", "identifier:p4"},                                                               //
-    {"builtinVariableP5", "p5", "identifier:p5"},                                                               //
-    {"builtinVariablePixel", "pixel", "identifier:pixel"},                                                      //
-    {"builtinVariableLastsqr", "lastsqr", "identifier:lastsqr"},                                                //
-    {"builtinVariableRand", "rand", "identifier:rand"},                                                         //
-    {"builtinVariablePi", "pi", "identifier:pi"},                                                               //
-    {"builtinVariableE", "e", "identifier:e"},                                                                  //
-    {"builtinVariableMaxit", "maxit", "identifier:maxit"},                                                      //
-    {"builtinVariableScrnmax", "scrnmax", "identifier:scrnmax"},                                                //
-    {"builtinVariableScrnpix", "scrnpix", "identifier:scrnpix"},                                                //
-    {"builtinVariableWhitesq", "whitesq", "identifier:whitesq"},                                                //
-    {"builtinVariableIsmand", "ismand", "identifier:ismand"},                                                   //
-    {"builtinVariableCenter", "center", "identifier:center"},                                                   //
-    {"builtinVariableMagxmag", "magxmag", "identifier:magxmag"},                                                //
-    {"builtinVariableRotskew", "rotskew", "identifier:rotskew"},                                                //
+        "assignment:this_is_another4_variable_name2 literal:4"},                                                    //
+    {"modulus", "|-3.0|", "unary_op:| unary_op:- literal:3"},                                                       //
+    {"compareLess", "4<3", "binary_op:< literal:4 literal:3"},                                                      //
+    {"compareLessPrecedence", "3<z=4", "binary_op:< literal:3 assignment:z literal:4"},                             //
+    {"compareLessEqual", "4<=3", "binary_op:<= literal:4 literal:3"},                                               //
+    {"compareGreater", "4>3", "binary_op:> literal:4 literal:3"},                                                   //
+    {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> literal:4 literal:3 literal:4"},                    //
+    {"compareGreaterEqual", "4>=3", "binary_op:>= literal:4 literal:3"},                                            //
+    {"compareEqual", "4==3", "binary_op:== literal:4 literal:3"},                                                   //
+    {"compareNotEqual", "4!=3", "binary_op:!= literal:4 literal:3"},                                                //
+    {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== literal:4 literal:3 binary_op:== literal:5 literal:6"}, //
+    {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== literal:4 literal:3 binary_op:== literal:5 literal:6"},  //
+    {"ignoreComments", "3; z=6 oh toodlee doo", "literal:3"},                                                       //
+    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "literal:3"},                                                   //
+    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "literal:3"},                                               //
+    {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 literal:1"},                                    //
+    {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine literal:1"},                                //
+    {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 literal:1"},                                   //
+    {"builtinVariableP1", "p1", "identifier:p1"},                                                                   //
+    {"builtinVariableP2", "p2", "identifier:p2"},                                                                   //
+    {"builtinVariableP3", "p3", "identifier:p3"},                                                                   //
+    {"builtinVariableP4", "p4", "identifier:p4"},                                                                   //
+    {"builtinVariableP5", "p5", "identifier:p5"},                                                                   //
+    {"builtinVariablePixel", "pixel", "identifier:pixel"},                                                          //
+    {"builtinVariableLastsqr", "lastsqr", "identifier:lastsqr"},                                                    //
+    {"builtinVariableRand", "rand", "identifier:rand"},                                                             //
+    {"builtinVariablePi", "pi", "identifier:pi"},                                                                   //
+    {"builtinVariableE", "e", "identifier:e"},                                                                      //
+    {"builtinVariableMaxit", "maxit", "identifier:maxit"},                                                          //
+    {"builtinVariableScrnmax", "scrnmax", "identifier:scrnmax"},                                                    //
+    {"builtinVariableScrnpix", "scrnpix", "identifier:scrnpix"},                                                    //
+    {"builtinVariableWhitesq", "whitesq", "identifier:whitesq"},                                                    //
+    {"builtinVariableIsmand", "ismand", "identifier:ismand"},                                                       //
+    {"builtinVariableCenter", "center", "identifier:center"},                                                       //
+    {"builtinVariableMagxmag", "magxmag", "identifier:magxmag"},                                                    //
+    {"builtinVariableRotskew", "rotskew", "identifier:rotskew"},                                                    //
     {"ifEmptyBody",
         "if(0)\n"
         "endif",
-        "if_statement:( number:0 ) { } endif"},
+        "if_statement:( literal:0 ) { } endif"},
     {"ifBlankLinesBody",
         "if(0)\n"
         "\n"
         "endif",
-        "if_statement:( number:0 ) { } endif"},
+        "if_statement:( literal:0 ) { } endif"},
     {"ifThenBody",
         "if(0)\n"
         "1\n"
         "endif",
-        "if_statement:( number:0 ) { number:1 } endif"},
+        "if_statement:( literal:0 ) { literal:1 } endif"},
     {"ifThenComplexBody",
         "if(0)\n"
         "1\n"
         "2\n"
         "endif",
-        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
+        "if_statement:( literal:0 ) { statement_seq:2 { literal:1 literal:2 } } endif"},
     {"ifComparisonCondition",
         "if(1<2)\n"
         "endif",
-        "if_statement:( binary_op:< number:1 number:2 ) { } endif"},
+        "if_statement:( binary_op:< literal:1 literal:2 ) { } endif"},
     {"ifConjunctiveCondition",
         "if(1&&2)\n"
         "endif",
-        "if_statement:( binary_op:&& number:1 number:2 ) { } endif"},
+        "if_statement:( binary_op:&& literal:1 literal:2 ) { } endif"},
     {"ifElseEmptyBody",
         "if(0)\n"
         "else\n"
         "endif",
-        "if_statement:( number:0 ) { } endif"},
+        "if_statement:( literal:0 ) { } endif"},
     {"ifElseBlankLinesBody",
         "if(0)\n"
         "\n"
         "else\n"
         "\n"
         "endif",
-        "if_statement:( number:0 ) { } endif"},
+        "if_statement:( literal:0 ) { } endif"},
     {"ifThenElseBody",
         "if(0)\n"
         "else\n"
         "1\n"
         "endif",
-        "if_statement:( number:0 ) { } else { number:1 } endif"},
+        "if_statement:( literal:0 ) { } else { literal:1 } endif"},
     {"ifThenBodyElse",
         "if(0)\n"
         "1\n"
         "else\n"
         "endif",
-        "if_statement:( number:0 ) { number:1 } endif"},
+        "if_statement:( literal:0 ) { literal:1 } endif"},
     {"ifThenElseComplexBody",
         "if(0)\n"
         "1\n"
@@ -244,23 +244,23 @@ static SimpleExpressionParam s_simple_expressions[]{
         "3\n"
         "4\n"
         "endif",
-        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } "
-        "} else { statement_seq:2 { number:3 number:4 } } endif"},
+        "if_statement:( literal:0 ) { statement_seq:2 { literal:1 literal:2 } "
+        "} else { statement_seq:2 { literal:3 literal:4 } } endif"},
     {"ifElseIfEmptyBody",
         "if(0)\n"
         "elseif(1)\n"
         "else\n"
         "endif",
-        "if_statement:( number:0 ) { } else { if_statement:( number:1 ) { } endif } endif"},
+        "if_statement:( literal:0 ) { } else { if_statement:( literal:1 ) { } endif } endif"},
     {"ifMultipleElseIfEmptyBody",
         "if(0)\n"
         "elseif(0)\n"
         "elseif(0)\n"
         "else\n"
         "endif",
-        "if_statement:( number:0 ) { } "
-        "else { if_statement:( number:0 ) { } "
-        "else { if_statement:( number:0 ) { } "
+        "if_statement:( literal:0 ) { } "
+        "else { if_statement:( literal:0 ) { } "
+        "else { if_statement:( literal:0 ) { } "
         "endif } "
         "endif } "
         "endif"},
@@ -272,8 +272,8 @@ static SimpleExpressionParam s_simple_expressions[]{
         "else\n"
         "\n"
         "endif",
-        "if_statement:( number:0 ) { } "
-        "else { if_statement:( number:0 ) { } "
+        "if_statement:( literal:0 ) { } "
+        "else { if_statement:( literal:0 ) { } "
         "endif } "
         "endif"},
     {"ifThenElseIfBody",
@@ -281,8 +281,8 @@ static SimpleExpressionParam s_simple_expressions[]{
         "elseif(0)\n"
         "1\n"
         "endif",
-        "if_statement:( number:0 ) { } "
-        "else { if_statement:( number:0 ) { number:1 } "
+        "if_statement:( literal:0 ) { } "
+        "else { if_statement:( literal:0 ) { literal:1 } "
         "endif } "
         "endif"},
     {"ifThenBodyElseIf",
@@ -290,8 +290,8 @@ static SimpleExpressionParam s_simple_expressions[]{
         "1\n"
         "elseif(0)\n"
         "endif",
-        "if_statement:( number:0 ) { number:1 } "
-        "else { if_statement:( number:0 ) { } "
+        "if_statement:( literal:0 ) { literal:1 } "
+        "else { if_statement:( literal:0 ) { } "
         "endif } "
         "endif"},
     {"ifThenElseIfComplexBody",
@@ -302,8 +302,8 @@ static SimpleExpressionParam s_simple_expressions[]{
         "3\n"
         "4\n"
         "endif",
-        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } "
-        "else { if_statement:( number:1 ) { statement_seq:2 { number:3 number:4 } } "
+        "if_statement:( literal:0 ) { statement_seq:2 { literal:1 literal:2 } } "
+        "else { if_statement:( literal:1 ) { statement_seq:2 { literal:3 literal:4 } } "
         "endif } "
         "endif"},
     {"chainedElseIf",
@@ -316,10 +316,10 @@ static SimpleExpressionParam s_simple_expressions[]{
         "elseif(6)\n"
         "7\n"
         "endif",
-        "if_statement:( number:0 ) { number:1 } "
-        "else { if_statement:( number:2 ) { number:3 } "
-        "else { if_statement:( number:4 ) { number:5 } "
-        "else { if_statement:( number:6 ) { number:7 } "
+        "if_statement:( literal:0 ) { literal:1 } "
+        "else { if_statement:( literal:2 ) { literal:3 } "
+        "else { if_statement:( literal:4 ) { literal:5 } "
+        "else { if_statement:( literal:6 ) { literal:7 } "
         "endif } "
         "endif } "
         "endif } "
@@ -328,25 +328,25 @@ static SimpleExpressionParam s_simple_expressions[]{
         "if(\\\n"
         "0)\n"
         "endif",
-        "if_statement:( number:0 ) { } endif"},
+        "if_statement:( literal:0 ) { } endif"},
     {"ifSequence",
         "if(0)\n"
         "1,2\n"
         "endif",
-        "if_statement:( number:0 ) { statement_seq:2 { number:1 number:2 } } endif"},
+        "if_statement:( literal:0 ) { statement_seq:2 { literal:1 literal:2 } } endif"},
     {"elseSequence",
         "if(0)\n"
         "else\n"
         "1,2\n"
         "endif",
-        "if_statement:( number:0 ) { } else { statement_seq:2 { number:1 number:2 } } endif"},
+        "if_statement:( literal:0 ) { } else { statement_seq:2 { literal:1 literal:2 } } endif"},
     {"elseIfSequence",
         "if(0)\n"
         "elseif(3)\n"
         "1,2\n"
         "endif",
-        "if_statement:( number:0 ) { } else { "
-        "if_statement:( number:3 ) { statement_seq:2 { number:1 number:2 } } "
+        "if_statement:( literal:0 ) { } else { "
+        "if_statement:( literal:3 ) { statement_seq:2 { literal:1 literal:2 } } "
         "endif } "
         "endif"},
 };
@@ -375,7 +375,7 @@ TEST(TestFormulaParse, invalidIdentifier)
 }
 
 static MultiStatementParam s_multi_statements[]{
-    {"sequence", "3,4"},                                                        //
+    {"sequence", "3,4"}, //
     {"statements", "3\n4\n"},
     {"assignmentStatements", "z=3\nz=4\n"},
     {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},
@@ -594,14 +594,14 @@ static SimpleExpressionParam s_default_values[]{
         "binary_op:||\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:2\n"
+        "literal:2\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:3\n"
+        "literal:3\n"
         "}\n"},
     {"precisionNumber", "precision=30",
         "setting:precision={\n"
-        "number:30\n"
+        "literal:30\n"
         "}\n"}, //
     {"precisionExpr", "precision=log(fracmagn) / log(10)",
         "setting:precision={\n"
@@ -610,7 +610,7 @@ static SimpleExpressionParam s_default_values[]{
         "identifier:fracmagn\n"
         ")\n"
         "function_call:log(\n"
-        "number:10\n"
+        "literal:10\n"
         ")\n"
         "}\n"},
     {"ratingRecommended", "rating=recommended", "setting:rating=recommended\n"},              //
@@ -695,10 +695,10 @@ static SimpleExpressionParam s_default_values[]{
         "binary_op:||\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:2\n"
+        "literal:2\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:3\n"
+        "literal:3\n"
         "}\n"
         "}\n"},
     {"enumParamBlock",
@@ -797,10 +797,10 @@ static SimpleExpressionParam s_default_values[]{
         "binary_op:||\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:2\n"
+        "literal:2\n"
         "binary_op:==\n"
         "identifier:power\n"
-        "number:3\n"
+        "literal:3\n"
         "}\n"
         "}\n"},
 };
@@ -932,7 +932,8 @@ static InvalidSectionParam s_invalid_sections[]{
         "foo=foo\n"
         "switch:\n"
         "foo=foo\n"},
-    {"invalidMethod", "default:\n"
+    {"invalidMethod",
+        "default:\n"
         "method=junk\n"},
 };
 

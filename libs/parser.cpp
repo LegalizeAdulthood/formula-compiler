@@ -1472,13 +1472,13 @@ Expr Descent::number()
 {
     if (check(TokenType::NUMBER))
     {
-        Expr result = std::make_shared<NumberNode>(num());
+        Expr result = std::make_shared<LiteralNode>(num());
         advance(); // consume the number
         return result;
     }
     if (check(TokenType::INTEGER))
     {
-        Expr result = std::make_shared<NumberNode>(std::get<int>(m_curr.value));
+        Expr result = std::make_shared<LiteralNode>(std::get<int>(m_curr.value));
         advance();
         return result;
     }

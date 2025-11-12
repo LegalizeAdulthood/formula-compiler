@@ -68,60 +68,60 @@ void PrintTo(const FunctionSimplifyTestParam &param, std::ostream *os)
 }
 
 static SimplifierParam s_simplifier_tests[]{
-    {"simplifySingleStatementSequence", statements({number(42.0)}), "number:42\n"},
+    {"simplifySingleStatementSequence", statements({number(42.0)}), "literal:42\n"},
     {"multipleStatementSequencePreserved", statements({number(42.0), identifier("z")}),
         "statement_seq:2 {\n"
-        "number:42\n"
+        "literal:42\n"
         "identifier:z\n"
         "}\n"},
     {"collapseMultipleNumberStatements", statements({identifier("z"), number(42.0), number(7.0), identifier("q")}),
         "statement_seq:3 {\n"
         "identifier:z\n"
-        "number:7\n"
+        "literal:7\n"
         "identifier:q\n"
         "}\n"},
-    {"unaryPlusNumber", unary('+', number(-42.0)), "number:-42\n"},
-    {"unaryMinusNumber", unary('-', number(-42.0)), "number:42\n"},
-    {"unaryModulusNumber", unary('|', number(-6.0)), "number:36\n"},
+    {"unaryPlusNumber", unary('+', number(-42.0)), "literal:-42\n"},
+    {"unaryMinusNumber", unary('-', number(-42.0)), "literal:42\n"},
+    {"unaryModulusNumber", unary('|', number(-6.0)), "literal:36\n"},
     {"functionCallOnIdentifierNotSimplified", function_call("sin", identifier("x")),
         "function_call:sin(\n"
         "identifier:x\n"
         ")\n"},
     {"otherIdentifierNotSimplified", identifier("someVariable"), "identifier:someVariable\n"},
-    {"ifStatementWithNonZeroConditionSimplified", if_statement(number(1.0), number(42.0), number(7.0)), "number:42\n"},
-    {"ifStatementWithZeroConditionSimplified", if_statement(number(0.0), number(42.0), number(7.0)), "number:7\n"},
-    {"ifStatementWithNonZeroConditionNoElse", if_statement(number(5.0), number(42.0)), "number:42\n"},
-    {"ifStatementWithZeroConditionNoElse", if_statement(number(0.0), number(42.0)), "number:0\n"},
-    {"ifStatementWithNonZeroConditionNoThen", if_statement(number(3.0), nullptr, number(7.0)), "number:1\n"},
-    {"ifStatementWithZeroConditionNoThen", if_statement(number(0.0), nullptr, number(7.0)), "number:7\n"},
+    {"ifStatementWithNonZeroConditionSimplified", if_statement(number(1.0), number(42.0), number(7.0)), "literal:42\n"},
+    {"ifStatementWithZeroConditionSimplified", if_statement(number(0.0), number(42.0), number(7.0)), "literal:7\n"},
+    {"ifStatementWithNonZeroConditionNoElse", if_statement(number(5.0), number(42.0)), "literal:42\n"},
+    {"ifStatementWithZeroConditionNoElse", if_statement(number(0.0), number(42.0)), "literal:0\n"},
+    {"ifStatementWithNonZeroConditionNoThen", if_statement(number(3.0), nullptr, number(7.0)), "literal:1\n"},
+    {"ifStatementWithZeroConditionNoThen", if_statement(number(0.0), nullptr, number(7.0)), "literal:7\n"},
     {"ifStatementWithExpressionConditionSimplified",
-        if_statement(binary(number(2.0), '+', number(3.0)), number(42.0), number(7.0)), "number:42\n"},
+        if_statement(binary(number(2.0), '+', number(3.0)), number(42.0), number(7.0)), "literal:42\n"},
     {"ifStatementWithVariableConditionNotSimplified", if_statement(identifier("x"), number(42.0), number(7.0)),
         "if_statement:(\n"
         "identifier:x\n"
         ") {\n"
-        "number:42\n"
+        "literal:42\n"
         "} else {\n"
-        "number:7\n"
+        "literal:7\n"
         "} endif\n"},
 };
 
 static BinaryOpTestParam s_binary_op_test_params[] = {
-    {binary(number(7.0), '+', number(12.0)), "number:19\n", "addTwoNumbers"},
-    {binary(number(12.0), '-', number(7.0)), "number:5\n", "subtractTwoNumbers"},
-    {binary(number(12.0), '*', number(2.0)), "number:24\n", "multiplyTwoNumbers"},
-    {binary(number(12.0), '/', number(2.0)), "number:6\n", "divideTwoNumbers"},
-    {binary(number(2.0), "^", number(2.0)), "number:4\n", "power"},
-    {binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))), "number:4\n", "numberExpression"},
-    {binary(number(0.0), "&&", identifier("x")), "number:0\n", "shortCircuitAnd"},
-    {binary(number(12.0), "||", identifier("x")), "number:1\n", "shortCircuitOr"},
-    {binary(number(3.0), "&&", number(4.0)), "number:1\n", "logicalAnd"},
-    {binary(number(0.0), "||", number(3.0)), "number:1\n", "logicalOr"},
-    {binary(number(0.0), "<", number(4.0)), "number:1\n", "lessThan"},
-    {binary(number(4.0), ">", number(0.0)), "number:1\n", "greaterThan"},
-    {binary(number(3.0), "==", number(3.0)), "number:1\n", "equalTo"},
-    {binary(number(0.0), "<=", number(4.0)), "number:1\n", "lessThanOrEqual"},
-    {binary(number(4.0), ">=", number(0.0)), "number:1\n", "greaterThanOrEqual"},
+    {binary(number(7.0), '+', number(12.0)), "literal:19\n", "addTwoNumbers"},
+    {binary(number(12.0), '-', number(7.0)), "literal:5\n", "subtractTwoNumbers"},
+    {binary(number(12.0), '*', number(2.0)), "literal:24\n", "multiplyTwoNumbers"},
+    {binary(number(12.0), '/', number(2.0)), "literal:6\n", "divideTwoNumbers"},
+    {binary(number(2.0), "^", number(2.0)), "literal:4\n", "power"},
+    {binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))), "literal:4\n", "numberExpression"},
+    {binary(number(0.0), "&&", identifier("x")), "literal:0\n", "shortCircuitAnd"},
+    {binary(number(12.0), "||", identifier("x")), "literal:1\n", "shortCircuitOr"},
+    {binary(number(3.0), "&&", number(4.0)), "literal:1\n", "logicalAnd"},
+    {binary(number(0.0), "||", number(3.0)), "literal:1\n", "logicalOr"},
+    {binary(number(0.0), "<", number(4.0)), "literal:1\n", "lessThan"},
+    {binary(number(4.0), ">", number(0.0)), "literal:1\n", "greaterThan"},
+    {binary(number(3.0), "==", number(3.0)), "literal:1\n", "equalTo"},
+    {binary(number(0.0), "<=", number(4.0)), "literal:1\n", "lessThanOrEqual"},
+    {binary(number(4.0), ">=", number(0.0)), "literal:1\n", "greaterThanOrEqual"},
 };
 
 // Simple function calls on numbers that should be simplified
@@ -189,7 +189,7 @@ TEST_P(TestSimplifyFunctionCall, simplifyFunctionCallOnNumber)
     const Expr simplified = simplify(function_call(param.function_name, number(param.input_value)));
 
     std::ostringstream expected;
-    expected << "number:" << param.expected_result << "\n";
+    expected << "literal:" << param.expected_result << "\n";
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
@@ -206,7 +206,7 @@ TEST_F(TestFormulaSimplifier, piConstantSimplified)
     const Expr simplified = simplify(identifier("pi"));
 
     std::ostringstream expected;
-    expected << "number:" << std::atan2(0.0, -1.0) << "\n"; // ~3.14159
+    expected << "literal:" << std::atan2(0.0, -1.0) << "\n"; // ~3.14159
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
@@ -215,7 +215,7 @@ TEST_F(TestFormulaSimplifier, eConstantSimplified)
     const Expr simplified = simplify(identifier("e"));
 
     std::ostringstream expected;
-    expected << "number:" << std::exp(1.0) << "\n"; // ~2.71828
+    expected << "literal:" << std::exp(1.0) << "\n"; // ~2.71828
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
@@ -224,7 +224,7 @@ TEST_F(TestFormulaSimplifier, piInExpressionSimplified)
     const Expr simplified = simplify(binary(identifier("pi"), '*', number(2.0)));
 
     std::ostringstream expected;
-    expected << "number:" << (std::atan2(0.0, -1.0) * 2.0) << "\n";
+    expected << "literal:" << (std::atan2(0.0, -1.0) * 2.0) << "\n";
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
@@ -233,7 +233,7 @@ TEST_F(TestFormulaSimplifier, eInExpressionSimplified)
     const Expr simplified = simplify(binary(number(1.0), '+', identifier("e")));
 
     std::ostringstream expected;
-    expected << "number:" << (1.0 + std::exp(1.0)) << "\n";
+    expected << "literal:" << (1.0 + std::exp(1.0)) << "\n";
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 
@@ -244,7 +244,7 @@ TEST_F(TestFormulaSimplifier, constantsInFunctionCallsSimplified)
 
     const double expectedValue = std::sin(std::atan2(0.0, -1.0) / 2.0);
     std::ostringstream expected;
-    expected << "number:" << expectedValue << "\n";
+    expected << "literal:" << expectedValue << "\n";
     EXPECT_EQ(expected.str(), to_string(simplified));
 }
 

@@ -14,9 +14,9 @@
 namespace formula::ast
 {
 
-inline std::shared_ptr<NumberNode> number(double value)
+inline std::shared_ptr<LiteralNode> number(double value)
 {
-    return std::make_shared<NumberNode>(value);
+    return std::make_shared<LiteralNode>(value);
 }
 
 inline std::shared_ptr<IdentifierNode> identifier(const std::string &name)
