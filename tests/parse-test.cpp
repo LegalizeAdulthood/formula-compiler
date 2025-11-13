@@ -141,9 +141,9 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"unaryPlus", "+(1)", "unary_op:+ literal:1"},                                              //
     {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- literal:1"},                        //
     {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ literal:1 literal:2 literal:3"},            //
-    {"capitalLetterInIdentifier", "A", "identifier:A"},                                         //
+    {"capitalLetterInIdentifier", "A", "identifier:a"},                                         //
     {"numberInIdentifier", "a1", "identifier:a1"},                                              //
-    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                        //
+    {"underscoreInIdentifier", "A_1", "identifier:a_1"},                                        //
     {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                        //
     {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"}, //
     {"assignment", "z=4", "assignment:z literal:4"},                                            //

@@ -408,9 +408,9 @@ bool Descent::default_rating_setting()
         return false;
     }
 
-    if (str() == "recommended" || str() == "average" || str() == "notRecommended")
+    if (str() == "recommended" || str() == "average" || str() == "notrecommended")
     {
-        const std::string rating{str()};
+        const std::string rating{str() == "notrecommended" ? "notRecommended" : str()};
         advance(); // consume rating value
 
         if (!check(TokenType::TERMINATOR))

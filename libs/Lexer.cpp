@@ -486,7 +486,7 @@ Token Lexer::lex_identifier()
     }
 
     // Not a reserved word, return as identifier
-    return {TokenType::IDENTIFIER, identifier, start, length};
+    return {TokenType::IDENTIFIER, to_lower(identifier), start, length};
 }
 
 Token Lexer::lex_string()

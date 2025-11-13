@@ -205,6 +205,15 @@ TEST(TestLexer, parenthesesWithIdentifiers)
     EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[3].type);
 }
 
+TEST(TestLexer, identifiersAreMadeLowerCases)
+{
+    Lexer lexer("FOO");
+    Token token = lexer.next_token();
+
+    EXPECT_EQ(TokenType::IDENTIFIER, token.type);
+    EXPECT_EQ("foo", std::get<std::string>(token.value));
+}
+
 TEST(TestLexer, stringWithEscapedQuotes)
 {
     Lexer lexer(R"text("He said \"Hello\" to me")text");
