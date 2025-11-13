@@ -17,14 +17,11 @@ All unit tests should follow the **Arrange-Act-Assert** pattern with clear visua
 ```cpp
 TEST_F(TestClassName, testMethodName)
 {
-    // Arrange - Setup test data and expectations
     const auto input = createTestInput();
     const auto expected = "expected_result";
   
-    // Act - Execute the code under test
     const auto result = methodUnderTest(input);
     
-    // Assert - Verify the results
     EXPECT_EQ(expected, result);
 }
 ```
@@ -36,14 +33,11 @@ For parameterized tests, the same structure applies:
 ```cpp
 TEST_P(ParameterizedTestClass, testMethodName)
 {
-    // Arrange
     const auto& param = GetParam();
     const auto input = param.input;
   
-    // Act
     const auto result = methodUnderTest(input);
     
-    // Assert
     EXPECT_EQ(param.expected, result);
 }
 ```
@@ -52,17 +46,12 @@ TEST_P(ParameterizedTestClass, testMethodName)
 
 1. **Blank Line Separation**: Always include blank lines between:
    - Setup (Arrange) section
-- Execution (Act) section  
+   - Execution (Act) section  
    - Verification (Assert) section
 
-2. **Clear Comments**: Use comments to identify each section when the separation isn't obvious:
-   - `// Arrange` - Test setup and input preparation
-   - `// Act` - Execution of the method under test
-   - `// Assert` - Verification of results and expectations
+2. **Single Responsibility**: Each test should verify one specific behavior or scenario
 
-3. **Single Responsibility**: Each test should verify one specific behavior or scenario
-
-4. **Descriptive Names**: Test names should clearly describe what is being tested
+3. **Descriptive Names**: Test names should clearly describe what is being tested
 
 ### Examples
 
@@ -70,14 +59,11 @@ TEST_P(ParameterizedTestClass, testMethodName)
 ```cpp
 TEST_F(TestSimplifyBinaryOp, addTwoNumbers)
 {
-    // Arrange
- const Expr expression = binary(number(7.0), '+', number(12.0));
+    const Expr expression = binary(number(7.0), '+', number(12.0));
  
-    // Act
     const Expr simplified = simplify(expression);
     
-    // Assert
-  simplified->visit(formatter);
+    simplified->visit(formatter);
     EXPECT_EQ("number:19\n", str.str());
 }
 ```
