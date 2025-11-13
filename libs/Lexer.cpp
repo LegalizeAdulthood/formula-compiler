@@ -472,8 +472,14 @@ Token Lexer::lex_identifier()
         {"zero", TokenType::ZERO},                //
     };
 
+    const auto to_lower = [](std::string text)
+    {
+        std::transform(text.begin(), text.end(), text.begin(),
+            [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+        return text;
+    };
     if (auto it = std::find_if(std::begin(reserved), std::end(reserved),
-            [&identifier](const TextTokenType &kw) { return kw.text == identifier; });
+            [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
         it != std::end(reserved))
     {
         return {it->type, std::string{it->text}, start, length};

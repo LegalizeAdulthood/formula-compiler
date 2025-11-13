@@ -479,6 +479,7 @@ static TextTokenParam s_params[]{
     {"colorType", "color", TokenType::TYPE_COLOR},                            //
     {"beginParam", "param", TokenType::PARAM},                                //
     {"endParam", "endparam", TokenType::END_PARAM},                           //
+    {"caseInsensitiveKeyword", "IF", TokenType::IF},                          //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));
