@@ -639,10 +639,7 @@ bool Parser::default_param_block()
         advance();
     }
 
-    while (check(TokenType::TERMINATOR))
-    {
-        advance();
-    }
+    skip_newlines();
 
     if (!check(TokenType::END_PARAM))
     {
@@ -956,6 +953,7 @@ FormulaSectionsPtr Parser::parse()
 {
     advance();
 
+    skip_newlines();
     if (const std::optional result = section_formula(); result)
     {
         return result.value() ? m_ast : nullptr;
@@ -1048,6 +1046,8 @@ bool Parser::require_newlines()
 
 Expr Parser::sequence()
 {
+    skip_newlines();
+
     // Parse the first statement
     Expr first = statement();
     if (!first)
@@ -1209,10 +1209,7 @@ Expr Parser::block()
         if (match(TokenType::COMMA))
         {
             // Skip any whitespace after comma
-            while (check(TokenType::TERMINATOR))
-            {
-                advance();
-            }
+            skip_newlines();
             // Continue parsing more statements
             continue;
         }
