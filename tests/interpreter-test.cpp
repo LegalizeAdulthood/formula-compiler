@@ -94,6 +94,10 @@ static InterpreterParam s_formulas[]{
     {"powerZeroOne", "0^1", Section::BAILOUT, 0.0, 0.0},                                //
     {"powerZeroTwo", "0^2", Section::BAILOUT, 0.0, 0.0},                                //
     {"powerOneOneSquared", "(1+flip(1))^2", Section::BAILOUT, 0.0, 2.0},                //
+    {"unaryMinus", "-5", Section::BAILOUT, -5.0, 0.0},                                  //
+    {"unaryMinusComplex", "-(1+flip(1))", Section::BAILOUT, -1.0, -1.0},                //
+    {"unaryPlus", "+5", Section::BAILOUT, 5.0, 0.0},                                    //
+    {"unaryPlusComplex", "+(1+flip(1))", Section::BAILOUT, 1.0, 1.0},                   //
 };
 
 class FormulaInterpretSuite : public TestWithParam<InterpreterParam>

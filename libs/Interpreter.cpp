@@ -208,10 +208,11 @@ void Interpreter::visit(const LiteralNode &node)
     {
     case 0:
         back().re = std::get<int>(node.value());
+        back().im = 0.0;
         break;
 
     case 1:
-        back().re = std::get<double>(node.value());
+        back() = {std::get<double>(node.value()), 0.0};
         break;
 
     case 2:
