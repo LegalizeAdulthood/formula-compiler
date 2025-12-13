@@ -93,6 +93,12 @@ static InterpreterParam s_formulas[]{
     {"powerZeroZero", "0^0", Section::BAILOUT, 1.0, 0.0},                               //
     {"powerZeroOne", "0^1", Section::BAILOUT, 0.0, 0.0},                                //
     {"powerZeroTwo", "0^2", Section::BAILOUT, 0.0, 0.0},                                //
+    {"powerComplexExponent", "2^flip(1)", Section::BAILOUT,                             //
+        0.76923890136397211, 0.63896127631363475},                                      // e^(i*ln2)
+    {"powerComplexBase", "flip(2)^3", Section::BAILOUT, 0.0, -8.0},                     // (2i)^3 = -8i
+    {"powerBothComplex", "(1+flip(1))^(1+flip(1))", Section::BAILOUT,                   //
+        0.27395725383012109, 0.58370075875861471},                                      //
+    {"powerNegativeBase", "(-1)^0.5", Section::BAILOUT, 0.0, 1.0},                      // sqrt(-1) = i
     {"powerOneOneSquared", "(1+flip(1))^2", Section::BAILOUT, 0.0, 2.0},                //
     {"unaryMinus", "-5", Section::BAILOUT, -5.0, 0.0},                                  //
     {"unaryMinusComplex", "-(1+flip(1))", Section::BAILOUT, -1.0, -1.0},                //

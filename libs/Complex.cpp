@@ -14,7 +14,9 @@ Complex exp(const Complex &z)
 Complex log(const Complex &z)
 {
     const double magnitude = std::sqrt(z.re * z.re + z.im * z.im);
-    const double phase = std::atan2(z.im, z.re);
+    // Treat -0.0 as +0.0 for imaginary part
+    double im = (z.im == 0.0) ? 0.0 : z.im;
+    const double phase = std::atan2(im, z.re);
     return {std::log(magnitude), phase};
 }
 
