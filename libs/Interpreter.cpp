@@ -246,6 +246,7 @@ void Interpreter::visit(const UnaryOpNode &node)
         const double im = back().im;
         back() = {re * re + im * im, 0.0};
     }
+    // nothing to be done for unary + since it doesn't change the value
 }
 
 } // namespace
