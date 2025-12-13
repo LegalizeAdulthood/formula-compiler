@@ -166,11 +166,13 @@ void Compiler::visit(const FunctionCallNode &node)
         // identity does nothing
         return;
     }
-    // if (ComplexFunction *fn = lookup_complex(m_name))
+    //if (ComplexFunction *fn = lookup_complex(name))
     //{
-    //     m_arg->compile(comp, state, result);
-    //     return call(comp, fn, result);
-    // }
+    //    if (const CompileError err = call(comp, fn, m_result.back()); err)
+    //    {
+    //        m_err = err;
+    //    }
+    //}
     if (RealFunction *fn = lookup_real(name))
     {
         if (const CompileError err = call(comp, fn, m_result.back()); err)

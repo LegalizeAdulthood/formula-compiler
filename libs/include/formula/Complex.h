@@ -85,4 +85,8 @@ inline Complex abs(const Complex &value)
     return {std::abs(value.re), std::abs(value.im)};
 }
 
+Complex exp(const Complex &z);
+Complex log(const Complex &z);
+Complex pow(const Complex &z, const Complex &w);
+
 } // namespace formula

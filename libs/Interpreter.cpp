@@ -126,7 +126,7 @@ void Interpreter::visit(const BinaryOpNode &node)
     }
     else if (op == "^")
     {
-        back() = {std::pow(left.re, right.re), 0.0};
+        back() = pow(left, right);
     }
     else if (op == "<")
     {

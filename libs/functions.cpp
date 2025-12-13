@@ -100,19 +100,6 @@ Complex sinh(const Complex &arg)
     return {std::sinh(arg.re) * std::cos(arg.im), std::cosh(arg.re) * std::sin(arg.im)};
 }
 
-Complex exp(const Complex &arg)
-{
-    const double exp_re = std::exp(arg.re);
-    return {exp_re * std::cos(arg.im), exp_re * std::sin(arg.im)};
-}
-
-Complex log(const Complex &arg)
-{
-    const double magnitude = std::sqrt(arg.re * arg.re + arg.im * arg.im);
-    const double phase = std::atan2(arg.im, arg.re);
-    return {std::log(magnitude), phase};
-}
-
 Complex sqrt(const Complex &arg)
 {
     const double magnitude = std::sqrt(arg.re * arg.re + arg.im * arg.im);
@@ -300,43 +287,43 @@ double set_rand(double arg)
 }
 
 const FunctionMap s_standard_functions[]{
-    {"abs", std::abs, abs},  //
-    {"acos", std::acos, acos},     //
-    {"acosh", std::acosh, acosh},   //
-    {"asin", std::asin, asin},     //
-    {"asinh", std::asinh, asinh},   //
-    {"atan", std::atan, atan},     //
-    {"atanh", std::atanh, atanh},   //
-    {"cabs", cabs, cabs},          //
-    {"ceil", std::ceil},     //
-    {"conj", conj, conj},    //
+    {"abs", std::abs, abs},       //
+    {"acos", std::acos, acos},    //
+    {"acosh", std::acosh, acosh}, //
+    {"asin", std::asin, asin},    //
+    {"asinh", std::asinh, asinh}, //
+    {"atan", std::atan, atan},    //
+    {"atanh", std::atanh, atanh}, //
+    {"cabs", cabs, cabs},         //
+    {"ceil", std::ceil},          //
+    {"conj", conj, conj},         //
     {"cos", std::cos, cos},       //
-    {"cosh", std::cosh, cosh},     //
-    {"cosxx", cosxx, cosxx},        //
-    {"cotan", cotan, cotan},        //
-    {"cotanh", cotanh, cotanh},      //
+    {"cosh", std::cosh, cosh},    //
+    {"cosxx", cosxx, cosxx},      //
+    {"cotan", cotan, cotan},      //
+    {"cotanh", cotanh, cotanh},   //
     {"exp", std::exp, exp},       //
-    {"flip", flip, flip},    //
-    {"floor", std::floor},   //
+    {"flip", flip, flip},         //
+    {"floor", std::floor},        //
     {"fn1", fn1, fn1},            //
     {"fn2", fn2, fn2},            //
     {"fn3", fn3, fn3},            //
     {"fn4", fn4, fn4},            //
-    {"ident", ident, ident}, //
-    {"imag", imag, imag},          //
+    {"ident", ident, ident},      //
+    {"imag", imag, imag},         //
     {"log", std::log, log},       //
-    {"one", one, one},       //
-    {"real", real, real},          //
-    {"round", std::round},   //
+    {"one", one, one},            //
+    {"real", real, real},         //
+    {"round", std::round},        //
     {"sin", std::sin, sin},       //
-    {"sinh", std::sinh, sinh},     //
+    {"sinh", std::sinh, sinh},    //
     {"sqr", sqr, sqr},            //
-    {"sqrt", std::sqrt, sqrt},     //
-    {"srand", set_rand},     //
+    {"sqrt", std::sqrt, sqrt},    //
+    {"srand", set_rand},          //
     {"tan", std::tan, tan},       //
-    {"tanh", std::tanh, tanh},     //
-    {"trunc", std::trunc},   //
-    {"zero", zero, zero},    //
+    {"tanh", std::tanh, tanh},    //
+    {"trunc", std::trunc},        //
+    {"zero", zero, zero},         //
 };
 
 } // namespace

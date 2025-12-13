@@ -89,6 +89,11 @@ static InterpreterParam s_formulas[]{
     {"bailoutSection", "bailout:\n4\n", Section::BAILOUT, 4.0, 0.0},                    //
     {"perturbInitSection", "perturbinit:\n5\n", Section::PERTURB_INITIALIZE, 5.0, 0.0}, //
     {"perturbLoopSection", "perturbloop:\n6\n", Section::PERTURB_ITERATE, 6.0, 0.0},    //
+    {"powerISquared", "flip(1)^2", Section::BAILOUT, -1.0, 0.0},                        //
+    {"powerZeroZero", "0^0", Section::BAILOUT, 1.0, 0.0},                               //
+    {"powerZeroOne", "0^1", Section::BAILOUT, 0.0, 0.0},                                //
+    {"powerZeroTwo", "0^2", Section::BAILOUT, 0.0, 0.0},                                //
+    {"powerOneOneSquared", "(1+flip(1))^2", Section::BAILOUT, 0.0, 2.0},                //
 };
 
 class FormulaInterpretSuite : public TestWithParam<InterpreterParam>
