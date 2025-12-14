@@ -4,6 +4,7 @@
 //
 #include <formula/Formula.h>
 
+#include "ExpressionParam.h"
 #include "function-call.h"
 
 #include <gtest/gtest.h>
@@ -16,62 +17,7 @@ using namespace testing;
 namespace formula::test
 {
 
-struct CompileParam
-{
-    std::string_view name;
-    std::string_view text;
-    Section section;
-    double expected_re;
-    double expected_im;
-};
-
-inline void PrintTo(const CompileParam &param, std::ostream *os)
-{
-    *os << param.name;
-}
-
-static CompileParam s_compiled_formulas[]{
-    {"one", "1", Section::BAILOUT, 1.0, 0.0},
-    {"two", "2", Section::BAILOUT, 2.0, 0.0},
-    {"identifier", "e", Section::BAILOUT, std::exp(1.0), 0.0},
-    {"unknownIdentifierIsZero", "a", Section::BAILOUT, 0.0, 0.0},
-    {"add", "1.2+1.2", Section::BAILOUT, 2.4, 0.0},
-    {"subtract", "1.5-2.2", Section::BAILOUT, -0.7, 0.0},
-    {"multiply", "2.2*3.1", Section::BAILOUT, 6.82, 0.0},
-    {"divide", "13.76/4.3", Section::BAILOUT, 3.2, 0.0},
-    {"avogadrosNumberDivide", "6.02e23/2", Section::BAILOUT, 3.01e23, 0.0},
-    {"unaryNegate", "--1.6", Section::BAILOUT, 1.6, 0.0},
-    {"addAddAdd", "1.1+2.2+3.3", Section::BAILOUT, 6.6, 0.0},
-    {"mulMulMul", "2.2*2.2*2.2", Section::BAILOUT, 10.648, 0.0},
-    {"addMulAdd", "1.1+2.2*3.3+4.4", Section::BAILOUT, 12.76, 0.0},
-    {"power", "2^3", Section::BAILOUT, 8.0, 0.0},
-    {"powerLeftAssociative", "2^3^2", Section::BAILOUT, 64.0, 0.0},
-    {"powerPrecedence", "2*3^2", Section::BAILOUT, 18.0, 0.0},
-    {"compareLessFalse", "4<3", Section::BAILOUT, 0.0, 0.0},
-    {"compareLessTrue", "3<4", Section::BAILOUT, 1.0, 0.0},
-    {"compareLessEqualTrueEquality", "3<=3", Section::BAILOUT, 1.0, 0.0},
-    {"compareLessEqualTrueLess", "3<=4", Section::BAILOUT, 1.0, 0.0},
-    {"compareLessEqualFalse", "3<=2", Section::BAILOUT, 0.0, 0.0},
-    {"compareGreaterFalse", "3>4", Section::BAILOUT, 0.0, 0.0},
-    {"compareGreaterTrue", "4>3", Section::BAILOUT, 1.0, 0.0},
-    {"compareGreaterEqualTrueEquality", "3>=3", Section::BAILOUT, 1.0, 0.0},
-    {"compareGreaterEqualTrueGreater", "4>=3", Section::BAILOUT, 1.0, 0.0},
-    {"compareEqualTrue", "3==3", Section::BAILOUT, 1.0, 0.0},
-    {"compareEqualFalse", "3==4", Section::BAILOUT, 0.0, 0.0},
-    {"compareNotEqualTrue", "3!=4", Section::BAILOUT, 1.0, 0.0},
-    {"compareNotEqualFalse", "3!=3", Section::BAILOUT, 0.0, 0.0},
-    {"logicalAndTrue", "1&&1", Section::BAILOUT, 1.0, 0.0},
-    {"logicalAndFalse", "1&&0", Section::BAILOUT, 0.0, 0.0},
-    {"logicalOrTrue", "1||0", Section::BAILOUT, 1.0, 0.0},
-    {"logicalOrFalse", "0||0", Section::BAILOUT, 0.0, 0.0},
-    {"statementsIterate", "3\n4\n", Section::ITERATE, 3.0, 0.0},
-    {"statementsBailout", "3\n4\n", Section::BAILOUT, 4.0, 0.0},
-    {"ifStatementEmptyBodyTrue", "if(5)\nendif", Section::BAILOUT, 1.0, 0.0},
-    {"ifStatementEmptyBodyFalse", "if(5<4)\nendif", Section::BAILOUT, 0.0, 0.0},
-    {"ifElseIfStatementEmptyBodyTrue", "if(0)\nelseif(1)\nendif", Section::BAILOUT, 1.0, 0.0},
-    {"ifElseIfStatementEmptyBodyFalse", "if(0)\nelseif(0)\nendif", Section::BAILOUT, 0.0, 0.0},
-    {"ifElseIfElseStatementEmptyBodyFalse", "if(0)\nelseif(0)\nelse\nendif", Section::BAILOUT, 0.0, 0.0},
-};
+using CompileParam = ExpressionParam;
 
 class CompiledFormulaRunSuite : public TestWithParam<CompileParam>
 {
@@ -91,7 +37,7 @@ TEST_P(CompiledFormulaRunSuite, run)
     EXPECT_NEAR(param.expected_im, result.im, 1e-6);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestCompiledFormula, CompiledFormulaRunSuite, ValuesIn(s_compiled_formulas));
+INSTANTIATE_TEST_SUITE_P(TestCompiledFormula, CompiledFormulaRunSuite, ValuesIn(g_expression_params));
 
 TEST(TestCompiledFormulaRun, identifierComplex)
 {

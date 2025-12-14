@@ -52,9 +52,12 @@ private:
 
     EmitterState m_state;
     FormulaSectionsPtr m_ast;
+    Function *m_per_image{};
     Function *m_initialize{};
     Function *m_iterate{};
     Function *m_bailout{};
+    Function *m_perturb_initialize{};
+    Function *m_perturb_iterate{};
     asmjit::JitRuntime m_runtime;
     asmjit::FileLogger m_logger{stdout};
 };
@@ -160,7 +163,8 @@ CompileError update_symbols(
 CompileError ParsedFormula::compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label)
 {
     label = comp.addFunc(asmjit::FuncSignature::build<double>())->label();
-    asmjit::x86::Xmm result = comp.newXmmSd();
+    asmjit::x86::Xmm result = comp.newXmm();  // Use full XMM register for complex numbers
+    ASMJIT_CHECK(comp.xorpd(result, result)); // Initialize to zero {0.0, 0.0}
     if (const CompileError err = ast::compile(node, comp, m_state, result); err)
     {
         std::cerr << "Failed to compile AST\n" << asmjit::DebugUtils::errorAsString(err.value()) << '\n';
@@ -232,9 +236,12 @@ bool ParsedFormula::compile()
     }
     asmjit::x86::Compiler comp(&code);
 
+    asmjit::Label per_image_label{};
     asmjit::Label init_label{};
     asmjit::Label iterate_label{};
     asmjit::Label bailout_label{};
+    asmjit::Label perturb_init_label{};
+    asmjit::Label perturb_iterate_label{};
     const auto do_part = [&, this](const char *name, Expr part, asmjit::Label &label)
     {
         if (!part)
@@ -250,9 +257,12 @@ bool ParsedFormula::compile()
         }
         return true;
     };
-    if (!do_part("initialize", m_ast->initialize, init_label) //
-        || !do_part("iterate", m_ast->iterate, iterate_label) //
-        || !do_part("bailout", m_ast->bailout, bailout_label))
+    if (!do_part("per_image", m_ast->per_image, per_image_label)                         //
+        || !do_part("initialize", m_ast->initialize, init_label)                         //
+        || !do_part("iterate", m_ast->iterate, iterate_label)                            //
+        || !do_part("bailout", m_ast->bailout, bailout_label)                            //
+        || !do_part("perturb_initialize", m_ast->perturb_initialize, perturb_init_label) //
+        || !do_part("perturb_iterate", m_ast->perturb_iterate, perturb_iterate_label))
     {
         return false;
     }
@@ -269,9 +279,12 @@ bool ParsedFormula::compile()
         std::cerr << "Failed to add formula:\n" << asmjit::DebugUtils::errorAsString(err) << '\n';
         return false;
     }
+    m_per_image = function_cast<Function *>(code, module, per_image_label);
     m_initialize = function_cast<Function *>(code, module, init_label);
     m_iterate = function_cast<Function *>(code, module, iterate_label);
     m_bailout = function_cast<Function *>(code, module, bailout_label);
+    m_perturb_initialize = function_cast<Function *>(code, module, perturb_init_label);
+    m_perturb_iterate = function_cast<Function *>(code, module, perturb_iterate_label);
 
     return true;
 }
@@ -289,12 +302,18 @@ Complex ParsedFormula::run(Section part)
     };
     switch (part)
     {
+    case Section::PER_IMAGE:
+        return result(m_per_image);
     case Section::INITIALIZE:
         return result(m_initialize);
     case Section::ITERATE:
         return result(m_iterate);
     case Section::BAILOUT:
         return result(m_bailout);
+    case Section::PERTURB_INITIALIZE:
+        return result(m_perturb_initialize);
+    case Section::PERTURB_ITERATE:
+        return result(m_perturb_iterate);
     }
     throw std::runtime_error("Invalid part for run");
 }

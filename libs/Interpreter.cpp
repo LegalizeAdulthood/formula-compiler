@@ -81,26 +81,27 @@ void Interpreter::visit(const BinaryOpNode &node)
     {
         return Complex{condition ? 1.0 : 0.0, 0.0};
     };
-    if (op == "&&") // short-circuit AND
+    if (op == "&&") // short-circuit AND - only check real part
     {
-        if (result() == Complex{0.0, 0.0})
+        if (result().re == 0.0)
         {
+            back() = {0.0, 0.0};
             return;
         }
         node.right()->visit(*this);
-        back() = bool_result(result() != Complex{0.0, 0.0});
+        back() = bool_result(result().re != 0.0);
         return;
     }
-    if (op == "||") // short-circuit OR
+    if (op == "||") // short-circuit OR - only check real part
     {
-        if (result() != Complex{0.0, 0.0})
+        if (result().re != 0.0)
         {
             back() = {1.0, 0.0};
             return;
         }
         back() = {};
         node.right()->visit(*this);
-        back() = bool_result(result() != Complex{0.0, 0.0});
+        back() = bool_result(result().re != 0.0);
         return;
     }
 
@@ -179,7 +180,7 @@ void Interpreter::visit(const IdentifierNode &node)
 void Interpreter::visit(const IfStatementNode &node)
 {
     node.condition()->visit(*this);
-    if (result() != Complex{0.0, 0.0})
+    if (result().re != 0.0) // Only check real part
     {
         if (node.has_then_block())
         {
