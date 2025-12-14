@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "parser.h"
+#include "Parser.h"
 
 #include <formula/Lexer.h>
 
@@ -38,10 +38,10 @@ constexpr std::array<TokenType, 9> s_sections{
     TokenType::DEFAULT, TokenType::SWITCH,                //
 };
 
-class Descent
+class Parser
 {
 public:
-    Descent(std::string_view text) :
+    Parser(std::string_view text) :
         m_ast(std::make_shared<FormulaSections>()),
         m_text(text),
         m_lexer(text)
@@ -142,7 +142,7 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
     }
 }
 
-bool Descent::builtin_section()
+bool Parser::builtin_section()
 {
     if (!check(TokenType::IDENTIFIER) || str() != "type")
     {
@@ -182,7 +182,7 @@ std::string_view s_default_number_settings[]{
     "angle", "magn", "maxiter", "periodicity", "skew", "stretch", //
 };
 
-std::optional<double> Descent::signed_literal()
+std::optional<double> Parser::signed_literal()
 {
     const bool prefix_op = check({TokenType::PLUS, TokenType::MINUS});
     if (!(check({TokenType::INTEGER, TokenType::NUMBER}) || prefix_op))
@@ -209,7 +209,7 @@ std::optional<double> Descent::signed_literal()
     return {};
 }
 
-bool Descent::default_number_setting(const std::string name)
+bool Parser::default_number_setting(const std::string name)
 {
     const std::optional num{signed_literal()};
     if (!num)
@@ -226,7 +226,7 @@ bool Descent::default_number_setting(const std::string name)
     return true;
 }
 
-std::optional<Complex> Descent::complex_number()
+std::optional<Complex> Parser::complex_number()
 {
     const auto get_literal = [this]() -> std::optional<double>
     {
@@ -291,7 +291,7 @@ std::optional<Complex> Descent::complex_number()
     return Complex{real.value(), imag.value()};
 }
 
-bool Descent::default_complex_setting(const std::string name)
+bool Parser::default_complex_setting(const std::string name)
 {
     std::optional value{complex_number()};
     if (!value)
@@ -308,7 +308,7 @@ bool Descent::default_complex_setting(const std::string name)
     return true;
 }
 
-bool Descent::default_string_setting(const std::string name)
+bool Parser::default_string_setting(const std::string name)
 {
     if (!check(TokenType::STRING))
     {
@@ -327,7 +327,7 @@ bool Descent::default_string_setting(const std::string name)
     return true;
 }
 
-bool Descent::default_method_setting()
+bool Parser::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -350,7 +350,7 @@ bool Descent::default_method_setting()
     return true;
 }
 
-bool Descent::default_perturb_setting()
+bool Parser::default_perturb_setting()
 {
     if (check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -383,7 +383,7 @@ bool Descent::default_perturb_setting()
     return true;
 }
 
-bool Descent::default_precision_setting()
+bool Parser::default_precision_setting()
 {
     Expr expr = conjunctive();
     if (!expr)
@@ -401,7 +401,7 @@ bool Descent::default_precision_setting()
     return true;
 }
 
-bool Descent::default_rating_setting()
+bool Parser::default_rating_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -425,7 +425,7 @@ bool Descent::default_rating_setting()
     return false;
 }
 
-bool Descent::default_render_setting()
+bool Parser::default_render_setting()
 {
     if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -445,7 +445,7 @@ bool Descent::default_render_setting()
     return true;
 }
 
-std::optional<Expr> Descent::param_string(const std::string &name)
+std::optional<Expr> Parser::param_string(const std::string &name)
 {
     if (!check(TokenType::STRING))
     {
@@ -456,7 +456,7 @@ std::optional<Expr> Descent::param_string(const std::string &name)
     return body;
 }
 
-std::optional<Expr> Descent::param_default(const std::string &type)
+std::optional<Expr> Parser::param_default(const std::string &type)
 {
     if (type == "bool")
     {
@@ -498,7 +498,7 @@ std::optional<Expr> Descent::param_default(const std::string &type)
     return {};
 }
 
-std::optional<Expr> Descent::param_bool_expr(const std::string &name)
+std::optional<Expr> Parser::param_bool_expr(const std::string &name)
 {
     Expr expr = conjunctive();
     if (!expr)
@@ -508,7 +508,7 @@ std::optional<Expr> Descent::param_bool_expr(const std::string &name)
     return std::make_shared<SettingNode>(name, expr);
 }
 
-std::optional<Expr> Descent::param_enum()
+std::optional<Expr> Parser::param_enum()
 {
     std::vector<std::string> values;
     while (check(TokenType::STRING))
@@ -523,7 +523,7 @@ std::optional<Expr> Descent::param_enum()
     return std::make_shared<SettingNode>("enum", values);
 }
 
-std::optional<Expr> Descent::param_bool(const std::string &name)
+std::optional<Expr> Parser::param_bool(const std::string &name)
 {
     if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -534,7 +534,7 @@ std::optional<Expr> Descent::param_bool(const std::string &name)
     return body;
 }
 
-std::optional<Expr> Descent::param_number(const std::string &type, const std::string &name)
+std::optional<Expr> Parser::param_number(const std::string &type, const std::string &name)
 {
     if (type == "int")
     {
@@ -566,7 +566,7 @@ std::optional<Expr> Descent::param_number(const std::string &type, const std::st
     return {};
 }
 
-bool Descent::default_param_block()
+bool Parser::default_param_block()
 {
     std::string type;
     if (!check(TokenType::PARAM))
@@ -660,7 +660,7 @@ bool Descent::default_param_block()
     return true;
 }
 
-bool Descent::default_section()
+bool Parser::default_section()
 {
     if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
             TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
@@ -727,7 +727,7 @@ bool Descent::default_section()
     return false;
 }
 
-bool Descent::switch_section()
+bool Parser::switch_section()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -784,7 +784,7 @@ bool Descent::switch_section()
     return true;
 }
 
-std::optional<bool> Descent::section_formula()
+std::optional<bool> Parser::section_formula()
 {
     const auto is_token = [this](TokenType tok)
     {
@@ -952,7 +952,7 @@ std::optional<bool> Descent::section_formula()
 }
 
 // If parsing failed, return nullptr instead of partially constructed AST
-FormulaSectionsPtr Descent::parse()
+FormulaSectionsPtr Parser::parse()
 {
     advance();
 
@@ -983,12 +983,12 @@ FormulaSectionsPtr Descent::parse()
     return m_ast;
 }
 
-void Descent::advance()
+void Parser::advance()
 {
     m_curr = m_lexer.next_token();
 }
 
-bool Descent::match(TokenType type)
+bool Parser::match(TokenType type)
 {
     if (check(type))
     {
@@ -998,13 +998,13 @@ bool Descent::match(TokenType type)
     return false;
 }
 
-bool Descent::check(TokenType type) const
+bool Parser::check(TokenType type) const
 {
     return m_curr.type == type;
 }
 
 // Only allow IdentifierNode for assignment target
-bool Descent::is_user_identifier(const Expr &expr) const
+bool Parser::is_user_identifier(const Expr &expr) const
 {
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
@@ -1028,7 +1028,7 @@ bool Descent::is_user_identifier(const Expr &expr) const
     return false;
 }
 
-void Descent::skip_newlines()
+void Parser::skip_newlines()
 {
     while (match(TokenType::TERMINATOR))
     {
@@ -1036,7 +1036,7 @@ void Descent::skip_newlines()
     }
 }
 
-bool Descent::require_newlines()
+bool Parser::require_newlines()
 {
     if (!match(TokenType::TERMINATOR))
     {
@@ -1046,7 +1046,7 @@ bool Descent::require_newlines()
     return true;
 }
 
-Expr Descent::sequence()
+Expr Parser::sequence()
 {
     // Parse the first statement
     Expr first = statement();
@@ -1092,7 +1092,7 @@ Expr Descent::sequence()
     return std::make_shared<StatementSeqNode>(std::move(seq));
 }
 
-Expr Descent::statement()
+Expr Parser::statement()
 {
     if (check(TokenType::IF))
     {
@@ -1101,7 +1101,7 @@ Expr Descent::statement()
     return conjunctive();
 }
 
-Expr Descent::if_statement()
+Expr Parser::if_statement()
 {
     Expr result = if_statement_no_endif();
     if (!result)
@@ -1118,7 +1118,7 @@ Expr Descent::if_statement()
     return result;
 }
 
-Expr Descent::if_statement_no_endif()
+Expr Parser::if_statement_no_endif()
 {
     // Handle both 'if' and 'elseif' tokens
     if (!match(TokenType::IF) && !match(TokenType::ELSE_IF))
@@ -1177,7 +1177,7 @@ Expr Descent::if_statement_no_endif()
     return std::make_shared<IfStatementNode>(condition, then_block, else_block);
 }
 
-Expr Descent::block()
+Expr Parser::block()
 {
     // A block can be empty or contain statements
     // Check if we're at endif, else, or elseif - that means empty block
@@ -1241,7 +1241,7 @@ Expr Descent::block()
     return std::make_shared<StatementSeqNode>(statements);
 }
 
-Expr Descent::assignment()
+Expr Parser::assignment()
 {
     Expr left = additive();
 
@@ -1272,7 +1272,7 @@ Expr Descent::assignment()
     return left;
 }
 
-Expr Descent::conjunctive()
+Expr Parser::conjunctive()
 {
     Expr left = comparative();
 
@@ -1304,7 +1304,7 @@ Expr Descent::conjunctive()
 }
 
 // Handle relational operators: <, <=, >, >=, ==, !=
-Expr Descent::comparative()
+Expr Parser::comparative()
 {
     Expr left = assignment();
 
@@ -1340,7 +1340,7 @@ Expr Descent::comparative()
     return left;
 }
 
-Expr Descent::additive()
+Expr Parser::additive()
 {
     Expr left = term();
 
@@ -1359,7 +1359,7 @@ Expr Descent::additive()
     return left;
 }
 
-Expr Descent::term()
+Expr Parser::term()
 {
     Expr left = unary();
 
@@ -1378,7 +1378,7 @@ Expr Descent::term()
     return left;
 }
 
-Expr Descent::unary()
+Expr Parser::unary()
 {
     if (check({TokenType::PLUS, TokenType::MINUS}))
     {
@@ -1395,7 +1395,7 @@ Expr Descent::unary()
     return power();
 }
 
-Expr Descent::power()
+Expr Parser::power()
 {
     Expr left = primary();
 
@@ -1414,7 +1414,7 @@ Expr Descent::power()
     return left;
 }
 
-Expr Descent::builtin_var()
+Expr Parser::builtin_var()
 {
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
@@ -1439,7 +1439,7 @@ constexpr TokenType s_builtin_fns[]{
     TokenType::ZERO,                                                      //
 };
 
-Expr Descent::builtin_function()
+Expr Parser::builtin_function()
 {
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
@@ -1454,7 +1454,7 @@ Expr Descent::builtin_function()
     return nullptr;
 }
 
-Expr Descent::function_call()
+Expr Parser::function_call()
 {
     if (check(TokenType::LEFT_PAREN))
     {
@@ -1468,7 +1468,7 @@ Expr Descent::function_call()
     return nullptr;
 }
 
-Expr Descent::number()
+Expr Parser::number()
 {
     if (check(TokenType::NUMBER))
     {
@@ -1485,7 +1485,7 @@ Expr Descent::number()
     return nullptr;
 }
 
-Expr Descent::identifier()
+Expr Parser::identifier()
 {
     if (check(TokenType::IDENTIFIER))
     {
@@ -1496,7 +1496,7 @@ Expr Descent::identifier()
     return nullptr;
 }
 
-Expr Descent::primary()
+Expr Parser::primary()
 {
     // Check for invalid tokens first
     if (check(TokenType::INVALID))
@@ -1556,7 +1556,7 @@ Expr Descent::primary()
 
 FormulaSectionsPtr parse(std::string_view text)
 {
-    Descent parser(text);
+    Parser parser(text);
     return parser.parse();
 }
 
