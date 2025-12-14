@@ -52,6 +52,9 @@ static InterpreterParam s_formulas[]{
     {"powerLeftAssociative", "2^3^2", Section::BAILOUT, 64.0, 0.0},                     //
     {"powerPrecedence", "2*3^2", Section::BAILOUT, 18.0, 0.0},                          //
     {"modulus", "|-3.0 + flip(-2)|", Section::BAILOUT, 13.0, 0.0},                      //
+    {"modulusReal", "|-3.0|", Section::BAILOUT, 9.0, 0.0},                              //
+    {"modulusImaginary", "|flip(3)|", Section::BAILOUT, 9.0, 0.0},                      //
+    {"modulusZero", "|0|", Section::BAILOUT, 0.0, 0.0},                                 //
     {"compareLessFalse", "4<3", Section::BAILOUT, 0.0, 0.0},                            //
     {"compareLessTrue", "3<4", Section::BAILOUT, 1.0, 0.0},                             //
     {"compareLessEqualTrueEquality", "3<=3", Section::BAILOUT, 1.0, 0.0},               //
@@ -67,12 +70,26 @@ static InterpreterParam s_formulas[]{
     {"compareEqualFalse", "3==4", Section::BAILOUT, 0.0, 0.0},                          //
     {"compareNotEqualTrue", "3!=4", Section::BAILOUT, 1.0, 0.0},                        //
     {"compareNotEqualFalse", "3!=3", Section::BAILOUT, 0.0, 0.0},                       //
+    {"compareComplexLess", "(1+flip(5))<(2+flip(1))", Section::BAILOUT, 1.0, 0.0},      // 1<2 (ignores imag)
+    {"compareComplexGreater", "(2+flip(5))>(1+flip(10))", Section::BAILOUT, 1.0, 0.0},  // 2>1 (ignores imag)
+    {"compareComplexEqual", "(1+flip(2))==(1+flip(2))", Section::BAILOUT, 1.0, 0.0},    // both parts match
+    {"compareComplexNotEqualSameReal", "(1+flip(2))==(1+flip(3))", Section::BAILOUT,    // different imag
+        0.0, 0.0},                                                                      //
+    {"compareComplexNotEqualDiffReal", "(1+flip(2))==(2+flip(2))", Section::BAILOUT,    // different real
+        0.0, 0.0},                                                                      //
     {"logicalAndTrue", "1&&1", Section::BAILOUT, 1.0, 0.0},                             //
     {"logicalAndFalse", "1&&0", Section::BAILOUT, 0.0, 0.0},                            //
     {"logicalAndPrecedence", "1+2&&3+4", Section::BAILOUT, 1.0, 0.0},                   //
     {"logicalOrTrue", "1||0", Section::BAILOUT, 1.0, 0.0},                              //
     {"logicalOrFalse", "0||0", Section::BAILOUT, 0.0, 0.0},                             //
     {"logicalOrPrecedence", "1+2||3+4", Section::BAILOUT, 1.0, 0.0},                    //
+    {"logicalAndComplexTrue", "(1+flip(1))&&(2+flip(2))", Section::BAILOUT, 1.0, 0.0},  //
+    {"logicalAndComplexLeftFalse", "0&&flip(1)", Section::BAILOUT, 0.0, 0.0},           //
+    {"logicalAndComplexRightFalse", "flip(1)&&0", Section::BAILOUT, 0.0, 0.0},          //
+    {"logicalAndPureImaginaryTrue", "flip(1)&&flip(2)", Section::BAILOUT, 1.0, 0.0},    // both non-zero
+    {"logicalOrComplexTrue", "flip(1)||0", Section::BAILOUT, 1.0, 0.0},                 //
+    {"logicalOrComplexBothFalse", "(0+flip(0))||(0+flip(0))", Section::BAILOUT,         //
+        0.0, 0.0},                                                                      //
     {"statementsIterate", "3\n4\n", Section::ITERATE, 3.0, 0.0},                        //
     {"statementsBailout", "3\n4\n", Section::BAILOUT, 4.0, 0.0},                        //
     {"commaSeparatedStatementsIterate", "3,4", Section::ITERATE, 3.0, 0.0},             //
@@ -83,6 +100,13 @@ static InterpreterParam s_formulas[]{
     {"complexMultiply", "flip(1)*flip(1)", Section::BAILOUT, -1.0, 0.0},                //
     {"complexDivideScalar", "(1+flip(1))/2", Section::BAILOUT, 0.5, 0.5},               //
     {"complexDivide", "(1+flip(1))/(2+flip(2))", Section::BAILOUT, 0.5, 0.0},           //
+    {"realTimesComplex", "3*flip(2)", Section::BAILOUT, 0.0, 6.0},                      //
+    {"complexTimesReal", "flip(2)*3", Section::BAILOUT, 0.0, 6.0},                      //
+    {"complexMinusReal", "(2+flip(3))-5", Section::BAILOUT, -3.0, 3.0},                 //
+    {"realMinusComplex", "5-(2+flip(3))", Section::BAILOUT, 3.0, -3.0},                 //
+    {"realPlusComplex", "5+flip(3)", Section::BAILOUT, 5.0, 3.0},                       //
+    {"complexPlusReal", "flip(3)+5", Section::BAILOUT, 5.0, 3.0},                       //
+    {"realDivideComplex", "2/(1+flip(1))", Section::BAILOUT, 1.0, -1.0},                // 2/(1+i) = 1-i
     {"globalSection", "global:\n1\n", Section::PER_IMAGE, 1.0, 0.0},                    //
     {"initSection", "init:\n2\n", Section::INITIALIZE, 2.0, 0.0},                       //
     {"loopSection", "loop:\n3\n", Section::ITERATE, 3.0, 0.0},                          //
@@ -100,10 +124,18 @@ static InterpreterParam s_formulas[]{
         0.27395725383012109, 0.58370075875861471},                                      //
     {"powerNegativeBase", "(-1)^0.5", Section::BAILOUT, 0.0, 1.0},                      // sqrt(-1) = i
     {"powerOneOneSquared", "(1+flip(1))^2", Section::BAILOUT, 0.0, 2.0},                //
+    {"powerNegativeExponent", "2^(-1)", Section::BAILOUT, 0.5, 0.0},                    //
+    {"powerComplexNegativeExponent", "flip(1)^(-1)", Section::BAILOUT, 0.0, -1.0},      // 1/i = -i
+    {"powerFractionalExponent", "4^0.5", Section::BAILOUT, 2.0, 0.0},                   //
+    {"powerComplexFractional", "(4+flip(0))^0.5", Section::BAILOUT, 2.0, 0.0},          //
+    {"powerNegativeComplexBase", "(-1-flip(1))^2", Section::BAILOUT, 0.0, 2.0},         // (-1-i)^2 = 2i
     {"unaryMinus", "-5", Section::BAILOUT, -5.0, 0.0},                                  //
     {"unaryMinusComplex", "-(1+flip(1))", Section::BAILOUT, -1.0, -1.0},                //
     {"unaryPlus", "+5", Section::BAILOUT, 5.0, 0.0},                                    //
     {"unaryPlusComplex", "+(1+flip(1))", Section::BAILOUT, 1.0, 1.0},                   //
+    {"assignComplexMultiply", "z=(1+flip(1))*(2+flip(2))", Section::BAILOUT, 0.0, 4.0}, //
+    {"assignChainedComplex", "a=b=flip(5)", Section::BAILOUT, 0.0, 5.0},                //
+    {"assignComplexPower", "z=flip(1)^2", Section::BAILOUT, -1.0, 0.0},                 //
 };
 
 class FormulaInterpretSuite : public TestWithParam<InterpreterParam>
