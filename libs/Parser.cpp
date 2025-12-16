@@ -5,6 +5,7 @@
 #include "Parser.h"
 
 #include <formula/Lexer.h>
+#include <formula/NodeTyper.h>
 
 #include <algorithm>
 #include <array>
@@ -88,8 +89,9 @@ private:
     Expr function_call();
     Expr number();
     Expr identifier();
-    Expr builtin_function();
     Expr complex_literal();
+    Expr builtin_function();
+    Expr complex();
     Expr primary();
     void advance();
     void begin_tracking();
@@ -1473,7 +1475,7 @@ Expr Parser::builtin_function()
     return nullptr;
 }
 
-Expr Parser::complex_literal()
+Expr Parser::complex()
 {
     double re;
     double im;
@@ -1544,6 +1546,11 @@ Expr Parser::function_call()
     if (check(TokenType::LEFT_PAREN))
     {
         advance(); // consume left paren
+        if (const Expr expr = complex_literal())
+        {
+            return expr;
+        }
+
         if (const Expr args = assignment(); args && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume right paren
@@ -1581,6 +1588,19 @@ Expr Parser::identifier()
     return nullptr;
 }
 
+Expr Parser::complex_literal()
+{
+    begin_tracking();
+    const Token curr{m_curr};
+    if (Expr result = complex())
+    {
+        end_tracking();
+        return result;
+    }
+    backtrack();
+    m_curr = curr;
+    return nullptr;
+}
 Expr Parser::primary()
 {
     // Check for invalid tokens first
@@ -1612,15 +1632,10 @@ Expr Parser::primary()
     if (check(TokenType::LEFT_PAREN))
     {
         advance();
-        begin_tracking();
-        const Token curr{m_curr};
-        if (Expr result = complex_literal())
+        if (Expr expr = complex_literal())
         {
-            end_tracking();
-            return result;
+            return expr;
         }
-        backtrack();
-        m_curr = curr;
 
         // Allow full expressions including assignment in parens
         if (Expr expr = assignment(); expr && check(TokenType::RIGHT_PAREN))
