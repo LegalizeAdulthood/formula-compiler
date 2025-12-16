@@ -89,8 +89,12 @@ private:
     Expr number();
     Expr identifier();
     Expr builtin_function();
+    Expr complex_literal();
     Expr primary();
     void advance();
+    void begin_tracking();
+    void end_tracking();
+    void backtrack();
     bool match(TokenType type);
     bool check(TokenType type) const;
     bool check(std::initializer_list<TokenType> types) const
@@ -118,6 +122,8 @@ private:
     std::string_view m_text;
     Lexer m_lexer;
     Token m_curr;
+    std::vector<Token> m_backtrack;
+    bool m_backtracking{};
 };
 
 void split_iterate_bailout(FormulaSections &result, const Expr &expr)
@@ -983,7 +989,32 @@ FormulaSectionsPtr Parser::parse()
 
 void Parser::advance()
 {
-    m_curr = m_lexer.next_token();
+    m_curr = m_lexer.get_token();
+    if (m_backtracking)
+    {
+        m_backtrack.push_back(m_curr);
+    }
+}
+
+void Parser::begin_tracking()
+{
+    m_backtrack.clear();
+    m_backtracking = true;
+}
+
+void Parser::end_tracking()
+{
+    m_backtrack.clear();
+    m_backtracking = false;
+}
+
+void Parser::backtrack()
+{
+    for (Token &t : m_backtrack)
+    {
+        m_lexer.put_token(t);
+    }
+    end_tracking();
 }
 
 bool Parser::match(TokenType type)
@@ -1277,16 +1308,7 @@ Expr Parser::conjunctive()
     // Left-associative
     while (left && check({TokenType::LOGICAL_AND, TokenType::LOGICAL_OR}))
     {
-        std::string op;
-        if (check(TokenType::LOGICAL_AND))
-        {
-            op = "&&";
-        }
-        else if (check(TokenType::LOGICAL_OR))
-        {
-            op = "||";
-        }
-
+        const std::string op{check(TokenType::LOGICAL_AND) ? "&&" : "||"};
         advance();
         Expr right = comparative();
         if (!right)
@@ -1451,6 +1473,72 @@ Expr Parser::builtin_function()
     return nullptr;
 }
 
+Expr Parser::complex_literal()
+{
+    double re;
+    double im;
+    if (check({TokenType::PLUS, TokenType::MINUS, TokenType::INTEGER, TokenType::NUMBER}))
+    {
+        bool negate{check(TokenType::MINUS)};
+        if (check({TokenType::PLUS, TokenType::MINUS}))
+        {
+            advance();
+        }
+        if (check({TokenType::INTEGER, TokenType::NUMBER}))
+        {
+            if (check(TokenType::INTEGER))
+            {
+                re = static_cast<double>(integer());
+            }
+            else
+            {
+                re = num();
+            }
+            if (negate)
+            {
+                re = -re;
+            }
+            advance();
+
+            if (check(TokenType::COMMA))
+            {
+                advance();
+
+                negate = check(TokenType::MINUS);
+                if (check({TokenType::PLUS, TokenType::MINUS, TokenType::INTEGER, TokenType::NUMBER}))
+                {
+                    if (check({TokenType::PLUS, TokenType::MINUS}))
+                    {
+                        advance();
+                    }
+
+                    if (check(TokenType::INTEGER))
+                    {
+                        im = static_cast<double>(integer());
+                    }
+                    else
+                    {
+                        im = num();
+                    }
+                    if (negate)
+                    {
+                        im = -im;
+                    }
+                    advance();
+
+                    if (check(TokenType::RIGHT_PAREN))
+                    {
+                        advance();
+                        return std::make_shared<LiteralNode>(Complex{re, im});
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 Expr Parser::function_call()
 {
     if (check(TokenType::LEFT_PAREN))
@@ -1524,8 +1612,18 @@ Expr Parser::primary()
     if (check(TokenType::LEFT_PAREN))
     {
         advance();
-        Expr expr = assignment(); // Allow full expressions including assignment in parens
-        if (expr && check(TokenType::RIGHT_PAREN))
+        begin_tracking();
+        const Token curr{m_curr};
+        if (Expr result = complex_literal())
+        {
+            end_tracking();
+            return result;
+        }
+        backtrack();
+        m_curr = curr;
+
+        // Allow full expressions including assignment in parens
+        if (Expr expr = assignment(); expr && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume ')'
             return expr;

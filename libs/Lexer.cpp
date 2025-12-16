@@ -11,19 +11,274 @@
 namespace formula
 {
 
+std::string_view to_string(TokenType value)
+{
+    switch (value)
+    {
+    case TokenType::NONE:
+        return "NONE";
+    case TokenType::END_OF_INPUT:
+        return "END_OF_INPUT";
+    case TokenType::INTEGER:
+        return "INTEGER";
+    case TokenType::NUMBER:
+        return "NUMBER";
+    case TokenType::PLUS:
+        return "PLUS";
+    case TokenType::MINUS:
+        return "MINUS";
+    case TokenType::MULTIPLY:
+        return "MULTIPLY";
+    case TokenType::DIVIDE:
+        return "DIVIDE";
+    case TokenType::POWER:
+        return "POWER";
+    case TokenType::ASSIGN:
+        return "ASSIGN";
+    case TokenType::LESS_THAN:
+        return "LESS_THAN";
+    case TokenType::GREATER_THAN:
+        return "GREATER_THAN";
+    case TokenType::LESS_EQUAL:
+        return "LESS_EQUAL";
+    case TokenType::GREATER_EQUAL:
+        return "GREATER_EQUAL";
+    case TokenType::EQUAL:
+        return "EQUAL";
+    case TokenType::NOT_EQUAL:
+        return "NOT_EQUAL";
+    case TokenType::LOGICAL_AND:
+        return "LOGICAL_AND";
+    case TokenType::LOGICAL_OR:
+        return "LOGICAL_OR";
+    case TokenType::MODULUS:
+        return "MODULUS";
+    case TokenType::IDENTIFIER:
+        return "IDENTIFIER";
+    case TokenType::LEFT_PAREN:
+        return "LEFT_PAREN";
+    case TokenType::RIGHT_PAREN:
+        return "RIGHT_PAREN";
+    case TokenType::LEFT_BRACKET:
+        return "LEFT_BRACKET";
+    case TokenType::RIGHT_BRACKET:
+        return "RIGHT_BRACKET";
+    case TokenType::LEFT_BRACE:
+        return "LEFT_BRACE";
+    case TokenType::RIGHT_BRACE:
+        return "RIGHT_BRACE";
+    case TokenType::PERIOD:
+        return "PERIOD";
+    case TokenType::COLON:
+        return "COLON";
+    case TokenType::COMMA:
+        return "COMMA";
+    case TokenType::TERMINATOR:
+        return "TERMINATOR";
+    case TokenType::IF:
+        return "IF";
+    case TokenType::ELSE_IF:
+        return "ELSE_IF";
+    case TokenType::ELSE:
+        return "ELSE";
+    case TokenType::END_IF:
+        return "END_IF";
+    case TokenType::WHILE:
+        return "WHILE";
+    case TokenType::END_WHILE:
+        return "END_WHILE";
+    case TokenType::REPEAT:
+        return "REPEAT";
+    case TokenType::UNTIL:
+        return "UNTIL";
+    case TokenType::FUNC:
+        return "FUNC";
+    case TokenType::END_FUNC:
+        return "END_FUNC";
+    case TokenType::PARAM:
+        return "PARAM";
+    case TokenType::END_PARAM:
+        return "END_PARAM";
+    case TokenType::HEADING:
+        return "HEADING";
+    case TokenType::END_HEADING:
+        return "END_HEADING";
+    case TokenType::CTX_CONST:
+        return "CTX_CONST";
+    case TokenType::CTX_IMPORT:
+        return "CTX_IMPORT";
+    case TokenType::CTX_NEW:
+        return "CTX_NEW";
+    case TokenType::CTX_RETURN:
+        return "CTX_RETURN";
+    case TokenType::CTX_STATIC:
+        return "CTX_STATIC";
+    case TokenType::CTX_THIS:
+        return "CTX_THIS";
+    case TokenType::GLOBAL:
+        return "GLOBAL";
+    case TokenType::BUILTIN:
+        return "BUILTIN";
+    case TokenType::INIT:
+        return "INIT";
+    case TokenType::LOOP:
+        return "LOOP";
+    case TokenType::BAILOUT:
+        return "BAILOUT";
+    case TokenType::PERTURB_INIT:
+        return "PERTURB_INIT";
+    case TokenType::PERTURB_LOOP:
+        return "PERTURB_LOOP";
+    case TokenType::DEFAULT:
+        return "DEFAULT";
+    case TokenType::SWITCH:
+        return "SWITCH";
+    case TokenType::P1:
+        return "P1";
+    case TokenType::P2:
+        return "P2";
+    case TokenType::P3:
+        return "P3";
+    case TokenType::P4:
+        return "P4";
+    case TokenType::P5:
+        return "P5";
+    case TokenType::PIXEL:
+        return "PIXEL";
+    case TokenType::LAST_SQR:
+        return "LAST_SQR";
+    case TokenType::RAND:
+        return "RAND";
+    case TokenType::PI:
+        return "PI";
+    case TokenType::E:
+        return "E";
+    case TokenType::MAX_ITER:
+        return "MAX_ITER";
+    case TokenType::SCREEN_MAX:
+        return "SCREEN_MAX";
+    case TokenType::SCREEN_PIXEL:
+        return "SCREEN_PIXEL";
+    case TokenType::WHITE_SQUARE:
+        return "WHITE_SQUARE";
+    case TokenType::IS_MAND:
+        return "IS_MAND";
+    case TokenType::CENTER:
+        return "CENTER";
+    case TokenType::MAG_X_MAG:
+        return "MAG_X_MAG";
+    case TokenType::ROT_SKEW:
+        return "ROT_SKEW";
+    case TokenType::SINH:
+        return "SINH";
+    case TokenType::COSH:
+        return "COSH";
+    case TokenType::COSXX:
+        return "COSXX";
+    case TokenType::SIN:
+        return "SIN";
+    case TokenType::COS:
+        return "COS";
+    case TokenType::COTANH:
+        return "COTANH";
+    case TokenType::COTAN:
+        return "COTAN";
+    case TokenType::TANH:
+        return "TANH";
+    case TokenType::TAN:
+        return "TAN";
+    case TokenType::SQRT:
+        return "SQRT";
+    case TokenType::LOG:
+        return "LOG";
+    case TokenType::EXP:
+        return "EXP";
+    case TokenType::ABS:
+        return "ABS";
+    case TokenType::CONJ:
+        return "CONJ";
+    case TokenType::REAL:
+        return "REAL";
+    case TokenType::IMAG:
+        return "IMAG";
+    case TokenType::FLIP:
+        return "FLIP";
+    case TokenType::FN1:
+        return "FN1";
+    case TokenType::FN2:
+        return "FN2";
+    case TokenType::FN3:
+        return "FN3";
+    case TokenType::FN4:
+        return "FN4";
+    case TokenType::SRAND:
+        return "SRAND";
+    case TokenType::ASINH:
+        return "ASINH";
+    case TokenType::ACOSH:
+        return "ACOSH";
+    case TokenType::ASIN:
+        return "ASIN";
+    case TokenType::ACOS:
+        return "ACOS";
+    case TokenType::ATANH:
+        return "ATANH";
+    case TokenType::ATAN:
+        return "ATAN";
+    case TokenType::CABS:
+        return "CABS";
+    case TokenType::SQR:
+        return "SQR";
+    case TokenType::FLOOR:
+        return "FLOOR";
+    case TokenType::CEIL:
+        return "CEIL";
+    case TokenType::TRUNC:
+        return "TRUNC";
+    case TokenType::ROUND:
+        return "ROUND";
+    case TokenType::IDENT:
+        return "IDENT";
+    case TokenType::ONE:
+        return "ONE";
+    case TokenType::ZERO:
+        return "ZERO";
+    case TokenType::INVALID:
+        return "INVALID";
+    case TokenType::TRUE:
+        return "TRUE";
+    case TokenType::FALSE:
+        return "FALSE";
+    case TokenType::STRING:
+        return "STRING";
+    case TokenType::TYPE_BOOL:
+        return "TYPE_BOOL";
+    case TokenType::TYPE_INT:
+        return "TYPE_INT";
+    case TokenType::TYPE_FLOAT:
+        return "TYPE_FLOAT";
+    case TokenType::TYPE_COMPLEX:
+        return "TYPE_COMPLEX";
+    case TokenType::TYPE_COLOR:
+        return "TYPE_COLOR";
+    }
+
+    return "?Unknown";
+}
+
 Lexer::Lexer(std::string_view input) :
     m_input(input),
-    m_position(0),
-    m_has_peek(false)
+    m_position(0)
 {
 }
 
-Token Lexer::next_token()
+Token Lexer::get_token()
 {
-    if (m_has_peek)
+    if (!m_peek_tokens.empty())
     {
-        m_has_peek = false;
-        return m_peek_token;
+        Token result{m_peek_tokens.front()};
+        m_peek_tokens.pop_front();
+        return result;
     }
 
     skip_whitespace();
@@ -144,21 +399,24 @@ Token Lexer::next_token()
     case '\\':
         // Backslash here means it wasn't part of a line continuation
         // (those are handled in skip_whitespace)
-        return {TokenType::INVALID, start, 1};
     default:
         // Unknown character
         return {TokenType::INVALID, start, 1};
     }
 }
 
+void Lexer::put_token(Token token)
+{
+    m_peek_tokens.push_back(token);
+}
+
 Token Lexer::peek_token()
 {
-    if (!m_has_peek)
+    if (m_peek_tokens.empty())
     {
-        m_peek_token = next_token();
-        m_has_peek = true;
+        m_peek_tokens.push_back(get_token());
     }
-    return m_peek_token;
+    return m_peek_tokens.front();
 }
 
 void Lexer::skip_whitespace()

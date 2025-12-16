@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <deque>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -139,6 +140,8 @@ enum class TokenType
     TYPE_COLOR,   // color type name
 };
 
+std::string_view to_string(TokenType value);
+
 struct Token
 {
     Token() :
@@ -186,7 +189,8 @@ class Lexer
 public:
     explicit Lexer(std::string_view input);
 
-    Token next_token();
+    Token get_token();
+    void put_token(Token token);
     Token peek_token();
     size_t position() const
     {
@@ -212,8 +216,7 @@ private:
 
     std::string_view m_input;
     size_t m_position;
-    Token m_peek_token;
-    bool m_has_peek;
+    std::deque<Token> m_peek_tokens;
 };
 
 using LexerPtr = std::shared_ptr<Lexer>;

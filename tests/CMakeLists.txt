@@ -6,27 +6,32 @@ include(GoogleTest)
 
 find_package(GTest CONFIG REQUIRED)
 
-# Generate formula data from id.frm at configure time
+# Build the formula data generator tool
+add_executable(generate-formula-data "generate-formula-data.cpp" )
+target_folder(generate-formula-data "Tools")
+
+# Generate formula data from id.frm at build time
 set(ID_FRM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/id.frm")
-set(GENERATOR_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/generate-formula-data.cmake")
+set(FORMULA_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/formula-data.h")
 set(FORMULA_DATA_CPP "${CMAKE_CURRENT_BINARY_DIR}/formula-data.cpp")
 
 add_custom_command(
-    OUTPUT "${FORMULA_DATA_CPP}"
-    COMMAND ${CMAKE_COMMAND}
-        -DINPUT_FILE=${ID_FRM_FILE}
-        -DOUTPUT_FILE=${FORMULA_DATA_CPP}
-        -P ${GENERATOR_SCRIPT}
-    DEPENDS ${ID_FRM_FILE} ${GENERATOR_SCRIPT}
+    OUTPUT "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
+    COMMAND generate-formula-data
+        "${ID_FRM_FILE}"
+        "${FORMULA_DATA_H}"
+        "${FORMULA_DATA_CPP}"
+    DEPENDS ${ID_FRM_FILE} generate-formula-data
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating formula-data.cpp from id.frm"
+    COMMENT "Generating formula-data.h and formula-data.cpp from id.frm"
     VERBATIM
 )
 
 add_executable("test-formula"
     "ExpressionParam.h" "ExpressionParam.cpp"
+    "FormulaEntry.h"
     "node-builders.h"
-    "formula-data.h" "${FORMULA_DATA_CPP}"
+    "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
     "formula-data-test.cpp"
     "NodeFormatter.h" "NodeFormatter.cpp"
     "function-call.h" "function-call.cpp"
@@ -38,7 +43,7 @@ add_executable("test-formula"
     "simplifier-test.cpp"
     "trim_ws.h" "trim_ws.cpp"
 )
-target_include_directories("test-formula" PRIVATE .)
+target_include_directories("test-formula" PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries("test-formula" PUBLIC formula GTest::gtest_main)
 target_folder("test-formula" "Tests")
 

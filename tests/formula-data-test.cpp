@@ -13,18 +13,18 @@ namespace formula::test
 
 TEST(FormulaDataTest, hasExpectedCount)
 {
-    const size_t count = formula_count;
+    const size_t count = g_formula_count;
 
     EXPECT_GT(count, 0);
 }
 
 TEST(FormulaDataTest, allEntriesHaveNamesAndContent)
 {
-    for (size_t i = 0; i < formula_count; ++i)
+    for (size_t i = 0; i < g_formula_count; ++i)
     {
-        const auto &entry = formulas[i];
+        const auto &entry = g_formulas[i];
         EXPECT_GT(entry.name.length(), 0) << "Entry " << i << " has empty name";
-        EXPECT_GT(entry.content.length(), 0) << "Entry " << i << " has empty content";
+        EXPECT_GT(entry.body.length(), 0) << "Entry " << i << " has empty content";
     }
 }
 
@@ -33,9 +33,9 @@ TEST(FormulaDataTest, canFindMandelbrotFormula)
     const char *searchName = "Mandelbrot(XAXIS)";
     bool found = false;
 
-    for (size_t i = 0; i < formula_count; ++i)
+    for (size_t i = 0; i < g_formula_count; ++i)
     {
-        if (formulas[i].name == searchName)
+        if (g_formulas[i].name == searchName)
         {
             found = true;
             break;
@@ -49,9 +49,9 @@ TEST(FormulaDataTest, canFindMandelbrotFormula)
 TEST(FormulaDataTest, noCommentEntries)
 {
     // Arrange & Act & Assert
-    for (size_t i = 0; i < formula_count; ++i)
+    for (size_t i = 0; i < g_formula_count; ++i)
     {
-        const auto &entry = formulas[i];
+        const FormulaEntry &entry = g_formulas[i];
         EXPECT_NE("comment", entry.name) << "Found comment entry at index " << i;
     }
 }

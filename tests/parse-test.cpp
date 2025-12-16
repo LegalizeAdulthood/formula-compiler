@@ -128,26 +128,28 @@ class BuiltinDisallows : public TestWithParam<BuiltinDisallowsParam>
 } // namespace
 
 static SimpleExpressionParam s_simple_expressions[]{
-    {"constant", "1", "literal:1"},                                                             //
-    {"identifier", "z2", "identifier:z2"},                                                      //
-    {"parenExpr", "(z)", "identifier:z"},                                                       //
-    {"add", "1+2", "binary_op:+ literal:1 literal:2"},                                          //
-    {"subtract", "1-2", "binary_op:- literal:1 literal:2"},                                     //
-    {"multiply", "1*2", "binary_op:* literal:1 literal:2"},                                     //
-    {"divide", "1/2", "binary_op:/ literal:1 literal:2"},                                       //
-    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* literal:1 literal:2 literal:4"},          //
-    {"parenthesisExpr", "1*(2+4)", "binary_op:* literal:1 binary_op:+ literal:2 literal:4"},    //
-    {"unaryMinus", "-(1)", "unary_op:- literal:1"},                                             //
-    {"unaryPlus", "+(1)", "unary_op:+ literal:1"},                                              //
-    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- literal:1"},                        //
-    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ literal:1 literal:2 literal:3"},            //
-    {"capitalLetterInIdentifier", "A", "identifier:a"},                                         //
-    {"numberInIdentifier", "a1", "identifier:a1"},                                              //
-    {"underscoreInIdentifier", "A_1", "identifier:a_1"},                                        //
-    {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                        //
-    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"}, //
-    {"assignment", "z=4", "assignment:z literal:4"},                                            //
-    {"assignmentLongVariable", "this_is_another4_variable_name2=4",
+    {"intLiteral", "1", "literal:1"},                                                                               //
+    {"floatLiteral", "1.5", "literal:1.5"},                                                                         //
+    {"complexLiteral", "(1,2)", "literal:(1,2)"},                                                                   //
+    {"identifier", "z2", "identifier:z2"},                                                                          //
+    {"parenExpr", "(z)", "identifier:z"},                                                                           //
+    {"add", "1+2", "binary_op:+ literal:1 literal:2"},                                                              //
+    {"subtract", "1-2", "binary_op:- literal:1 literal:2"},                                                         //
+    {"multiply", "1*2", "binary_op:* literal:1 literal:2"},                                                         //
+    {"divide", "1/2", "binary_op:/ literal:1 literal:2"},                                                           //
+    {"multiplyAdd", "1*2+4", "binary_op:+ binary_op:* literal:1 literal:2 literal:4"},                              //
+    {"parenthesisExpr", "1*(2+4)", "binary_op:* literal:1 binary_op:+ literal:2 literal:4"},                        //
+    {"unaryMinus", "-(1)", "unary_op:- literal:1"},                                                                 //
+    {"unaryPlus", "+(1)", "unary_op:+ literal:1"},                                                                  //
+    {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- literal:1"},                                            //
+    {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ literal:1 literal:2 literal:3"},                                //
+    {"capitalLetterInIdentifier", "A", "identifier:a"},                                                             //
+    {"numberInIdentifier", "a1", "identifier:a1"},                                                                  //
+    {"underscoreInIdentifier", "A_1", "identifier:a_1"},                                                            //
+    {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                                            //
+    {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"},                     //
+    {"assignment", "z=4", "assignment:z literal:4"},                                                                //
+    {"assignmentLongVariable", "this_is_another4_variable_name2=4",                                                 //
         "assignment:this_is_another4_variable_name2 literal:4"},                                                    //
     {"modulus", "|-3.0|", "unary_op:| unary_op:- literal:3"},                                                       //
     {"compareLess", "4<3", "binary_op:< literal:4 literal:3"},                                                      //
