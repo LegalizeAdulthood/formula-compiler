@@ -142,6 +142,7 @@ static CompileError call(asmjit::x86::Compiler &comp, RealFunction *fn, asmjit::
 
 static CompileError call(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
 {
+#ifdef _WIN32
     // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
     // Function signature: Complex* fn(Complex* return_slot, const Complex* arg)
     // - RCX = pointer to return slot (caller allocates)
@@ -179,6 +180,42 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmji
     ASMJIT_CHECK(comp.movlpd(result, return_slot));
     asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
     ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
+#else
+    // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
+    // Function signature: Complex fn(Complex arg)
+    // - XMM0 = low 64 bits (real part)
+    // - XMM1 = high 64 bits (imaginary part)
+    // - Return: XMM0 = real part, XMM1 = imaginary part
+
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
+
+    // Split the input complex number into two XMM registers
+    asmjit::x86::Xmm arg_real = comp.newXmmSd(); // XMM register for real part
+    asmjit::x86::Xmm arg_imag = comp.newXmmSd(); // XMM register for imaginary part
+
+    // Extract real and imaginary parts from result
+    ASMJIT_CHECK(comp.movsd(arg_real, result));       // arg_real = result.low (real part)
+    ASMJIT_CHECK(comp.movapd(arg_imag, result));      // arg_imag = result (both parts)
+    ASMJIT_CHECK(comp.shufpd(arg_imag, arg_imag, 1)); // arg_imag = result.high (imaginary part)
+
+    // Create invoke node with signature: void fn(double, double) ? (double, double)
+    asmjit::InvokeNode *invoke_node;
+    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, double, double>()));
+
+    // Set arguments: arg0 (XMM0) = real, arg1 (XMM1) = imaginary
+    invoke_node->setArg(0, arg_real);
+    invoke_node->setArg(1, arg_imag);
+
+    // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
+    asmjit::x86::Xmm ret_real = comp.newXmmSd();
+    asmjit::x86::Xmm ret_imag = comp.newXmmSd();
+    invoke_node->setRet(0, ret_real);
+    invoke_node->setRet(1, ret_imag);
+
+    // Combine the two return values into result XMM register
+    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
+    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
+#endif
 
     return {};
 }
@@ -187,6 +224,7 @@ using ComplexBinOp = Complex(const Complex &lhs, const Complex &rhs);
 
 static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
 {
+#ifdef _WIN32
     // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
     // Function signature: Complex* fn(Complex* return_slot, const Complex* left, const Complex* right)
     // - RCX = pointer to return slot (caller allocates)
@@ -237,6 +275,52 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
     ASMJIT_CHECK(comp.movlpd(result, return_slot));
     asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
     ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
+#else
+    // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
+    // Function signature: Complex fn(Complex left, Complex right)
+    // - Left: XMM0 = real, XMM1 = imaginary
+    // - Right: XMM2 = real, XMM3 = imaginary
+    // - Return: XMM0 = real, XMM1 = imaginary
+
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
+
+    // Split the input complex numbers into separate XMM registers
+    asmjit::x86::Xmm left_real = comp.newXmmSd();
+    asmjit::x86::Xmm left_imag = comp.newXmmSd();
+    asmjit::x86::Xmm right_real = comp.newXmmSd();
+    asmjit::x86::Xmm right_imag = comp.newXmmSd();
+
+    // Extract left operand (result) parts
+    ASMJIT_CHECK(comp.movsd(left_real, result));        // left_real = result.low
+    ASMJIT_CHECK(comp.movapd(left_imag, result));       // left_imag = result
+    ASMJIT_CHECK(comp.shufpd(left_imag, left_imag, 1)); // left_imag = result.high
+
+    // Extract right operand parts
+    ASMJIT_CHECK(comp.movsd(right_real, right));          // right_real = right.low
+    ASMJIT_CHECK(comp.movapd(right_imag, right));         // right_imag = right
+    ASMJIT_CHECK(comp.shufpd(right_imag, right_imag, 1)); // right_imag = right.high
+
+    // Create invoke node with signature: void fn(double, double, double, double) ? (double, double)
+    asmjit::InvokeNode *invoke_node;
+    ASMJIT_CHECK(
+        comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, double, double, double, double>()));
+
+    // Set arguments in order: left_real (XMM0), left_imag (XMM1), right_real (XMM2), right_imag (XMM3)
+    invoke_node->setArg(0, left_real);
+    invoke_node->setArg(1, left_imag);
+    invoke_node->setArg(2, right_real);
+    invoke_node->setArg(3, right_imag);
+
+    // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
+    asmjit::x86::Xmm ret_real = comp.newXmmSd();
+    asmjit::x86::Xmm ret_imag = comp.newXmmSd();
+    invoke_node->setRet(0, ret_real);
+    invoke_node->setRet(1, ret_imag);
+
+    // Combine the two return values into result XMM register
+    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
+    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
+#endif
 
     return {};
 }
@@ -285,7 +369,7 @@ void Compiler::visit(const FunctionCallNode &node)
         {
             m_err = err;
         }
-        return;  // Found complex version, don't check for real version
+        return; // Found complex version, don't check for real version
     }
     if (RealFunction *fn = lookup_real(name))
     {
