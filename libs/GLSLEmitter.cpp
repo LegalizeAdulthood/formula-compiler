@@ -16,6 +16,15 @@ namespace formula::codegen
 namespace
 {
 
+/// This Visitor is an example implementation that emits a GLSL compute
+/// shader for the fractal formula.
+///
+/// This example was generated with Copilot and not much else was done,
+/// so the results may be incorrect and buggy as an actual GLSL compute
+/// shader.
+///
+/// It merely serves as an example for your own Visitor.
+///
 class GLSLEmitter : public ast::Visitor
 {
 public:
@@ -121,8 +130,7 @@ std::string GLSLEmitter::emit_header()
     out << "// Auto-generated fractal compute shader\n\n";
 
     // Workgroup size
-    out << "layout(local_size_x = " << m_workgroup_size_x
-        << ", local_size_y = " << m_workgroup_size_y << ") in;\n\n";
+    out << "layout(local_size_x = " << m_workgroup_size_x << ", local_size_y = " << m_workgroup_size_y << ") in;\n\n";
 
     // Output image binding
     out << "layout(rgba32f, binding = 0) uniform image2D output_image;\n\n";
@@ -452,8 +460,7 @@ void GLSLEmitter::visit(const ast::LiteralNode &node)
     if (std::holds_alternative<Complex>(node.value()))
     {
         auto c = std::get<Complex>(node.value());
-        m_output << "vec2(" << std::fixed << std::setprecision(17)
-                 << c.re << ", " << c.im << ")";
+        m_output << "vec2(" << std::fixed << std::setprecision(17) << c.re << ", " << c.im << ")";
     }
     else if (std::holds_alternative<double>(node.value()))
     {
@@ -638,7 +645,7 @@ void GLSLEmitter::visit(const ast::ParamBlockNode &)
     // Parameter blocks are not emitted in shader code
 }
 
-}
+} // namespace
 
 std::string emit_shader(const ast::FormulaSections &formula)
 {
