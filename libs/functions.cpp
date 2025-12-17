@@ -70,9 +70,19 @@ Complex flip(const Complex &arg)
     return {arg.im, arg.re};
 }
 
+Complex floor(const Complex &arg)
+{
+    return {std::floor(arg.re), std::floor(arg.im)};
+}
+
 Complex cabs(const Complex &arg)
 {
     return {std::sqrt(arg.re * arg.re + arg.im * arg.im), 0.0};
+}
+
+Complex ceil(const Complex &arg)
+{
+    return {std::ceil(arg.re), std::ceil(arg.im)};
 }
 
 Complex sqr(const Complex &arg)
@@ -116,6 +126,11 @@ Complex tan(const Complex &arg)
 Complex tanh(const Complex &arg)
 {
     return sinh(arg) / cosh(arg);
+}
+
+Complex trunc(const Complex &arg)
+{
+    return {std::trunc(arg.re), std::trunc(arg.im)};
 }
 
 Complex cotan(const Complex &arg)
@@ -183,6 +198,11 @@ Complex atanh(const Complex &arg)
 Complex real(const Complex &arg)
 {
     return {arg.re, 0.0};
+}
+
+Complex round(const Complex &arg)
+{
+    return {std::round(arg.re), std::round(arg.im)};
 }
 
 Complex imag(const Complex &arg)
@@ -286,45 +306,52 @@ double set_rand(double arg)
     return 0.0;
 }
 
+Complex set_rand(const Complex &arg)
+{
+    return {set_rand(arg.re), 0.0};
+}
+
+// clang-format off
 const FunctionMap s_standard_functions[]{
-    {"abs", std::abs, abs},       //
-    {"acos", std::acos, acos},    //
-    {"acosh", std::acosh, acosh}, //
-    {"asin", std::asin, asin},    //
-    {"asinh", std::asinh, asinh}, //
-    {"atan", std::atan, atan},    //
-    {"atanh", std::atanh, atanh}, //
-    {"cabs", cabs, cabs},         //
-    {"ceil", std::ceil},          //
-    {"conj", conj, conj},         //
-    {"cos", std::cos, cos},       //
-    {"cosh", std::cosh, cosh},    //
-    {"cosxx", cosxx, cosxx},      //
-    {"cotan", cotan, cotan},      //
-    {"cotanh", cotanh, cotanh},   //
-    {"exp", std::exp, exp},       //
-    {"flip", flip, flip},         //
-    {"floor", std::floor},        //
-    {"fn1", fn1, fn1},            //
-    {"fn2", fn2, fn2},            //
-    {"fn3", fn3, fn3},            //
-    {"fn4", fn4, fn4},            //
-    {"ident", ident, ident},      //
-    {"imag", imag, imag},         //
-    {"log", std::log, log},       //
-    {"one", one, one},            //
-    {"real", real, real},         //
-    {"round", std::round},        //
-    {"sin", std::sin, sin},       //
-    {"sinh", std::sinh, sinh},    //
-    {"sqr", sqr, sqr},            //
-    {"sqrt", std::sqrt, sqrt},    //
-    {"srand", set_rand},          //
-    {"tan", std::tan, tan},       //
-    {"tanh", std::tanh, tanh},    //
-    {"trunc", std::trunc},        //
-    {"zero", zero, zero},         //
+    {"abs",     std::abs,   abs     },
+    {"acos",    std::acos,  acos    },
+    {"acosh",   std::acosh, acosh   },
+    {"asin",    std::asin,  asin    },
+    {"asinh",   std::asinh, asinh   },
+    {"atan",    std::atan,  atan    },
+    {"atanh",   std::atanh, atanh   },
+    {"cabs",    cabs,       cabs    },
+    {"ceil",    std::ceil,  ceil    },
+    {"conj",    conj,       conj    },
+    {"cos",     std::cos,   cos     },
+    {"cosh",    std::cosh,  cosh    },
+    {"cosxx",   cosxx,      cosxx   },
+    {"cotan",   cotan,      cotan   },
+    {"cotanh",  cotanh,     cotanh  },
+    {"exp",     std::exp,   exp     },
+    {"flip",    flip,       flip    },
+    {"floor",   std::floor, floor   },
+    {"fn1",     fn1,        fn1     },
+    {"fn2",     fn2,        fn2     },
+    {"fn3",     fn3,        fn3     },
+    {"fn4",     fn4,        fn4     },
+    {"ident",   ident,      ident   },
+    {"imag",    imag,       imag    },
+    {"log",     std::log,   log     },
+    {"one",     one,        one     },
+    {"real",    real,       real    },
+    {"round",   std::round, round   },
+    {"sin",     std::sin,   sin     },
+    {"sinh",    std::sinh,  sinh    },
+    {"sqr",     sqr,        sqr     },
+    {"sqrt",    std::sqrt,  sqrt    },
+    {"srand",   set_rand,   set_rand},
+    {"tan",     std::tan,   tan     },
+    {"tanh",    std::tanh,  tanh    },
+    {"trunc",   std::trunc, trunc   },
+    {"zero",    zero,       zero    },
 };
+// clang-format on
 
 } // namespace
 

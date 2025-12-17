@@ -369,15 +369,6 @@ void Compiler::visit(const FunctionCallNode &node)
         {
             m_err = err;
         }
-        return; // Found complex version, don't check for real version
-    }
-    if (RealFunction *fn = lookup_real(name))
-    {
-        if (const CompileError err = call(comp, fn, m_result.back()); err)
-        {
-            m_err = err;
-        }
-        return;
     }
 }
 
