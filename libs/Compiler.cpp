@@ -318,11 +318,11 @@ static CompileError call_binary(
     ASMJIT_CHECK(comp.lea(left_ptr, left_slot));
     ASMJIT_CHECK(comp.lea(right_ptr, right_slot));
 
-    // Create invoke node with signature: void fn(const void*, const void*) returning (double, double)
+    // Create invoke node with signature that returns two doubles
     asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, const void *, const void *>()));
+    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<double, uintptr_t, uintptr_t>()));
 
-    // Set arguments: RDI = left_slot, RSI = right_slot
+    // Set arguments: arg0 (RDI) = left_ptr, arg1 (RSI) = right_ptr
     invoke_node->setArg(0, left_ptr);
     invoke_node->setArg(1, right_ptr);
 
