@@ -284,6 +284,10 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
 
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
 
+    // Save the result and right XMM registers if needed
+    asmjit::x86::Mem result_save_slot = comp.newStack(16, 16);
+    ASMJIT_CHECK(comp.movdqa(result_save_slot, result));
+
     // Split the input complex numbers into separate XMM registers
     asmjit::x86::Xmm left_real = comp.newXmmSd();
     asmjit::x86::Xmm left_imag = comp.newXmmSd();
@@ -300,6 +304,10 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
     ASMJIT_CHECK(comp.movapd(right_imag, right));         // right_imag = right
     ASMJIT_CHECK(comp.shufpd(right_imag, right_imag, 1)); // right_imag = right.high
 
+    // Save right register for later if needed
+    asmjit::x86::Mem right_save_slot = comp.newStack(16, 16);
+    ASMJIT_CHECK(comp.movdqa(right_save_slot, right));
+
     // Create invoke node with signature: void fn(double, double, double, double) ? (double, double)
     asmjit::InvokeNode *invoke_node;
     ASMJIT_CHECK(
@@ -311,15 +319,23 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
     invoke_node->setArg(2, right_real);
     invoke_node->setArg(3, right_imag);
 
+    // Allocate stack slots to save return values
+    asmjit::x86::Mem ret_save_slot = comp.newStack(16, 16);
+    
     // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
     asmjit::x86::Xmm ret_real = comp.newXmmSd();
     asmjit::x86::Xmm ret_imag = comp.newXmmSd();
     invoke_node->setRet(0, ret_real);
     invoke_node->setRet(1, ret_imag);
 
-    // Combine the two return values into result XMM register
-    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
-    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
+    // Save return values to stack slot
+    ASMJIT_CHECK(comp.movsd(ret_save_slot, ret_real));
+    asmjit::x86::Mem ret_save_slot_high = ret_save_slot.cloneAdjusted(8);
+    ASMJIT_CHECK(comp.movsd(ret_save_slot_high, ret_imag));
+
+    // Load return value from stack back into result XMM register
+    ASMJIT_CHECK(comp.movsd(result, ret_save_slot));
+    ASMJIT_CHECK(comp.movhpd(result, ret_save_slot_high));
 #endif
 
     return {};
