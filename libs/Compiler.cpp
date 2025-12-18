@@ -525,7 +525,7 @@ void Compiler::visit(const BinaryOpNode &node)
     }
     if (op == "^")
     {
-        if (const CompileError err = call_binary(comp, pow, m_result.back(), right); err)
+        if (const CompileError err = call_binary(comp, formula::pow, m_result.back(), right); err)
         {
             m_err = err;
         }
