@@ -352,18 +352,6 @@ static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, a
 }
 #endif
 
-static CompileError call(
-    asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
-{
-    asmjit::InvokeNode *call;
-    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-    ASMJIT_CHECK(comp.invoke(&call, target, asmjit::FuncSignature::build<double, double, double>()));
-    call->setArg(0, result);
-    call->setArg(1, right);
-    call->setRet(0, result);
-    return {};
-}
-
 void Compiler::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
