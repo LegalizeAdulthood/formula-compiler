@@ -140,9 +140,9 @@ static CompileError call(asmjit::x86::Compiler &comp, RealFunction *fn, asmjit::
     return {};
 }
 
-static CompileError call(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
-{
 #ifdef _WIN32
+static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
+{
     // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
     // Function signature: Complex* fn(Complex* return_slot, const Complex* arg)
     // - RCX = pointer to return slot (caller allocates)
@@ -180,7 +180,12 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmji
     ASMJIT_CHECK(comp.movlpd(result, return_slot));
     asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
     ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
+
+    return {};
+}
 #else
+static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
+{
     // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
     // Function signature: Complex fn(Complex arg)
     // - XMM0 = low 64 bits (real part)
@@ -215,16 +220,16 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmji
     // Combine the two return values into result XMM register
     ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
     ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
-#endif
 
     return {};
 }
+#endif
 
 using ComplexBinOp = Complex(const Complex &lhs, const Complex &rhs);
 
-static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
-{
 #ifdef _WIN32
+static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+{
     // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
     // Function signature: Complex* fn(Complex* return_slot, const Complex* left, const Complex* right)
     // - RCX = pointer to return slot (caller allocates)
@@ -275,7 +280,13 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
     ASMJIT_CHECK(comp.movlpd(result, return_slot));
     asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
     ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
+
+    return {};
+}
 #else
+// Linux version
+static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+{
     // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
     // Function signature: Complex fn(Complex left, Complex right)
     // - Left: XMM0 = real, XMM1 = imaginary
@@ -321,7 +332,7 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
 
     // Allocate stack slots to save return values
     asmjit::x86::Mem ret_save_slot = comp.newStack(16, 16);
-    
+
     // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
     asmjit::x86::Xmm ret_real = comp.newXmmSd();
     asmjit::x86::Xmm ret_imag = comp.newXmmSd();
@@ -336,10 +347,10 @@ static CompileError call(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::
     // Load return value from stack back into result XMM register
     ASMJIT_CHECK(comp.movsd(result, ret_save_slot));
     ASMJIT_CHECK(comp.movhpd(result, ret_save_slot_high));
-#endif
 
     return {};
 }
+#endif
 
 static CompileError call(
     asmjit::x86::Compiler &comp, double (*fn)(double, double), asmjit::x86::Xmm result, asmjit::x86::Xmm right)
@@ -381,7 +392,7 @@ void Compiler::visit(const FunctionCallNode &node)
     }
     if (ComplexFunction *fn = lookup_complex(name))
     {
-        if (const CompileError err = call(comp, fn, m_result.back()); err)
+        if (const CompileError err = call_unary(comp, fn, m_result.back()); err)
         {
             m_err = err;
         }
@@ -538,7 +549,7 @@ void Compiler::visit(const BinaryOpNode &node)
     }
     if (op == "^")
     {
-        if (const CompileError err = call(comp, pow, m_result.back(), right); err)
+        if (const CompileError err = call_binary(comp, pow, m_result.back(), right); err)
         {
             m_err = err;
         }
