@@ -228,7 +228,8 @@ static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn,
 using ComplexBinOp = Complex(const Complex &lhs, const Complex &rhs);
 
 #ifdef _WIN32
-static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+static CompileError call_binary(
+    asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
 {
     // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
     // Function signature: Complex* fn(Complex* return_slot, const Complex* left, const Complex* right)
@@ -285,53 +286,45 @@ static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, a
 }
 #else
 // Linux version
-static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
+static CompileError call_binary(
+    asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
 {
-    // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
-    // Function signature: Complex fn(Complex left, Complex right)
-    // - Left: XMM0 = real, XMM1 = imaginary
-    // - Right: XMM2 = real, XMM3 = imaginary
-    // - Return: XMM0 = real, XMM1 = imaginary
+    // System V AMD64 ABI: Complex (16 bytes) passed by reference, returned in XMM registers
+    // Function signature: Complex fn(const Complex& left, const Complex& right)
+    // - Arguments: RDI = pointer to left, RSI = pointer to right
+    // - Return: XMM0 = real part, XMM1 = imaginary part
 
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
 
-    // Save the result and right XMM registers if needed
-    asmjit::x86::Mem result_save_slot = comp.newStack(16, 16);
-    ASMJIT_CHECK(comp.movdqa(result_save_slot, result));
+    // Allocate 16 bytes on stack for left argument
+    asmjit::x86::Mem left_slot = comp.newStack(16, 16);
 
-    // Split the input complex numbers into separate XMM registers
-    asmjit::x86::Xmm left_real = comp.newXmmSd();
-    asmjit::x86::Xmm left_imag = comp.newXmmSd();
-    asmjit::x86::Xmm right_real = comp.newXmmSd();
-    asmjit::x86::Xmm right_imag = comp.newXmmSd();
+    // Allocate 16 bytes on stack for right argument
+    asmjit::x86::Mem right_slot = comp.newStack(16, 16);
 
-    // Extract left operand (result) parts
-    ASMJIT_CHECK(comp.movsd(left_real, result));        // left_real = result.low
-    ASMJIT_CHECK(comp.movapd(left_imag, result));       // left_imag = result
-    ASMJIT_CHECK(comp.shufpd(left_imag, left_imag, 1)); // left_imag = result.high
+    // Store left XMM register (result) to left_slot
+    ASMJIT_CHECK(comp.movlpd(left_slot, result));
+    asmjit::x86::Mem left_slot_high = left_slot.cloneAdjusted(8);
+    ASMJIT_CHECK(comp.movhpd(left_slot_high, result));
 
-    // Extract right operand parts
-    ASMJIT_CHECK(comp.movsd(right_real, right));          // right_real = right.low
-    ASMJIT_CHECK(comp.movapd(right_imag, right));         // right_imag = right
-    ASMJIT_CHECK(comp.shufpd(right_imag, right_imag, 1)); // right_imag = right.high
+    // Store right XMM register to right_slot
+    ASMJIT_CHECK(comp.movlpd(right_slot, right));
+    asmjit::x86::Mem right_slot_high = right_slot.cloneAdjusted(8);
+    ASMJIT_CHECK(comp.movhpd(right_slot_high, right));
 
-    // Save right register for later if needed
-    asmjit::x86::Mem right_save_slot = comp.newStack(16, 16);
-    ASMJIT_CHECK(comp.movdqa(right_save_slot, right));
+    // Get addresses of the stack slots
+    asmjit::x86::Gp left_ptr = comp.newIntPtr();
+    asmjit::x86::Gp right_ptr = comp.newIntPtr();
+    ASMJIT_CHECK(comp.lea(left_ptr, left_slot));
+    ASMJIT_CHECK(comp.lea(right_ptr, right_slot));
 
-    // Create invoke node with signature: void fn(double, double, double, double) ? (double, double)
+    // Create invoke node with signature: void fn(const void*, const void*) returning (double, double)
     asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(
-        comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, double, double, double, double>()));
+    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, const void *, const void *>()));
 
-    // Set arguments in order: left_real (XMM0), left_imag (XMM1), right_real (XMM2), right_imag (XMM3)
-    invoke_node->setArg(0, left_real);
-    invoke_node->setArg(1, left_imag);
-    invoke_node->setArg(2, right_real);
-    invoke_node->setArg(3, right_imag);
-
-    // Allocate stack slots to save return values
-    asmjit::x86::Mem ret_save_slot = comp.newStack(16, 16);
+    // Set arguments: RDI = left_slot, RSI = right_slot
+    invoke_node->setArg(0, left_ptr);
+    invoke_node->setArg(1, right_ptr);
 
     // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
     asmjit::x86::Xmm ret_real = comp.newXmmSd();
@@ -339,14 +332,9 @@ static CompileError call_binary(asmjit::x86::Compiler &comp, ComplexBinOp *fn, a
     invoke_node->setRet(0, ret_real);
     invoke_node->setRet(1, ret_imag);
 
-    // Save return values to stack slot
-    ASMJIT_CHECK(comp.movsd(ret_save_slot, ret_real));
-    asmjit::x86::Mem ret_save_slot_high = ret_save_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movsd(ret_save_slot_high, ret_imag));
-
-    // Load return value from stack back into result XMM register
-    ASMJIT_CHECK(comp.movsd(result, ret_save_slot));
-    ASMJIT_CHECK(comp.movhpd(result, ret_save_slot_high));
+    // Combine the two return values into result XMM register
+    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
+    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
 
     return {};
 }
