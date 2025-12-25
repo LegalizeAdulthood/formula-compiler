@@ -1556,17 +1556,27 @@ Expr Parser::function_call()
 
 Expr Parser::number()
 {
-    if (check(TokenType::NUMBER))
+    if (check({TokenType::PLUS, TokenType::MINUS, TokenType::INTEGER, TokenType::NUMBER}))
     {
-        Expr result = std::make_shared<LiteralNode>(num());
-        advance(); // consume the number
-        return result;
-    }
-    if (check(TokenType::INTEGER))
-    {
-        Expr result = std::make_shared<LiteralNode>(std::get<int>(m_curr.value));
-        advance();
-        return result;
+        bool negate{check(TokenType::MINUS)};
+        if (check({TokenType::PLUS, TokenType::MINUS}))
+        {
+            advance();
+        }
+        if (check(TokenType::NUMBER))
+        {
+            const double val = num();
+            Expr result = std::make_shared<LiteralNode>(negate? -val : val);
+            advance(); // consume the number
+            return result;
+        }
+        if (check(TokenType::INTEGER))
+        {
+            const int val{integer()};
+            Expr result = std::make_shared<LiteralNode>(negate ? -val : val);
+            advance();
+            return result;
+        }
     }
     return nullptr;
 }
@@ -1632,7 +1642,7 @@ Expr Parser::primary()
         }
 
         // Allow full expressions including assignment in parens
-        if (Expr expr = assignment(); expr && check(TokenType::RIGHT_PAREN))
+        if (Expr expr = conjunctive(); expr && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume ')'
             return expr;
