@@ -3,6 +3,7 @@
 // Copyright 2025 Richard Thomson
 //
 #include <formula/Formula.h>
+#include <formula/ParseOptions.h>
 
 #include <iostream>
 #include <map>
@@ -47,7 +48,7 @@ int main(const std::vector<std::string_view> &args)
     std::cout << "Enter an expression:\n";
     std::string line;
     std::getline(std::cin, line);
-    FormulaPtr formula = create_formula(line);
+    FormulaPtr formula = create_formula(line, ParseOptions{});
     if (!formula)
     {
         std::cerr << "Error: Invalid formula\n";

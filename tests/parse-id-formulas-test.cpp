@@ -4,6 +4,8 @@
 //
 #include <formula/Formula.h>
 
+#include <formula/ParseOptions.h>
+
 #include "formula-data.h"
 
 #include <gtest/gtest.h>
@@ -48,7 +50,7 @@ TEST_P(ParseIdFormulaSuite, parsed)
 {
     const FormulaEntry &entry{GetParam()};
 
-    FormulaPtr result{create_formula(prepare_content(entry.body))};
+    FormulaPtr result{create_formula(prepare_content(entry.body), ParseOptions{})};
 
     EXPECT_TRUE(result) << entry.name;
 }

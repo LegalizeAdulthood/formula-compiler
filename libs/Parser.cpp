@@ -6,6 +6,7 @@
 
 #include <formula/Lexer.h>
 #include <formula/NodeTyper.h>
+#include <formula/ParseOptions.h>
 
 #include <algorithm>
 #include <array>
@@ -42,10 +43,11 @@ constexpr std::array<TokenType, 9> s_sections{
 class Parser
 {
 public:
-    Parser(std::string_view text) :
+    Parser(std::string_view text, const ParseOptions &options) :
         m_ast(std::make_shared<FormulaSections>()),
         m_text(text),
-        m_lexer(text)
+        m_lexer(text),
+        m_options(options)
     {
     }
 
@@ -126,6 +128,7 @@ private:
     Token m_curr;
     std::vector<Token> m_backtrack;
     bool m_backtracking{};
+    ParseOptions m_options{};
 };
 
 void split_iterate_bailout(FormulaSections &result, const Expr &expr)
@@ -1031,6 +1034,11 @@ bool Parser::check(TokenType type) const
 // Only allow IdentifierNode for assignment target
 bool Parser::is_user_identifier(const Expr &expr) const
 {
+    if (m_options.allow_builtin_assignment)
+    {
+        return true;
+    }
+
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
         // Built-in variables and functions are not user identifiers
@@ -1668,9 +1676,9 @@ Expr Parser::primary()
 
 } // namespace
 
-FormulaSectionsPtr parse(std::string_view text)
+FormulaSectionsPtr parse(std::string_view text, const ParseOptions &options)
 {
-    Parser parser(text);
+    Parser parser(text, options);
     return parser.parse();
 }
 

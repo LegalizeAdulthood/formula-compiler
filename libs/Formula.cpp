@@ -325,9 +325,9 @@ bool valid_sections(const FormulaSectionsPtr &ast)
 
 } // namespace
 
-FormulaPtr create_formula(std::string_view text)
+FormulaPtr create_formula(std::string_view text, const ParseOptions &options)
 {
-    if (FormulaSectionsPtr sections = parser::parse(text))
+    if (FormulaSectionsPtr sections = parser::parse(text, options))
     {
         return std::make_shared<ParsedFormula>(sections);
     }

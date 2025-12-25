@@ -2,9 +2,9 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "formula/FormulaEntry.h"
-
 #include <formula/Formula.h>
+#include <formula/FormulaEntry.h>
+#include <formula/ParseOptions.h>
 
 #include <filesystem>
 #include <fstream>
@@ -40,7 +40,7 @@ int main(const std::vector<std::string_view> &args)
         int bad{};
         for (const auto &entry : load_formula_entries(str))
         {
-            if (FormulaPtr formula{create_formula(entry.body)})
+            if (FormulaPtr formula{create_formula(entry.body, ParseOptions{})})
             {
                 ++good;
             }

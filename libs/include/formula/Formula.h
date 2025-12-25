@@ -18,6 +18,8 @@ class Node;
 using Expr = std::shared_ptr<Node>;
 } // namespace ast
 
+struct ParseOptions;
+
 enum class Section
 {
     NONE = 0,
@@ -53,6 +55,6 @@ public:
 
 using FormulaPtr = std::shared_ptr<Formula>;
 
-FormulaPtr create_formula(std::string_view text);
+FormulaPtr create_formula(std::string_view text, const ParseOptions &options);
 
 } // namespace formula
