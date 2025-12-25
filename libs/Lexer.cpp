@@ -650,84 +650,75 @@ Token Lexer::lex_identifier()
         TokenType type;
     };
 
-    static constexpr TextTokenType reserved[] = {
-        {"if", TokenType::IF},                    // keywords
-        {"elseif", TokenType::ELSE_IF},           //
-        {"else", TokenType::ELSE},                //
-        {"endif", TokenType::END_IF},             //
-        {"param", TokenType::PARAM},              //
-        {"endparam", TokenType::END_PARAM},       //
-        {"false", TokenType::FALSE},              // boolean values
-        {"true", TokenType::TRUE},                //
-        {"bool", TokenType::TYPE_BOOL},           // type names
-        {"int", TokenType::TYPE_INT},             //
-        {"float", TokenType::TYPE_FLOAT},         //
-        {"complex", TokenType::TYPE_COMPLEX},     //
-        {"color", TokenType::TYPE_COLOR},         //
-        {"global", TokenType::GLOBAL},            // Section names
-        {"builtin", TokenType::BUILTIN},          //
-        {"init", TokenType::INIT},                //
-        {"loop", TokenType::LOOP},                //
-        {"bailout", TokenType::BAILOUT},          //
-        {"perturbinit", TokenType::PERTURB_INIT}, //
-        {"perturbloop", TokenType::PERTURB_LOOP}, //
-        {"default", TokenType::DEFAULT},          //
-        {"switch", TokenType::SWITCH},            //
-        {"p1", TokenType::P1},                    // Built-in variables
-        {"p2", TokenType::P2},                    //
-        {"p3", TokenType::P3},                    //
-        {"p4", TokenType::P4},                    //
-        {"p5", TokenType::P5},                    //
-        {"pixel", TokenType::PIXEL},              //
-        {"lastsqr", TokenType::LAST_SQR},         //
-        {"rand", TokenType::RAND},                //
-        {"pi", TokenType::PI},                    //
-        {"e", TokenType::E},                      //
-        {"maxit", TokenType::MAX_ITER},           //
-        {"scrnmax", TokenType::SCREEN_MAX},       //
-        {"scrnpix", TokenType::SCREEN_PIXEL},     //
-        {"whitesq", TokenType::WHITE_SQUARE},     //
-        {"ismand", TokenType::IS_MAND},           //
-        {"center", TokenType::CENTER},            //
-        {"magxmag", TokenType::MAG_X_MAG},        //
-        {"rotskew", TokenType::ROT_SKEW},         //
-        {"sinh", TokenType::SINH},                // Built-in functions
-        {"cosh", TokenType::COSH},                //
-        {"cosxx", TokenType::COSXX},              //
-        {"sin", TokenType::SIN},                  //
-        {"cos", TokenType::COS},                  //
-        {"cotanh", TokenType::COTANH},            //
-        {"cotan", TokenType::COTAN},              //
-        {"tanh", TokenType::TANH},                //
-        {"tan", TokenType::TAN},                  //
-        {"sqrt", TokenType::SQRT},                //
-        {"log", TokenType::LOG},                  //
-        {"exp", TokenType::EXP},                  //
-        {"abs", TokenType::ABS},                  //
-        {"conj", TokenType::CONJ},                //
-        {"real", TokenType::REAL},                //
-        {"imag", TokenType::IMAG},                //
-        {"flip", TokenType::FLIP},                //
-        {"fn1", TokenType::FN1},                  //
-        {"fn2", TokenType::FN2},                  //
-        {"fn3", TokenType::FN3},                  //
-        {"fn4", TokenType::FN4},                  //
-        {"srand", TokenType::SRAND},              //
-        {"asinh", TokenType::ASINH},              //
-        {"acosh", TokenType::ACOSH},              //
-        {"asin", TokenType::ASIN},                //
-        {"acos", TokenType::ACOS},                //
-        {"atanh", TokenType::ATANH},              //
-        {"atan", TokenType::ATAN},                //
-        {"cabs", TokenType::CABS},                //
-        {"sqr", TokenType::SQR},                  //
-        {"floor", TokenType::FLOOR},              //
-        {"ceil", TokenType::CEIL},                //
-        {"trunc", TokenType::TRUNC},              //
-        {"round", TokenType::ROUND},              //
-        {"ident", TokenType::IDENT},              //
-        {"one", TokenType::ONE},                  //
-        {"zero", TokenType::ZERO},                //
+    static constexpr TextTokenType reserved[]{
+        {"if", TokenType::IF},                     // keywords
+        {"elseif", TokenType::ELSE_IF},            //
+        {"else", TokenType::ELSE},                 //
+        {"endif", TokenType::END_IF},              //
+        {"param", TokenType::PARAM},               //
+        {"endparam", TokenType::END_PARAM},        //
+        {"false", TokenType::FALSE},               // boolean values
+        {"true", TokenType::TRUE},                 //
+        {"bool", TokenType::TYPE_BOOL},            // type names
+        {"int", TokenType::TYPE_INT},              //
+        {"float", TokenType::TYPE_FLOAT},          //
+        {"complex", TokenType::TYPE_COMPLEX},      //
+        {"color", TokenType::TYPE_COLOR},          //
+        {"p1", TokenType::P1},                     // Built-in variables
+        {"p2", TokenType::P2},                     //
+        {"p3", TokenType::P3},                     //
+        {"p4", TokenType::P4},                     //
+        {"p5", TokenType::P5},                     //
+        {"pixel", TokenType::PIXEL},               //
+        {"lastsqr", TokenType::LAST_SQR},          //
+        {"rand", TokenType::RAND},                 //
+        {"pi", TokenType::PI},                     //
+        {"e", TokenType::E},                       //
+        {"maxit", TokenType::MAX_ITER},            //
+        {"scrnmax", TokenType::SCREEN_MAX},        //
+        {"scrnpix", TokenType::SCREEN_PIXEL},      //
+        {"whitesq", TokenType::WHITE_SQUARE},      //
+        {"ismand", TokenType::IS_MAND},            //
+        {"center", TokenType::CENTER},             //
+        {"magxmag", TokenType::MAG_X_MAG},         //
+        {"rotskew", TokenType::ROT_SKEW},          //
+        {"sinh", TokenType::SINH},                 // Built-in functions
+        {"cosh", TokenType::COSH},                 //
+        {"cosxx", TokenType::COSXX},               //
+        {"sin", TokenType::SIN},                   //
+        {"cos", TokenType::COS},                   //
+        {"cotanh", TokenType::COTANH},             //
+        {"cotan", TokenType::COTAN},               //
+        {"tanh", TokenType::TANH},                 //
+        {"tan", TokenType::TAN},                   //
+        {"sqrt", TokenType::SQRT},                 //
+        {"log", TokenType::LOG},                   //
+        {"exp", TokenType::EXP},                   //
+        {"abs", TokenType::ABS},                   //
+        {"conj", TokenType::CONJ},                 //
+        {"real", TokenType::REAL},                 //
+        {"imag", TokenType::IMAG},                 //
+        {"flip", TokenType::FLIP},                 //
+        {"fn1", TokenType::FN1},                   //
+        {"fn2", TokenType::FN2},                   //
+        {"fn3", TokenType::FN3},                   //
+        {"fn4", TokenType::FN4},                   //
+        {"srand", TokenType::SRAND},               //
+        {"asinh", TokenType::ASINH},               //
+        {"acosh", TokenType::ACOSH},               //
+        {"asin", TokenType::ASIN},                 //
+        {"acos", TokenType::ACOS},                 //
+        {"atanh", TokenType::ATANH},               //
+        {"atan", TokenType::ATAN},                 //
+        {"cabs", TokenType::CABS},                 //
+        {"sqr", TokenType::SQR},                   //
+        {"floor", TokenType::FLOOR},               //
+        {"ceil", TokenType::CEIL},                 //
+        {"trunc", TokenType::TRUNC},               //
+        {"round", TokenType::ROUND},               //
+        {"ident", TokenType::IDENT},               //
+        {"one", TokenType::ONE},                   //
+        {"zero", TokenType::ZERO},                 //
     };
 
     const auto to_lower = [](std::string text)
@@ -741,6 +732,28 @@ Token Lexer::lex_identifier()
         it != std::end(reserved))
     {
         return {it->type, std::string{it->text}, start, length};
+    }
+
+    static constexpr TextTokenType section_names[]{
+        {"global", TokenType::GLOBAL},            // Section names
+        {"builtin", TokenType::BUILTIN},          //
+        {"init", TokenType::INIT},                //
+        {"loop", TokenType::LOOP},                //
+        {"bailout", TokenType::BAILOUT},          //
+        {"perturbinit", TokenType::PERTURB_INIT}, //
+        {"perturbloop", TokenType::PERTURB_LOOP}, //
+        {"default", TokenType::DEFAULT},          //
+        {"switch", TokenType::SWITCH},            //
+    };
+    if (auto it = std::find_if(std::begin(section_names), std::end(section_names),
+            [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
+        it != std::end(reserved))
+    {
+        if (peek_char(0) == ':')
+        {
+            advance(); // Consume the colon
+            return {it->type, std::string{it->text}, start, length};
+        }
     }
 
     // Not a reserved word, return as identifier

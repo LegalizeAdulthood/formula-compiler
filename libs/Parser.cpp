@@ -801,27 +801,14 @@ std::optional<bool> Parser::section_formula()
     };
     while (is_section())
     {
-        begin_tracking();
-        const Token curr{m_curr};
         TokenType section{m_curr.type};
-        advance(); // consume section name
-
-        if (!check(TokenType::COLON))
-        {
-            backtrack();
-            m_curr = curr;
-            return {};
-        }
-        advance(); // consume colon
+        advance(); // consume section name and colon (handled by lexer)
 
         if (!check(TokenType::TERMINATOR))
         {
-            backtrack();
-            m_curr = curr;
-            return {};
+            return false;
         }
         advance(); // consume newline
-        end_tracking();
 
         if (section == TokenType::BUILTIN)
         {

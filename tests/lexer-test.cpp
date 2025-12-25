@@ -402,15 +402,15 @@ static TextTokenParam s_params[]{
     {"elseIfPrefix", "elseif2", TokenType::IDENTIFIER},                       //
     {"elseSuffix", "myelse", TokenType::IDENTIFIER},                          //
     {"endIfPrefix", "endif_func", TokenType::IDENTIFIER},                     //
-    {"global", "global", TokenType::GLOBAL},                                  //
-    {"builtin", "builtin", TokenType::BUILTIN},                               //
-    {"init", "init", TokenType::INIT},                                        //
-    {"loop", "loop", TokenType::LOOP},                                        //
-    {"bailout", "bailout", TokenType::BAILOUT},                               //
-    {"perturbinit", "perturbinit", TokenType::PERTURB_INIT},                  //
-    {"perturbloop", "perturbloop", TokenType::PERTURB_LOOP},                  //
-    {"default", "default", TokenType::DEFAULT},                               //
-    {"switch", "switch", TokenType::SWITCH},                                  //
+    {"global", "global:", TokenType::GLOBAL, 0, 6},                           //
+    {"builtin", "builtin:", TokenType::BUILTIN, 0, 7},                        //
+    {"init", "init:", TokenType::INIT, 0, 4},                                 //
+    {"loop", "loop:", TokenType::LOOP, 0, 4},                                 //
+    {"bailout", "bailout:", TokenType::BAILOUT, 0, 7},                        //
+    {"perturbinit", "perturbinit:", TokenType::PERTURB_INIT, 0, 11},          //
+    {"perturbloop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 11},          //
+    {"default", "default:", TokenType::DEFAULT, 0, 7},                        //
+    {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
     {"p1", "p1", TokenType::P1},                                              //
     {"p2", "p2", TokenType::P2},                                              //
     {"p3", "p3", TokenType::P3},                                              //
@@ -469,15 +469,6 @@ static TextTokenParam s_params[]{
     {"commentAfter", "1;this is a comment", TokenType::INTEGER, 0, 1},        //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
     {"continuation", "\\\n1", TokenType::INTEGER, 2, 1},                      //
-    {"global", "global:", TokenType::GLOBAL, 0, 6},                           //
-    {"builtin", "builtin:", TokenType::BUILTIN, 0, 7},                        //
-    {"init", "init:", TokenType::INIT, 0, 4},                                 //
-    {"loop", "loop:", TokenType::LOOP, 0, 4},                                 //
-    {"bailout", "bailout:", TokenType::BAILOUT, 0, 7},                        //
-    {"perturbationInit", "perturbinit:", TokenType::PERTURB_INIT, 0, 11},     //
-    {"perturbationLoop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 11},     //
-    {"default", "default:", TokenType::DEFAULT, 0, 7},                        //
-    {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
