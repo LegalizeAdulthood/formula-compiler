@@ -3,3 +3,4 @@
 # Copyright 2025 Richard Thomson
 #
 add_subdirectory(formula-compiler)
+add_subdirectory(formula-validator)

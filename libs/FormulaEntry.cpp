@@ -4,6 +4,8 @@
 //
 #include <formula/FormulaEntry.h>
 
+#include <cassert>
+
 namespace formula
 {
 
@@ -47,6 +49,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             else
             {
                 // TODO: throw exception?
+                assert(false);
             }
         }
 
@@ -62,6 +65,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             else
             {
                 // TODO: throw exception?
+                assert(false);
             }
         }
 
