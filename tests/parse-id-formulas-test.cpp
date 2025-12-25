@@ -11,12 +11,18 @@
 using namespace formula;
 using namespace testing;
 
-namespace formula::test
+namespace formula
 {
+
 inline void PrintTo(const FormulaEntry &entry, std::ostream *os)
 {
     *os << entry.name;
 }
+
+}
+
+namespace formula::test
+{
 
 class ParseIdFormulaSuite : public TestWithParam<FormulaEntry>
 {
