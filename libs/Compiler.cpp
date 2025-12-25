@@ -186,30 +186,32 @@ static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn,
 #else
 static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
 {
-    // System V AMD64 ABI: Complex (16 bytes) is passed and returned in XMM registers
-    // Function signature: Complex fn(Complex arg)
-    // - XMM0 = low 64 bits (real part)
-    // - XMM1 = high 64 bits (imaginary part)
+    // System V AMD64 ABI: Complex (16 bytes) passed by reference, returned by value in XMM registers
+    // Function signature: Complex fn(const Complex& arg)
+    // - Argument: RDI = pointer to Complex
     // - Return: XMM0 = real part, XMM1 = imaginary part
 
     asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
 
-    // Split the input complex number into two XMM registers
-    asmjit::x86::Xmm arg_real = comp.newXmmSd(); // XMM register for real part
-    asmjit::x86::Xmm arg_imag = comp.newXmmSd(); // XMM register for imaginary part
+    // Allocate 16 bytes on stack for argument
+    asmjit::x86::Mem arg_slot = comp.newStack(16, 16);
 
-    // Extract real and imaginary parts from result
-    ASMJIT_CHECK(comp.movsd(arg_real, result));       // arg_real = result.low (real part)
-    ASMJIT_CHECK(comp.movapd(arg_imag, result));      // arg_imag = result (both parts)
-    ASMJIT_CHECK(comp.shufpd(arg_imag, arg_imag, 1)); // arg_imag = result.high (imaginary part)
+    // Store result XMM register to argument slot (both low and high parts)
+    ASMJIT_CHECK(comp.movlpd(arg_slot, result));
+    asmjit::x86::Mem arg_slot_high = arg_slot.cloneAdjusted(8);
+    ASMJIT_CHECK(comp.movhpd(arg_slot_high, result));
 
-    // Create invoke node with signature: void fn(double, double) ? (double, double)
+    // Get address of the stack slot
+    asmjit::x86::Gp arg_ptr = comp.newIntPtr();
+    ASMJIT_CHECK(comp.lea(arg_ptr, arg_slot));
+
+    // Create invoke node with signature: (double, double) fn(uintptr_t)
+    // The function takes pointer to Complex, returns two doubles in XMM0, XMM1
     asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, double, double>()));
+    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<double, uintptr_t>()));
 
-    // Set arguments: arg0 (XMM0) = real, arg1 (XMM1) = imaginary
-    invoke_node->setArg(0, arg_real);
-    invoke_node->setArg(1, arg_imag);
+    // Set argument: arg0 (RDI) = arg_ptr
+    invoke_node->setArg(0, arg_ptr);
 
     // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
     asmjit::x86::Xmm ret_real = comp.newXmmSd();
