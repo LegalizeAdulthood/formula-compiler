@@ -25,6 +25,34 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             name.erase(end);
         }
 
+        std::string bracket_value;
+        if (const auto close_bracket = name.find_last_of(']'); close_bracket != std::string::npos)
+        {
+            if (const auto open_bracket = name.find_last_of('[', close_bracket); open_bracket != std::string::npos)
+            {
+                bracket_value = name.substr(open_bracket + 1, close_bracket - open_bracket - 1);
+                name.erase(open_bracket, close_bracket - open_bracket + 1);
+            }
+            else
+            {
+                // TODO: throw exception?
+            }
+        }
+
+        std::string paren_value;
+        if (const auto close_paren = name.find_last_of(')'); close_paren != std::string::npos)
+        {
+            if (const auto open_paren = name.find_last_of('(', close_paren); open_paren != std::string::npos)
+            {
+                paren_value = name.substr(open_paren + 1, close_paren - open_paren - 1);
+                name.erase(open_paren, close_paren - open_paren + 1);
+            }
+            else
+            {
+                // TODO: throw exception?
+            }
+        }
+
         // skip entries with no name or where the name is "comment".
         if (name.empty() || name == "comment")
         {
@@ -59,7 +87,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         }
         if (found_brace)
         {
-            formulas.push_back({name, "", "", body});
+            formulas.push_back({name, paren_value, bracket_value, body});
         }
     }
 

@@ -30,25 +30,23 @@ TEST(FormulaDataTest, allEntriesHaveNamesAndContent)
 
 TEST(FormulaDataTest, canFindMandelbrotFormula)
 {
-    const char *searchName = "Mandelbrot(XAXIS)";
+    const char *const search_name = "Mandelbrot";
     bool found = false;
 
     for (size_t i = 0; i < g_formula_count; ++i)
     {
-        if (g_formulas[i].name == searchName)
+        if (g_formulas[i].name == search_name)
         {
             found = true;
             break;
         }
     }
 
-    // Assert
-    EXPECT_TRUE(found) << "Could not find " << searchName << " in formula data";
+    EXPECT_TRUE(found) << "Could not find " << search_name << " in formula data";
 }
 
 TEST(FormulaDataTest, noCommentEntries)
 {
-    // Arrange & Act & Assert
     for (size_t i = 0; i < g_formula_count; ++i)
     {
         const FormulaEntry &entry = g_formulas[i];
