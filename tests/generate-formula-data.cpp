@@ -4,6 +4,8 @@
 //
 // Tool to parse id.frm and generate C++ source files with formula data
 
+#include "formula/FormulaEntry.h"
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -11,13 +13,9 @@
 #include <string>
 #include <vector>
 
-struct FormulaEntry
-{
-    std::string name;
-    std::string body;
-};
+using namespace formula;
 
-std::string escape_for_cpp(const std::string &text)
+static std::string escape_for_cpp(const std::string &text)
 {
     std::string result;
     result.reserve(text.size() * 2);
@@ -48,82 +46,20 @@ std::string escape_for_cpp(const std::string &text)
     return result;
 }
 
-std::string trim(const std::string &str)
+static std::vector<FormulaEntry> parse_formulas(const std::string &filename)
 {
-    const auto start = std::find_if(str.begin(), str.end(), [](unsigned char ch) { return !std::isspace(ch); });
-    const auto end = std::find_if(str.rbegin(), str.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base();
+    std::ifstream in(filename);
 
-    return (start < end) ? std::string(start, end) : std::string();
-}
-
-std::vector<FormulaEntry> parse_formulas(const std::string &filename)
-{
-    std::vector<FormulaEntry> formulas;
-    std::ifstream file(filename, std::ios::binary);
-
-    if (!file)
+    if (!in)
     {
         std::cerr << "Error: Could not open file " << filename << '\n';
-        return formulas;
+        return {};
     }
 
-    std::string line;
-    while (std::getline(file, line))
-    {
-        const auto open_brace{line.find("{")};
-        if (open_brace == std::string::npos)
-        {
-            continue;
-        }
-
-        std::string name{line};
-        if (const auto end = name.find_first_of(" \t{"); end != std::string::npos)
-        {
-            name.erase(end);
-        }
-
-        // skip entries with no name or where the name is "comment".
-        if (name.empty() || name == "comment")
-        {
-            while (line.find("}") == std::string::npos)
-            {
-                if (!std::getline(file, line))
-                {
-                    break;
-                }
-            }
-            continue;
-        }
-
-        std::string body;
-        line.erase(0, open_brace + 1);
-        const auto accum = [&body, &line]() {
-            body.append(line);
-            body.append(1, '\n');
-        };
-        accum();
-        bool found_brace{};
-        while (std::getline(file, line))
-        {
-            if (const auto brace = line.find("}"); brace != std::string::npos)
-            {
-                found_brace = true;
-                line.erase(brace);
-                accum();
-                break;
-            }
-            accum();
-        }
-        if (found_brace)
-        {
-            formulas.push_back({name, body});
-        }
-    }
-
-    return formulas;
+    return load_formula_entries(in);
 }
 
-bool generate_header(const std::string &filename)
+static bool generate_header(const std::string &filename)
 {
     std::ofstream file(filename);
     if (!file)
@@ -140,7 +76,7 @@ R"(// SPDX-License-Identifier: GPL-3.0-only
 // Auto-generated file from id.frm - DO NOT EDIT MANUALLY
 #pragma once
 
-#include "FormulaEntry.h"
+#include <formula/FormulaEntry.h>
 
 #include <cstdint>
 
@@ -156,7 +92,7 @@ extern const std::size_t g_formula_count;
     return true;
 }
 
-bool generate_source(const std::string &filename, const std::vector<FormulaEntry> &formulas)
+static bool generate_source(const std::string &filename, const std::vector<FormulaEntry> &formulas)
 {
     std::ofstream file(filename);
     if (!file)
@@ -183,7 +119,7 @@ const FormulaEntry g_formulas[] =
     for (size_t i = 0; i < formulas.size(); ++i)
     {
         const auto &entry = formulas[i];
-        file << "    {\"" << entry.name << "\", \"" << escape_for_cpp(entry.body) << "\"}";
+        file << "    {\"" << entry.name << R"(", "", "", ")" << escape_for_cpp(entry.body) << "\"}";
         if (i < formulas.size() - 1)
         {
             file << ",";

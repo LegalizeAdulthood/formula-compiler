@@ -8,6 +8,7 @@ find_package(GTest CONFIG REQUIRED)
 
 # Build the formula data generator tool
 add_executable(generate-formula-data "generate-formula-data.cpp" )
+target_link_libraries(generate-formula-data PUBLIC formula)
 target_folder(generate-formula-data "Tools")
 
 # Generate formula data from id.frm at build time
@@ -29,7 +30,6 @@ add_custom_command(
 
 add_executable("test-formula"
     "ExpressionParam.h" "ExpressionParam.cpp"
-    "FormulaEntry.h"
     "node-builders.h"
     "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
     "formula-data-test.cpp"

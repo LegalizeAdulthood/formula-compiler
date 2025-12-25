@@ -8,6 +8,7 @@ add_library(formula
     include/formula/Compiler.h Compiler.cpp
     include/formula/Complex.h Complex.cpp
     include/formula/Formula.h Formula.cpp
+    include/formula/FormulaEntry.h FormulaEntry.cpp
     functions.h functions.cpp
     include/formula/GLSLEmitter.h GLSLEmitter.cpp
     include/formula/Interpreter.h Interpreter.cpp
