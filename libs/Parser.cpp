@@ -1662,7 +1662,7 @@ Expr Parser::primary()
     if (check(TokenType::MODULUS))
     {
         advance();
-        Expr expr = assignment(); // Parse the inner expression
+        Expr expr = conjunctive(); // Parse the inner expression
         if (expr && check(TokenType::MODULUS))
         {
             advance(); // consume closing '|'

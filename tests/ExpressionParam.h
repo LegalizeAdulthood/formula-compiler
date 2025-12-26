@@ -26,6 +26,6 @@ inline void PrintTo(const ExpressionParam &param, std::ostream *os)
     *os << param.name;
 }
 
-extern std::array<ExpressionParam, 96> g_expression_params;
+extern std::array<ExpressionParam, 97> g_expression_params;
 
 } // namespace formula::test
