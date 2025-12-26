@@ -144,11 +144,13 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
         }
         else
         {
+            result.iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
             result.bailout = expr;
         }
     }
     else
     {
+        result.iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
         result.bailout = expr;
     }
 }
@@ -939,12 +941,6 @@ std::optional<bool> Parser::section_formula()
         }
     }
 
-    if (check(TokenType::COLON))
-    {
-        // unrecognized section name
-        return false;
-    }
-
     if (check(TokenType::END_OF_INPUT))
     {
         return true;
@@ -964,7 +960,16 @@ FormulaSectionsPtr Parser::parse()
         return result.value() ? m_ast : nullptr;
     }
 
-    Expr result = sequence();
+    Expr result;
+    if (check(TokenType::COLON))
+    {
+        // no init section, so make an empty statement sequence
+        result = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
+    }
+    else
+    {
+        result = sequence();
+    }
     if (!result)
     {
         return nullptr;
@@ -978,6 +983,10 @@ FormulaSectionsPtr Parser::parse()
         {
             return nullptr;
         }
+    }
+    else
+    {
+        m_ast->initialize = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
     }
 
     // Check if we have multiple top-level newline-separated statements (StatementSeqNode)

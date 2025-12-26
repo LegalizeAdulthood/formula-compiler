@@ -362,11 +362,15 @@ TEST_P(SimpleExpressions, parse)
     const FormulaPtr result{create_formula(param.text, ParseOptions{})};
 
     ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
     const ast::Expr bailout = result->get_section(Section::BAILOUT);
     ASSERT_TRUE(bailout);
     EXPECT_EQ(param.expected, trim_ws(to_string(bailout)));
+    const ast::Expr init = result->get_section(Section::INITIALIZE);
+    ASSERT_TRUE(init);
+    EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(init)));
+    const ast::Expr iter = result->get_section(Section::ITERATE);
+    ASSERT_TRUE(iter);
+    EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(iter)));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_expressions));
@@ -396,9 +400,11 @@ TEST_P(MultiStatements, parse)
     const FormulaPtr result{create_formula(param.text, ParseOptions{})};
 
     ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
     EXPECT_TRUE(result->get_section(Section::ITERATE));
     EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    const ast::Expr init = result->get_section(Section::INITIALIZE);
+    ASSERT_TRUE(init);
+    EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(init)));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, MultiStatements, ValuesIn(s_multi_statements));
@@ -1059,5 +1065,15 @@ TEST_P(BuiltinDisallows, parse)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinDisallows, ValuesIn(s_builtin_disallows));
+
+TEST(TestParse, emptyInit)
+{
+    const FormulaPtr result{create_formula(":|imag(pixel)|<p1", ParseOptions{})};
+
+    ASSERT_TRUE(result) << "parse failed";
+    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(result->get_section(Section::ITERATE));
+    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+}
 
 } // namespace formula::test
