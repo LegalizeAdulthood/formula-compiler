@@ -318,11 +318,6 @@ Complex ParsedFormula::run(Section part)
     throw std::runtime_error("Invalid part for run");
 }
 
-bool valid_sections(const FormulaSectionsPtr &ast)
-{
-    return ast && (ast->builtin ? !(ast->per_image || ast->initialize || ast->iterate || ast->bailout) : true);
-}
-
 } // namespace
 
 FormulaPtr create_formula(std::string_view text, const ParseOptions &options)
