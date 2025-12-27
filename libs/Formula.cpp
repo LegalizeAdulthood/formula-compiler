@@ -320,7 +320,7 @@ Complex ParsedFormula::run(Section part)
 
 } // namespace
 
-FormulaPtr create_formula(std::string_view text, const ParseOptions &options)
+FormulaPtr create_formula(std::string_view text, const parser::Options &options)
 {
     if (FormulaSectionsPtr sections = parser::parse(text, options))
     {

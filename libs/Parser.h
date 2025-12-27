@@ -8,14 +8,10 @@
 
 #include <string_view>
 
-namespace formula
-{
-struct ParseOptions;
-}
-
 namespace formula::parser
 {
+struct Options;
 
-ast::FormulaSectionsPtr parse(std::string_view text, const ParseOptions &options);
+ast::FormulaSectionsPtr parse(std::string_view text, const Options &options);
 
 } // namespace formula::parser

@@ -14,6 +14,7 @@
 #include <vector>
 
 using namespace formula;
+using namespace formula::parser;
 
 namespace
 {
@@ -40,7 +41,7 @@ int main(const std::vector<std::string_view> &args)
         int bad{};
         for (const auto &entry : load_formula_entries(str))
         {
-            if (FormulaPtr formula{create_formula(entry.body, ParseOptions{})})
+            if (FormulaPtr formula{create_formula(entry.body, Options{})})
             {
                 ++good;
             }

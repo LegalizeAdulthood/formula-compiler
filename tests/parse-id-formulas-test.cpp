@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 using namespace formula;
+using namespace formula::parser;
 using namespace testing;
 
 namespace formula
@@ -50,7 +51,7 @@ TEST_P(ParseIdFormulaSuite, parsed)
 {
     const FormulaEntry &entry{GetParam()};
 
-    FormulaPtr result{create_formula(prepare_content(entry.body), ParseOptions{})};
+    FormulaPtr result{create_formula(prepare_content(entry.body), Options{})};
 
     EXPECT_TRUE(result) << entry.name;
 }

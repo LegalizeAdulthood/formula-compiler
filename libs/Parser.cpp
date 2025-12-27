@@ -43,7 +43,7 @@ constexpr std::array<TokenType, 9> s_sections{
 class Parser
 {
 public:
-    Parser(std::string_view text, const ParseOptions &options) :
+    Parser(std::string_view text, const Options &options) :
         m_ast(std::make_shared<FormulaSections>()),
         m_text(text),
         m_lexer(text),
@@ -131,7 +131,7 @@ private:
     Token m_curr;
     std::vector<Token> m_backtrack;
     bool m_backtracking{};
-    ParseOptions m_options{};
+    Options m_options{};
 };
 
 void split_iterate_bailout(FormulaSections &result, const Expr &expr)
@@ -1696,7 +1696,7 @@ Expr Parser::primary()
 
 } // namespace
 
-FormulaSectionsPtr parse(std::string_view text, const ParseOptions &options)
+FormulaSectionsPtr parse(std::string_view text, const Options &options)
 {
     Parser parser(text, options);
     return parser.parse();

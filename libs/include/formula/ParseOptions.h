@@ -4,12 +4,12 @@
 //
 #pragma once
 
-namespace formula
+namespace formula::parser
 {
 
-struct ParseOptions
+struct Options
 {
     bool allow_builtin_assignment{true};
 };
 
-} // namespace formula
+} // namespace formula::parser

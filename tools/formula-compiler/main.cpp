@@ -12,6 +12,7 @@
 #include <vector>
 
 using namespace formula;
+using namespace formula::parser;
 
 namespace
 {
@@ -48,7 +49,7 @@ int main(const std::vector<std::string_view> &args)
     std::cout << "Enter an expression:\n";
     std::string line;
     std::getline(std::cin, line);
-    FormulaPtr formula = create_formula(line, ParseOptions{});
+    FormulaPtr formula = create_formula(line, Options{});
     if (!formula)
     {
         std::cerr << "Error: Invalid formula\n";
