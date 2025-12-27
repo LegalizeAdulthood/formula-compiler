@@ -9,7 +9,7 @@ namespace formula::test
 
 // TODO: is power operator left associative or right associative?
 // TODO: is an empty section allowed?
-std::array<ExpressionParam, 98> g_expression_params{
+std::array<ExpressionParam, 99> g_expression_params{
     ExpressionParam{"one", "1", Section::BAILOUT, 1.0, 0.0},                           //
     {"two", "2", Section::BAILOUT, 2.0, 0.0},                                          //
     {"add", "1+1", Section::BAILOUT, 2.0, 0.0},                                        //
@@ -114,6 +114,7 @@ std::array<ExpressionParam, 98> g_expression_params{
     {"relOpExpr", "c=whitesq*cabs(b4)-(whitesq==0)*sqr(b4)", Section::BAILOUT},         //
     {"modulusConjunctive", "|(1 < 2) && (2 < 3)|", Section::BAILOUT, 1.0, 0.0},         //
     {"fnConjunctive", "real((1 < 2) && (2 < 3))", Section::BAILOUT, 1.0, 0.0},          //
+    {"colorVar", "color=1", Section::BAILOUT, 1.0, 0.0},                                //
 };
 
 } // namespace formula::test

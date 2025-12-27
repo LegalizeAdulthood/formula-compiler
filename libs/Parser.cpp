@@ -1602,6 +1602,15 @@ Expr Parser::identifier()
         advance(); // consume the identifier
         return result;
     }
+
+    // Also allow some reserved words as identifiers in expression context
+    if (check(TokenType::TYPE_COLOR))
+    {
+        Expr result = std::make_shared<IdentifierNode>(str());
+        advance(); // consume the type token
+        return result;
+    }
+
     return nullptr;
 }
 
