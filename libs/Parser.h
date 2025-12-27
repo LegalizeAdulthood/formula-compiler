@@ -6,12 +6,28 @@
 
 #include <formula/Node.h>
 
+#include <memory>
 #include <string_view>
 
 namespace formula::parser
 {
 struct Options;
 
-ast::FormulaSectionsPtr parse(std::string_view text, const Options &options);
+class Parser
+{
+public:
+    virtual ~Parser() = default;
+
+    virtual ast::FormulaSectionsPtr parse() = 0;
+};
+
+using ParserPtr = std::shared_ptr<Parser>;
+
+ParserPtr create_parser(std::string_view text, const Options &options);
+
+inline ast::FormulaSectionsPtr parse(std::string_view text, const Options &options)
+{
+    return create_parser(text, options)->parse();
+}
 
 } // namespace formula::parser

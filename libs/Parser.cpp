@@ -40,18 +40,19 @@ constexpr std::array<TokenType, 9> s_sections{
     TokenType::DEFAULT, TokenType::SWITCH,                //
 };
 
-class Parser
+class FormulaParser : public Parser
 {
 public:
-    Parser(std::string_view text, const Options &options) :
+    FormulaParser(std::string_view text, const Options &options) :
         m_ast(std::make_shared<FormulaSections>()),
         m_text(text),
         m_lexer(text),
         m_options(options)
     {
     }
+    ~FormulaParser() override = default;
 
-    FormulaSectionsPtr parse();
+    FormulaSectionsPtr parse() override;
 
 private:
     bool builtin_section();
@@ -158,7 +159,7 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
     }
 }
 
-bool Parser::builtin_section()
+bool FormulaParser::builtin_section()
 {
     if (!check(TokenType::IDENTIFIER) || str() != "type")
     {
@@ -198,7 +199,7 @@ std::string_view s_default_number_settings[]{
     "angle", "magn", "maxiter", "periodicity", "skew", "stretch", //
 };
 
-std::optional<double> Parser::signed_literal()
+std::optional<double> FormulaParser::signed_literal()
 {
     const bool prefix_op = check({TokenType::PLUS, TokenType::MINUS});
     if (!(check({TokenType::INTEGER, TokenType::NUMBER}) || prefix_op))
@@ -225,7 +226,7 @@ std::optional<double> Parser::signed_literal()
     return {};
 }
 
-bool Parser::default_number_setting(const std::string name)
+bool FormulaParser::default_number_setting(const std::string name)
 {
     const std::optional num{signed_literal()};
     if (!num)
@@ -242,7 +243,7 @@ bool Parser::default_number_setting(const std::string name)
     return true;
 }
 
-std::optional<Complex> Parser::complex_number()
+std::optional<Complex> FormulaParser::complex_number()
 {
     const auto get_literal = [this]() -> std::optional<double>
     {
@@ -307,7 +308,7 @@ std::optional<Complex> Parser::complex_number()
     return Complex{real.value(), imag.value()};
 }
 
-bool Parser::default_complex_setting(const std::string name)
+bool FormulaParser::default_complex_setting(const std::string name)
 {
     std::optional value{complex_number()};
     if (!value)
@@ -324,7 +325,7 @@ bool Parser::default_complex_setting(const std::string name)
     return true;
 }
 
-bool Parser::default_string_setting(const std::string name)
+bool FormulaParser::default_string_setting(const std::string name)
 {
     if (!check(TokenType::STRING))
     {
@@ -343,7 +344,7 @@ bool Parser::default_string_setting(const std::string name)
     return true;
 }
 
-bool Parser::default_method_setting()
+bool FormulaParser::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -366,7 +367,7 @@ bool Parser::default_method_setting()
     return true;
 }
 
-bool Parser::default_perturb_setting()
+bool FormulaParser::default_perturb_setting()
 {
     if (check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -399,7 +400,7 @@ bool Parser::default_perturb_setting()
     return true;
 }
 
-bool Parser::default_precision_setting()
+bool FormulaParser::default_precision_setting()
 {
     Expr expr = conjunctive();
     if (!expr)
@@ -417,7 +418,7 @@ bool Parser::default_precision_setting()
     return true;
 }
 
-bool Parser::default_rating_setting()
+bool FormulaParser::default_rating_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -441,7 +442,7 @@ bool Parser::default_rating_setting()
     return false;
 }
 
-bool Parser::default_render_setting()
+bool FormulaParser::default_render_setting()
 {
     if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -461,7 +462,7 @@ bool Parser::default_render_setting()
     return true;
 }
 
-std::optional<Expr> Parser::param_string(const std::string &name)
+std::optional<Expr> FormulaParser::param_string(const std::string &name)
 {
     if (!check(TokenType::STRING))
     {
@@ -472,7 +473,7 @@ std::optional<Expr> Parser::param_string(const std::string &name)
     return body;
 }
 
-std::optional<Expr> Parser::param_default(const std::string &type)
+std::optional<Expr> FormulaParser::param_default(const std::string &type)
 {
     if (type == "bool")
     {
@@ -514,7 +515,7 @@ std::optional<Expr> Parser::param_default(const std::string &type)
     return {};
 }
 
-std::optional<Expr> Parser::param_bool_expr(const std::string &name)
+std::optional<Expr> FormulaParser::param_bool_expr(const std::string &name)
 {
     Expr expr = conjunctive();
     if (!expr)
@@ -524,7 +525,7 @@ std::optional<Expr> Parser::param_bool_expr(const std::string &name)
     return std::make_shared<SettingNode>(name, expr);
 }
 
-std::optional<Expr> Parser::param_enum()
+std::optional<Expr> FormulaParser::param_enum()
 {
     std::vector<std::string> values;
     while (check(TokenType::STRING))
@@ -539,7 +540,7 @@ std::optional<Expr> Parser::param_enum()
     return std::make_shared<SettingNode>("enum", values);
 }
 
-std::optional<Expr> Parser::param_bool(const std::string &name)
+std::optional<Expr> FormulaParser::param_bool(const std::string &name)
 {
     if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -550,7 +551,7 @@ std::optional<Expr> Parser::param_bool(const std::string &name)
     return body;
 }
 
-std::optional<Expr> Parser::param_number(const std::string &type, const std::string &name)
+std::optional<Expr> FormulaParser::param_number(const std::string &type, const std::string &name)
 {
     if (type == "int")
     {
@@ -582,7 +583,7 @@ std::optional<Expr> Parser::param_number(const std::string &type, const std::str
     return {};
 }
 
-bool Parser::default_param_block()
+bool FormulaParser::default_param_block()
 {
     std::string type;
     if (!check(TokenType::PARAM))
@@ -673,7 +674,7 @@ bool Parser::default_param_block()
     return true;
 }
 
-bool Parser::default_section()
+bool FormulaParser::default_section()
 {
     if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
             TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
@@ -740,7 +741,7 @@ bool Parser::default_section()
     return false;
 }
 
-bool Parser::switch_section()
+bool FormulaParser::switch_section()
 {
     if (!check(TokenType::IDENTIFIER))
     {
@@ -797,7 +798,7 @@ bool Parser::switch_section()
     return true;
 }
 
-std::optional<bool> Parser::section_formula()
+std::optional<bool> FormulaParser::section_formula()
 {
     if (check(TokenType::COLON))
     {
@@ -963,7 +964,7 @@ std::optional<bool> Parser::section_formula()
 }
 
 // If parsing failed, return nullptr instead of partially constructed AST
-FormulaSectionsPtr Parser::parse()
+FormulaSectionsPtr FormulaParser::parse()
 {
     advance();
 
@@ -1008,7 +1009,7 @@ FormulaSectionsPtr Parser::parse()
     return m_ast;
 }
 
-void Parser::advance()
+void FormulaParser::advance()
 {
     m_curr = m_lexer.get_token();
     if (m_backtracking)
@@ -1017,19 +1018,19 @@ void Parser::advance()
     }
 }
 
-void Parser::begin_tracking()
+void FormulaParser::begin_tracking()
 {
     m_backtrack.clear();
     m_backtracking = true;
 }
 
-void Parser::end_tracking()
+void FormulaParser::end_tracking()
 {
     m_backtrack.clear();
     m_backtracking = false;
 }
 
-void Parser::backtrack()
+void FormulaParser::backtrack()
 {
     for (Token &t : m_backtrack)
     {
@@ -1038,7 +1039,7 @@ void Parser::backtrack()
     end_tracking();
 }
 
-bool Parser::match(TokenType type)
+bool FormulaParser::match(TokenType type)
 {
     if (check(type))
     {
@@ -1048,13 +1049,13 @@ bool Parser::match(TokenType type)
     return false;
 }
 
-bool Parser::check(TokenType type) const
+bool FormulaParser::check(TokenType type) const
 {
     return m_curr.type == type;
 }
 
 // Only allow IdentifierNode for assignment target
-bool Parser::is_user_identifier(const Expr &expr) const
+bool FormulaParser::is_user_identifier(const Expr &expr) const
 {
     if (m_options.allow_builtin_assignment)
     {
@@ -1084,7 +1085,7 @@ bool Parser::is_user_identifier(const Expr &expr) const
 }
 
 // Accept either comma or terminator (newline) as separator
-bool Parser::skip_separators()
+bool FormulaParser::skip_separators()
 {
     bool found{};
     while (match({TokenType::COMMA, TokenType::TERMINATOR}))
@@ -1095,7 +1096,7 @@ bool Parser::skip_separators()
     return found;
 }
 
-Expr Parser::sequence()
+Expr FormulaParser::sequence()
 {
     skip_separators();
 
@@ -1140,7 +1141,7 @@ Expr Parser::sequence()
     return std::make_shared<StatementSeqNode>(std::move(seq));
 }
 
-Expr Parser::statement()
+Expr FormulaParser::statement()
 {
     if (check(TokenType::IF))
     {
@@ -1149,7 +1150,7 @@ Expr Parser::statement()
     return conjunctive();
 }
 
-Expr Parser::if_statement()
+Expr FormulaParser::if_statement()
 {
     Expr result = if_statement_no_endif();
     if (!result)
@@ -1166,7 +1167,7 @@ Expr Parser::if_statement()
     return result;
 }
 
-Expr Parser::if_statement_no_endif()
+Expr FormulaParser::if_statement_no_endif()
 {
     // Handle both 'if' and 'elseif' tokens
     if (!match(TokenType::IF) && !match(TokenType::ELSE_IF))
@@ -1225,7 +1226,7 @@ Expr Parser::if_statement_no_endif()
     return std::make_shared<IfStatementNode>(condition, then_block, else_block);
 }
 
-Expr Parser::block()
+Expr FormulaParser::block()
 {
     // A block can be empty or contain statements
     // Check if we're at endif, else, or elseif - that means empty block
@@ -1278,7 +1279,7 @@ Expr Parser::block()
     return std::make_shared<StatementSeqNode>(statements);
 }
 
-Expr Parser::assignment()
+Expr FormulaParser::assignment()
 {
     Expr left = additive();
 
@@ -1309,7 +1310,7 @@ Expr Parser::assignment()
     return left;
 }
 
-Expr Parser::conjunctive()
+Expr FormulaParser::conjunctive()
 {
     Expr left = comparative();
 
@@ -1332,7 +1333,7 @@ Expr Parser::conjunctive()
 }
 
 // Handle relational operators: <, <=, >, >=, ==, !=
-Expr Parser::comparative()
+Expr FormulaParser::comparative()
 {
     Expr left = assignment();
 
@@ -1368,7 +1369,7 @@ Expr Parser::comparative()
     return left;
 }
 
-Expr Parser::additive()
+Expr FormulaParser::additive()
 {
     Expr left = term();
 
@@ -1387,7 +1388,7 @@ Expr Parser::additive()
     return left;
 }
 
-Expr Parser::term()
+Expr FormulaParser::term()
 {
     Expr left = unary();
 
@@ -1406,7 +1407,7 @@ Expr Parser::term()
     return left;
 }
 
-Expr Parser::unary()
+Expr FormulaParser::unary()
 {
     if (check({TokenType::PLUS, TokenType::MINUS}))
     {
@@ -1423,7 +1424,7 @@ Expr Parser::unary()
     return power();
 }
 
-Expr Parser::power()
+Expr FormulaParser::power()
 {
     Expr left = primary();
 
@@ -1442,7 +1443,7 @@ Expr Parser::power()
     return left;
 }
 
-Expr Parser::builtin_var()
+Expr FormulaParser::builtin_var()
 {
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
@@ -1467,7 +1468,7 @@ constexpr TokenType s_builtin_fns[]{
     TokenType::ZERO,                                                      //
 };
 
-Expr Parser::builtin_function()
+Expr FormulaParser::builtin_function()
 {
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
@@ -1487,7 +1488,7 @@ Expr Parser::builtin_function()
     return nullptr;
 }
 
-Expr Parser::complex()
+Expr FormulaParser::complex()
 {
     double re;
     double im;
@@ -1553,7 +1554,7 @@ Expr Parser::complex()
     return nullptr;
 }
 
-Expr Parser::function_call()
+Expr FormulaParser::function_call()
 {
     if (check(TokenType::LEFT_PAREN))
     {
@@ -1572,7 +1573,7 @@ Expr Parser::function_call()
     return nullptr;
 }
 
-Expr Parser::number()
+Expr FormulaParser::number()
 {
     if (check({TokenType::PLUS, TokenType::MINUS, TokenType::INTEGER, TokenType::NUMBER}))
     {
@@ -1599,7 +1600,7 @@ Expr Parser::number()
     return nullptr;
 }
 
-Expr Parser::identifier()
+Expr FormulaParser::identifier()
 {
     if (check(TokenType::IDENTIFIER))
     {
@@ -1620,7 +1621,7 @@ Expr Parser::identifier()
     return nullptr;
 }
 
-Expr Parser::complex_literal()
+Expr FormulaParser::complex_literal()
 {
     begin_tracking();
     const Token curr{m_curr};
@@ -1633,7 +1634,7 @@ Expr Parser::complex_literal()
     m_curr = curr;
     return nullptr;
 }
-Expr Parser::primary()
+Expr FormulaParser::primary()
 {
     // Check for invalid tokens first
     if (check(TokenType::INVALID))
@@ -1696,10 +1697,9 @@ Expr Parser::primary()
 
 } // namespace
 
-FormulaSectionsPtr parse(std::string_view text, const Options &options)
+ParserPtr create_parser(std::string_view text, const Options &options)
 {
-    Parser parser(text, options);
-    return parser.parse();
+    return std::make_shared<FormulaParser>(text, options);
 }
 
 } // namespace formula::parser
