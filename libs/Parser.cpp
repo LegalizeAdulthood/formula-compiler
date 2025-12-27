@@ -1604,7 +1604,8 @@ Expr Parser::identifier()
     }
 
     // Also allow some reserved words as identifiers in expression context
-    if (check(TokenType::TYPE_COLOR))
+    // TODO: only allow true and false to be identifiers in legacy mode
+    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE}))
     {
         Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the type token
