@@ -1057,11 +1057,6 @@ bool FormulaParser::check(TokenType type) const
 // Only allow IdentifierNode for assignment target
 bool FormulaParser::is_user_identifier(const Expr &expr) const
 {
-    if (m_options.allow_builtin_assignment)
-    {
-        return true;
-    }
-
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
         // Built-in variables and functions are not user identifiers
@@ -1079,7 +1074,12 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             "floor", "ceil", "trunc", "round", "ident", //
             "one", "zero",                              //
         };
-        return std::find(std::begin(builtins), std::end(builtins), node->name()) == std::end(builtins);
+        if (std::find(std::begin(builtins), std::end(builtins), node->name()) == std::end(builtins))
+        {
+            return true;
+        }
+        // identifier matches a builtin variable
+        return m_options.allow_builtin_assignment;
     }
     return false;
 }
