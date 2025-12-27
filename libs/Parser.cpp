@@ -1253,8 +1253,8 @@ Expr Parser::block()
 
         statements.push_back(stmt);
 
-        // Check for comma separator
-        if (match(TokenType::COMMA))
+        // Check for statement separator
+        if (match({TokenType::COMMA, TokenType::TERMINATOR}))
         {
             // Skip any whitespace after comma
             skip_separators();
@@ -1262,16 +1262,8 @@ Expr Parser::block()
             continue;
         }
 
-        // After the statement, skip any newlines
-        if (check(TokenType::TERMINATOR))
-        {
-            skip_separators();
-        }
-        else
-        {
-            // No newline means we should be at block end
-            break;
-        }
+        // No newline means we should be at block end
+        break;
     }
 
     // Return appropriate node based on statement count
