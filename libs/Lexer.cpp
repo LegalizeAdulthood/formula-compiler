@@ -431,19 +431,38 @@ void Lexer::skip_whitespace()
         }
         else if (ch == '\\')
         {
-            // Check for line continuation: backslash followed by newline
-            if (m_position + 1 < m_input.length())
+            // Check for line continuation: backslash followed by optional whitespace and newline
+            size_t look_ahead = m_position + 1;
+            
+            // Skip any trailing whitespace after the backslash
+            while (look_ahead < m_input.length())
             {
-                char next_ch = m_input[m_position + 1];
-                if (next_ch == '\n')
+                char next_ch = m_input[look_ahead];
+                if (next_ch == ' ' || next_ch == '\t')
                 {
-                    // Skip backslash and newline
-                    m_position += 2;
+                    ++look_ahead;
                 }
-                else if (next_ch == '\r' && m_position + 2 < m_input.length() && m_input[m_position + 2] == '\n')
+                else if (next_ch == '\r')
                 {
-                    // Skip backslash, CR, and LF
-                    m_position += 3;
+                    // Check for \r\n
+                    if (look_ahead + 1 < m_input.length() && m_input[look_ahead + 1] == '\n')
+                    {
+                        // Skip backslash, trailing whitespace, CR, and LF
+                        m_position = look_ahead + 2;
+                        break;
+                    }
+                    else
+                    {
+                        // Just \r, treat as continuation
+                        m_position = look_ahead + 1;
+                        break;
+                    }
+                }
+                else if (next_ch == '\n')
+                {
+                    // Skip backslash, trailing whitespace, and newline
+                    m_position = look_ahead + 1;
+                    break;
                 }
                 else
                 {
@@ -451,9 +470,11 @@ void Lexer::skip_whitespace()
                     break;
                 }
             }
-            else
+            
+            // If we didn't find a newline after the backslash and optional whitespace, stop
+            if (look_ahead >= m_input.length() || 
+                (m_input[look_ahead] != '\n' && m_input[look_ahead] != '\r'))
             {
-                // Backslash at end of input, stop skipping whitespace
                 break;
             }
         }

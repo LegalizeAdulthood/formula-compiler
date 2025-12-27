@@ -138,6 +138,26 @@ TEST(TestLexer, lineContinuationWithSpaces)
     EXPECT_EQ(TokenType::INTEGER, token2.type);
 }
 
+TEST(TestLexer, lineContinuationWithTrailingWhitespace)
+{
+    Lexer lexer("1\\ \n2");
+    Token token1 = lexer.get_token();
+    Token token2 = lexer.get_token();
+
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
+}
+
+TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
+{
+    Lexer lexer("1\\ \r\n2");
+    Token token1 = lexer.get_token();
+    Token token2 = lexer.get_token();
+
+    EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(TokenType::INTEGER, token2.type);
+}
+
 TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
 {
     Lexer lexer("1\\2");
