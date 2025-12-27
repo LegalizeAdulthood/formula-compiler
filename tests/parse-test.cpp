@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include <formula/Formula.h>
+#include <formula/Parser.h>
 
 #include <formula/ParseOptions.h>
 
@@ -1061,7 +1061,7 @@ TEST_P(BuiltinDisallows, parse)
 {
     const BuiltinDisallowsParam &param{GetParam()};
 
-    const FormulaPtr result{create_formula(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parser::parse(param.text, Options{})};
 
     ASSERT_FALSE(result);
 }
@@ -1070,12 +1070,12 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinDisallows, ValuesIn(s_builtin_
 
 TEST(TestParse, emptyInit)
 {
-    const FormulaPtr result{create_formula(":|imag(pixel)|<p1", Options{})};
+    const ast::FormulaSectionsPtr result{parser::parse(":|imag(pixel)|<p1", Options{})};
 
     ASSERT_TRUE(result) << "parse failed";
-    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->initialize);
+    EXPECT_TRUE(result->iterate);
+    EXPECT_TRUE(result->bailout);
 }
 
 } // namespace formula::test

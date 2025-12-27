@@ -16,7 +16,7 @@ add_library(formula
     include/formula/Node.h Node.cpp
     include/formula/NodeTyper.h
     include/formula/ParseOptions.h
-    Parser.h Parser.cpp
+    include/formula/Parser.h Parser.cpp
     include/formula/Simplifier.h Simplifier.cpp
     include/formula/Visitor.h
 )

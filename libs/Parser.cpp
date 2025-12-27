@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "Parser.h"
+#include <formula/Parser.h>
 
 #include <formula/Lexer.h>
 #include <formula/NodeTyper.h>

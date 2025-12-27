@@ -6,8 +6,7 @@
 
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
-
-#include "Parser.h"
+#include <formula/Parser.h>
 
 #include <cstdint>
 #include <utility>
