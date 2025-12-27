@@ -461,8 +461,8 @@ static std::vector<std::string> s_functions{
     "fn4", "srand", "asin", "acos", "asinh",    //
     "acosh", "atan", "atanh", "sqrt", "cabs",   //
     "floor", "ceil", "trunc", "round", "ident", //
-    "one", "zero",                              //
 };
+
 
 TEST_P(Functions, notAssignable)
 {

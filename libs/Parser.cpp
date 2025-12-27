@@ -1472,12 +1472,17 @@ Expr Parser::builtin_function()
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
     {
+        begin_tracking();
+        const Token curr{m_curr};
         const std::string name{str()};
         advance(); // consume the function name
         if (Expr args = function_call())
         {
+            end_tracking();
             return std::make_shared<FunctionCallNode>(name, args);
         }
+        backtrack();
+        m_curr = curr;
     }
     return nullptr;
 }
@@ -1605,7 +1610,7 @@ Expr Parser::identifier()
 
     // Also allow some reserved words as identifiers in expression context
     // TODO: only allow true and false to be identifiers in legacy mode
-    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE}))
+    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE, TokenType::ZERO, TokenType::ONE}))
     {
         Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the type token
@@ -1641,7 +1646,7 @@ Expr Parser::primary()
         return result;
     }
 
-    if (Expr result = identifier())
+    if (Expr result = builtin_function())
     {
         return result;
     }
@@ -1651,7 +1656,7 @@ Expr Parser::primary()
         return result;
     }
 
-    if (Expr result = builtin_function())
+    if (Expr result = identifier())
     {
         return result;
     }
