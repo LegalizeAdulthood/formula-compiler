@@ -9,9 +9,16 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 namespace formula
 {
+
+enum class LexerWarning
+{
+    NONE = 0,
+    CONTINUATION_WITH_WHITESPACE,
+};
 
 enum class TokenType
 {
@@ -142,6 +149,12 @@ enum class TokenType
 
 std::string_view to_string(TokenType value);
 
+struct LexicalWarning
+{
+    LexerWarning type;
+    size_t position;
+};
+
 struct Token
 {
     Token() :
@@ -200,6 +213,10 @@ public:
     {
         return m_position >= m_input.length();
     }
+    const std::vector<LexicalWarning> &get_warnings() const
+    {
+        return m_warnings;
+    }
 
 private:
     void skip_whitespace();
@@ -214,6 +231,7 @@ private:
     char peek_char(size_t offset = 1) const;
     void advance(size_t count = 1);
 
+    std::vector<LexicalWarning> m_warnings;
     std::string_view m_input;
     size_t m_position;
     std::deque<Token> m_peek_tokens;
