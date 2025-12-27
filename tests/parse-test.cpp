@@ -392,6 +392,7 @@ static MultiStatementParam s_multi_statements[]{
     {"commaSeparatedAssignmentStatements", "z=3,z=4"},
     {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},
     {"commaWithSpaces", "3 , 4"},
+    {"compactIf", "if(1),1,elseif(2),2,else,0,endif"},
 };
 
 TEST_P(MultiStatements, parse)

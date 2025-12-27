@@ -100,14 +100,17 @@ private:
     void end_tracking();
     void backtrack();
     bool match(TokenType type);
+    bool match(std::initializer_list<TokenType> types)
+    {
+        return std::any_of(types.begin(), types.end(), [this](TokenType t) { return match(t); });
+    }
     bool check(TokenType type) const;
     bool check(std::initializer_list<TokenType> types) const
     {
         return std::any_of(types.begin(), types.end(), [this](TokenType t) { return check(t); });
     }
     bool is_user_identifier(const Expr &expr) const;
-    void skip_newlines();
-    bool require_newlines();
+    bool skip_separators();
 
     const std::string &str() const
     {
@@ -652,7 +655,7 @@ bool Parser::default_param_block()
         advance();
     }
 
-    skip_newlines();
+    skip_separators();
 
     if (!check(TokenType::END_PARAM))
     {
@@ -954,7 +957,7 @@ FormulaSectionsPtr Parser::parse()
 {
     advance();
 
-    skip_newlines();
+    skip_separators();
     if (const std::optional result = section_formula(); result)
     {
         return result.value() ? m_ast : nullptr;
@@ -1070,27 +1073,21 @@ bool Parser::is_user_identifier(const Expr &expr) const
     return false;
 }
 
-void Parser::skip_newlines()
+// Accept either comma or terminator (newline) as separator
+bool Parser::skip_separators()
 {
-    while (match(TokenType::TERMINATOR))
+    bool found{};
+    while (match({TokenType::COMMA, TokenType::TERMINATOR}))
     {
-        // Skip all newlines
+        // skip separating tokens
+        found = true;
     }
-}
-
-bool Parser::require_newlines()
-{
-    if (!match(TokenType::TERMINATOR))
-    {
-        return false;
-    }
-    skip_newlines();
-    return true;
+    return found;
 }
 
 Expr Parser::sequence()
 {
-    skip_newlines();
+    skip_separators();
 
     // Parse the first statement
     Expr first = statement();
@@ -1187,8 +1184,8 @@ Expr Parser::if_statement_no_endif()
         return nullptr;
     }
 
-    // Require newline after condition
-    if (!require_newlines())
+    // Accept comma or newline after condition
+    if (!skip_separators())
     {
         return nullptr;
     }
@@ -1210,7 +1207,7 @@ Expr Parser::if_statement_no_endif()
     }
     else if (match(TokenType::ELSE))
     {
-        if (!require_newlines())
+        if (!skip_separators())
         {
             return nullptr;
         }
@@ -1253,7 +1250,7 @@ Expr Parser::block()
         if (match(TokenType::COMMA))
         {
             // Skip any whitespace after comma
-            skip_newlines();
+            skip_separators();
             // Continue parsing more statements
             continue;
         }
@@ -1261,7 +1258,7 @@ Expr Parser::block()
         // After the statement, skip any newlines
         if (check(TokenType::TERMINATOR))
         {
-            skip_newlines();
+            skip_separators();
         }
         else
         {
@@ -1583,7 +1580,7 @@ Expr Parser::number()
         if (check(TokenType::NUMBER))
         {
             const double val = num();
-            Expr result = std::make_shared<LiteralNode>(negate? -val : val);
+            Expr result = std::make_shared<LiteralNode>(negate ? -val : val);
             advance(); // consume the number
             return result;
         }
