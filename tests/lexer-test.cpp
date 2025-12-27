@@ -224,6 +224,21 @@ TEST(TestLexer, singleExclamationInvalid)
     EXPECT_EQ(2, std::get<int>(token2.value));
 }
 
+TEST(TestLexer, varColon)
+{
+    Lexer lexer("ball_size:");
+
+    const Token t1 = lexer.get_token();
+    const Token t2 = lexer.get_token();
+
+    EXPECT_EQ(TokenType::IDENTIFIER, t1.type);
+    EXPECT_EQ("ball_size", std::get<std::string>(t1.value));
+    EXPECT_EQ(0, t1.position);
+    EXPECT_EQ(9, t1.length);
+    EXPECT_EQ(TokenType::COLON, t2.type);
+    EXPECT_EQ(9, t2.position);
+}
+
 TEST(TestLexer, builtinVariablsHaveNameValue)
 {
     Lexer lexer("maxit");
@@ -450,15 +465,15 @@ static TextTokenParam s_params[]{
     {"elseIfPrefix", "elseif2", TokenType::IDENTIFIER},                       //
     {"elseSuffix", "myelse", TokenType::IDENTIFIER},                          //
     {"endIfPrefix", "endif_func", TokenType::IDENTIFIER},                     //
-    {"global", "global:", TokenType::GLOBAL, 0, 6},                           //
-    {"builtin", "builtin:", TokenType::BUILTIN, 0, 7},                        //
-    {"init", "init:", TokenType::INIT, 0, 4},                                 //
-    {"loop", "loop:", TokenType::LOOP, 0, 4},                                 //
-    {"bailout", "bailout:", TokenType::BAILOUT, 0, 7},                        //
-    {"perturbinit", "perturbinit:", TokenType::PERTURB_INIT, 0, 11},          //
-    {"perturbloop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 11},          //
-    {"default", "default:", TokenType::DEFAULT, 0, 7},                        //
-    {"switch", "switch:", TokenType::SWITCH, 0, 6},                           //
+    {"global", "global:", TokenType::GLOBAL, 0, 7},                           //
+    {"builtin", "builtin:", TokenType::BUILTIN, 0, 8},                        //
+    {"init", "init:", TokenType::INIT, 0, 5},                                 //
+    {"loop", "loop:", TokenType::LOOP, 0, 5},                                 //
+    {"bailout", "bailout:", TokenType::BAILOUT, 0, 8},                        //
+    {"perturbinit", "perturbinit:", TokenType::PERTURB_INIT, 0, 12},          //
+    {"perturbloop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 12},          //
+    {"default", "default:", TokenType::DEFAULT, 0, 8},                        //
+    {"switch", "switch:", TokenType::SWITCH, 0, 7},                           //
     {"p1", "p1", TokenType::P1},                                              //
     {"p2", "p2", TokenType::P2},                                              //
     {"p3", "p3", TokenType::P3},                                              //

@@ -778,11 +778,12 @@ Token Lexer::lex_identifier()
     };
     if (auto it = std::find_if(std::begin(section_names), std::end(section_names),
             [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
-        it != std::end(reserved))
+        it != std::end(section_names))
     {
-        if (peek_char(0) == ':')
+        if (current_char() == ':')
         {
-            advance(); // Consume the colon
+            advance();                   // Consume the colon for section names
+            length = m_position - start; // Recalculate length to include the colon
             return {it->type, std::string{it->text}, start, length};
         }
     }

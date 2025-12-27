@@ -799,6 +799,10 @@ bool Parser::switch_section()
 
 std::optional<bool> Parser::section_formula()
 {
+    if (check(TokenType::COLON))
+    {
+        return {};
+    }
     const auto is_token = [this](TokenType tok)
     {
         return check(tok);
@@ -942,6 +946,12 @@ std::optional<bool> Parser::section_formula()
                 return false;
             }
         }
+    }
+
+    // some unknown section name?
+    if (check(TokenType::COLON))
+    {
+        return false;
     }
 
     if (check(TokenType::END_OF_INPUT))
@@ -1103,10 +1113,7 @@ Expr Parser::sequence()
     // Parse sequence of statements separated by COMMA or TERMINATOR (eol)
     while (check({TokenType::COMMA, TokenType::TERMINATOR}))
     {
-        while (check({TokenType::COMMA, TokenType::TERMINATOR}))
-        {
-            advance();
-        }
+        skip_separators();
 
         // Check if we've reached end of input
         if (check(TokenType::END_OF_INPUT))
