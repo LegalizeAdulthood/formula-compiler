@@ -151,8 +151,8 @@ std::string_view to_string(TokenType value);
 
 struct LexicalWarning
 {
-    LexerWarning type;
-    size_t position;
+    LexerWarning type{};
+    size_t position{};
 };
 
 struct Token

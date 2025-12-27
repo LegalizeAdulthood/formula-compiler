@@ -433,6 +433,15 @@ void Lexer::skip_whitespace()
         {
             // Check for line continuation: backslash followed by optional whitespace and newline
             size_t look_ahead = m_position + 1;
+            size_t trailing_ws{};
+            const auto warn_trailing_ws = [&trailing_ws, this]
+            {
+                m_warnings.push_back(LexicalWarning{
+                    LexerWarning::CONTINUATION_WITH_WHITESPACE,
+                    trailing_ws,
+                });
+                trailing_ws = 0;
+            };
 
             // Skip any trailing whitespace after the backslash
             while (look_ahead < m_input.length())
@@ -440,6 +449,7 @@ void Lexer::skip_whitespace()
                 char next_ch = m_input[look_ahead];
                 if (next_ch == ' ' || next_ch == '\t')
                 {
+                    trailing_ws = look_ahead;
                     ++look_ahead;
                 }
                 else if (next_ch == '\r')
@@ -449,19 +459,20 @@ void Lexer::skip_whitespace()
                     {
                         // Skip backslash, trailing whitespace, CR, and LF
                         m_position = look_ahead + 2;
+                        warn_trailing_ws();
                         break;
                     }
-                    else
-                    {
-                        // Just \r, treat as continuation
-                        m_position = look_ahead + 1;
-                        break;
-                    }
+
+                    // Just \r, treat as continuation
+                    m_position = look_ahead + 1;
+                    warn_trailing_ws();
+                    break;
                 }
                 else if (next_ch == '\n')
                 {
                     // Skip backslash, trailing whitespace, and newline
                     m_position = look_ahead + 1;
+                    warn_trailing_ws();
                     break;
                 }
                 else
