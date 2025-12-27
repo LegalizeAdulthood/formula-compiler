@@ -46,7 +46,7 @@ int main(const std::vector<std::string_view> &args)
             }
             else
             {
-                std::cout << "Error: " << file.stem().string() << '(' << entry.name << "): couldn't parse body\n";
+                std::cout << "Error: " << file.filename().string() << '(' << entry.name << "): couldn't parse body\n";
                 ++bad;
             }
         }

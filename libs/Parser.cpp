@@ -1562,7 +1562,7 @@ Expr Parser::function_call()
             return expr;
         }
 
-        if (const Expr args = assignment(); args && check(TokenType::RIGHT_PAREN))
+        if (const Expr args = conjunctive(); args && check(TokenType::RIGHT_PAREN))
         {
             advance(); // consume right paren
             return args;
