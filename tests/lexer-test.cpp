@@ -272,7 +272,7 @@ TEST(TestLexer, parenthesesWithIdentifiers)
     EXPECT_EQ(TokenType::CLOSE_PAREN, tokens[3].type);
 }
 
-TEST(TestLexer, identifiersAreMadeLowerCases)
+TEST(TestLexer, identifiersAreMadeLowerCase)
 {
     Lexer lexer("FOO");
     Token token = lexer.get_token();
