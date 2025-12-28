@@ -806,49 +806,32 @@ bool FormulaParser::default_section()
         return false;
     }
 
-    if (it->type == SettingType::INTEGER)
+    switch (it->type)
     {
-        return default_integer_setting(name);
-    }
-
-    if (it->type == SettingType::FLOATING_POINT)
-    {
-        return default_number_setting(name);
-    }
-
-    if (it->type == SettingType::COMPLEX)
-    {
-        return default_complex_setting(name);
-    }
-
-    if (name == "helpfile" || name == "helptopic" || name == "title")
-    {
-        return default_string_setting(name);
-    }
-
-    if (name == "method")
-    {
-        return default_method_setting();
-    }
-
-    if (name == "perturb")
-    {
-        return default_perturb_setting();
-    }
-
-    if (name == "precision")
-    {
-        return default_precision_setting();
-    }
-
-    if (name == "rating")
-    {
-        return default_rating_setting();
-    }
-
-    if (name == "render")
-    {
+    case SettingType::BOOLEAN:
         return default_render_setting();
+    case SettingType::INTEGER:
+        return default_integer_setting(name);
+    case SettingType::FLOATING_POINT:
+        return default_number_setting(name);
+    case SettingType::COMPLEX:
+        return default_complex_setting(name);
+    case SettingType::STRING:
+        return default_string_setting(name);
+    case SettingType::ENUMERATION:
+        if (name == "method")
+        {
+            return default_method_setting();
+        }
+        if (name == "rating")
+        {
+            return default_rating_setting();
+        }
+        return false;
+    case SettingType::BOOLEAN_EXPRESSION:
+        return default_perturb_setting();
+    case SettingType::INTEGER_EXPRESSION:
+        return default_precision_setting();
     }
 
     return false;
