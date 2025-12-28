@@ -42,6 +42,10 @@ std::ostream &operator<<(std::ostream &os, ErrorCode code)
         return os << "INVALID_SECTION_ORDER";
     case ErrorCode::DUPLICATE_SECTION:
         return os << "DUPLICATE_SECTION";
+    case ErrorCode::INVALID_DEFAULT_METHOD:
+        return os << "INVALID_DEFAULT_METHOD";
+    case ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS:
+        return os << "BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS";
     }
     return os << "ErrorCode(" << static_cast<int>(code) << ')';
 }
@@ -964,7 +968,7 @@ static InvalidSectionParam s_invalid_sections[]{
         "1\n"
         "builtin:\n"
         "type=1\n",
-        ErrorCode::INVALID_SECTION_ORDER},
+        ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS},
     {"initAfterLoop",
         "loop:\n"
         "1\n"
@@ -1175,10 +1179,14 @@ static BuiltinDisallowsParam s_builtin_disallows[]{
 TEST_P(BuiltinDisallows, parse)
 {
     const BuiltinDisallowsParam &param{GetParam()};
+    const ParserPtr parser{create_parser(param.text, Options{})};
 
-    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    const Diagnostic &error{parser->get_errors().back()};
+    EXPECT_EQ(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS, error.code);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinDisallows, ValuesIn(s_builtin_disallows));

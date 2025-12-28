@@ -853,11 +853,13 @@ std::optional<bool> FormulaParser::section_formula()
                 error(ErrorCode::DUPLICATE_SECTION);
                 return false;
             }
-
-            if (m_ast->per_image                                         //
-                || m_ast->initialize || m_ast->iterate || m_ast->bailout //
-                || m_ast->perturb_initialize || m_ast->perturb_iterate   //
-                || m_ast->defaults || m_ast->type_switch)
+            if (m_ast->per_image                                          //
+                || m_ast->initialize || m_ast->iterate || m_ast->bailout) //
+            {
+                error(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+                return false;
+            }
+            if (m_ast->defaults || m_ast->type_switch)
             {
                 error(ErrorCode::INVALID_SECTION_ORDER);
                 return false;
@@ -906,7 +908,7 @@ std::optional<bool> FormulaParser::section_formula()
                     error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
-                if (m_ast->builtin                       //
+                if (m_ast->builtin                                           //
                     || m_ast->initialize || m_ast->iterate || m_ast->bailout //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
@@ -923,8 +925,8 @@ std::optional<bool> FormulaParser::section_formula()
                     error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
-                if (m_ast->initialize || m_ast->iterate || m_ast->bailout //
-                    || m_ast->perturb_initialize || m_ast->perturb_iterate   //
+                if (m_ast->initialize || m_ast->iterate || m_ast->bailout  //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     error(ErrorCode::INVALID_SECTION_ORDER);
@@ -939,9 +941,13 @@ std::optional<bool> FormulaParser::section_formula()
                     error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
-                if (m_ast->builtin                                           //
-                    || m_ast->iterate || m_ast->bailout //
-                    || m_ast->perturb_initialize || m_ast->perturb_iterate   //
+                if (m_ast->builtin)
+                {
+                    error(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+                    return false;
+                }
+                if (m_ast->iterate || m_ast->bailout                       //
+                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     error(ErrorCode::INVALID_SECTION_ORDER);
@@ -956,8 +962,12 @@ std::optional<bool> FormulaParser::section_formula()
                     error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
-                if (m_ast->builtin                                         //
-                    || m_ast->bailout                    //
+                if (m_ast->builtin)
+                {
+                    error(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+                    return false;
+                }
+                if (m_ast->bailout                                         //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
@@ -973,8 +983,12 @@ std::optional<bool> FormulaParser::section_formula()
                     error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
-                if (m_ast->builtin                                         //
-                    || m_ast->perturb_initialize || m_ast->perturb_iterate //
+                if (m_ast->builtin)
+                {
+                    error(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+                    return false;
+                }
+                if (m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
                     error(ErrorCode::INVALID_SECTION_ORDER);
