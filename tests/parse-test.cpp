@@ -4,6 +4,7 @@
 //
 #include <formula/Parser.h>
 
+#include <formula/Formula.h>
 #include <formula/ParseOptions.h>
 
 #include "NodeFormatter.h"
@@ -360,16 +361,16 @@ TEST_P(SimpleExpressions, parse)
 {
     const SimpleExpressionParam &param{GetParam()};
 
-    const FormulaPtr result{create_formula(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     ASSERT_TRUE(result);
-    const ast::Expr bailout = result->get_section(Section::BAILOUT);
+    const ast::Expr bailout = result->bailout;
     ASSERT_TRUE(bailout);
     EXPECT_EQ(param.expected, trim_ws(to_string(bailout)));
-    const ast::Expr init = result->get_section(Section::INITIALIZE);
+    const ast::Expr init = result->initialize;
     ASSERT_TRUE(init);
     EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(init)));
-    const ast::Expr iter = result->get_section(Section::ITERATE);
+    const ast::Expr iter = result->iterate;
     ASSERT_TRUE(iter);
     EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(iter)));
 }
@@ -378,9 +379,12 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_
 
 TEST(TestFormulaParse, invalidIdentifier)
 {
-    const FormulaPtr result{create_formula("1a", Options{})};
+    ParserPtr parser{create_parser("1a", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     EXPECT_FALSE(result);
+    EXPECT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
 }
 
 static MultiStatementParam s_multi_statements[]{
@@ -399,12 +403,12 @@ static MultiStatementParam s_multi_statements[]{
 TEST_P(MultiStatements, parse)
 {
     const MultiStatementParam &param{GetParam()};
-    const FormulaPtr result{create_formula(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-    const ast::Expr init = result->get_section(Section::INITIALIZE);
+    EXPECT_TRUE(result->iterate);
+    EXPECT_TRUE(result->bailout);
+    const ast::Expr init = result->initialize;
     ASSERT_TRUE(init);
     EXPECT_EQ("statement_seq:0 { }", trim_ws(to_string(init)));
 }
@@ -413,22 +417,22 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, MultiStatements, ValuesIn(s_multi_sta
 
 TEST(TestFormulaParse, initializeIterateBailout)
 {
-    const FormulaPtr result{create_formula("z=pixel:z=z*z+pixel,|z|>4", Options{})};
+    const ast::FormulaSectionsPtr result{parse("z=pixel:z=z*z+pixel,|z|>4", Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->initialize);
+    EXPECT_TRUE(result->iterate);
+    EXPECT_TRUE(result->bailout);
 }
 
 TEST(TestFormulaParse, statementSequenceInitialize)
 {
-    const FormulaPtr result{create_formula("z=pixel,d=0:z=z*z+pixel,|z|>4", Options{})};
+    const ast::FormulaSectionsPtr result{parse("z=pixel,d=0:z=z*z+pixel,|z|>4", Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->initialize);
+    EXPECT_TRUE(result->iterate);
+    EXPECT_TRUE(result->bailout);
 }
 
 static std::vector<std::string> s_builtin_vars{
@@ -440,14 +444,21 @@ static std::vector<std::string> s_builtin_vars{
 
 TEST_P(BuiltinVariables, notAssignable)
 {
-    const FormulaPtr result{create_formula(GetParam() + "=1", Options{false})};
+    const std::string text{GetParam() + "=1"};
+    ParserPtr parser{create_parser(text, Options{false})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    const auto &error{parser->get_errors().front()};
+    EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, error.code);
+    EXPECT_EQ(GetParam().length() + 1, error.position);
 }
 
 TEST_P(BuiltinVariables, assignable)
 {
-    const FormulaPtr result{create_formula(GetParam() + "=1", Options{true})};
+    const ast::FormulaSectionsPtr result{parse(GetParam() + "=1", Options{true})};
 
     ASSERT_TRUE(result);
 }
@@ -467,29 +478,36 @@ static std::vector<std::string> s_functions{
 
 TEST_P(Functions, notAssignable)
 {
-    const FormulaPtr result{create_formula(GetParam() + "=1", Options{})};
+    const std::string text{GetParam() + "=1"};
+    ParserPtr parser{create_parser(text, Options{false})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    const auto &error{parser->get_errors().front()};
+    EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, error.code);
+    EXPECT_EQ(GetParam().length() + 1, error.position);
 }
 
 TEST_P(Functions, functionOne)
 {
-    const FormulaPtr result{create_formula(GetParam() + "(1)", Options{})};
+    const ast::FormulaSectionsPtr result{parse(GetParam() + "(1)", Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
+    EXPECT_TRUE(result->bailout);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
 
 TEST_P(ReservedWords, notAssignable)
 {
-    const FormulaPtr result1{create_formula(GetParam() + "=1", Options{})};
-    const FormulaPtr result2{create_formula(GetParam() + "2=1", Options{})};
+    const ast::FormulaSectionsPtr result1{parse(GetParam() + "=1", Options{})};
+    const ast::FormulaSectionsPtr result2{parse(GetParam() + "2=1", Options{})};
 
     ASSERT_FALSE(result1);
     ASSERT_TRUE(result2);
-    ASSERT_TRUE(result2->get_section(Section::BAILOUT));
+    ASSERT_TRUE(result2->bailout);
 }
 
 static std::string s_reserved_words[]{
@@ -512,7 +530,8 @@ static ParseFailureParam s_parse_failures[]{
 TEST_P(ParseFailures, parse)
 {
     const ParseFailureParam &param{GetParam()};
-    const FormulaPtr result{create_formula(param.text, Options{})};
+
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     EXPECT_FALSE(result);
 }
@@ -554,40 +573,72 @@ static ParseParam s_single_sections[]{
         Section::SWITCH},
 };
 
+ast::Expr get_section(const ast::FormulaSectionsPtr &sections, Section section)
+{
+    if (!sections)
+    {
+        return nullptr;
+    }
+
+    switch (section)
+    {
+    case Section::PER_IMAGE:
+        return sections->per_image;
+    case Section::INITIALIZE:
+        return sections->initialize;
+    case Section::ITERATE:
+        return sections->iterate;
+    case Section::BAILOUT:
+        return sections->bailout;
+    case Section::PERTURB_INITIALIZE:
+        return sections->perturb_initialize;
+    case Section::PERTURB_ITERATE:
+        return sections->perturb_iterate;
+    case Section::DEFAULT:
+        return sections->defaults;
+    case Section::SWITCH:
+        return sections->type_switch;
+    case Section::BUILTIN:
+        return sections->builtin;
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
 TEST_P(SingleSections, parse)
 {
     const ParseParam &param{GetParam()};
 
-    const FormulaPtr result{create_formula(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(param.section));
+    EXPECT_TRUE(get_section(result, param.section));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SingleSections, ValuesIn(s_single_sections));
 
 TEST(TestFormulaParse, builtinSectionMandelbrot)
 {
-    const FormulaPtr result{create_formula("builtin:\n"
-                                           "type=1\n",
+    const ast::FormulaSectionsPtr result{parse("builtin:\n"
+                                               "type=1\n",
         Options{})};
 
     ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ("setting:type=1\n", to_string(builtin));
+    EXPECT_TRUE(result->builtin);
+    EXPECT_EQ("setting:type=1\n", to_string(result->builtin));
 }
 
 TEST(TestFormulaParse, builtinSectionJulia)
 {
-    const FormulaPtr result{create_formula("builtin:\n"
-                                           "type=2\n",
+    const ast::FormulaSectionsPtr result{parse("builtin:\n"
+                                               "type=2\n",
         Options{})};
 
     ASSERT_TRUE(result);
-    const ast::Expr &builtin{result->get_section(Section::BUILTIN)};
-    EXPECT_TRUE(builtin);
-    EXPECT_EQ("setting:type=2\n", to_string(builtin));
+    EXPECT_TRUE(result->builtin);
+    EXPECT_EQ("setting:type=2\n", to_string(result->builtin));
 }
 
 static SimpleExpressionParam s_default_values[]{
@@ -836,24 +887,23 @@ TEST_P(DefaultSection, parse)
         text.append(1, '\n');
     }
 
-    const FormulaPtr result{create_formula(text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(text, Options{})};
 
     ASSERT_TRUE(result);
-    const ast::Expr &section{result->get_section(Section::DEFAULT)};
-    EXPECT_TRUE(section);
-    EXPECT_EQ(param.expected, to_string(section));
+    EXPECT_TRUE(result->defaults);
+    EXPECT_EQ(param.expected, to_string(result->defaults));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormualParse, DefaultSection, ValuesIn(s_default_values));
 
 TEST(TestParse, switchParameter)
 {
-    const FormulaPtr result{create_formula("switch:\n"
-                                           "seed=pixel\n",
+    const ast::FormulaSectionsPtr result{parse("switch:\n"
+                                               "seed=pixel\n",
         Options{})};
 
     ASSERT_TRUE(result);
-    const ast::Expr &section{result->get_section(Section::SWITCH)};
+    const ast::Expr &section{result->type_switch};
     ASSERT_TRUE(section);
     EXPECT_EQ("setting:seed=pixel\n", to_string(section));
 }
@@ -967,7 +1017,7 @@ TEST_P(InvalidSectionOrdering, parse)
 {
     const InvalidSectionParam &param{GetParam()};
 
-    const FormulaPtr result{create_formula(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     ASSERT_FALSE(result);
 }
@@ -976,62 +1026,62 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_in
 
 TEST(TestFormulaParse, maximumSections)
 {
-    const FormulaPtr result{create_formula("global:\n"
-                                           "1\n"
-                                           "init:\n"
-                                           "1\n"
-                                           "loop:\n"
-                                           "1\n"
-                                           "bailout:\n"
-                                           "1\n"
-                                           "perturbinit:\n"
-                                           "1\n"
-                                           "perturbloop:\n"
-                                           "1\n"
-                                           "default:\n"
-                                           "angle=0\n"
-                                           "switch:\n"
-                                           "type=\"Julia\"\n",
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "1\n"
+                                               "init:\n"
+                                               "1\n"
+                                               "loop:\n"
+                                               "1\n"
+                                               "bailout:\n"
+                                               "1\n"
+                                               "perturbinit:\n"
+                                               "1\n"
+                                               "perturbloop:\n"
+                                               "1\n"
+                                               "default:\n"
+                                               "angle=0\n"
+                                               "switch:\n"
+                                               "type=\"Julia\"\n",
         Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_TRUE(result->get_section(Section::PER_IMAGE));
-    EXPECT_FALSE(result->get_section(Section::BUILTIN));
-    EXPECT_TRUE(result->get_section(Section::INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::ITERATE));
-    EXPECT_TRUE(result->get_section(Section::BAILOUT));
-    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
-    EXPECT_TRUE(result->get_section(Section::DEFAULT));
-    EXPECT_TRUE(result->get_section(Section::SWITCH));
+    EXPECT_TRUE(result->per_image);
+    EXPECT_FALSE(result->builtin);
+    EXPECT_TRUE(result->initialize);
+    EXPECT_TRUE(result->iterate);
+    EXPECT_TRUE(result->bailout);
+    EXPECT_TRUE(result->perturb_initialize);
+    EXPECT_TRUE(result->perturb_iterate);
+    EXPECT_TRUE(result->defaults);
+    EXPECT_TRUE(result->type_switch);
 }
 
 TEST(TestFormulaParse, builtinSections)
 {
-    const FormulaPtr result{create_formula("builtin:\n"
-                                           "type=1\n"
-                                           "perturbinit:\n"
-                                           "1\n"
-                                           "perturbloop:\n"
-                                           "1\n"
-                                           "default:\n"
-                                           "angle=0\n"
-                                           "switch:\n"
-                                           "type=\"Julia\"\n",
+    const ast::FormulaSectionsPtr result{parse("builtin:\n"
+                                               "type=1\n"
+                                               "perturbinit:\n"
+                                               "1\n"
+                                               "perturbloop:\n"
+                                               "1\n"
+                                               "default:\n"
+                                               "angle=0\n"
+                                               "switch:\n"
+                                               "type=\"Julia\"\n",
         Options{})};
 
     ASSERT_TRUE(result);
-    EXPECT_FALSE(result->get_section(Section::PER_IMAGE));
-    ast::Expr builtin = result->get_section(Section::BUILTIN);
+    EXPECT_FALSE(result->per_image);
+    ast::Expr builtin = result->builtin;
     EXPECT_TRUE(builtin);
     EXPECT_EQ("setting:type=1\n", to_string(builtin));
-    EXPECT_FALSE(result->get_section(Section::INITIALIZE));
-    EXPECT_FALSE(result->get_section(Section::ITERATE));
-    EXPECT_FALSE(result->get_section(Section::BAILOUT));
-    EXPECT_TRUE(result->get_section(Section::PERTURB_INITIALIZE));
-    EXPECT_TRUE(result->get_section(Section::PERTURB_ITERATE));
-    EXPECT_TRUE(result->get_section(Section::DEFAULT));
-    EXPECT_TRUE(result->get_section(Section::SWITCH));
+    EXPECT_FALSE(result->initialize);
+    EXPECT_FALSE(result->iterate);
+    EXPECT_FALSE(result->bailout);
+    EXPECT_TRUE(result->perturb_initialize);
+    EXPECT_TRUE(result->perturb_iterate);
+    EXPECT_TRUE(result->defaults);
+    EXPECT_TRUE(result->type_switch);
 }
 
 static BuiltinDisallowsParam s_builtin_disallows[]{

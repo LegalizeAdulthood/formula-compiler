@@ -4,11 +4,15 @@
 //
 #pragma once
 
-#include "formula/Formula.h"
-
 #include <formula/Visitor.h>
 
 #include <ostream>
+
+namespace formula::ast
+{
+class Node;
+using Expr = std::shared_ptr<Node>;
+} // namespace formula::ast
 
 namespace formula::test
 {

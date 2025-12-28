@@ -148,8 +148,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
-    const LexicalWarning &warning{lexer.get_warnings().front()};
-    EXPECT_EQ(LexerWarning::CONTINUATION_WITH_WHITESPACE, warning.type);
+    const LexicalDiagnostic &warning{lexer.get_warnings().front()};
+    EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
     EXPECT_EQ(2u, warning.position);
 }
 
@@ -162,8 +162,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
-    const LexicalWarning &warning{lexer.get_warnings().front()};
-    EXPECT_EQ(LexerWarning::CONTINUATION_WITH_WHITESPACE, warning.type);
+    const LexicalDiagnostic &warning{lexer.get_warnings().front()};
+    EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
     EXPECT_EQ(2u, warning.position);
 }
 
@@ -180,7 +180,7 @@ TEST(TestLexer, multipleWarnings)
     const auto &warnings{lexer.get_warnings()};
     ASSERT_EQ(2, warnings.size()) << "lexer should have produced two warnings";
     EXPECT_TRUE(std::all_of(warnings.begin(), warnings.end(),
-        [](const LexicalWarning &w) { return w.type == LexerWarning::CONTINUATION_WITH_WHITESPACE; }))
+        [](const LexicalDiagnostic &w) { return w.code == LexerErrorCode::CONTINUATION_WITH_WHITESPACE; }))
         << "all warnings should be CONTINUATION_WITH_WHITESPACE";
     EXPECT_EQ(2U, warnings[0].position) << "location of first warning";
     EXPECT_EQ(6U, warnings[1].position) << "location of second warning";

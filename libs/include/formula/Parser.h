@@ -8,10 +8,26 @@
 
 #include <memory>
 #include <string_view>
+#include <vector>
 
 namespace formula::parser
 {
 struct Options;
+
+enum class ErrorCode
+{
+    NONE = 0,
+    BUILTIN_VARIABLE_ASSIGNMENT,
+    BUILTIN_FUNCTION_ASSIGNMENT,
+    EXPECTED_PRIMARY,
+    INVALID_TOKEN,
+};
+
+struct Diagnostic
+{
+    ErrorCode code{};
+    size_t position{};
+};
 
 class Parser
 {
@@ -19,6 +35,9 @@ public:
     virtual ~Parser() = default;
 
     virtual ast::FormulaSectionsPtr parse() = 0;
+
+    virtual const std::vector<Diagnostic> &get_warnings() const = 0;
+    virtual const std::vector<Diagnostic> &get_errors() const = 0;
 };
 
 using ParserPtr = std::shared_ptr<Parser>;

@@ -14,10 +14,11 @@
 namespace formula
 {
 
-enum class LexerWarning
+enum class LexerErrorCode
 {
     NONE = 0,
     CONTINUATION_WITH_WHITESPACE,
+    INVALID_NUMBER,
 };
 
 enum class TokenType
@@ -149,9 +150,9 @@ enum class TokenType
 
 std::string_view to_string(TokenType value);
 
-struct LexicalWarning
+struct LexicalDiagnostic
 {
-    LexerWarning type{};
+    LexerErrorCode code{};
     size_t position{};
 };
 
@@ -213,12 +214,32 @@ public:
     {
         return m_position >= m_input.length();
     }
-    const std::vector<LexicalWarning> &get_warnings() const
+    const std::vector<LexicalDiagnostic> &get_warnings() const
     {
         return m_warnings;
     }
+    const std::vector<LexicalDiagnostic> &get_errors() const
+    {
+        return m_errors;
+    }
 
 private:
+    void warning(LexerErrorCode code)
+    {
+        m_warnings.push_back(LexicalDiagnostic{code, m_position});
+    }
+    void warning(LexerErrorCode code, size_t pos)
+    {
+        m_warnings.push_back(LexicalDiagnostic{code, pos});
+    }
+    void error(LexerErrorCode code)
+    {
+        m_errors.push_back(LexicalDiagnostic{code, m_position});
+    }
+    void error(LexerErrorCode code, size_t pos)
+    {
+        m_errors.push_back(LexicalDiagnostic{code, pos});
+    }
     void skip_whitespace();
     void skip_comment();
     Token lex_number();
@@ -231,7 +252,8 @@ private:
     char peek_char(size_t offset = 1) const;
     void advance(size_t count = 1);
 
-    std::vector<LexicalWarning> m_warnings;
+    std::vector<LexicalDiagnostic> m_warnings;
+    std::vector<LexicalDiagnostic> m_errors;
     std::string_view m_input;
     size_t m_position;
     std::deque<Token> m_peek_tokens;

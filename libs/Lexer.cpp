@@ -436,10 +436,9 @@ void Lexer::skip_whitespace()
             size_t trailing_ws{};
             const auto warn_trailing_ws = [&trailing_ws, this]
             {
-                m_warnings.push_back(LexicalWarning{
-                    LexerWarning::CONTINUATION_WITH_WHITESPACE,
-                    trailing_ws,
-                });
+                LexerErrorCode code = LexerErrorCode::CONTINUATION_WITH_WHITESPACE;
+                size_t pos = trailing_ws;
+                warning(code, pos);
                 trailing_ws = 0;
             };
 
@@ -598,6 +597,7 @@ Token Lexer::lex_number()
                 advance();
             }
             size_t length = m_position - start;
+            error(LexerErrorCode::INVALID_NUMBER, start);
             return {TokenType::INVALID, start, length};
         }
     }

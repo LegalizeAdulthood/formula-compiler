@@ -54,6 +54,15 @@ public:
 
     FormulaSectionsPtr parse() override;
 
+    const std::vector<Diagnostic> &get_warnings() const override
+    {
+        return m_warnings;
+    }
+    const std::vector<Diagnostic> &get_errors() const override
+    {
+        return m_errors;
+    }
+
 private:
     bool builtin_section();
     std::optional<double> signed_literal();
@@ -113,6 +122,15 @@ private:
     bool is_user_identifier(const Expr &expr) const;
     bool skip_separators();
 
+    void warning(ErrorCode code) const
+    {
+        m_warnings.push_back(Diagnostic{code, m_lexer.position()});
+    }
+    void error(ErrorCode code) const
+    {
+        m_errors.push_back(Diagnostic{code, m_lexer.position()});
+    }
+
     const std::string &str() const
     {
         return std::get<std::string>(m_curr.value);
@@ -126,6 +144,7 @@ private:
         return std::get<int>(m_curr.value);
     }
 
+private:
     FormulaSectionsPtr m_ast;
     std::string_view m_text;
     Lexer m_lexer;
@@ -133,6 +152,8 @@ private:
     std::vector<Token> m_backtrack;
     bool m_backtracking{};
     Options m_options{};
+    mutable std::vector<Diagnostic> m_warnings;
+    mutable std::vector<Diagnostic> m_errors;
 };
 
 void split_iterate_bailout(FormulaSections &result, const Expr &expr)
@@ -1012,6 +1033,10 @@ FormulaSectionsPtr FormulaParser::parse()
 void FormulaParser::advance()
 {
     m_curr = m_lexer.get_token();
+    if (check(TokenType::INVALID))
+    {
+        error(ErrorCode::INVALID_TOKEN);
+    }
     if (m_backtracking)
     {
         m_backtrack.push_back(m_curr);
@@ -1078,9 +1103,17 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
         {
             return true;
         }
+
         // identifier matches a builtin variable
-        return m_options.allow_builtin_assignment;
+        if (m_options.allow_builtin_assignment)
+        {
+            warning(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
+            return true;
+        }
+
+        error(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
     }
+
     return false;
 }
 
@@ -1456,16 +1489,19 @@ Expr FormulaParser::builtin_var()
 }
 
 constexpr TokenType s_builtin_fns[]{
-    TokenType::SINH, TokenType::COSH, TokenType::COSXX, TokenType::SIN,   //
-    TokenType::COS, TokenType::COTANH, TokenType::COTAN, TokenType::TANH, //
-    TokenType::TAN, TokenType::SQRT, TokenType::LOG, TokenType::EXP,      //
-    TokenType::ABS, TokenType::CONJ, TokenType::REAL, TokenType::IMAG,    //
-    TokenType::FLIP, TokenType::FN1, TokenType::FN2, TokenType::FN3,      //
-    TokenType::FN4, TokenType::SRAND, TokenType::ASINH, TokenType::ACOSH, //
-    TokenType::ASIN, TokenType::ACOS, TokenType::ATANH, TokenType::ATAN,  //
-    TokenType::CABS, TokenType::SQR, TokenType::FLOOR, TokenType::CEIL,   //
-    TokenType::TRUNC, TokenType::ROUND, TokenType::IDENT, TokenType::ONE, //
-    TokenType::ZERO,                                                      //
+    TokenType::COSXX,                                                      //
+    TokenType::COS, TokenType::SIN, TokenType::TAN, TokenType::COTAN,      //
+    TokenType::COSH, TokenType::SINH, TokenType::TANH, TokenType::COTANH,  //
+    TokenType::SQRT, TokenType::SQR,                                       //
+    TokenType::LOG, TokenType::EXP,                                        //
+    TokenType::CONJ, TokenType::REAL, TokenType::IMAG, TokenType::FLIP,    //
+    TokenType::FN1, TokenType::FN2, TokenType::FN3, TokenType::FN4,        //
+    TokenType::SRAND,                                                      //
+    TokenType::ASIN, TokenType::ACOS, TokenType::ATAN,                     //
+    TokenType::ACOSH, TokenType::ASINH, TokenType::ATANH,                  //
+    TokenType::ABS, TokenType::CABS,                                       //
+    TokenType::FLOOR, TokenType::CEIL, TokenType::TRUNC, TokenType::ROUND, //
+    TokenType::IDENT, TokenType::ZERO, TokenType::ONE,                     //
 };
 
 Expr FormulaParser::builtin_function()
@@ -1611,11 +1647,24 @@ Expr FormulaParser::identifier()
 
     // Also allow some reserved words as identifiers in expression context
     // TODO: only allow true and false to be identifiers in legacy mode
-    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE, TokenType::ZERO, TokenType::ONE}))
+    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE}))
     {
         Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the type token
         return result;
+    }
+
+    if (std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type) != std::end(s_builtin_fns))
+    {
+        if (m_options.allow_builtin_assignment)
+        {
+            Expr result = std::make_shared<IdentifierNode>(str());
+            advance(); // consume the type token
+            warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
+            return result;
+        }
+
+        error(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
     }
 
     return nullptr;
@@ -1657,6 +1706,8 @@ Expr FormulaParser::primary()
         return result;
     }
 
+    // Should be after we checked for builtin variables and functions, so
+    // we can detect legacy code that attempts to use these names as variables.
     if (Expr result = identifier())
     {
         return result;
@@ -1692,6 +1743,7 @@ Expr FormulaParser::primary()
         return nullptr; // missing closing '|'
     }
 
+    error(ErrorCode::EXPECTED_PRIMARY);
     return nullptr;
 }
 
