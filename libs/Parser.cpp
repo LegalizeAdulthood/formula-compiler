@@ -66,10 +66,11 @@ public:
 private:
     bool builtin_section();
     std::optional<double> signed_literal();
-    bool default_number_setting(std::string name);
+    bool default_integer_setting(const std::string &name);
+    bool default_number_setting(const std::string &name);
     std::optional<Complex> complex_number();
-    bool default_complex_setting(std::string name);
-    bool default_string_setting(std::string name);
+    bool default_complex_setting(const std::string &name);
+    bool default_string_setting(const std::string &name);
     bool default_method_setting();
     bool default_perturb_setting();
     bool default_precision_setting();
@@ -226,8 +227,39 @@ bool FormulaParser::builtin_section()
     return true;
 }
 
-std::string_view s_default_number_settings[]{
-    "angle", "magn", "maxiter", "periodicity", "skew", "stretch", //
+enum class SettingType
+{
+    BOOLEAN,
+    INTEGER,
+    FLOATING_POINT,
+    COMPLEX,
+    STRING,
+    ENUMERATION,
+    BOOLEAN_EXPRESSION,
+    INTEGER_EXPRESSION
+};
+struct SettingMetadata
+{
+    std::string_view name;
+    SettingType type;
+};
+
+SettingMetadata s_default_settings[]{
+    {"angle", SettingType::FLOATING_POINT},         //
+    {"center", SettingType::COMPLEX},               //
+    {"helpfile", SettingType::STRING},              //
+    {"helptopic", SettingType::STRING},             //
+    {"magn", SettingType::FLOATING_POINT},          //
+    {"maxiter", SettingType::INTEGER},              //
+    {"method", SettingType::ENUMERATION},           //
+    {"periodicity", SettingType::INTEGER},          //
+    {"perturb", SettingType::BOOLEAN_EXPRESSION},   //
+    {"precision", SettingType::INTEGER_EXPRESSION}, //
+    {"rating", SettingType::ENUMERATION},           //
+    {"render", SettingType::BOOLEAN},               //
+    {"skew", SettingType::FLOATING_POINT},          //
+    {"stretch", SettingType::FLOATING_POINT},       //
+    {"title", SettingType::STRING},                 //
 };
 
 std::optional<double> FormulaParser::signed_literal()
@@ -257,15 +289,38 @@ std::optional<double> FormulaParser::signed_literal()
     return {};
 }
 
-bool FormulaParser::default_number_setting(const std::string name)
+bool FormulaParser::default_integer_setting(const std::string &name)
+{
+    if (!check(TokenType::INTEGER))
+    {
+        error(ErrorCode::EXPECTED_INTEGER);
+        return false;
+    }
+    const int value{integer()};
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        error(ErrorCode::EXPECTED_TERMINATOR);
+        return false;
+    }
+    advance();
+
+    m_ast->defaults = std::make_shared<SettingNode>(name, value);
+    return true;
+}
+
+bool FormulaParser::default_number_setting(const std::string &name)
 {
     const std::optional num{signed_literal()};
     if (!num)
     {
+        error(ErrorCode::EXPECTED_FLOATING_POINT);
         return false;
     }
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -308,6 +363,7 @@ std::optional<Complex> FormulaParser::complex_number()
 
     if (!check(TokenType::OPEN_PAREN))
     {
+        error(ErrorCode::EXPECTED_OPEN_PAREN);
         return {};
     }
     advance();
@@ -315,11 +371,13 @@ std::optional<Complex> FormulaParser::complex_number()
     const std::optional real{get_literal()};
     if (!real)
     {
+        error(ErrorCode::EXPECTED_FLOATING_POINT);
         return {};
     }
 
     if (!check(TokenType::COMMA))
     {
+        error(ErrorCode::EXPECTED_COMMA);
         return {};
     }
     advance();
@@ -327,11 +385,13 @@ std::optional<Complex> FormulaParser::complex_number()
     const std::optional imag{get_literal()};
     if (!imag)
     {
+        error(ErrorCode::EXPECTED_FLOATING_POINT);
         return {};
     }
 
     if (!check(TokenType::CLOSE_PAREN))
     {
+        error(ErrorCode::EXPECTED_CLOSE_PAREN);
         return {};
     }
     advance();
@@ -339,7 +399,7 @@ std::optional<Complex> FormulaParser::complex_number()
     return Complex{real.value(), imag.value()};
 }
 
-bool FormulaParser::default_complex_setting(const std::string name)
+bool FormulaParser::default_complex_setting(const std::string &name)
 {
     std::optional value{complex_number()};
     if (!value)
@@ -348,6 +408,7 @@ bool FormulaParser::default_complex_setting(const std::string name)
     }
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -356,10 +417,11 @@ bool FormulaParser::default_complex_setting(const std::string name)
     return true;
 }
 
-bool FormulaParser::default_string_setting(const std::string name)
+bool FormulaParser::default_string_setting(const std::string &name)
 {
     if (!check(TokenType::STRING))
     {
+        error(ErrorCode::EXPECTED_STRING);
         return false;
     }
     const std::string value{str()};
@@ -367,6 +429,7 @@ bool FormulaParser::default_string_setting(const std::string name)
 
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -379,19 +442,20 @@ bool FormulaParser::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
-        error(ErrorCode::INVALID_DEFAULT_METHOD);
+        error(ErrorCode::EXPECTED_IDENTIFIER);
         return false;
     }
     const std::string method{str()};
     if (method != "guessing" && method != "multipass" && method != "onepass")
     {
-        error(ErrorCode::INVALID_DEFAULT_METHOD);
+        error(ErrorCode::DEFAULT_SECTION_INVALID_METHOD);
         return false;
     }
     advance(); // consume method value
 
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -409,6 +473,7 @@ bool FormulaParser::default_perturb_setting()
 
         if (!check(TokenType::TERMINATOR))
         {
+            error(ErrorCode::EXPECTED_TERMINATOR);
             return false;
         }
         advance();
@@ -425,6 +490,7 @@ bool FormulaParser::default_perturb_setting()
 
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -719,6 +785,7 @@ bool FormulaParser::default_section()
     const bool is_center{check(TokenType::CENTER)};
     if (!(check(TokenType::IDENTIFIER) || is_center))
     {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
         return false;
     }
     const std::string name{str()};
@@ -726,17 +793,30 @@ bool FormulaParser::default_section()
 
     if (!check(TokenType::ASSIGN))
     {
+        error(ErrorCode::EXPECTED_ASSIGNMENT);
         return false;
     }
     advance(); // consume assignment operator
 
-    if (std::find(std::begin(s_default_number_settings), std::end(s_default_number_settings), name) !=
-        std::end(s_default_number_settings))
+    auto it = std::find_if(std::begin(s_default_settings), std::end(s_default_settings),
+        [&name](const SettingMetadata &m) { return m.name == name; });
+    if (it == std::end(s_default_settings))
+    {
+        error(ErrorCode::DEFAULT_SECTION_INVALID_KEY);
+        return false;
+    }
+
+    if (it->type == SettingType::INTEGER)
+    {
+        return default_integer_setting(name);
+    }
+
+    if (it->type == SettingType::FLOATING_POINT)
     {
         return default_number_setting(name);
     }
 
-    if (is_center)
+    if (it->type == SettingType::COMPLEX)
     {
         return default_complex_setting(name);
     }
@@ -1878,53 +1958,44 @@ ParserPtr create_parser(std::string_view text, const Options &options)
     return std::make_shared<FormulaParser>(text, options);
 }
 
+#define ERROR_CODE_CASE(name_) \
+    case ErrorCode::name_:     \
+        return #name_
+
 std::string to_string(ErrorCode code)
 {
     switch (code)
     {
-    case ErrorCode::NONE:
-        return "NONE";
-    case ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT:
-        return "BUILTIN_VARIABLE_ASSIGNMENT";
-    case ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT:
-        return "BUILTIN_FUNCTION_ASSIGNMENT";
-    case ErrorCode::EXPECTED_PRIMARY:
-        return "EXPECTED_PRIMARY";
-    case ErrorCode::INVALID_TOKEN:
-        return "INVALID_TOKEN";
-    case ErrorCode::INVALID_SECTION:
-        return "INVALID_SECTION";
-    case ErrorCode::INVALID_SECTION_ORDER:
-        return "INVALID_SECTION_ORDER";
-    case ErrorCode::DUPLICATE_SECTION:
-        return "DUPLICATE_SECTION";
-    case ErrorCode::INVALID_DEFAULT_METHOD:
-        return "INVALID_DEFAULT_METHOD";
-    case ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS:
-        return "BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS";
-    case ErrorCode::EXPECTED_ENDIF:
-        return "EXPECTED_ENDIF";
-    case ErrorCode::EXPECTED_STATEMENT_SEPARATOR:
-        return "EXPECTED_STATEMENT_SEPARATOR";
-    case ErrorCode::BUILTIN_SECTION_INVALID_TYPE:
-        return "BUILTIN_SECTION_INVALID_TYPE";
-    case ErrorCode::EXPECTED_OPEN_PAREN:
-        return "EXPECTED_OPEN_PAREN";
-    case ErrorCode::EXPECTED_CLOSE_PAREN:
-        return "EXPECTED_CLOSE_PAREN";
-    case ErrorCode::EXPECTED_IDENTIFIER:
-        return "EXPECTED_IDENTIFIER";
-    case ErrorCode::BUILTIN_SECTION_INVALID_KEY:
-        return "BUILTIN_SECTION_INVALID_KEY";
-    case ErrorCode::EXPECTED_ASSIGNMENT:
-        return "EXPECTED_ASSIGNMENT";
-    case ErrorCode::EXPECTED_INTEGER:
-        return "EXPECTED_INTEGER";
-    case ErrorCode::EXPECTED_TERMINATOR:
-        return "EXPECTED_TERMINATOR";
+    ERROR_CODE_CASE(NONE);
+    ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
+    ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
+    ERROR_CODE_CASE(EXPECTED_PRIMARY);
+    ERROR_CODE_CASE(INVALID_TOKEN);
+    ERROR_CODE_CASE(INVALID_SECTION);
+    ERROR_CODE_CASE(INVALID_SECTION_ORDER);
+    ERROR_CODE_CASE(DUPLICATE_SECTION);
+    ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
+    ERROR_CODE_CASE(BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+    ERROR_CODE_CASE(EXPECTED_ENDIF);
+    ERROR_CODE_CASE(EXPECTED_STATEMENT_SEPARATOR);
+    ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
+    ERROR_CODE_CASE(EXPECTED_OPEN_PAREN);
+    ERROR_CODE_CASE(EXPECTED_CLOSE_PAREN);
+    ERROR_CODE_CASE(EXPECTED_IDENTIFIER);
+    ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
+    ERROR_CODE_CASE(EXPECTED_ASSIGNMENT);
+    ERROR_CODE_CASE(EXPECTED_INTEGER);
+    ERROR_CODE_CASE(EXPECTED_TERMINATOR);
+    ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
+    ERROR_CODE_CASE(EXPECTED_COMMA);
+    ERROR_CODE_CASE(EXPECTED_FLOATING_POINT);
+    ERROR_CODE_CASE(EXPECTED_COMPLEX);
+    ERROR_CODE_CASE(EXPECTED_STRING);
     }
 
     return std::to_string(static_cast<int>(code));
 }
+
+#undef ERROR_CODE_CASE
 
 } // namespace formula::parser
