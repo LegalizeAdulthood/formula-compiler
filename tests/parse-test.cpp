@@ -568,6 +568,7 @@ static ParseFailureParam s_parse_failures[]{
     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},                 //
     {"builtinBadType", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                     //
     {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
+    {"ifWithoutOpenParen", "if 1", ErrorCode::EXPECTED_OPEN_PAREN},                                      //
 };
 
 TEST_P(ParseFailures, parse)

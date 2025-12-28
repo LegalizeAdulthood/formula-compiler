@@ -1299,6 +1299,7 @@ Expr FormulaParser::if_statement_no_endif()
     // Parse condition in parentheses
     if (!match(TokenType::OPEN_PAREN))
     {
+        error(ErrorCode::EXPECTED_OPEN_PAREN);
         return nullptr;
     }
 

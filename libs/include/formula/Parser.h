@@ -30,6 +30,7 @@ enum class ErrorCode
     EXPECTED_ENDIF,
     EXPECTED_STATEMENT_SEPARATOR,
     BUILTIN_SECTION_INVALID_TYPE,
+    EXPECTED_OPEN_PAREN,
 };
 
 struct Diagnostic
