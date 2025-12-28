@@ -18,6 +18,7 @@
 #include <vector>
 
 using namespace formula::ast;
+using namespace formula::lexer;
 
 namespace formula::parser
 {

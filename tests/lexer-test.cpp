@@ -10,6 +10,7 @@
 #include <cmath>
 #include <string>
 
+using namespace formula::lexer;
 using namespace testing;
 
 namespace formula::test

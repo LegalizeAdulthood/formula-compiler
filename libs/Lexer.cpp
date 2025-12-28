@@ -8,7 +8,7 @@
 #include <cctype>
 #include <cstdlib>
 
-namespace formula
+namespace formula::lexer
 {
 
 std::string_view to_string(TokenType value)

@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-namespace formula
+namespace formula::lexer
 {
 
 enum class LexerErrorCode
@@ -271,4 +271,4 @@ using LexerPtr = std::shared_ptr<Lexer>;
 
 LexerPtr lex(std::string_view input);
 
-} // namespace formula
+} // namespace formula::lexer
