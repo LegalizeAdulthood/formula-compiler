@@ -50,6 +50,14 @@ std::ostream &operator<<(std::ostream &os, ErrorCode code)
         return os << "EXPECTED_ENDIF";
     case ErrorCode::EXPECTED_STATEMENT_SEPARATOR:
         return os << "EXPECTED_STATEMENT_SEPARATOR";
+    case ErrorCode::BUILTIN_SECTION_INVALID_TYPE:
+        return os << "BUILTIN_SECTION_INVALID_TYPE";
+    case ErrorCode::EXPECTED_OPEN_PAREN:
+        return os << "EXPECTED_OPEN_PAREN";
+    case ErrorCode::EXPECTED_CLOSE_PAREN:
+        return os << "EXPECTED_CLOSE_PAREN";
+    case ErrorCode::EXPECTED_IDENTIFIER:
+        return os << "EXPECTED_IDENTIFIER";
     }
     return os << "ErrorCode(" << static_cast<int>(code) << ')';
 }
@@ -573,6 +581,7 @@ static ParseFailureParam s_parse_failures[]{
     {"elseIfWithoutOpenParen", "if(1)\nelseif 1\nendif\n", ErrorCode::EXPECTED_OPEN_PAREN},              //
     {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
     {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_IDENTIFIER},                                     //
+    {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},                             //
 };
 
 TEST_P(ParseFailures, parse)

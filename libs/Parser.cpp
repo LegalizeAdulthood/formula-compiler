@@ -98,11 +98,11 @@ private:
     Expr unary();
     Expr power();
     Expr builtin_var();
-    Expr function_call();
+    std::optional<Expr> function_call();
     Expr number();
     Expr identifier();
     Expr complex_literal();
-    Expr builtin_function();
+    std::optional<Expr> builtin_function();
     Expr complex();
     Expr primary();
     void advance();
@@ -1597,7 +1597,7 @@ constexpr TokenType s_builtin_fns[]{
     TokenType::IDENT, TokenType::ZERO, TokenType::ONE,                     //
 };
 
-Expr FormulaParser::builtin_function()
+std::optional<Expr> FormulaParser::builtin_function()
 {
     if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
         it != std::end(s_builtin_fns))
@@ -1606,13 +1606,20 @@ Expr FormulaParser::builtin_function()
         const Token curr{m_curr};
         const std::string name{str()};
         advance(); // consume the function name
-        if (Expr args = function_call())
+        std::optional args{function_call()};
+        if (args.has_value())
         {
-            end_tracking();
-            return std::make_shared<FunctionCallNode>(name, args);
+            if (args.value())
+            {
+                end_tracking();
+                return std::make_shared<FunctionCallNode>(name, args.value());
+            }
+            backtrack();
+            m_curr = curr;
+            return nullptr;
         }
-        backtrack();
-        m_curr = curr;
+        // function_call encountered a parsing error, so don't backtrack
+        return {};
     }
     return nullptr;
 }
@@ -1683,7 +1690,7 @@ Expr FormulaParser::complex()
     return nullptr;
 }
 
-Expr FormulaParser::function_call()
+std::optional<Expr> FormulaParser::function_call()
 {
     if (check(TokenType::OPEN_PAREN))
     {
@@ -1693,10 +1700,16 @@ Expr FormulaParser::function_call()
             return expr;
         }
 
-        if (const Expr args = conjunctive(); args && check(TokenType::CLOSE_PAREN))
+        if (const Expr args = conjunctive())
         {
-            advance(); // consume right paren
-            return args;
+            if (check(TokenType::CLOSE_PAREN))
+            {
+                advance(); // consume right paren
+                return args;
+            }
+
+            error(ErrorCode::EXPECTED_CLOSE_PAREN);
+            return {};
         }
     }
     return nullptr;
@@ -1790,9 +1803,16 @@ Expr FormulaParser::primary()
         return result;
     }
 
-    if (Expr result = builtin_function())
+    if (std::optional<Expr> result = builtin_function())
     {
-        return result;
+        if (result.value())
+        {
+            return result.value();
+        }
+    }
+    else
+    {
+        return nullptr;
     }
 
     if (Expr result = builtin_var())
