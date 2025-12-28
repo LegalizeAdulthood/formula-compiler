@@ -530,10 +530,14 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
 
 TEST_P(ReservedWords, notAssignable)
 {
-    const ast::FormulaSectionsPtr result1{parse(GetParam() + "=1", Options{})};
+    const std::string text{GetParam() + "=1"};
+    const ParserPtr parser{create_parser(text, Options{})};
+
+    const ast::FormulaSectionsPtr result1{parser->parse()};
     const ast::FormulaSectionsPtr result2{parse(GetParam() + "2=1", Options{})};
 
     ASSERT_FALSE(result1);
+    EXPECT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     ASSERT_TRUE(result2);
     ASSERT_TRUE(result2->bailout);
 }
