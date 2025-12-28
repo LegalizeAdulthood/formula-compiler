@@ -158,6 +158,16 @@ struct SourceLocation
     size_t column{1};
 };
 
+inline bool operator==(const SourceLocation &lhs, const SourceLocation &rhs)
+{
+    return lhs.line == rhs.line && lhs.column == rhs.column;
+}
+
+inline bool operator!=(const SourceLocation &lhs, const SourceLocation &rhs)
+{
+    return !(lhs == rhs);
+}
+
 struct LexicalDiagnostic
 {
     LexerErrorCode code{};
@@ -167,43 +177,41 @@ struct LexicalDiagnostic
 struct Token
 {
     Token() :
-        type(TokenType::END_OF_INPUT),
-        position(0),
-        length(0)
+        type(TokenType::END_OF_INPUT)
     {
     }
-    Token(TokenType t, size_t pos, size_t len) :
+    Token(TokenType t, SourceLocation pos, size_t len) :
         type(t),
-        position(pos),
+        location(pos),
         length(len)
     {
     }
-    Token(int val, size_t pos, size_t len) :
+    Token(int val, SourceLocation pos, size_t len) :
         type(TokenType::INTEGER),
         value(val),
-        position(pos),
+        location(pos),
         length(len)
     {
     }
-    Token(double val, size_t pos, size_t len) :
+    Token(double val, SourceLocation pos, size_t len) :
         type(TokenType::NUMBER),
         value(val),
-        position(pos),
+        location(pos),
         length(len)
     {
     }
-    Token(TokenType t, std::string str_val, size_t pos, size_t len) :
+    Token(TokenType t, std::string str_val, SourceLocation pos, size_t len) :
         type(t),
         value(std::move(str_val)),
-        position(pos),
+        location(pos),
         length(len)
     {
     }
 
     TokenType type;
     std::variant<int, double, std::string> value;
-    size_t position;
-    size_t length;
+    SourceLocation location;
+    size_t length{};
 };
 
 class Lexer

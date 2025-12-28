@@ -285,7 +285,7 @@ Token Lexer::get_token()
 
     if (at_end())
     {
-        return {TokenType::END_OF_INPUT, m_position, 0};
+        return {TokenType::END_OF_INPUT, m_source_location, 0};
     }
 
     char ch = current_char();
@@ -293,7 +293,7 @@ Token Lexer::get_token()
     // Check for end-of-line (newline) as separator
     if (ch == '\n')
     {
-        size_t start = m_position;
+        SourceLocation start = m_source_location;
         advance();
         return {TokenType::TERMINATOR, start, 1};
     }
@@ -322,7 +322,7 @@ Token Lexer::get_token()
     }
 
     // Check for operators
-    size_t start = m_position;
+    SourceLocation start = m_source_location;
     advance();
 
     switch (ch)
@@ -625,7 +625,7 @@ Token Lexer::lex_number()
             }
             size_t length = m_position - start;
             error(LexerErrorCode::INVALID_NUMBER, start_loc);
-            return {TokenType::INVALID, start, length};
+            return {TokenType::INVALID, start_loc, length};
         }
     }
 
@@ -637,14 +637,14 @@ Token Lexer::lex_number()
         // Floating-point number
         char *end;
         double value = std::strtod(number_str.c_str(), &end);
-        return {value, start, length};
+        return {value, start_loc, length};
     }
     else
     {
         // Integer number
         char *end;
         int value = static_cast<int>(std::strtol(number_str.c_str(), &end, 10));
-        return {value, start, length};
+        return {value, start_loc, length};
     }
 }
 
@@ -716,6 +716,7 @@ bool Lexer::is_identifier_continue(char c) const
 Token Lexer::lex_identifier()
 {
     size_t start = m_position;
+    SourceLocation start_loc = m_source_location;
     std::string identifier;
 
     // Start with letter or underscore
@@ -819,7 +820,7 @@ Token Lexer::lex_identifier()
             [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
         it != std::end(reserved))
     {
-        return {it->type, std::string{it->text}, start, length};
+        return {it->type, std::string{it->text}, start_loc, length};
     }
 
     static constexpr TextTokenType section_names[]{
@@ -841,17 +842,18 @@ Token Lexer::lex_identifier()
         {
             advance();                   // Consume the colon for section names
             length = m_position - start; // Recalculate length to include the colon
-            return {it->type, std::string{it->text}, start, length};
+            return {it->type, std::string{it->text}, start_loc, length};
         }
     }
 
     // Not a reserved word, return as identifier
-    return {TokenType::IDENTIFIER, to_lower(identifier), start, length};
+    return {TokenType::IDENTIFIER, to_lower(identifier), start_loc, length};
 }
 
 Token Lexer::lex_string()
 {
     size_t start = m_position;
+    SourceLocation start_loc = m_source_location;
     std::string str_value;
 
     // Skip opening quote
@@ -869,7 +871,7 @@ Token Lexer::lex_string()
             {
                 // Unterminated string (backslash at end)
                 size_t length = m_position - start;
-                return {TokenType::INVALID, start, length};
+                return {TokenType::INVALID, start_loc, length};
             }
 
             char escaped_ch = current_char();
@@ -895,13 +897,13 @@ Token Lexer::lex_string()
             // End of string
             advance(); // Skip closing quote
             size_t length = m_position - start;
-            return {TokenType::STRING, str_value, start, length};
+            return {TokenType::STRING, str_value, start_loc, length};
         }
         else if (ch == '\n')
         {
             // Unterminated string (newline before closing quote)
             size_t length = m_position - start;
-            return {TokenType::INVALID, start, length};
+            return {TokenType::INVALID, start_loc, length};
         }
         else
         {
@@ -913,7 +915,7 @@ Token Lexer::lex_string()
 
     // Reached end of input without closing quote
     size_t length = m_position - start;
-    return {TokenType::INVALID, start, length};
+    return {TokenType::INVALID, start_loc, length};
 }
 
 } // namespace formula

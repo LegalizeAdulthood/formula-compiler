@@ -150,8 +150,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(1u, warning.location.line);
-    EXPECT_EQ(3u, warning.location.column);
+    EXPECT_EQ(1U, warning.location.line);
+    EXPECT_EQ(3U, warning.location.column);
 }
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
@@ -165,8 +165,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(1u, warning.location.line);
-    EXPECT_EQ(3u, warning.location.column);
+    EXPECT_EQ(1U, warning.location.line);
+    EXPECT_EQ(3U, warning.location.column);
 }
 
 TEST(TestLexer, multipleWarnings)
@@ -184,10 +184,10 @@ TEST(TestLexer, multipleWarnings)
     EXPECT_TRUE(std::all_of(warnings.begin(), warnings.end(),
         [](const LexicalDiagnostic &w) { return w.code == LexerErrorCode::CONTINUATION_WITH_WHITESPACE; }))
         << "all warnings should be CONTINUATION_WITH_WHITESPACE";
-    EXPECT_EQ(1u, warnings[0].location.line) << "line of first warning";
-    EXPECT_EQ(3u, warnings[0].location.column) << "column of first warning";
-    EXPECT_EQ(2u, warnings[1].location.line) << "line of second warning";
-    EXPECT_EQ(3u, warnings[1].location.column) << "column of second warning";
+    EXPECT_EQ(1U, warnings[0].location.line) << "line of first warning";
+    EXPECT_EQ(3U, warnings[0].location.column) << "column of first warning";
+    EXPECT_EQ(2U, warnings[1].location.line) << "line of second warning";
+    EXPECT_EQ(3U, warnings[1].location.column) << "column of second warning";
 }
 
 TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
@@ -208,9 +208,9 @@ TEST(TestLexer, positionTracking)
     size_t pos = lexer.position();
     Token token = lexer.get_token();
 
-    EXPECT_EQ(0u, pos);
-    EXPECT_EQ(2u, token.position); // After skipping leading whitespace
-    EXPECT_EQ(2u, token.length);
+    EXPECT_EQ(0U, pos);
+    EXPECT_EQ(3U, token.location.column); // After skipping leading whitespace
+    EXPECT_EQ(2U, token.length);
 }
 
 TEST(TestLexer, singleExclamationInvalid)
@@ -223,7 +223,7 @@ TEST(TestLexer, singleExclamationInvalid)
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(1, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::INVALID, op.type);
-    EXPECT_EQ(1u, op.length);
+    EXPECT_EQ(1U, op.length);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
     EXPECT_EQ(2, std::get<int>(token2.value));
 }
@@ -237,10 +237,10 @@ TEST(TestLexer, varColon)
 
     EXPECT_EQ(TokenType::IDENTIFIER, t1.type);
     EXPECT_EQ("ball_size", std::get<std::string>(t1.value));
-    EXPECT_EQ(0, t1.position);
+    EXPECT_EQ(1U, t1.location.column);
     EXPECT_EQ(9, t1.length);
     EXPECT_EQ(TokenType::COLON, t2.type);
-    EXPECT_EQ(9, t2.position);
+    EXPECT_EQ(10, t2.location.column);
 }
 
 TEST(TestLexer, builtinVariablsHaveNameValue)
@@ -251,8 +251,8 @@ TEST(TestLexer, builtinVariablsHaveNameValue)
 
     EXPECT_EQ(TokenType::MAX_ITER, token.type);
     EXPECT_EQ("maxit", std::get<std::string>(token.value));
-    EXPECT_EQ(0, token.position);
-    EXPECT_EQ(5, token.length);
+    EXPECT_EQ(1U, token.location.column);
+    EXPECT_EQ(5U, token.length);
 }
 
 TEST(TestLexer, parenthesesWithIdentifiers)
@@ -391,7 +391,7 @@ struct TextTokenParam
     std::string_view name;
     std::string_view input;
     TokenType token{};
-    size_t position{};
+    size_t column{1};
     size_t length{};
 };
 
@@ -412,7 +412,7 @@ TEST_P(TokenRecognized, recognized)
     const Token token = lexer.get_token();
 
     EXPECT_EQ(param.token, token.type);
-    EXPECT_EQ(param.position, token.position);
+    EXPECT_EQ(param.column, token.location.column);
     EXPECT_EQ(param.length != 0 ? param.length : param.input.length(), token.length);
 }
 
@@ -429,7 +429,7 @@ static TextTokenParam s_params[]{
     {"decimalWithTrailingZeros", "1.500", TokenType::NUMBER},                 //
     {"veryLargeNumber", "1.7976931348623157e+308", TokenType::NUMBER},        //
     {"verySmallNumber", "2.2250738585072014e-308", TokenType::NUMBER},        //
-    {"skipsLeadingWhitespace", "  42", TokenType::INTEGER, 2, 2},             //
+    {"skipsLeadingWhitespace", "  42", TokenType::INTEGER, 3, 2},             //
     {"emptyInput", "", TokenType::END_OF_INPUT},                              //
     {"plus", "+", TokenType::PLUS},                                           //
     {"minus", "-", TokenType::MINUS},                                         //
@@ -469,15 +469,15 @@ static TextTokenParam s_params[]{
     {"elseIfPrefix", "elseif2", TokenType::IDENTIFIER},                       //
     {"elseSuffix", "myelse", TokenType::IDENTIFIER},                          //
     {"endIfPrefix", "endif_func", TokenType::IDENTIFIER},                     //
-    {"global", "global:", TokenType::GLOBAL, 0, 7},                           //
-    {"builtin", "builtin:", TokenType::BUILTIN, 0, 8},                        //
-    {"init", "init:", TokenType::INIT, 0, 5},                                 //
-    {"loop", "loop:", TokenType::LOOP, 0, 5},                                 //
-    {"bailout", "bailout:", TokenType::BAILOUT, 0, 8},                        //
-    {"perturbinit", "perturbinit:", TokenType::PERTURB_INIT, 0, 12},          //
-    {"perturbloop", "perturbloop:", TokenType::PERTURB_LOOP, 0, 12},          //
-    {"default", "default:", TokenType::DEFAULT, 0, 8},                        //
-    {"switch", "switch:", TokenType::SWITCH, 0, 7},                           //
+    {"global", "global:", TokenType::GLOBAL, 1, 7},                           //
+    {"builtin", "builtin:", TokenType::BUILTIN, 1, 8},                        //
+    {"init", "init:", TokenType::INIT, 1, 5},                                 //
+    {"loop", "loop:", TokenType::LOOP, 1, 5},                                 //
+    {"bailout", "bailout:", TokenType::BAILOUT, 1, 8},                        //
+    {"perturbinit", "perturbinit:", TokenType::PERTURB_INIT, 1, 12},          //
+    {"perturbloop", "perturbloop:", TokenType::PERTURB_LOOP, 1, 12},          //
+    {"default", "default:", TokenType::DEFAULT, 1, 8},                        //
+    {"switch", "switch:", TokenType::SWITCH, 1, 7},                           //
     {"p1", "p1", TokenType::P1},                                              //
     {"p2", "p2", TokenType::P2},                                              //
     {"p3", "p3", TokenType::P3},                                              //
@@ -533,9 +533,9 @@ static TextTokenParam s_params[]{
     {"ident", "ident", TokenType::IDENT},                                     //
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
-    {"commentAfter", "1;this is a comment", TokenType::INTEGER, 0, 1},        //
-    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 18, 1}, //
-    {"continuation", "\\\n1", TokenType::INTEGER, 2, 1},                      //
+    {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
+    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 1, 1},  //
+    {"continuation", "\\\n1", TokenType::INTEGER, 1, 1},                      //
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
@@ -568,7 +568,7 @@ TEST(TestLexer, putTokenSingleToken)
     Token token_again = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, token_again.type);
     EXPECT_EQ(42, std::get<int>(token_again.value));
-    EXPECT_EQ(token1.position, token_again.position);
+    EXPECT_EQ(token1.location, token_again.location);
     EXPECT_EQ(token1.length, token_again.length);
 
     // Next token should be the second number
@@ -643,9 +643,9 @@ TEST(TestLexer, putTokenDifferentTypes)
     Lexer lexer("xyz");
 
     // Create tokens of different types using proper constructors
-    Token int_token(42, 0, 1);                                         // int constructor
-    Token string_token(TokenType::STRING, std::string("hello"), 0, 1); // string constructor
-    Token op_token(TokenType::PLUS, 0, 1);                             // TokenType constructor
+    Token int_token(42, {}, 1);                                         // int constructor
+    Token string_token(TokenType::STRING, std::string("hello"), {}, 1); // string constructor
+    Token op_token(TokenType::PLUS, {}, 1);                             // TokenType constructor
 
     // Put them all back
     lexer.put_token(int_token);
@@ -703,7 +703,7 @@ TEST(TestLexer, putTokenPreservesTokenDetails)
     Token token = lexer.get_token();
     EXPECT_EQ(TokenType::MAX_ITER, token.type);
     EXPECT_EQ("maxit", std::get<std::string>(token.value));
-    size_t orig_position = token.position;
+    SourceLocation orig_position = token.location;
     size_t orig_length = token.length;
 
     // Put it back
@@ -713,7 +713,7 @@ TEST(TestLexer, putTokenPreservesTokenDetails)
     Token retrieved = lexer.get_token();
     EXPECT_EQ(TokenType::MAX_ITER, retrieved.type);
     EXPECT_EQ("maxit", std::get<std::string>(retrieved.value));
-    EXPECT_EQ(orig_position, retrieved.position);
+    EXPECT_EQ(orig_position, retrieved.location);
     EXPECT_EQ(orig_length, retrieved.length);
 }
 
@@ -786,7 +786,7 @@ TEST(TestLexer, putTokenWithInvalidToken)
     Lexer lexer("42");
 
     // Create an invalid token
-    Token invalid_token(TokenType::INVALID, 0, 1);
+    Token invalid_token(TokenType::INVALID, {}, 1);
 
     // Put it back
     lexer.put_token(invalid_token);
@@ -806,7 +806,7 @@ TEST(TestLexer, putTokenEmptyLexer)
     Lexer lexer("");
 
     // Create and put a token on empty lexer
-    Token token(99, 0, 1); // int constructor
+    Token token(99, {}, 1); // int constructor
     lexer.put_token(token);
 
     // Should retrieve the put-back token
