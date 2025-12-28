@@ -11,264 +11,151 @@
 namespace formula::lexer
 {
 
-std::string_view to_string(TokenType value)
+#define TOKEN_TYPE_CASE(name_) \
+    case TokenType::name_:     \
+        return #name_
+
+std::string to_string(TokenType value)
 {
     switch (value)
     {
-    case TokenType::NONE:
-        return "NONE";
-    case TokenType::END_OF_INPUT:
-        return "END_OF_INPUT";
-    case TokenType::INTEGER:
-        return "INTEGER";
-    case TokenType::NUMBER:
-        return "NUMBER";
-    case TokenType::PLUS:
-        return "PLUS";
-    case TokenType::MINUS:
-        return "MINUS";
-    case TokenType::MULTIPLY:
-        return "MULTIPLY";
-    case TokenType::DIVIDE:
-        return "DIVIDE";
-    case TokenType::POWER:
-        return "POWER";
-    case TokenType::ASSIGN:
-        return "ASSIGN";
-    case TokenType::LESS_THAN:
-        return "LESS_THAN";
-    case TokenType::GREATER_THAN:
-        return "GREATER_THAN";
-    case TokenType::LESS_EQUAL:
-        return "LESS_EQUAL";
-    case TokenType::GREATER_EQUAL:
-        return "GREATER_EQUAL";
-    case TokenType::EQUAL:
-        return "EQUAL";
-    case TokenType::NOT_EQUAL:
-        return "NOT_EQUAL";
-    case TokenType::LOGICAL_AND:
-        return "LOGICAL_AND";
-    case TokenType::LOGICAL_OR:
-        return "LOGICAL_OR";
-    case TokenType::MODULUS:
-        return "MODULUS";
-    case TokenType::IDENTIFIER:
-        return "IDENTIFIER";
-    case TokenType::OPEN_PAREN:
-        return "LEFT_PAREN";
-    case TokenType::CLOSE_PAREN:
-        return "RIGHT_PAREN";
-    case TokenType::OPEN_BRACKET:
-        return "LEFT_BRACKET";
-    case TokenType::CLOSE_BRACKET:
-        return "RIGHT_BRACKET";
-    case TokenType::OPEN_BRACE:
-        return "LEFT_BRACE";
-    case TokenType::CLOSE_BRACE:
-        return "RIGHT_BRACE";
-    case TokenType::PERIOD:
-        return "PERIOD";
-    case TokenType::COLON:
-        return "COLON";
-    case TokenType::COMMA:
-        return "COMMA";
-    case TokenType::TERMINATOR:
-        return "TERMINATOR";
-    case TokenType::IF:
-        return "IF";
-    case TokenType::ELSE_IF:
-        return "ELSE_IF";
-    case TokenType::ELSE:
-        return "ELSE";
-    case TokenType::END_IF:
-        return "END_IF";
-    case TokenType::WHILE:
-        return "WHILE";
-    case TokenType::END_WHILE:
-        return "END_WHILE";
-    case TokenType::REPEAT:
-        return "REPEAT";
-    case TokenType::UNTIL:
-        return "UNTIL";
-    case TokenType::FUNC:
-        return "FUNC";
-    case TokenType::END_FUNC:
-        return "END_FUNC";
-    case TokenType::PARAM:
-        return "PARAM";
-    case TokenType::END_PARAM:
-        return "END_PARAM";
-    case TokenType::HEADING:
-        return "HEADING";
-    case TokenType::END_HEADING:
-        return "END_HEADING";
-    case TokenType::CTX_CONST:
-        return "CTX_CONST";
-    case TokenType::CTX_IMPORT:
-        return "CTX_IMPORT";
-    case TokenType::CTX_NEW:
-        return "CTX_NEW";
-    case TokenType::CTX_RETURN:
-        return "CTX_RETURN";
-    case TokenType::CTX_STATIC:
-        return "CTX_STATIC";
-    case TokenType::CTX_THIS:
-        return "CTX_THIS";
-    case TokenType::GLOBAL:
-        return "GLOBAL";
-    case TokenType::BUILTIN:
-        return "BUILTIN";
-    case TokenType::INIT:
-        return "INIT";
-    case TokenType::LOOP:
-        return "LOOP";
-    case TokenType::BAILOUT:
-        return "BAILOUT";
-    case TokenType::PERTURB_INIT:
-        return "PERTURB_INIT";
-    case TokenType::PERTURB_LOOP:
-        return "PERTURB_LOOP";
-    case TokenType::DEFAULT:
-        return "DEFAULT";
-    case TokenType::SWITCH:
-        return "SWITCH";
-    case TokenType::P1:
-        return "P1";
-    case TokenType::P2:
-        return "P2";
-    case TokenType::P3:
-        return "P3";
-    case TokenType::P4:
-        return "P4";
-    case TokenType::P5:
-        return "P5";
-    case TokenType::PIXEL:
-        return "PIXEL";
-    case TokenType::LAST_SQR:
-        return "LAST_SQR";
-    case TokenType::RAND:
-        return "RAND";
-    case TokenType::PI:
-        return "PI";
-    case TokenType::E:
-        return "E";
-    case TokenType::MAX_ITER:
-        return "MAX_ITER";
-    case TokenType::SCREEN_MAX:
-        return "SCREEN_MAX";
-    case TokenType::SCREEN_PIXEL:
-        return "SCREEN_PIXEL";
-    case TokenType::WHITE_SQUARE:
-        return "WHITE_SQUARE";
-    case TokenType::IS_MAND:
-        return "IS_MAND";
-    case TokenType::CENTER:
-        return "CENTER";
-    case TokenType::MAG_X_MAG:
-        return "MAG_X_MAG";
-    case TokenType::ROT_SKEW:
-        return "ROT_SKEW";
-    case TokenType::SINH:
-        return "SINH";
-    case TokenType::COSH:
-        return "COSH";
-    case TokenType::COSXX:
-        return "COSXX";
-    case TokenType::SIN:
-        return "SIN";
-    case TokenType::COS:
-        return "COS";
-    case TokenType::COTANH:
-        return "COTANH";
-    case TokenType::COTAN:
-        return "COTAN";
-    case TokenType::TANH:
-        return "TANH";
-    case TokenType::TAN:
-        return "TAN";
-    case TokenType::SQRT:
-        return "SQRT";
-    case TokenType::LOG:
-        return "LOG";
-    case TokenType::EXP:
-        return "EXP";
-    case TokenType::ABS:
-        return "ABS";
-    case TokenType::CONJ:
-        return "CONJ";
-    case TokenType::REAL:
-        return "REAL";
-    case TokenType::IMAG:
-        return "IMAG";
-    case TokenType::FLIP:
-        return "FLIP";
-    case TokenType::FN1:
-        return "FN1";
-    case TokenType::FN2:
-        return "FN2";
-    case TokenType::FN3:
-        return "FN3";
-    case TokenType::FN4:
-        return "FN4";
-    case TokenType::SRAND:
-        return "SRAND";
-    case TokenType::ASINH:
-        return "ASINH";
-    case TokenType::ACOSH:
-        return "ACOSH";
-    case TokenType::ASIN:
-        return "ASIN";
-    case TokenType::ACOS:
-        return "ACOS";
-    case TokenType::ATANH:
-        return "ATANH";
-    case TokenType::ATAN:
-        return "ATAN";
-    case TokenType::CABS:
-        return "CABS";
-    case TokenType::SQR:
-        return "SQR";
-    case TokenType::FLOOR:
-        return "FLOOR";
-    case TokenType::CEIL:
-        return "CEIL";
-    case TokenType::TRUNC:
-        return "TRUNC";
-    case TokenType::ROUND:
-        return "ROUND";
-    case TokenType::IDENT:
-        return "IDENT";
-    case TokenType::ONE:
-        return "ONE";
-    case TokenType::ZERO:
-        return "ZERO";
-    case TokenType::INVALID:
-        return "INVALID";
-    case TokenType::TRUE:
-        return "TRUE";
-    case TokenType::FALSE:
-        return "FALSE";
-    case TokenType::STRING:
-        return "STRING";
-    case TokenType::TYPE_BOOL:
-        return "TYPE_BOOL";
-    case TokenType::TYPE_INT:
-        return "TYPE_INT";
-    case TokenType::TYPE_FLOAT:
-        return "TYPE_FLOAT";
-    case TokenType::TYPE_COMPLEX:
-        return "TYPE_COMPLEX";
-    case TokenType::TYPE_COLOR:
-        return "TYPE_COLOR";
+        TOKEN_TYPE_CASE(NONE);
+        TOKEN_TYPE_CASE(END_OF_INPUT);
+        TOKEN_TYPE_CASE(INTEGER);
+        TOKEN_TYPE_CASE(NUMBER);
+        TOKEN_TYPE_CASE(PLUS);
+        TOKEN_TYPE_CASE(MINUS);
+        TOKEN_TYPE_CASE(MULTIPLY);
+        TOKEN_TYPE_CASE(DIVIDE);
+        TOKEN_TYPE_CASE(POWER);
+        TOKEN_TYPE_CASE(ASSIGN);
+        TOKEN_TYPE_CASE(LESS_THAN);
+        TOKEN_TYPE_CASE(GREATER_THAN);
+        TOKEN_TYPE_CASE(LESS_EQUAL);
+        TOKEN_TYPE_CASE(GREATER_EQUAL);
+        TOKEN_TYPE_CASE(EQUAL);
+        TOKEN_TYPE_CASE(NOT_EQUAL);
+        TOKEN_TYPE_CASE(LOGICAL_AND);
+        TOKEN_TYPE_CASE(LOGICAL_OR);
+        TOKEN_TYPE_CASE(MODULUS);
+        TOKEN_TYPE_CASE(IDENTIFIER);
+        TOKEN_TYPE_CASE(OPEN_PAREN);
+        TOKEN_TYPE_CASE(CLOSE_PAREN);
+        TOKEN_TYPE_CASE(OPEN_BRACKET);
+        TOKEN_TYPE_CASE(CLOSE_BRACKET);
+        TOKEN_TYPE_CASE(OPEN_BRACE);
+        TOKEN_TYPE_CASE(CLOSE_BRACE);
+        TOKEN_TYPE_CASE(PERIOD);
+        TOKEN_TYPE_CASE(COLON);
+        TOKEN_TYPE_CASE(COMMA);
+        TOKEN_TYPE_CASE(TERMINATOR);
+        TOKEN_TYPE_CASE(IF);
+        TOKEN_TYPE_CASE(ELSE_IF);
+        TOKEN_TYPE_CASE(ELSE);
+        TOKEN_TYPE_CASE(END_IF);
+        TOKEN_TYPE_CASE(WHILE);
+        TOKEN_TYPE_CASE(END_WHILE);
+        TOKEN_TYPE_CASE(REPEAT);
+        TOKEN_TYPE_CASE(UNTIL);
+        TOKEN_TYPE_CASE(FUNC);
+        TOKEN_TYPE_CASE(END_FUNC);
+        TOKEN_TYPE_CASE(PARAM);
+        TOKEN_TYPE_CASE(END_PARAM);
+        TOKEN_TYPE_CASE(HEADING);
+        TOKEN_TYPE_CASE(END_HEADING);
+        TOKEN_TYPE_CASE(CTX_CONST);
+        TOKEN_TYPE_CASE(CTX_IMPORT);
+        TOKEN_TYPE_CASE(CTX_NEW);
+        TOKEN_TYPE_CASE(CTX_RETURN);
+        TOKEN_TYPE_CASE(CTX_STATIC);
+        TOKEN_TYPE_CASE(CTX_THIS);
+        TOKEN_TYPE_CASE(GLOBAL);
+        TOKEN_TYPE_CASE(BUILTIN);
+        TOKEN_TYPE_CASE(INIT);
+        TOKEN_TYPE_CASE(LOOP);
+        TOKEN_TYPE_CASE(BAILOUT);
+        TOKEN_TYPE_CASE(PERTURB_INIT);
+        TOKEN_TYPE_CASE(PERTURB_LOOP);
+        TOKEN_TYPE_CASE(DEFAULT);
+        TOKEN_TYPE_CASE(SWITCH);
+        TOKEN_TYPE_CASE(P1);
+        TOKEN_TYPE_CASE(P2);
+        TOKEN_TYPE_CASE(P3);
+        TOKEN_TYPE_CASE(P4);
+        TOKEN_TYPE_CASE(P5);
+        TOKEN_TYPE_CASE(PIXEL);
+        TOKEN_TYPE_CASE(LAST_SQR);
+        TOKEN_TYPE_CASE(RAND);
+        TOKEN_TYPE_CASE(PI);
+        TOKEN_TYPE_CASE(E);
+        TOKEN_TYPE_CASE(MAX_ITER);
+        TOKEN_TYPE_CASE(SCREEN_MAX);
+        TOKEN_TYPE_CASE(SCREEN_PIXEL);
+        TOKEN_TYPE_CASE(WHITE_SQUARE);
+        TOKEN_TYPE_CASE(IS_MAND);
+        TOKEN_TYPE_CASE(CENTER);
+        TOKEN_TYPE_CASE(MAG_X_MAG);
+        TOKEN_TYPE_CASE(ROT_SKEW);
+        TOKEN_TYPE_CASE(SINH);
+        TOKEN_TYPE_CASE(COSH);
+        TOKEN_TYPE_CASE(COSXX);
+        TOKEN_TYPE_CASE(SIN);
+        TOKEN_TYPE_CASE(COS);
+        TOKEN_TYPE_CASE(COTANH);
+        TOKEN_TYPE_CASE(COTAN);
+        TOKEN_TYPE_CASE(TANH);
+        TOKEN_TYPE_CASE(TAN);
+        TOKEN_TYPE_CASE(SQRT);
+        TOKEN_TYPE_CASE(LOG);
+        TOKEN_TYPE_CASE(EXP);
+        TOKEN_TYPE_CASE(ABS);
+        TOKEN_TYPE_CASE(CONJ);
+        TOKEN_TYPE_CASE(REAL);
+        TOKEN_TYPE_CASE(IMAG);
+        TOKEN_TYPE_CASE(FLIP);
+        TOKEN_TYPE_CASE(FN1);
+        TOKEN_TYPE_CASE(FN2);
+        TOKEN_TYPE_CASE(FN3);
+        TOKEN_TYPE_CASE(FN4);
+        TOKEN_TYPE_CASE(SRAND);
+        TOKEN_TYPE_CASE(ASINH);
+        TOKEN_TYPE_CASE(ACOSH);
+        TOKEN_TYPE_CASE(ASIN);
+        TOKEN_TYPE_CASE(ACOS);
+        TOKEN_TYPE_CASE(ATANH);
+        TOKEN_TYPE_CASE(ATAN);
+        TOKEN_TYPE_CASE(CABS);
+        TOKEN_TYPE_CASE(SQR);
+        TOKEN_TYPE_CASE(FLOOR);
+        TOKEN_TYPE_CASE(CEIL);
+        TOKEN_TYPE_CASE(TRUNC);
+        TOKEN_TYPE_CASE(ROUND);
+        TOKEN_TYPE_CASE(IDENT);
+        TOKEN_TYPE_CASE(ONE);
+        TOKEN_TYPE_CASE(ZERO);
+        TOKEN_TYPE_CASE(INVALID);
+        TOKEN_TYPE_CASE(TRUE);
+        TOKEN_TYPE_CASE(FALSE);
+        TOKEN_TYPE_CASE(STRING);
+        TOKEN_TYPE_CASE(TYPE_BOOL);
+        TOKEN_TYPE_CASE(TYPE_INT);
+        TOKEN_TYPE_CASE(TYPE_FLOAT);
+        TOKEN_TYPE_CASE(TYPE_COMPLEX);
+        TOKEN_TYPE_CASE(TYPE_COLOR);
+        TOKEN_TYPE_CASE(CONSTANT_IDENTIFIER);
     }
 
-    return "?Unknown";
+    return "TokenType(" + std::to_string(static_cast<int>(value)) + ")";
 }
 
 Lexer::Lexer(std::string_view input) :
-    m_input(input),
-    m_position(0)
+    Lexer(input, Options{})
+{
+}
+
+Lexer::Lexer(std::string_view input, Options options) :
+    m_options(options),
+    m_input(input)
 {
 }
 
@@ -319,6 +206,14 @@ Token Lexer::get_token()
     if (ch == '"')
     {
         return lex_string();
+    }
+
+    if (m_options.allow_identifier_prefix)
+    {
+        if (ch == '#')
+        {
+            return lex_constant_identifier();
+        }
     }
 
     // Check for operators
@@ -850,6 +745,14 @@ Token Lexer::lex_identifier()
     return {TokenType::IDENTIFIER, to_lower(identifier), start_loc, length};
 }
 
+Token Lexer::lex_constant_identifier()
+{
+    advance();
+    Token result{lex_identifier()};
+    result.type = TokenType::CONSTANT_IDENTIFIER;
+    return result;
+}
+
 Token Lexer::lex_string()
 {
     size_t start = m_position;
@@ -918,4 +821,4 @@ Token Lexer::lex_string()
     return {TokenType::INVALID, start_loc, length};
 }
 
-} // namespace formula
+} // namespace formula::lexer

@@ -23,8 +23,6 @@ enum class LexerErrorCode
     INVALID_NUMBER,
 };
 
-using LexerWarning = LexerErrorCode;
-
 enum class TokenType
 {
     NONE = 0,
@@ -47,6 +45,7 @@ enum class TokenType
     LOGICAL_OR,
     MODULUS,
     IDENTIFIER,
+    CONSTANT_IDENTIFIER,
     OPEN_PAREN,
     CLOSE_PAREN,
     OPEN_BRACKET,
@@ -152,7 +151,7 @@ enum class TokenType
     TYPE_COLOR,   // color type name
 };
 
-std::string_view to_string(TokenType value);
+std::string to_string(TokenType value);
 
 struct LexicalDiagnostic
 {
@@ -200,10 +199,16 @@ struct Token
     size_t length{};
 };
 
+struct Options
+{
+    bool allow_identifier_prefix{};
+};
+
 class Lexer
 {
 public:
     explicit Lexer(std::string_view input);
+    Lexer(std::string_view input, Options options);
 
     Token get_token();
     void put_token(Token token);
@@ -251,6 +256,7 @@ private:
     Token lex_number();
     bool is_number_start() const;
     Token lex_identifier();
+    Token lex_constant_identifier();
     Token lex_string();
     bool is_identifier_start() const;
     bool is_identifier_continue(char c) const;
@@ -259,11 +265,12 @@ private:
     void advance(size_t count = 1);
     SourceLocation position_to_location(size_t pos) const;
 
+    Options m_options;
     std::vector<LexicalDiagnostic> m_warnings;
     std::vector<LexicalDiagnostic> m_errors;
     std::string_view m_input;
-    size_t m_position;
-    SourceLocation m_source_location{1, 1};
+    size_t m_position{};
+    SourceLocation m_source_location;
     std::deque<Token> m_peek_tokens;
 };
 

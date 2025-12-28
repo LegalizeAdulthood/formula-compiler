@@ -8,10 +8,21 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <string>
 
 using namespace formula::lexer;
 using namespace testing;
+
+namespace formula::lexer
+{
+
+static std::ostream &operator<<(std::ostream &os, TokenType type)
+{
+    return os << to_string(type);
+}
+
+} // namespace formula::lexer
 
 namespace formula::test
 {
@@ -767,6 +778,26 @@ TEST(TestLexer, putTokenEmptyLexer)
     EXPECT_EQ(TokenType::INTEGER, retrieved.type);
     EXPECT_EQ(99, std::get<int>(retrieved.value));
     EXPECT_EQ(TokenType::END_OF_INPUT, end.type);
+}
+
+TEST(TestLexer, createWithOptions)
+{
+    Lexer lexer{"42", Options{true}};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::INTEGER, token.type);
+    EXPECT_EQ(42, std::get<int>(token.value));
+}
+
+TEST(TestLexer, constantIdentifier)
+{
+    Lexer lexer{"#pixel", Options{true}};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::CONSTANT_IDENTIFIER, token.type);
+    EXPECT_EQ("pixel", std::get<std::string>(token.value));
 }
 
 } // namespace formula::test
