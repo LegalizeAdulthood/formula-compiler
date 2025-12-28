@@ -17,9 +17,10 @@ namespace formula::test
 
 TEST(TestLexer, skipsTrailingWhitespace)
 {
-    Lexer lexer("42   ");
-    Token token = lexer.get_token();
-    Token end_token = lexer.get_token();
+    Lexer lexer{"42   "};
+
+    const Token token{lexer.get_token()};
+    const Token end_token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token.type);
     EXPECT_EQ(42, std::get<int>(token.value));
@@ -28,11 +29,12 @@ TEST(TestLexer, skipsTrailingWhitespace)
 
 TEST(TestLexer, multipleNumbers)
 {
-    Lexer lexer("1 2.5 3");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
-    Token token3 = lexer.get_token();
-    Token end_token = lexer.get_token();
+    Lexer lexer{"1 2.5 3"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
+    const Token token3{lexer.get_token()};
+    const Token end_token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(1, std::get<int>(token1.value));
@@ -45,15 +47,17 @@ TEST(TestLexer, multipleNumbers)
 
 TEST(TestLexer, whitespaceOnly)
 {
-    Lexer lexer("   \t  ");
-    Token token = lexer.get_token();
+    Lexer lexer{"   \t  "};
+
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::END_OF_INPUT, token.type);
 }
 
 TEST(TestLexer, terminatorLF)
 {
-    Lexer lexer("1\n2");
+    Lexer lexer{"1\n2"};
+
     Token tokens[3];
     for (Token &t : tokens)
     {
@@ -67,7 +71,8 @@ TEST(TestLexer, terminatorLF)
 
 TEST(TestLexer, terminatorCRLF)
 {
-    Lexer lexer("1\r\n2");
+    Lexer lexer{"1\r\n2"};
+
     Token tokens[3];
     for (Token &t : tokens)
     {
@@ -81,11 +86,12 @@ TEST(TestLexer, terminatorCRLF)
 
 TEST(TestLexer, peekDoesNotAdvance)
 {
-    Lexer lexer("42 3.14");
-    Token peek_token = lexer.peek_token();
-    Token peek_again = lexer.peek_token(); // Peek again should return the same token
-    Token token1 = lexer.get_token();      // Now actually consume it
-    Token token2 = lexer.get_token();      // Next token should be the second number
+    Lexer lexer{"42 3.14"};
+
+    const Token peek_token{lexer.peek_token()};
+    const Token peek_again{lexer.peek_token()};
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, peek_token.type);
     EXPECT_EQ(42, std::get<int>(peek_token.value));
@@ -99,10 +105,10 @@ TEST(TestLexer, peekDoesNotAdvance)
 
 TEST(TestLexer, lineContinuationWithLF)
 {
-    Lexer lexer("1\\\n2");
+    Lexer lexer{"1\\\n2"};
 
-    const Token token1 = lexer.get_token();
-    const Token token2 = lexer.get_token();
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -110,10 +116,10 @@ TEST(TestLexer, lineContinuationWithLF)
 
 TEST(TestLexer, lineContinuationWithCRLF)
 {
-    Lexer lexer("1\\\r\n2");
+    Lexer lexer{"1\\\r\n2"};
 
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -121,9 +127,10 @@ TEST(TestLexer, lineContinuationWithCRLF)
 
 TEST(TestLexer, lineContinuationMultiple)
 {
-    Lexer lexer("1\\\n\\\n2");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1\\\n\\\n2"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -131,9 +138,10 @@ TEST(TestLexer, lineContinuationMultiple)
 
 TEST(TestLexer, lineContinuationWithSpaces)
 {
-    Lexer lexer("1 \\\n  2");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1 \\\n  2"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -141,9 +149,10 @@ TEST(TestLexer, lineContinuationWithSpaces)
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespace)
 {
-    Lexer lexer("1\\ \n2");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1\\ \n2"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -156,9 +165,10 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
 {
-    Lexer lexer("1\\ \r\n2");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1\\ \r\n2"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -171,10 +181,11 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
 
 TEST(TestLexer, multipleWarnings)
 {
-    Lexer lexer("1\\ \n2\\ \n3\n");
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
-    Token token3 = lexer.get_token();
+    Lexer lexer{"1\\ \n2\\ \n3\n"};
+
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
+    const Token token3{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INTEGER, token2.type);
@@ -192,10 +203,11 @@ TEST(TestLexer, multipleWarnings)
 
 TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
 {
-    Lexer lexer("1\\2");
-    Token token1 = lexer.get_token();
-    Token invalid = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1\\2"};
+
+    const Token token1{lexer.get_token()};
+    const Token invalid{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(TokenType::INVALID, invalid.type);
@@ -204,21 +216,23 @@ TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
 
 TEST(TestLexer, positionTracking)
 {
-    Lexer lexer("  42  ");
+    Lexer lexer{"  42  "};
+
     size_t pos = lexer.position();
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(0U, pos);
-    EXPECT_EQ(3U, token.location.column); // After skipping leading whitespace
+    EXPECT_EQ(3U, token.location.column);
     EXPECT_EQ(2U, token.length);
 }
 
 TEST(TestLexer, singleExclamationInvalid)
 {
-    Lexer lexer("1!2");
-    Token token1 = lexer.get_token();
-    Token op = lexer.get_token();
-    Token token2 = lexer.get_token();
+    Lexer lexer{"1!2"};
+
+    const Token token1{lexer.get_token()};
+    const Token op{lexer.get_token()};
+    const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(1, std::get<int>(token1.value));
@@ -230,10 +244,10 @@ TEST(TestLexer, singleExclamationInvalid)
 
 TEST(TestLexer, varColon)
 {
-    Lexer lexer("ball_size:");
+    Lexer lexer{"ball_size:"};
 
-    const Token t1 = lexer.get_token();
-    const Token t2 = lexer.get_token();
+    const Token t1{lexer.get_token()};
+    const Token t2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::IDENTIFIER, t1.type);
     EXPECT_EQ("ball_size", std::get<std::string>(t1.value));
@@ -245,9 +259,9 @@ TEST(TestLexer, varColon)
 
 TEST(TestLexer, builtinVariablsHaveNameValue)
 {
-    Lexer lexer("maxit");
+    Lexer lexer{"maxit"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::MAX_ITER, token.type);
     EXPECT_EQ("maxit", std::get<std::string>(token.value));
@@ -257,7 +271,8 @@ TEST(TestLexer, builtinVariablsHaveNameValue)
 
 TEST(TestLexer, parenthesesWithIdentifiers)
 {
-    Lexer lexer("f(x)");
+    Lexer lexer{"f(x)"};
+
     Token tokens[4];
     for (int i = 0; i < 4; ++i)
     {
@@ -274,8 +289,9 @@ TEST(TestLexer, parenthesesWithIdentifiers)
 
 TEST(TestLexer, identifiersAreMadeLowerCase)
 {
-    Lexer lexer("FOO");
-    Token token = lexer.get_token();
+    Lexer lexer{"FOO"};
+
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::IDENTIFIER, token.type);
     EXPECT_EQ("foo", std::get<std::string>(token.value));
@@ -283,9 +299,9 @@ TEST(TestLexer, identifiersAreMadeLowerCase)
 
 TEST(TestLexer, stringWithEscapedQuotes)
 {
-    Lexer lexer(R"text("He said \"Hello\" to me")text");
+    Lexer lexer{R"text("He said \"Hello\" to me")text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::STRING, token.type);
     EXPECT_EQ(R"text(He said "Hello" to me)text", std::get<std::string>(token.value));
@@ -293,9 +309,9 @@ TEST(TestLexer, stringWithEscapedQuotes)
 
 TEST(TestLexer, stringWithMultipleEscapedQuotes)
 {
-    Lexer lexer(R"text("She said \"Hello, Doctor Frankenstein\" and he laughed.")text");
+    Lexer lexer{R"text("She said \"Hello, Doctor Frankenstein\" and he laughed.")text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::STRING, token.type);
     EXPECT_EQ(R"text(She said "Hello, Doctor Frankenstein" and he laughed.)text", std::get<std::string>(token.value));
@@ -303,9 +319,9 @@ TEST(TestLexer, stringWithMultipleEscapedQuotes)
 
 TEST(TestLexer, emptyString)
 {
-    Lexer lexer(R"text("")text");
+    Lexer lexer{R"text("")text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::STRING, token.type);
     EXPECT_EQ("", std::get<std::string>(token.value));
@@ -313,27 +329,27 @@ TEST(TestLexer, emptyString)
 
 TEST(TestLexer, stringUnterminatedInvalid)
 {
-    Lexer lexer(R"text("unterminated)text");
+    Lexer lexer{R"text("unterminated)text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INVALID, token.type);
 }
 
 TEST(TestLexer, stringWithNewlineInvalid)
 {
-    Lexer lexer("\"line1\nline2\"");
+    Lexer lexer{"\"line1\nline2\""};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INVALID, token.type);
 }
 
 TEST(TestLexer, stringWithEscapedChar)
 {
-    Lexer lexer(R"text("line1\nline2")text");
+    Lexer lexer{R"text("line1\nline2")text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::STRING, token.type);
     EXPECT_EQ(R"text(line1nline2)text", std::get<std::string>(token.value));
@@ -341,9 +357,9 @@ TEST(TestLexer, stringWithEscapedChar)
 
 TEST(TestLexer, stringWithEscapedBackslash)
 {
-    Lexer lexer(R"("path\\to\\file")");
+    Lexer lexer{R"text("path\\to\\file")text"};
 
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::STRING, token.type);
     EXPECT_EQ(R"(path\to\file)", std::get<std::string>(token.value));
@@ -351,8 +367,8 @@ TEST(TestLexer, stringWithEscapedBackslash)
 
 TEST(TestLexer, integerLiteral)
 {
-    Lexer lexer("42");
-    Token token = lexer.get_token();
+    Lexer lexer{"42"};
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token.type);
     EXPECT_EQ(42, std::get<int>(token.value));
@@ -360,8 +376,9 @@ TEST(TestLexer, integerLiteral)
 
 TEST(TestLexer, floatingPointLiteral)
 {
-    Lexer lexer("42.5");
-    Token token = lexer.get_token();
+    Lexer lexer{"42.5"};
+
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(42.5, std::get<double>(token.value));
@@ -369,8 +386,9 @@ TEST(TestLexer, floatingPointLiteral)
 
 TEST(TestLexer, scientificNotationIsFloat)
 {
-    Lexer lexer("1e10");
-    Token token = lexer.get_token();
+    Lexer lexer{"1e10"};
+
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(1e10, std::get<double>(token.value));
@@ -378,8 +396,9 @@ TEST(TestLexer, scientificNotationIsFloat)
 
 TEST(TestLexer, decimalPointMakesFloat)
 {
-    Lexer lexer("42.0");
-    Token token = lexer.get_token();
+    Lexer lexer{"42.0"};
+
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::NUMBER, token.type);
     EXPECT_DOUBLE_EQ(42.0, std::get<double>(token.value));
@@ -390,7 +409,7 @@ struct TextTokenParam
 {
     std::string_view name;
     std::string_view input;
-    TokenType token{};
+    const TokenType token{};
     size_t column{1};
     size_t length{};
 };
@@ -407,9 +426,9 @@ class TokenRecognized : public TestWithParam<TextTokenParam>
 TEST_P(TokenRecognized, recognized)
 {
     const TextTokenParam &param = GetParam();
+    Lexer lexer{param.input};
 
-    Lexer lexer(param.input);
-    const Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
 
     EXPECT_EQ(param.token, token.type);
     EXPECT_EQ(param.column, token.location.column);
@@ -551,166 +570,121 @@ static TextTokenParam s_params[]{
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));
 
-// Tests for put_token method
 TEST(TestLexer, putTokenSingleToken)
 {
-    Lexer lexer("42 3.14");
+    Lexer lexer{"42 3.14"};
 
-    // Get first token
-    Token token1 = lexer.get_token();
+    const Token token1{lexer.get_token()};
+    lexer.put_token(token1);
+    const Token token_again{lexer.get_token()};
+    const Token token2{lexer.get_token()};
+
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(42, std::get<int>(token1.value));
-
-    // Put it back
-    lexer.put_token(token1);
-
-    // Get it again - should be the same token
-    Token token_again = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, token_again.type);
     EXPECT_EQ(42, std::get<int>(token_again.value));
     EXPECT_EQ(token1.location, token_again.location);
     EXPECT_EQ(token1.length, token_again.length);
-
-    // Next token should be the second number
-    Token token2 = lexer.get_token();
     EXPECT_EQ(TokenType::NUMBER, token2.type);
     EXPECT_DOUBLE_EQ(3.14, std::get<double>(token2.value));
 }
 
 TEST(TestLexer, putTokenMultipleTokens)
 {
-    Lexer lexer("1 2 3");
+    Lexer lexer{"1 2 3"};
 
-    // Get first two tokens
-    Token token1 = lexer.get_token();
-    Token token2 = lexer.get_token();
+    const Token token1{lexer.get_token()};
+    const Token token2{lexer.get_token()};
+    lexer.put_token(token1);
+    lexer.put_token(token2);
+    const Token retrieved1{lexer.get_token()};
+    const Token retrieved2{lexer.get_token()};
+    const Token token3{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
     EXPECT_EQ(1, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::INTEGER, token2.type);
     EXPECT_EQ(2, std::get<int>(token2.value));
-
-    // Put them back in order (first put 1, then put 2)
-    // With push_back/pop_front, this creates queue: [1, 2]
-    // So we'll get 1 first, then 2
-    lexer.put_token(token1);
-    lexer.put_token(token2);
-
-    // Get them back - should come out in FIFO order (1, then 2)
-    Token retrieved1 = lexer.get_token();
-    Token retrieved2 = lexer.get_token();
-
     EXPECT_EQ(TokenType::INTEGER, retrieved1.type);
     EXPECT_EQ(1, std::get<int>(retrieved1.value));
     EXPECT_EQ(TokenType::INTEGER, retrieved2.type);
     EXPECT_EQ(2, std::get<int>(retrieved2.value));
-
-    // Next token should be 3
-    Token token3 = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, token3.type);
     EXPECT_EQ(3, std::get<int>(token3.value));
 }
 
 TEST(TestLexer, putTokenWithPeek)
 {
-    Lexer lexer("42 3.14");
+    Lexer lexer{"42 3.14"};
 
-    // Peek at first token
-    Token peeked = lexer.peek_token();
+    const Token peeked{lexer.peek_token()};
+    const Token token1{lexer.get_token()};
+    lexer.put_token(token1);
+    const Token peeked_again{lexer.peek_token()};
+    const Token retrieved{lexer.get_token()};
+
     EXPECT_EQ(TokenType::INTEGER, peeked.type);
     EXPECT_EQ(42, std::get<int>(peeked.value));
-
-    // Get and consume it
-    Token token1 = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-
-    // Put it back
-    lexer.put_token(token1);
-
-    // Peek should now see the put-back token
-    Token peeked_again = lexer.peek_token();
     EXPECT_EQ(TokenType::INTEGER, peeked_again.type);
     EXPECT_EQ(42, std::get<int>(peeked_again.value));
-
-    // Get should consume the put-back token
-    Token retrieved = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, retrieved.type);
     EXPECT_EQ(42, std::get<int>(retrieved.value));
 }
 
 TEST(TestLexer, putTokenDifferentTypes)
 {
-    Lexer lexer("xyz");
+    Lexer lexer{"xyz"};
 
-    // Create tokens of different types using proper constructors
-    Token int_token(42, {}, 1);                                         // int constructor
-    Token string_token(TokenType::STRING, std::string("hello"), {}, 1); // string constructor
-    Token op_token(TokenType::PLUS, {}, 1);                             // TokenType constructor
-
-    // Put them all back
+    const Token int_token(42, {}, 1);
+    const Token string_token(TokenType::STRING, std::string("hello"), {}, 1);
+    const Token op_token(TokenType::PLUS, {}, 1);
     lexer.put_token(int_token);
     lexer.put_token(string_token);
     lexer.put_token(op_token);
+    const Token retrieved1{lexer.get_token()};
+    const Token retrieved2{lexer.get_token()};
+    const Token retrieved3{lexer.get_token()};
+    const Token original{lexer.get_token()};
 
-    // Retrieve them in FIFO order
-    Token retrieved1 = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, retrieved1.type);
     EXPECT_EQ(42, std::get<int>(retrieved1.value));
-
-    Token retrieved2 = lexer.get_token();
     EXPECT_EQ(TokenType::STRING, retrieved2.type);
     EXPECT_EQ("hello", std::get<std::string>(retrieved2.value));
-
-    Token retrieved3 = lexer.get_token();
     EXPECT_EQ(TokenType::PLUS, retrieved3.type);
-
-    // Original lexer content should still be there
-    Token original = lexer.get_token();
     EXPECT_EQ(TokenType::IDENTIFIER, original.type);
     EXPECT_EQ("xyz", std::get<std::string>(original.value));
 }
 
 TEST(TestLexer, putTokenAfterEndOfInput)
 {
-    Lexer lexer("42");
+    Lexer lexer{"42"};
 
-    // Consume the only token
-    Token token = lexer.get_token();
-    EXPECT_EQ(TokenType::INTEGER, token.type);
-
-    // Get END_OF_INPUT
-    Token end_token = lexer.get_token();
-    EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
-
-    // Put a token back
+    const Token token{lexer.get_token()};
+    const Token end_token{lexer.get_token()};
     lexer.put_token(token);
+    const Token retrieved{lexer.get_token()};
+    const Token end_again{lexer.get_token()};
 
-    // Should get the put-back token
-    Token retrieved = lexer.get_token();
+    EXPECT_EQ(TokenType::INTEGER, token.type);
+    EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
     EXPECT_EQ(TokenType::INTEGER, retrieved.type);
     EXPECT_EQ(42, std::get<int>(retrieved.value));
-
-    // Should get END_OF_INPUT again
-    Token end_again = lexer.get_token();
     EXPECT_EQ(TokenType::END_OF_INPUT, end_again.type);
 }
 
 TEST(TestLexer, putTokenPreservesTokenDetails)
 {
-    Lexer lexer("  maxit  ");
+    Lexer lexer{"  maxit  "};
 
-    // Get a token with specific position and length
-    Token token = lexer.get_token();
+    const Token token{lexer.get_token()};
+    const SourceLocation orig_position{token.location};
+    const size_t orig_length{token.length};
+    lexer.put_token(token);
+    const Token retrieved{lexer.get_token()};
+
     EXPECT_EQ(TokenType::MAX_ITER, token.type);
     EXPECT_EQ("maxit", std::get<std::string>(token.value));
-    SourceLocation orig_position = token.location;
-    size_t orig_length = token.length;
-
-    // Put it back
-    lexer.put_token(token);
-
-    // Retrieve it and verify all details match
-    Token retrieved = lexer.get_token();
     EXPECT_EQ(TokenType::MAX_ITER, retrieved.type);
     EXPECT_EQ("maxit", std::get<std::string>(retrieved.value));
     EXPECT_EQ(orig_position, retrieved.location);
@@ -719,103 +693,78 @@ TEST(TestLexer, putTokenPreservesTokenDetails)
 
 TEST(TestLexer, putTokenMultiplePeeks)
 {
-    Lexer lexer("1 2 3");
+    Lexer lexer{"1 2 3"};
 
-    // Get and put back a token
-    Token token1 = lexer.get_token();
+    const Token token1{lexer.get_token()};
     lexer.put_token(token1);
+    const Token peek1{lexer.peek_token()};
+    const Token peek2{lexer.peek_token()};
+    const Token peek3{lexer.peek_token()};
+    const Token consumed{lexer.get_token()};
 
-    // Peek multiple times
-    Token peek1 = lexer.peek_token();
-    Token peek2 = lexer.peek_token();
-    Token peek3 = lexer.peek_token();
-
-    // All peeks should return the same token
     EXPECT_EQ(TokenType::INTEGER, peek1.type);
     EXPECT_EQ(1, std::get<int>(peek1.value));
     EXPECT_EQ(TokenType::INTEGER, peek2.type);
     EXPECT_EQ(1, std::get<int>(peek2.value));
     EXPECT_EQ(TokenType::INTEGER, peek3.type);
     EXPECT_EQ(1, std::get<int>(peek3.value));
-
-    // Actually consume it
-    Token consumed = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, consumed.type);
     EXPECT_EQ(1, std::get<int>(consumed.value));
 }
 
 TEST(TestLexer, putTokenComplexSequence)
 {
-    Lexer lexer("x + y");
+    Lexer lexer{"x + y"};
 
-    // Get all tokens
-    Token id1 = lexer.get_token(); // x
-    Token op = lexer.get_token();  // +
-    Token id2 = lexer.get_token(); // y
+    const Token id1{lexer.get_token()};
+    const Token op{lexer.get_token()};
+    const Token id2{lexer.get_token()};
+    lexer.put_token(id1);
+    lexer.put_token(op);
+    lexer.put_token(id2);
+    const Token r1{lexer.get_token()};
+    const Token r2{lexer.get_token()};
+    const Token r3{lexer.get_token()};
+    const Token end{lexer.get_token()};
 
     EXPECT_EQ(TokenType::IDENTIFIER, id1.type);
     EXPECT_EQ("x", std::get<std::string>(id1.value));
     EXPECT_EQ(TokenType::PLUS, op.type);
     EXPECT_EQ(TokenType::IDENTIFIER, id2.type);
     EXPECT_EQ("y", std::get<std::string>(id2.value));
-
-    // Put them all back in order (x, +, y)
-    // With FIFO behavior: put x, put +, put y creates queue [x, +, y]
-    lexer.put_token(id1);
-    lexer.put_token(op);
-    lexer.put_token(id2);
-
-    // Retrieve in original order (FIFO)
-    Token r1 = lexer.get_token();
-    Token r2 = lexer.get_token();
-    Token r3 = lexer.get_token();
-
     EXPECT_EQ(TokenType::IDENTIFIER, r1.type);
     EXPECT_EQ("x", std::get<std::string>(r1.value));
     EXPECT_EQ(TokenType::PLUS, r2.type);
     EXPECT_EQ(TokenType::IDENTIFIER, r3.type);
     EXPECT_EQ("y", std::get<std::string>(r3.value));
-
-    // Should be at end now
-    Token end = lexer.get_token();
     EXPECT_EQ(TokenType::END_OF_INPUT, end.type);
 }
 
 TEST(TestLexer, putTokenWithInvalidToken)
 {
-    Lexer lexer("42");
+    Lexer lexer{"42"};
 
-    // Create an invalid token
-    Token invalid_token(TokenType::INVALID, {}, 1);
-
-    // Put it back
+    const Token invalid_token(TokenType::INVALID, {}, 1);
     lexer.put_token(invalid_token);
+    const Token retrieved{lexer.get_token()};
+    const Token original{lexer.get_token()};
 
-    // Should retrieve the invalid token
-    Token retrieved = lexer.get_token();
     EXPECT_EQ(TokenType::INVALID, retrieved.type);
-
-    // Next should be the original content
-    Token original = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, original.type);
     EXPECT_EQ(42, std::get<int>(original.value));
 }
 
 TEST(TestLexer, putTokenEmptyLexer)
 {
-    Lexer lexer("");
+    Lexer lexer{""};
 
-    // Create and put a token on empty lexer
-    Token token(99, {}, 1); // int constructor
+    const Token token(99, {}, 1);
     lexer.put_token(token);
+    const Token retrieved{lexer.get_token()};
+    const Token end{lexer.get_token()};
 
-    // Should retrieve the put-back token
-    Token retrieved = lexer.get_token();
     EXPECT_EQ(TokenType::INTEGER, retrieved.type);
     EXPECT_EQ(99, std::get<int>(retrieved.value));
-
-    // Should get END_OF_INPUT
-    Token end = lexer.get_token();
     EXPECT_EQ(TokenType::END_OF_INPUT, end.type);
 }
 
