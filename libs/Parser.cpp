@@ -203,6 +203,7 @@ bool FormulaParser::builtin_section()
 
     if (value != 1 && value != 2)
     {
+        error(ErrorCode::BUILTIN_SECTION_INVALID_TYPE);
         return false;
     }
 
@@ -1280,6 +1281,7 @@ Expr FormulaParser::if_statement()
     // Consume the endif token
     if (!match(TokenType::END_IF))
     {
+        error(ErrorCode::EXPECTED_ENDIF);
         return nullptr;
     }
 
@@ -1314,6 +1316,7 @@ Expr FormulaParser::if_statement_no_endif()
     // Accept comma or newline after condition
     if (!skip_separators())
     {
+        error(ErrorCode::EXPECTED_STATEMENT_SEPARATOR);
         return nullptr;
     }
 
@@ -1336,6 +1339,7 @@ Expr FormulaParser::if_statement_no_endif()
     {
         if (!skip_separators())
         {
+            error(ErrorCode::EXPECTED_STATEMENT_SEPARATOR);
             return nullptr;
         }
         else_block = block();

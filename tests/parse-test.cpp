@@ -46,6 +46,10 @@ std::ostream &operator<<(std::ostream &os, ErrorCode code)
         return os << "INVALID_DEFAULT_METHOD";
     case ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS:
         return os << "BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS";
+    case ErrorCode::EXPECTED_ENDIF:
+        return os << "EXPECTED_ENDIF";
+    case ErrorCode::EXPECTED_STATEMENT_SEPARATOR:
+        return os << "EXPECTED_STATEMENT_SEPARATOR";
     }
     return os << "ErrorCode(" << static_cast<int>(code) << ')';
 }
@@ -554,12 +558,13 @@ static std::string s_reserved_words[]{
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithoutEndIf", "if(1)"},                            //
-    {"ifElseWithoutEndIf", "if(1)\nelse"},                  //
-    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},           //
-    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"}, //
-    {"builtinSectionBogus", "builtin:type=0"},              //
-    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},    //
+    {"ifWithoutThen", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                  //
+    {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                             //
+    {"ifElseWithoutEndIf", "if(1)\nelse\n", ErrorCode::EXPECTED_ENDIF},                   //
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)\n", ErrorCode::EXPECTED_ENDIF},            //
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},  //
+    {"builtinSectionBogus", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE}, //
+    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                  //
 };
 
 TEST_P(ParseFailures, parse)
@@ -570,12 +575,9 @@ TEST_P(ParseFailures, parse)
     const ast::FormulaSectionsPtr result{parser->parse()};
 
     EXPECT_FALSE(result);
-    if (param.expected_error != ErrorCode::NONE)
-    {
-        ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
-        const Diagnostic &error{parser->get_errors().back()};
-        EXPECT_EQ(param.expected_error, error.code);
-    }
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    const Diagnostic &error{parser->get_errors().back()};
+    EXPECT_EQ(param.expected_error, error.code);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
