@@ -427,19 +427,21 @@ void Lexer::skip_whitespace()
         // Skip only spaces and tabs, not newlines
         if (ch == ' ' || ch == '\t' || ch == '\r')
         {
-            ++m_position;
+            advance();
         }
         else if (ch == '\\')
         {
             // Check for line continuation: backslash followed by optional whitespace and newline
             size_t look_ahead = m_position + 1;
-            size_t trailing_ws{};
-            const auto warn_trailing_ws = [&trailing_ws, this]
+            size_t trailing_ws_pos{};
+            const auto warn_trailing_ws = [&trailing_ws_pos, this]
             {
-                LexerErrorCode code = LexerErrorCode::CONTINUATION_WITH_WHITESPACE;
-                size_t pos = trailing_ws;
-                warning(code, pos);
-                trailing_ws = 0;
+                if (trailing_ws_pos != 0)
+                {
+                    SourceLocation loc = position_to_location(trailing_ws_pos);
+                    warning(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, loc);
+                    trailing_ws_pos = 0;
+                }
             };
 
             // Skip any trailing whitespace after the backslash
@@ -448,7 +450,7 @@ void Lexer::skip_whitespace()
                 char next_ch = m_input[look_ahead];
                 if (next_ch == ' ' || next_ch == '\t')
                 {
-                    trailing_ws = look_ahead;
+                    trailing_ws_pos = look_ahead;
                     ++look_ahead;
                 }
                 else if (next_ch == '\r')
@@ -457,20 +459,44 @@ void Lexer::skip_whitespace()
                     if (look_ahead + 1 < m_input.length() && m_input[look_ahead + 1] == '\n')
                     {
                         // Skip backslash, trailing whitespace, CR, and LF
+                        size_t old_pos = m_position;
                         m_position = look_ahead + 2;
+                        // Update source location
+                        for (size_t i = old_pos; i < m_position; ++i)
+                        {
+                            if (m_input[i] == '\n')
+                            {
+                                ++m_source_location.line;
+                                m_source_location.column = 1;
+                            }
+                        }
                         warn_trailing_ws();
                         break;
                     }
 
                     // Just \r, treat as continuation
+                    size_t old_pos = m_position;
                     m_position = look_ahead + 1;
+                    // Update source location
+                    for (size_t i = old_pos; i < m_position; ++i)
+                    {
+                        if (m_input[i] == '\n')
+                        {
+                            ++m_source_location.line;
+                            m_source_location.column = 1;
+                        }
+                    }
                     warn_trailing_ws();
                     break;
                 }
                 else if (next_ch == '\n')
                 {
                     // Skip backslash, trailing whitespace, and newline
+                    size_t old_pos = m_position;
                     m_position = look_ahead + 1;
+                    // Update source location
+                    ++m_source_location.line;
+                    m_source_location.column = 1;
                     warn_trailing_ws();
                     break;
                 }
@@ -539,6 +565,7 @@ bool Lexer::is_number_start() const
 Token Lexer::lex_number()
 {
     size_t start = m_position;
+    SourceLocation start_loc = m_source_location;
     std::string number_str;
     bool has_decimal_point = false;
     bool has_exponent = false;
@@ -597,7 +624,7 @@ Token Lexer::lex_number()
                 advance();
             }
             size_t length = m_position - start;
-            error(LexerErrorCode::INVALID_NUMBER, start);
+            error(LexerErrorCode::INVALID_NUMBER, start_loc);
             return {TokenType::INVALID, start, length};
         }
     }
@@ -642,7 +669,37 @@ char Lexer::peek_char(size_t offset) const
 
 void Lexer::advance(size_t count)
 {
-    m_position += count;
+    for (size_t i = 0; i < count && m_position < m_input.length(); ++i)
+    {
+        if (m_input[m_position] == '\n')
+        {
+            ++m_source_location.line;
+            m_source_location.column = 1;
+        }
+        else
+        {
+            ++m_source_location.column;
+        }
+        ++m_position;
+    }
+}
+
+SourceLocation Lexer::position_to_location(size_t pos) const
+{
+    SourceLocation loc{1, 1};
+    for (size_t i = 0; i < pos && i < m_input.length(); ++i)
+    {
+        if (m_input[i] == '\n')
+        {
+            ++loc.line;
+            loc.column = 1;
+        }
+        else
+        {
+            ++loc.column;
+        }
+    }
+    return loc;
 }
 
 bool Lexer::is_identifier_start() const

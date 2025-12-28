@@ -558,13 +558,16 @@ static std::string s_reserved_words[]{
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithoutThen", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                  //
-    {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                             //
-    {"ifElseWithoutEndIf", "if(1)\nelse\n", ErrorCode::EXPECTED_ENDIF},                   //
-    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)\n", ErrorCode::EXPECTED_ENDIF},            //
-    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},  //
-    {"builtinSectionBogus", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE}, //
-    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                  //
+    {"ifWithoutSeparator", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                            //
+    {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                                            //
+    {"ifElseWithoutSeparator", "if(1)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                  //
+    {"ifElseWithoutEndIf", "if(1)\nelse\n", ErrorCode::EXPECTED_ENDIF},                                  //
+    {"ifElseIfWithoutSeparator", "if(1)\nelseif(0)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},           //
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)\n", ErrorCode::EXPECTED_ENDIF},                           //
+    {"ifElseIfElseWithoutSeparator", "if(1)\nelseif(0)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR}, //
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},                 //
+    {"builtinBadType", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                     //
+    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
 };
 
 TEST_P(ParseFailures, parse)

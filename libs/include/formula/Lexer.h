@@ -21,6 +21,8 @@ enum class LexerErrorCode
     INVALID_NUMBER,
 };
 
+using LexerWarning = LexerErrorCode;
+
 enum class TokenType
 {
     NONE = 0,
@@ -150,10 +152,16 @@ enum class TokenType
 
 std::string_view to_string(TokenType value);
 
+struct SourceLocation
+{
+    size_t line{1};
+    size_t column{1};
+};
+
 struct LexicalDiagnostic
 {
     LexerErrorCode code{};
-    size_t position{};
+    SourceLocation location{};
 };
 
 struct Token
@@ -210,6 +218,10 @@ public:
     {
         return m_position;
     }
+    SourceLocation source_location() const
+    {
+        return m_source_location;
+    }
     bool at_end() const
     {
         return m_position >= m_input.length();
@@ -226,19 +238,19 @@ public:
 private:
     void warning(LexerErrorCode code)
     {
-        m_warnings.push_back(LexicalDiagnostic{code, m_position});
+        m_warnings.push_back(LexicalDiagnostic{code, m_source_location});
     }
-    void warning(LexerErrorCode code, size_t pos)
+    void warning(LexerErrorCode code, SourceLocation loc)
     {
-        m_warnings.push_back(LexicalDiagnostic{code, pos});
+        m_warnings.push_back(LexicalDiagnostic{code, loc});
     }
     void error(LexerErrorCode code)
     {
-        m_errors.push_back(LexicalDiagnostic{code, m_position});
+        m_errors.push_back(LexicalDiagnostic{code, m_source_location});
     }
-    void error(LexerErrorCode code, size_t pos)
+    void error(LexerErrorCode code, SourceLocation loc)
     {
-        m_errors.push_back(LexicalDiagnostic{code, pos});
+        m_errors.push_back(LexicalDiagnostic{code, loc});
     }
     void skip_whitespace();
     void skip_comment();
@@ -251,11 +263,13 @@ private:
     char current_char() const;
     char peek_char(size_t offset = 1) const;
     void advance(size_t count = 1);
+    SourceLocation position_to_location(size_t pos) const;
 
     std::vector<LexicalDiagnostic> m_warnings;
     std::vector<LexicalDiagnostic> m_errors;
     std::string_view m_input;
     size_t m_position;
+    SourceLocation m_source_location{1, 1};
     std::deque<Token> m_peek_tokens;
 };
 

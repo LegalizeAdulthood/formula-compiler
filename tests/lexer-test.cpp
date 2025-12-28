@@ -150,7 +150,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(2u, warning.position);
+    EXPECT_EQ(1u, warning.location.line);
+    EXPECT_EQ(3u, warning.location.column);
 }
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
@@ -164,7 +165,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(2u, warning.position);
+    EXPECT_EQ(1u, warning.location.line);
+    EXPECT_EQ(3u, warning.location.column);
 }
 
 TEST(TestLexer, multipleWarnings)
@@ -182,8 +184,10 @@ TEST(TestLexer, multipleWarnings)
     EXPECT_TRUE(std::all_of(warnings.begin(), warnings.end(),
         [](const LexicalDiagnostic &w) { return w.code == LexerErrorCode::CONTINUATION_WITH_WHITESPACE; }))
         << "all warnings should be CONTINUATION_WITH_WHITESPACE";
-    EXPECT_EQ(2U, warnings[0].position) << "location of first warning";
-    EXPECT_EQ(6U, warnings[1].position) << "location of second warning";
+    EXPECT_EQ(1u, warnings[0].location.line) << "line of first warning";
+    EXPECT_EQ(3u, warnings[0].location.column) << "column of first warning";
+    EXPECT_EQ(2u, warnings[1].location.line) << "line of second warning";
+    EXPECT_EQ(3u, warnings[1].location.column) << "column of second warning";
 }
 
 TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
