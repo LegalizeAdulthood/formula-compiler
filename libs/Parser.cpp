@@ -66,24 +66,25 @@ public:
 private:
     bool builtin_section();
     std::optional<double> signed_literal();
-    bool default_integer_setting(const std::string &name);
-    bool default_number_setting(const std::string &name);
+    Expr default_integer_setting(const std::string &name);
+    Expr default_number_setting(const std::string &name);
     std::optional<Complex> complex_number();
-    bool default_complex_setting(const std::string &name);
-    bool default_string_setting(const std::string &name);
-    bool default_method_setting();
-    bool default_perturb_setting();
-    bool default_precision_setting();
-    bool default_rating_setting();
-    bool default_render_setting();
+    Expr default_complex_setting(const std::string &name);
+    Expr default_string_setting(const std::string &name);
+    Expr default_enum_setting(const std::string &name);
+    Expr default_method_setting();
+    Expr default_perturb_setting();
+    Expr default_precision_setting();
+    Expr default_rating_setting();
+    Expr default_render_setting();
     std::optional<Expr> param_string(const std::string &name);
     std::optional<Expr> param_default(const std::string &type);
     std::optional<Expr> param_bool_expr(const std::string &name);
     std::optional<Expr> param_enum();
     std::optional<Expr> param_bool(const std::string &name);
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
-    bool default_param_block();
-    bool default_section();
+    Expr default_param_block();
+    Expr default_section();
     bool switch_section();
     std::optional<bool> section_formula();
     Expr sequence();
@@ -289,12 +290,12 @@ std::optional<double> FormulaParser::signed_literal()
     return {};
 }
 
-bool FormulaParser::default_integer_setting(const std::string &name)
+Expr FormulaParser::default_integer_setting(const std::string &name)
 {
     if (!check(TokenType::INTEGER))
     {
         error(ErrorCode::EXPECTED_INTEGER);
-        return false;
+        return nullptr;
     }
     const int value{integer()};
     advance();
@@ -302,31 +303,29 @@ bool FormulaParser::default_integer_setting(const std::string &name)
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, value);
-    return true;
+    return std::make_shared<SettingNode>(name, value);
 }
 
-bool FormulaParser::default_number_setting(const std::string &name)
+Expr FormulaParser::default_number_setting(const std::string &name)
 {
     const std::optional num{signed_literal()};
     if (!num)
     {
         error(ErrorCode::EXPECTED_FLOATING_POINT);
-        return false;
+        return nullptr;
     }
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, num.value());
-    return true;
+    return std::make_shared<SettingNode>(name, num.value());
 }
 
 std::optional<Complex> FormulaParser::complex_number()
@@ -399,30 +398,29 @@ std::optional<Complex> FormulaParser::complex_number()
     return Complex{real.value(), imag.value()};
 }
 
-bool FormulaParser::default_complex_setting(const std::string &name)
+Expr FormulaParser::default_complex_setting(const std::string &name)
 {
     std::optional value{complex_number()};
     if (!value)
     {
-        return false;
+        return nullptr;
     }
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, value.value());
-    return true;
+    return std::make_shared<SettingNode>(name, value.value());
 }
 
-bool FormulaParser::default_string_setting(const std::string &name)
+Expr FormulaParser::default_string_setting(const std::string &name)
 {
     if (!check(TokenType::STRING))
     {
         error(ErrorCode::EXPECTED_STRING);
-        return false;
+        return nullptr;
     }
     const std::string value{str()};
     advance();
@@ -430,41 +428,39 @@ bool FormulaParser::default_string_setting(const std::string &name)
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>(name, value);
-    return true;
+    return std::make_shared<SettingNode>(name, value);
 }
 
-bool FormulaParser::default_method_setting()
+Expr FormulaParser::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
         error(ErrorCode::EXPECTED_IDENTIFIER);
-        return false;
+        return nullptr;
     }
     const std::string method{str()};
     if (method != "guessing" && method != "multipass" && method != "onepass")
     {
         error(ErrorCode::DEFAULT_SECTION_INVALID_METHOD);
-        return false;
+        return nullptr;
     }
     advance(); // consume method value
 
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>("method", EnumName{method});
-    return true;
+    return std::make_shared<SettingNode>("method", EnumName{method});
 }
 
-bool FormulaParser::default_perturb_setting()
+Expr FormulaParser::default_perturb_setting()
 {
     if (check({TokenType::TRUE, TokenType::FALSE}))
     {
@@ -474,78 +470,75 @@ bool FormulaParser::default_perturb_setting()
         if (!check(TokenType::TERMINATOR))
         {
             error(ErrorCode::EXPECTED_TERMINATOR);
-            return false;
+            return nullptr;
         }
         advance();
 
-        m_ast->defaults = std::make_shared<SettingNode>("perturb", value);
-        return true;
+        return std::make_shared<SettingNode>("perturb", value);
     }
 
     Expr expr = conjunctive();
     if (!expr)
     {
-        return false;
+        return nullptr;
     }
 
     if (!check(TokenType::TERMINATOR))
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>("perturb", expr);
-    return true;
+    return std::make_shared<SettingNode>("perturb", expr);
 }
 
-bool FormulaParser::default_precision_setting()
+Expr FormulaParser::default_precision_setting()
 {
     Expr expr = conjunctive();
     if (!expr)
     {
-        return false;
+        return nullptr;
     }
 
     if (!check(TokenType::TERMINATOR))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>("precision", expr);
-    return true;
+    return std::make_shared<SettingNode>("precision", expr);
 }
 
-bool FormulaParser::default_rating_setting()
+Expr FormulaParser::default_rating_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
-        return false;
+        return nullptr;
     }
 
-    if (str() == "recommended" || str() == "average" || str() == "notrecommended")
+    if (str() != "recommended" && str() != "average" && str() != "notrecommended")
     {
-        const std::string rating{str() == "notrecommended" ? "notRecommended" : str()};
-        advance(); // consume rating value
-
-        if (!check(TokenType::TERMINATOR))
-        {
-            return false;
-        }
-        advance();
-
-        m_ast->defaults = std::make_shared<SettingNode>("rating", EnumName{rating});
-        return true;
+        return nullptr;
     }
-    return false;
+
+    const std::string rating{str() == "notrecommended" ? "notRecommended" : str()};
+    advance(); // consume rating value
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return nullptr;
+    }
+    advance();
+
+    return std::make_shared<SettingNode>("rating", EnumName{rating});
 }
 
-bool FormulaParser::default_render_setting()
+Expr FormulaParser::default_render_setting()
 {
     if (!check({TokenType::TRUE, TokenType::FALSE}))
     {
-        return false;
+        return nullptr;
     }
 
     const bool value{check(TokenType::TRUE)};
@@ -553,12 +546,11 @@ bool FormulaParser::default_render_setting()
 
     if (!check(TokenType::TERMINATOR))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<SettingNode>("render", value);
-    return true;
+    return std::make_shared<SettingNode>("render", value);
 }
 
 std::optional<Expr> FormulaParser::param_string(const std::string &name)
@@ -682,7 +674,7 @@ std::optional<Expr> FormulaParser::param_number(const std::string &type, const s
     return {};
 }
 
-bool FormulaParser::default_param_block()
+Expr FormulaParser::default_param_block()
 {
     std::string type;
     if (!check(TokenType::PARAM))
@@ -693,20 +685,20 @@ bool FormulaParser::default_param_block()
 
     if (!check(TokenType::PARAM))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
     if (!check(TokenType::IDENTIFIER))
     {
-        return false;
+        return nullptr;
     }
     const std::string name{str()};
     advance();
 
     if (!check(TokenType::TERMINATOR))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
@@ -718,7 +710,7 @@ bool FormulaParser::default_param_block()
 
         if (!check(TokenType::ASSIGN))
         {
-            return false;
+            return nullptr;
         }
         advance();
 
@@ -749,7 +741,7 @@ bool FormulaParser::default_param_block()
         }
         if (!value)
         {
-            return false;
+            return nullptr;
         }
         body = value.value();
         advance();
@@ -759,22 +751,36 @@ bool FormulaParser::default_param_block()
 
     if (!check(TokenType::END_PARAM))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
     if (!check({TokenType::TERMINATOR, TokenType::END_OF_INPUT}))
     {
-        return false;
+        return nullptr;
     }
     advance();
 
-    m_ast->defaults = std::make_shared<ParamBlockNode>(type, name, body);
-    return true;
+    return std::make_shared<ParamBlockNode>(type, name, body);
 }
 
-bool FormulaParser::default_section()
+Expr FormulaParser::default_enum_setting(const std::string &name)
 {
+    if (name == "method")
+    {
+        return default_method_setting();
+    }
+    if (name == "rating")
+    {
+        return default_rating_setting();
+    }
+    return nullptr;
+}
+
+Expr FormulaParser::default_section()
+{
+    std::vector<Expr> settings;
+
     if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
             TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
             TokenType::TYPE_COLOR, TokenType::PARAM}))
@@ -786,7 +792,7 @@ bool FormulaParser::default_section()
     if (!(check(TokenType::IDENTIFIER) || is_center))
     {
         error(ErrorCode::EXPECTED_IDENTIFIER);
-        return false;
+        return nullptr;
     }
     const std::string name{str()};
     advance(); // consume setting name
@@ -794,7 +800,7 @@ bool FormulaParser::default_section()
     if (!check(TokenType::ASSIGN))
     {
         error(ErrorCode::EXPECTED_ASSIGNMENT);
-        return false;
+        return nullptr;
     }
     advance(); // consume assignment operator
 
@@ -803,7 +809,7 @@ bool FormulaParser::default_section()
     if (it == std::end(s_default_settings))
     {
         error(ErrorCode::DEFAULT_SECTION_INVALID_KEY);
-        return false;
+        return nullptr;
     }
 
     switch (it->type)
@@ -819,22 +825,14 @@ bool FormulaParser::default_section()
     case SettingType::STRING:
         return default_string_setting(name);
     case SettingType::ENUMERATION:
-        if (name == "method")
-        {
-            return default_method_setting();
-        }
-        if (name == "rating")
-        {
-            return default_rating_setting();
-        }
-        return false;
+        return default_enum_setting(name);
     case SettingType::BOOLEAN_EXPRESSION:
         return default_perturb_setting();
     case SettingType::INTEGER_EXPRESSION:
         return default_precision_setting();
     }
 
-    return false;
+    return nullptr;
 }
 
 bool FormulaParser::switch_section()
@@ -955,7 +953,11 @@ std::optional<bool> FormulaParser::section_formula()
                 error(ErrorCode::INVALID_SECTION_ORDER);
                 return false;
             }
-            if (!default_section())
+            if (Expr result = default_section())
+            {
+                m_ast->defaults = result;
+            }
+            else
             {
                 return false;
             }
@@ -1949,31 +1951,31 @@ std::string to_string(ErrorCode code)
 {
     switch (code)
     {
-    ERROR_CODE_CASE(NONE);
-    ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
-    ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
-    ERROR_CODE_CASE(EXPECTED_PRIMARY);
-    ERROR_CODE_CASE(INVALID_TOKEN);
-    ERROR_CODE_CASE(INVALID_SECTION);
-    ERROR_CODE_CASE(INVALID_SECTION_ORDER);
-    ERROR_CODE_CASE(DUPLICATE_SECTION);
-    ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
-    ERROR_CODE_CASE(BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
-    ERROR_CODE_CASE(EXPECTED_ENDIF);
-    ERROR_CODE_CASE(EXPECTED_STATEMENT_SEPARATOR);
-    ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
-    ERROR_CODE_CASE(EXPECTED_OPEN_PAREN);
-    ERROR_CODE_CASE(EXPECTED_CLOSE_PAREN);
-    ERROR_CODE_CASE(EXPECTED_IDENTIFIER);
-    ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
-    ERROR_CODE_CASE(EXPECTED_ASSIGNMENT);
-    ERROR_CODE_CASE(EXPECTED_INTEGER);
-    ERROR_CODE_CASE(EXPECTED_TERMINATOR);
-    ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
-    ERROR_CODE_CASE(EXPECTED_COMMA);
-    ERROR_CODE_CASE(EXPECTED_FLOATING_POINT);
-    ERROR_CODE_CASE(EXPECTED_COMPLEX);
-    ERROR_CODE_CASE(EXPECTED_STRING);
+        ERROR_CODE_CASE(NONE);
+        ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
+        ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
+        ERROR_CODE_CASE(EXPECTED_PRIMARY);
+        ERROR_CODE_CASE(INVALID_TOKEN);
+        ERROR_CODE_CASE(INVALID_SECTION);
+        ERROR_CODE_CASE(INVALID_SECTION_ORDER);
+        ERROR_CODE_CASE(DUPLICATE_SECTION);
+        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
+        ERROR_CODE_CASE(BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+        ERROR_CODE_CASE(EXPECTED_ENDIF);
+        ERROR_CODE_CASE(EXPECTED_STATEMENT_SEPARATOR);
+        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
+        ERROR_CODE_CASE(EXPECTED_OPEN_PAREN);
+        ERROR_CODE_CASE(EXPECTED_CLOSE_PAREN);
+        ERROR_CODE_CASE(EXPECTED_IDENTIFIER);
+        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
+        ERROR_CODE_CASE(EXPECTED_ASSIGNMENT);
+        ERROR_CODE_CASE(EXPECTED_INTEGER);
+        ERROR_CODE_CASE(EXPECTED_TERMINATOR);
+        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
+        ERROR_CODE_CASE(EXPECTED_COMMA);
+        ERROR_CODE_CASE(EXPECTED_FLOATING_POINT);
+        ERROR_CODE_CASE(EXPECTED_COMPLEX);
+        ERROR_CODE_CASE(EXPECTED_STRING);
     }
 
     return std::to_string(static_cast<int>(code));
