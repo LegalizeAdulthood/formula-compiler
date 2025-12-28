@@ -4,6 +4,8 @@
 //
 #pragma once
 
+#include <formula/SourceLocation.h>
+
 #include <deque>
 #include <memory>
 #include <string>
@@ -151,22 +153,6 @@ enum class TokenType
 };
 
 std::string_view to_string(TokenType value);
-
-struct SourceLocation
-{
-    size_t line{1};
-    size_t column{1};
-};
-
-inline bool operator==(const SourceLocation &lhs, const SourceLocation &rhs)
-{
-    return lhs.line == rhs.line && lhs.column == rhs.column;
-}
-
-inline bool operator!=(const SourceLocation &lhs, const SourceLocation &rhs)
-{
-    return !(lhs == rhs);
-}
 
 struct LexicalDiagnostic
 {
