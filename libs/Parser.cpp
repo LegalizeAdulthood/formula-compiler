@@ -1312,6 +1312,7 @@ Expr FormulaParser::if_statement_no_endif()
 
     if (!match(TokenType::CLOSE_PAREN))
     {
+        error(ErrorCode::EXPECTED_CLOSE_PAREN);
         return nullptr;
     }
 

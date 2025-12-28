@@ -569,6 +569,9 @@ static ParseFailureParam s_parse_failures[]{
     {"builtinBadType", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                     //
     {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
     {"ifWithoutOpenParen", "if 1", ErrorCode::EXPECTED_OPEN_PAREN},                                      //
+    {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
+    {"elseIfWithoutOpenParen", "if(1)\nelseif 1\nendif\n", ErrorCode::EXPECTED_OPEN_PAREN},              //
+    {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
     {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_IDENTIFIER},                                     //
 };
 
