@@ -1111,7 +1111,7 @@ TEST_P(BuiltinDisallows, parse)
 {
     const BuiltinDisallowsParam &param{GetParam()};
 
-    const ast::FormulaSectionsPtr result{parser::parse(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
 
     ASSERT_FALSE(result);
 }
@@ -1120,7 +1120,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinDisallows, ValuesIn(s_builtin_
 
 TEST(TestParse, emptyInit)
 {
-    const ast::FormulaSectionsPtr result{parser::parse(":|imag(pixel)|<p1", Options{})};
+    const ast::FormulaSectionsPtr result{parse(":|imag(pixel)|<p1", Options{})};
 
     ASSERT_TRUE(result) << "parse failed";
     EXPECT_TRUE(result->initialize);
