@@ -5,6 +5,7 @@
 #pragma once
 
 #include <formula/Node.h>
+#include <formula/SourceLocation.h>
 
 #include <memory>
 #include <string>
@@ -36,7 +37,7 @@ enum class ErrorCode
 struct Diagnostic
 {
     ErrorCode code{};
-    size_t position{};
+    SourceLocation position;
 };
 
 class Parser
