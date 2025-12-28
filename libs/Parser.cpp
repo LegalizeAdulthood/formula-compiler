@@ -852,6 +852,7 @@ std::optional<bool> FormulaParser::section_formula()
 
         if (!check(TokenType::TERMINATOR))
         {
+            error(ErrorCode::EXPECTED_TERMINATOR);
             return false;
         }
         advance(); // consume newline

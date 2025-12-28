@@ -574,12 +574,14 @@ static ParseFailureParam s_parse_failures[]{
     {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)\n", ErrorCode::EXPECTED_ENDIF},                           //
     {"ifElseIfElseWithoutSeparator", "if(1)\nelseif(0)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR}, //
     {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},                 //
+    {"builtinNoTerminator", "builtin:", ErrorCode::EXPECTED_TERMINATOR},                                 //
     {"builtinBadType", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                     //
     {"builtinInvalidKey", "builtin:\n1=1", ErrorCode::EXPECTED_IDENTIFIER},                              //
     {"builtinBadKey", "builtin:\ntipe=1", ErrorCode::BUILTIN_SECTION_INVALID_KEY},                       //
     {"builtinNoAssignment", "builtin:\ntype 0", ErrorCode::EXPECTED_ASSIGNMENT},                         //
     {"builtinBadValue", "builtin:\ntype=1.0", ErrorCode::EXPECTED_INTEGER},                              //
     {"builtinNoTerminator", "builtin:\ntype=1 switch:", ErrorCode::EXPECTED_TERMINATOR},                 //
+    {"defaultNoTerminator", "default:", ErrorCode::EXPECTED_TERMINATOR},                                 //
     {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
     {"ifWithoutOpenParen", "if 1", ErrorCode::EXPECTED_OPEN_PAREN},                                      //
     {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
