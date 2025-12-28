@@ -45,17 +45,17 @@ enum class TokenType
     LOGICAL_OR,
     MODULUS,
     IDENTIFIER,
-    LEFT_PAREN,
-    RIGHT_PAREN,
-    LEFT_BRACKET,
-    RIGHT_BRACKET,
-    LEFT_BRACE,
-    RIGHT_BRACE,
+    OPEN_PAREN,
+    CLOSE_PAREN,
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
+    OPEN_BRACE,
+    CLOSE_BRACE,
     PERIOD,
     COLON,
     COMMA,
     TERMINATOR,
-    IF,           // keywords: if statemetn
+    IF,           // keywords: if statement
     ELSE_IF,      //
     ELSE,         //
     END_IF,       //

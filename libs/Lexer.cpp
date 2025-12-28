@@ -55,17 +55,17 @@ std::string_view to_string(TokenType value)
         return "MODULUS";
     case TokenType::IDENTIFIER:
         return "IDENTIFIER";
-    case TokenType::LEFT_PAREN:
+    case TokenType::OPEN_PAREN:
         return "LEFT_PAREN";
-    case TokenType::RIGHT_PAREN:
+    case TokenType::CLOSE_PAREN:
         return "RIGHT_PAREN";
-    case TokenType::LEFT_BRACKET:
+    case TokenType::OPEN_BRACKET:
         return "LEFT_BRACKET";
-    case TokenType::RIGHT_BRACKET:
+    case TokenType::CLOSE_BRACKET:
         return "RIGHT_BRACKET";
-    case TokenType::LEFT_BRACE:
+    case TokenType::OPEN_BRACE:
         return "LEFT_BRACE";
-    case TokenType::RIGHT_BRACE:
+    case TokenType::CLOSE_BRACE:
         return "RIGHT_BRACE";
     case TokenType::PERIOD:
         return "PERIOD";
@@ -389,9 +389,9 @@ Token Lexer::get_token()
         // Single | is MODULUS
         return {TokenType::MODULUS, start, 1};
     case '(':
-        return {TokenType::LEFT_PAREN, start, 1};
+        return {TokenType::OPEN_PAREN, start, 1};
     case ')':
-        return {TokenType::RIGHT_PAREN, start, 1};
+        return {TokenType::CLOSE_PAREN, start, 1};
     case ':':
         return {TokenType::COLON, start, 1};
     case ',':

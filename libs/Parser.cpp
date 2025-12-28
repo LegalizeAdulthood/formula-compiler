@@ -297,7 +297,7 @@ std::optional<Complex> FormulaParser::complex_number()
         return Complex{literal.value(), 0.0};
     }
 
-    if (!check(TokenType::LEFT_PAREN))
+    if (!check(TokenType::OPEN_PAREN))
     {
         return {};
     }
@@ -321,7 +321,7 @@ std::optional<Complex> FormulaParser::complex_number()
         return {};
     }
 
-    if (!check(TokenType::RIGHT_PAREN))
+    if (!check(TokenType::CLOSE_PAREN))
     {
         return {};
     }
@@ -1297,7 +1297,7 @@ Expr FormulaParser::if_statement_no_endif()
     }
 
     // Parse condition in parentheses
-    if (!match(TokenType::LEFT_PAREN))
+    if (!match(TokenType::OPEN_PAREN))
     {
         return nullptr;
     }
@@ -1308,7 +1308,7 @@ Expr FormulaParser::if_statement_no_endif()
         return nullptr;
     }
 
-    if (!match(TokenType::RIGHT_PAREN))
+    if (!match(TokenType::CLOSE_PAREN))
     {
         return nullptr;
     }
@@ -1667,7 +1667,7 @@ Expr FormulaParser::complex()
                     }
                     advance();
 
-                    if (check(TokenType::RIGHT_PAREN))
+                    if (check(TokenType::CLOSE_PAREN))
                     {
                         advance();
                         return std::make_shared<LiteralNode>(Complex{re, im});
@@ -1682,7 +1682,7 @@ Expr FormulaParser::complex()
 
 Expr FormulaParser::function_call()
 {
-    if (check(TokenType::LEFT_PAREN))
+    if (check(TokenType::OPEN_PAREN))
     {
         advance(); // consume left paren
         if (const Expr expr = complex_literal())
@@ -1690,7 +1690,7 @@ Expr FormulaParser::function_call()
             return expr;
         }
 
-        if (const Expr args = conjunctive(); args && check(TokenType::RIGHT_PAREN))
+        if (const Expr args = conjunctive(); args && check(TokenType::CLOSE_PAREN))
         {
             advance(); // consume right paren
             return args;
@@ -1804,7 +1804,7 @@ Expr FormulaParser::primary()
         return result;
     }
 
-    if (check(TokenType::LEFT_PAREN))
+    if (check(TokenType::OPEN_PAREN))
     {
         advance();
         if (Expr expr = complex_literal())
@@ -1813,7 +1813,7 @@ Expr FormulaParser::primary()
         }
 
         // Allow full expressions including assignment in parens
-        if (Expr expr = conjunctive(); expr && check(TokenType::RIGHT_PAREN))
+        if (Expr expr = conjunctive(); expr && check(TokenType::CLOSE_PAREN))
         {
             advance(); // consume ')'
             return expr;

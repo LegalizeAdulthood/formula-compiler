@@ -266,10 +266,10 @@ TEST(TestLexer, parenthesesWithIdentifiers)
 
     EXPECT_EQ(TokenType::IDENTIFIER, tokens[0].type);
     EXPECT_EQ("f", std::get<std::string>(tokens[0].value));
-    EXPECT_EQ(TokenType::LEFT_PAREN, tokens[1].type);
+    EXPECT_EQ(TokenType::OPEN_PAREN, tokens[1].type);
     EXPECT_EQ(TokenType::IDENTIFIER, tokens[2].type);
     EXPECT_EQ("x", std::get<std::string>(tokens[2].value));
-    EXPECT_EQ(TokenType::RIGHT_PAREN, tokens[3].type);
+    EXPECT_EQ(TokenType::CLOSE_PAREN, tokens[3].type);
 }
 
 TEST(TestLexer, identifiersAreMadeLowerCases)
@@ -458,8 +458,8 @@ static TextTokenParam s_params[]{
     {"longIdentifier", "very_long_variable_name_123", TokenType::IDENTIFIER}, //
     {"upperCaseIdentifier", "CONSTANT", TokenType::IDENTIFIER},               //
     {"mixedCaseIdentifier", "camelCase", TokenType::IDENTIFIER},              //
-    {"leftParenthesis", "(", TokenType::LEFT_PAREN},                          //
-    {"rightParenthesis", ")", TokenType::RIGHT_PAREN},                        //
+    {"leftParenthesis", "(", TokenType::OPEN_PAREN},                          //
+    {"rightParenthesis", ")", TokenType::CLOSE_PAREN},                        //
     {"if", "if", TokenType::IF},                                              //
     {"elseif", "elseif", TokenType::ELSE_IF},                                 //
     {"else", "else", TokenType::ELSE},                                        //
