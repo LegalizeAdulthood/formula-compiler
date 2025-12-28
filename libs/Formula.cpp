@@ -8,6 +8,7 @@
 #include <formula/Interpreter.h>
 #include <formula/Parser.h>
 
+#include <cassert>
 #include <cstdint>
 #include <utility>
 
@@ -318,6 +319,31 @@ Complex ParsedFormula::run(Section part)
 }
 
 } // namespace
+
+#define SECTION_CASE(name_) \
+    case Section::name_:    \
+        return #name_
+
+std::string_view to_string(Section value)
+{
+    switch (value)
+    {
+        SECTION_CASE(NONE);
+        SECTION_CASE(PER_IMAGE);
+        SECTION_CASE(BUILTIN);
+        SECTION_CASE(INITIALIZE);
+        SECTION_CASE(ITERATE);
+        SECTION_CASE(BAILOUT);
+        SECTION_CASE(PERTURB_INITIALIZE);
+        SECTION_CASE(PERTURB_ITERATE);
+        SECTION_CASE(DEFAULT);
+        SECTION_CASE(SWITCH);
+        SECTION_CASE(NUM_SECTIONS);
+    }
+    throw std::runtime_error("Unknown Section value " + std::to_string(+value));
+}
+
+#undef SECTION_CASE
 
 FormulaPtr create_formula(std::string_view text, const parser::Options &options)
 {

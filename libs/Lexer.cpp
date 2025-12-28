@@ -137,11 +137,7 @@ std::string to_string(TokenType value)
         TOKEN_TYPE_CASE(TRUE);
         TOKEN_TYPE_CASE(FALSE);
         TOKEN_TYPE_CASE(STRING);
-        TOKEN_TYPE_CASE(TYPE_BOOL);
-        TOKEN_TYPE_CASE(TYPE_INT);
-        TOKEN_TYPE_CASE(TYPE_FLOAT);
-        TOKEN_TYPE_CASE(TYPE_COMPLEX);
-        TOKEN_TYPE_CASE(TYPE_COLOR);
+        TOKEN_TYPE_CASE(TYPE_IDENTIFIER);
         TOKEN_TYPE_CASE(CONSTANT_IDENTIFIER);
     }
 
@@ -647,11 +643,11 @@ Token Lexer::identifier()
         {"endparam", TokenType::END_PARAM},   //
         {"false", TokenType::FALSE},          // boolean values
         {"true", TokenType::TRUE},            //
-        {"bool", TokenType::TYPE_BOOL},       // type names
-        {"int", TokenType::TYPE_INT},         //
-        {"float", TokenType::TYPE_FLOAT},     //
-        {"complex", TokenType::TYPE_COMPLEX}, //
-        {"color", TokenType::TYPE_COLOR},     //
+        {"bool", TokenType::TYPE_IDENTIFIER},       // type names
+        {"int", TokenType::TYPE_IDENTIFIER},         //
+        {"float", TokenType::TYPE_IDENTIFIER},     //
+        {"complex", TokenType::TYPE_IDENTIFIER}, //
+        {"color", TokenType::TYPE_IDENTIFIER},     //
         {"p1", TokenType::P1},                // Built-in variables
         {"p2", TokenType::P2},                //
         {"p3", TokenType::P3},                //

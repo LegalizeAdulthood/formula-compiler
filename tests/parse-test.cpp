@@ -7,6 +7,7 @@
 #include <formula/Formula.h>
 #include <formula/ParseOptions.h>
 
+#include "ExpressionParam.h"
 #include "NodeFormatter.h"
 #include "trim_ws.h"
 
@@ -1241,5 +1242,22 @@ TEST(TestParse, emptyInit)
     EXPECT_TRUE(result->iterate);
     EXPECT_TRUE(result->bailout);
 }
+
+class ParsedFormulaSuite : public TestWithParam<ExpressionParam>
+{
+};
+
+TEST_P(ParsedFormulaSuite, parse)
+{
+    const ExpressionParam &param{GetParam()};
+    const ParserPtr parser{create_parser(param.text, Options{})};
+    ASSERT_TRUE(parser) << "couldn't create parser for '" << param.text << "'";
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    EXPECT_TRUE(get_section(result, param.section)) << "should have parsed section " << to_string(param.section);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestParsedFormula, ParsedFormulaSuite, ValuesIn(g_expression_params));
 
 } // namespace formula::test

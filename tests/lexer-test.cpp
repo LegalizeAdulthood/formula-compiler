@@ -570,11 +570,11 @@ static TextTokenParam s_params[]{
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
-    {"boolType", "bool", TokenType::TYPE_BOOL},                               //
-    {"intType", "int", TokenType::TYPE_INT},                                  //
-    {"floatType", "float", TokenType::TYPE_FLOAT},                            //
-    {"complexType", "complex", TokenType::TYPE_COMPLEX},                      //
-    {"colorType", "color", TokenType::TYPE_COLOR},                            //
+    {"boolType", "bool", TokenType::TYPE_IDENTIFIER},                         //
+    {"intType", "int", TokenType::TYPE_IDENTIFIER},                           //
+    {"floatType", "float", TokenType::TYPE_IDENTIFIER},                       //
+    {"complexType", "complex", TokenType::TYPE_IDENTIFIER},                   //
+    {"colorType", "color", TokenType::TYPE_IDENTIFIER},                       //
     {"beginParam", "param", TokenType::PARAM},                                //
     {"endParam", "endparam", TokenType::END_PARAM},                           //
     {"caseInsensitiveKeyword", "IF", TokenType::IF},                          //

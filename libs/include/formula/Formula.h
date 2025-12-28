@@ -43,6 +43,8 @@ inline int operator+(Section value)
     return static_cast<int>(value);
 }
 
+std::string_view to_string(Section value);
+
 class Formula
 {
 public:

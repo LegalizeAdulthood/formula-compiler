@@ -681,6 +681,10 @@ Expr FormulaParser::default_param_block()
     std::string type;
     if (!check(TokenType::PARAM))
     {
+        if (!check(TokenType::TYPE_IDENTIFIER))
+        {
+            return nullptr;
+        }
         type = str();
         advance();
     }
@@ -825,9 +829,7 @@ Expr FormulaParser::default_section()
 
 Expr FormulaParser::default_setting()
 {
-    if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
-            TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
-            TokenType::TYPE_COLOR, TokenType::PARAM}))
+    if (check({TokenType::TYPE_IDENTIFIER, TokenType::PARAM}))
     {
         return default_param_block();
     }
@@ -1872,10 +1874,10 @@ Expr FormulaParser::identifier()
 
     // Also allow some reserved words as identifiers in expression context
     // TODO: only allow true and false to be identifiers in legacy mode
-    if (check({TokenType::TYPE_COLOR, TokenType::TRUE, TokenType::FALSE}))
+    if (check({TokenType::TRUE, TokenType::FALSE}) || (check(TokenType::TYPE_IDENTIFIER) && str() == "color"))
     {
         Expr result = std::make_shared<IdentifierNode>(str());
-        advance(); // consume the type token
+        advance(); // consume the token
         return result;
     }
 
@@ -1884,7 +1886,7 @@ Expr FormulaParser::identifier()
         if (m_options.allow_builtin_assignment)
         {
             Expr result = std::make_shared<IdentifierNode>(str());
-            advance(); // consume the type token
+            advance(); // consume the token
             warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
             return result;
         }
