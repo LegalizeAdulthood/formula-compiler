@@ -72,6 +72,7 @@ struct ParseFailureParam
 {
     std::string_view name;
     std::string_view text;
+    ErrorCode expected_error{};
 };
 
 inline void PrintTo(const ParseFailureParam &param, std::ostream *os)
@@ -520,20 +521,28 @@ static std::string s_reserved_words[]{
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithoutEndIf", "if(1)"},
-    {"ifElseWithoutEndIf", "if(1)\nelse"},
-    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},
-    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"},
-    {"builtinSectionBogus", "builtin:type=0"},
+    {"ifWithoutEndIf", "if(1)"},                            //
+    {"ifElseWithoutEndIf", "if(1)\nelse"},                  //
+    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)"},           //
+    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse"}, //
+    {"builtinSectionBogus", "builtin:type=0"},              //
+    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},    //
 };
 
 TEST_P(ParseFailures, parse)
 {
     const ParseFailureParam &param{GetParam()};
+    const ParserPtr parser{create_parser(param.text, Options{})};
 
-    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     EXPECT_FALSE(result);
+    if (param.expected_error != ErrorCode::NONE)
+    {
+        ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+        const Diagnostic &error{parser->get_errors().back()};
+        EXPECT_EQ(param.expected_error, error.code);
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));

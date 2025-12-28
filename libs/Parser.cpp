@@ -1688,6 +1688,7 @@ Expr FormulaParser::primary()
     // Check for invalid tokens first
     if (check(TokenType::INVALID))
     {
+        error(ErrorCode::EXPECTED_PRIMARY);
         return nullptr;
     }
 
