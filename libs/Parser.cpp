@@ -84,6 +84,7 @@ private:
     std::optional<Expr> param_bool(const std::string &name);
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
     Expr default_param_block();
+    Expr default_setting();
     Expr default_section();
     bool switch_section();
     std::optional<bool> section_formula();
@@ -781,6 +782,48 @@ Expr FormulaParser::default_section()
 {
     std::vector<Expr> settings;
 
+    // Parse multiple settings until we run out
+    while (true)
+    {
+        while (check(TokenType::TERMINATOR))
+        {
+            advance();
+        }
+
+        // Check if we've reached the end or a new section
+        if (check({TokenType::END_OF_INPUT,                           //
+                TokenType::GLOBAL, TokenType::BUILTIN,                //
+                TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+                TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+                TokenType::DEFAULT, TokenType::SWITCH}))
+        {
+            break;
+        }
+
+        if (Expr result = default_setting())
+        {
+            settings.push_back(result);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (settings.empty())
+    {
+        return nullptr;
+    }
+
+    if (settings.size() == 1)
+    {
+        return settings.front();
+    }
+    return std::make_shared<StatementSeqNode>(settings);
+}
+
+Expr FormulaParser::default_setting()
+{
     if (check({TokenType::TYPE_BOOL, TokenType::TYPE_INT,   //
             TokenType::TYPE_FLOAT, TokenType::TYPE_COMPLEX, //
             TokenType::TYPE_COLOR, TokenType::PARAM}))

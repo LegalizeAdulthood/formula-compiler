@@ -389,6 +389,23 @@ TEST_P(SimpleExpressions, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, SimpleExpressions, ValuesIn(s_simple_expressions));
 
+TEST(TestFormulaParse, multipleDefaults)
+{
+    ParserPtr parser{create_parser("default:\n"
+                                   "angle = 180\n"
+                                   "center = (-1.5, 0)\n",
+        Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_TRUE(result->defaults);
+    EXPECT_EQ("statement_seq:2 {"
+              " setting:angle=180"
+              " setting:center=(-1.5,0)"
+              " }",
+        trim_ws(to_string(result->defaults)));
+}
+
 TEST(TestFormulaParse, invalidIdentifier)
 {
     ParserPtr parser{create_parser("1a", Options{})};
