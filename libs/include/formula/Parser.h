@@ -7,6 +7,7 @@
 #include <formula/Node.h>
 
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -21,6 +22,10 @@ enum class ErrorCode
     BUILTIN_FUNCTION_ASSIGNMENT,
     EXPECTED_PRIMARY,
     INVALID_TOKEN,
+    INVALID_SECTION,
+    INVALID_SECTION_ORDER,
+    DUPLICATE_SECTION,
+    INVALID_DEFAULT_METHOD,
 };
 
 struct Diagnostic

@@ -369,11 +369,13 @@ bool FormulaParser::default_method_setting()
 {
     if (!check(TokenType::IDENTIFIER))
     {
+        error(ErrorCode::INVALID_DEFAULT_METHOD);
         return false;
     }
     const std::string method{str()};
     if (method != "guessing" && method != "multipass" && method != "onepass")
     {
+        error(ErrorCode::INVALID_DEFAULT_METHOD);
         return false;
     }
     advance(); // consume method value
@@ -846,27 +848,50 @@ std::optional<bool> FormulaParser::section_formula()
 
         if (section == TokenType::BUILTIN)
         {
-            if (m_ast->per_image || m_ast->builtin                       //
+            if (m_ast->builtin)
+            {
+                error(ErrorCode::DUPLICATE_SECTION);
+                return false;
+            }
+
+            if (m_ast->per_image                                         //
                 || m_ast->initialize || m_ast->iterate || m_ast->bailout //
                 || m_ast->perturb_initialize || m_ast->perturb_iterate   //
-                || m_ast->defaults || m_ast->type_switch                 //
-                || !builtin_section())
+                || m_ast->defaults || m_ast->type_switch)
+            {
+                error(ErrorCode::INVALID_SECTION_ORDER);
+                return false;
+            }
+            if (!builtin_section())
             {
                 return false;
             }
         }
         else if (section == TokenType::DEFAULT)
         {
-            if (m_ast->defaults || m_ast->type_switch //
-                || !default_section())
+            if (m_ast->defaults)
+            {
+                error(ErrorCode::DUPLICATE_SECTION);
+                return false;
+            }
+            if (m_ast->type_switch)
+            {
+                error(ErrorCode::INVALID_SECTION_ORDER);
+                return false;
+            }
+            if (!default_section())
             {
                 return false;
             }
         }
         else if (section == TokenType::SWITCH)
         {
-            if (m_ast->type_switch //
-                || !switch_section())
+            if (m_ast->type_switch)
+            {
+                error(ErrorCode::DUPLICATE_SECTION);
+                return false;
+            }
+            if (!switch_section())
             {
                 return false;
             }
@@ -876,81 +901,126 @@ std::optional<bool> FormulaParser::section_formula()
             switch (section)
             {
             case TokenType::GLOBAL:
-                if (m_ast->per_image || m_ast->builtin                       //
+                if (m_ast->per_image)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                if (m_ast->builtin                       //
                     || m_ast->initialize || m_ast->iterate || m_ast->bailout //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->per_image = result;
                 break;
 
             case TokenType::BUILTIN:
-                if (m_ast->builtin                                           //
-                    || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                if (m_ast->builtin)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                if (m_ast->initialize || m_ast->iterate || m_ast->bailout //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->builtin = result;
                 break;
 
             case TokenType::INIT:
+                if (m_ast->initialize)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
                 if (m_ast->builtin                                           //
-                    || m_ast->initialize || m_ast->iterate || m_ast->bailout //
+                    || m_ast->iterate || m_ast->bailout //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate   //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->initialize = result;
                 break;
 
             case TokenType::LOOP:
+                if (m_ast->iterate)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
                 if (m_ast->builtin                                         //
-                    || m_ast->iterate || m_ast->bailout                    //
+                    || m_ast->bailout                    //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->iterate = result;
                 break;
 
             case TokenType::BAILOUT:
+                if (m_ast->bailout)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
                 if (m_ast->builtin                                         //
-                    || m_ast->bailout                                      //
                     || m_ast->perturb_initialize || m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->bailout = result;
                 break;
 
             case TokenType::PERTURB_INIT:
-                if (m_ast->perturb_initialize || m_ast->perturb_iterate //
+                if (m_ast->perturb_initialize)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                if (m_ast->perturb_iterate //
                     || m_ast->defaults || m_ast->type_switch)
                 {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->perturb_initialize = result;
                 break;
 
             case TokenType::PERTURB_LOOP:
-                if (m_ast->perturb_iterate //
-                    || m_ast->defaults || m_ast->type_switch)
+                if (m_ast->perturb_iterate)
                 {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                if (m_ast->defaults || m_ast->type_switch)
+                {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->perturb_iterate = result;
                 break;
 
             case TokenType::DEFAULT:
-                if (m_ast->defaults || m_ast->type_switch)
+                if (m_ast->defaults)
                 {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                if (m_ast->type_switch)
+                {
+                    error(ErrorCode::INVALID_SECTION_ORDER);
                     return false;
                 }
                 m_ast->defaults = result;
@@ -959,6 +1029,7 @@ std::optional<bool> FormulaParser::section_formula()
             case TokenType::SWITCH:
                 if (m_ast->type_switch)
                 {
+                    error(ErrorCode::DUPLICATE_SECTION);
                     return false;
                 }
                 m_ast->type_switch = result;
@@ -973,6 +1044,7 @@ std::optional<bool> FormulaParser::section_formula()
     // some unknown section name?
     if (check(TokenType::COLON))
     {
+        error(ErrorCode::INVALID_SECTION);
         return false;
     }
 

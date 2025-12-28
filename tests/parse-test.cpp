@@ -19,6 +19,35 @@
 using namespace formula::parser;
 using namespace testing;
 
+namespace formula::parser
+{
+
+std::ostream &operator<<(std::ostream &os, ErrorCode code)
+{
+    switch (code)
+    {
+    case ErrorCode::NONE:
+        return os << "NONE";
+    case ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT:
+        return os << "BUILTIN_VARIABLE_ASSIGNMENT";
+    case ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT:
+        return os << "BUILTIN_FUNCTION_ASSIGNMENT";
+    case ErrorCode::EXPECTED_PRIMARY:
+        return os << "EXPECTED_PRIMARY";
+    case ErrorCode::INVALID_TOKEN:
+        return os << "INVALID_TOKEN";
+    case ErrorCode::INVALID_SECTION:
+        return os << "INVALID_SECTION";
+    case ErrorCode::INVALID_SECTION_ORDER:
+        return os << "INVALID_SECTION_ORDER";
+    case ErrorCode::DUPLICATE_SECTION:
+        return os << "DUPLICATE_SECTION";
+    }
+    return os << "ErrorCode(" << static_cast<int>(code) << ')';
+}
+
+} // namespace formula::parser
+
 namespace formula::test
 {
 
@@ -108,6 +137,7 @@ struct InvalidSectionParam
 {
     std::string_view name;
     std::string_view text;
+    ErrorCode expected_error{};
 };
 
 inline void PrintTo(const InvalidSectionParam &param, std::ostream *os)
@@ -475,7 +505,6 @@ static std::vector<std::string> s_functions{
     "acosh", "atan", "atanh", "sqrt", "cabs",   //
     "floor", "ceil", "trunc", "round", "ident", //
 };
-
 
 TEST_P(Functions, notAssignable)
 {
@@ -922,100 +951,120 @@ static InvalidSectionParam s_invalid_sections[]{
         "global:\n"
         "1\n"
         "unknown:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION},
     {"globalSectionFirst",
         "builtin:\n"
         "type=1\n"
         "global:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"builtinBeforeInit",
         "init:\n"
         "1\n"
         "builtin:\n"
-        "type=1\n"},
+        "type=1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"initAfterLoop",
         "loop:\n"
         "1\n"
         "init:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"initAfterBailout",
         "bailout:\n"
         "1\n"
         "init:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"loopAfterBailout",
         "bailout:\n"
         "1\n"
         "loop:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"bailoutAfterPerturbInit",
         "perturbinit:\n"
         "1\n"
         "bailout:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"perturbInitAfterPerturbLoop",
         "perturbloop:\n"
         "1\n"
         "perturbinit:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"perturbLoopAfterDefault",
         "default:\n"
         "angle=0\n"
         "perturbloop:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"defaultAfterSwitch",
         "switch:\n"
-        "1\n"
+        "foo=foo\n"
         "default:\n"
-        "angle=0\n"},
+        "angle=0\n",
+        ErrorCode::INVALID_SECTION_ORDER},
     {"globalTwice",
         "global:\n"
         "1\n"
         "global:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"builtinTwice",
         "builtin:\n"
         "type=1\n"
         "builtin:\n"
-        "type=1\n"},
+        "type=1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"initTwice",
         "init:\n"
         "1\n"
         "init:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"loopTwice",
         "loop:\n"
         "1\n"
         "loop:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"bailoutTwice",
         "bailout:\n"
         "1\n"
         "bailout:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"perturbInitTwice",
         "perturbinit:\n"
         "1\n"
         "perturbinit:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"perturbLoopTwice",
         "perturbloop:\n"
         "1\n"
         "perturbloop:\n"
-        "1\n"},
+        "1\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"defaultTwice",
         "default:\n"
         "angle=120\n"
         "default:\n"
-        "angle=120\n"},
+        "angle=120\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"switchTwice",
         "switch:\n"
         "foo=foo\n"
         "switch:\n"
-        "foo=foo\n"},
+        "foo=foo\n",
+        ErrorCode::DUPLICATE_SECTION},
     {"invalidMethod",
         "default:\n"
-        "method=junk\n"},
+        "method=junk\n",
+        ErrorCode::INVALID_DEFAULT_METHOD},
 };
 
 class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
@@ -1025,10 +1074,17 @@ class InvalidSectionOrdering : public TestWithParam<InvalidSectionParam>
 TEST_P(InvalidSectionOrdering, parse)
 {
     const InvalidSectionParam &param{GetParam()};
+    ParserPtr parser{create_parser(param.text, Options{})};
 
-    const ast::FormulaSectionsPtr result{parse(param.text, Options{})};
+    const ast::FormulaSectionsPtr result{parser->parse()};
 
     ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    if (param.expected_error != ErrorCode::NONE)
+    {
+        const Diagnostic &error{parser->get_errors().back()};
+        EXPECT_EQ(param.expected_error, error.code);
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, InvalidSectionOrdering, ValuesIn(s_invalid_sections));
