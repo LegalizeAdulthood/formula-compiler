@@ -492,7 +492,7 @@ TEST_P(BuiltinVariables, notAssignable)
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const auto &error{parser->get_errors().front()};
     EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, error.code);
-    EXPECT_EQ(1U, error.position.column);
+    EXPECT_EQ(GetParam().length() + 2, error.position.column);
 }
 
 TEST_P(BuiltinVariables, assignable)
@@ -525,7 +525,7 @@ TEST_P(Functions, notAssignable)
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const auto &error{parser->get_errors().front()};
     EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, error.code);
-    EXPECT_EQ(1U, error.position.column);
+    EXPECT_EQ(GetParam().length() + 2, error.position.column);
 }
 
 TEST_P(Functions, functionOne)

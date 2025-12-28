@@ -124,11 +124,11 @@ private:
 
     void warning(ErrorCode code) const
     {
-        m_warnings.push_back(Diagnostic{code, m_lexer.position()});
+        m_warnings.push_back(Diagnostic{code, m_lexer.source_location()});
     }
     void error(ErrorCode code) const
     {
-        m_errors.push_back(Diagnostic{code, m_lexer.position()});
+        m_errors.push_back(Diagnostic{code, m_lexer.source_location()});
     }
 
     const std::string &str() const
