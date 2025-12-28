@@ -796,8 +796,18 @@ TEST(TestLexer, constantIdentifier)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::CONSTANT_IDENTIFIER, token.type);
+    ASSERT_EQ(TokenType::CONSTANT_IDENTIFIER, token.type);
     EXPECT_EQ("pixel", std::get<std::string>(token.value));
+}
+
+TEST(TestLexer, parameterIdentifier)
+{
+    Lexer lexer{"@bailout", Options{true}};
+
+    const Token token{lexer.get_token()};
+
+    ASSERT_EQ(TokenType::PARAMETER_IDENTIFIER, token.type);
+    EXPECT_EQ("bailout", std::get<std::string>(token.value));
 }
 
 } // namespace formula::test

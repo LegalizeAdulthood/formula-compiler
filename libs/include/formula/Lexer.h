@@ -44,8 +44,9 @@ enum class TokenType
     LOGICAL_AND,
     LOGICAL_OR,
     MODULUS,
-    IDENTIFIER,
-    CONSTANT_IDENTIFIER,
+    IDENTIFIER,           // variable name or enum value
+    CONSTANT_IDENTIFIER,  // #name
+    PARAMETER_IDENTIFIER, // @name
     OPEN_PAREN,
     CLOSE_PAREN,
     OPEN_BRACKET,
@@ -255,9 +256,10 @@ private:
     void skip_comment();
     Token lex_number();
     bool is_number_start() const;
-    Token lex_identifier();
-    Token lex_constant_identifier();
-    Token lex_string();
+    Token identifier();
+    Token constant_identifier();
+    Token parameter_identifier();
+    Token string_literal();
     bool is_identifier_start() const;
     bool is_identifier_continue(char c) const;
     char current_char() const;

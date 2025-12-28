@@ -199,20 +199,24 @@ Token Lexer::get_token()
     // Check if this is the start of an identifier
     if (is_identifier_start())
     {
-        return lex_identifier();
+        return identifier();
     }
 
     // Check for quoted strings
     if (ch == '"')
     {
-        return lex_string();
+        return string_literal();
     }
 
     if (m_options.allow_identifier_prefix)
     {
         if (ch == '#')
         {
-            return lex_constant_identifier();
+            return constant_identifier();
+        }
+        if (ch == '@')
+        {
+            return parameter_identifier();
         }
     }
 
@@ -608,7 +612,7 @@ bool Lexer::is_identifier_continue(char c) const
     return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
 }
 
-Token Lexer::lex_identifier()
+Token Lexer::identifier()
 {
     size_t start = m_position;
     SourceLocation start_loc = m_source_location;
@@ -745,15 +749,23 @@ Token Lexer::lex_identifier()
     return {TokenType::IDENTIFIER, to_lower(identifier), start_loc, length};
 }
 
-Token Lexer::lex_constant_identifier()
+Token Lexer::constant_identifier()
 {
     advance();
-    Token result{lex_identifier()};
+    Token result{identifier()};
     result.type = TokenType::CONSTANT_IDENTIFIER;
     return result;
 }
 
-Token Lexer::lex_string()
+Token Lexer::parameter_identifier()
+{
+    advance();
+    Token result{identifier()};
+    result.type = TokenType::PARAMETER_IDENTIFIER;
+    return result;
+}
+
+Token Lexer::string_literal()
 {
     size_t start = m_position;
     SourceLocation start_loc = m_source_location;
