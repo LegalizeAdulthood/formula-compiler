@@ -182,20 +182,28 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
 
 bool FormulaParser::builtin_section()
 {
-    if (!check(TokenType::IDENTIFIER) || str() != "type")
+    if (!check(TokenType::IDENTIFIER))
     {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
+        return false;
+    }
+    if (str() != "type")
+    {
+        error(ErrorCode::BUILTIN_SECTION_INVALID_KEY);
         return false;
     }
     advance(); // advance past type parameter name
 
     if (!check(TokenType::ASSIGN))
     {
+        error(ErrorCode::EXPECTED_ASSIGNMENT);
         return false;
     }
     advance(); // advance past assignment token
 
     if (!check(TokenType::INTEGER))
     {
+        error(ErrorCode::EXPECTED_INTEGER);
         return false;
     }
     const int value{integer()};
@@ -209,6 +217,7 @@ bool FormulaParser::builtin_section()
 
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -1501,7 +1510,7 @@ Expr FormulaParser::additive()
 
     while (left && check({TokenType::PLUS, TokenType::MINUS}))
     {
-        char op = (check(TokenType::PLUS)) ? '+' : '-';
+        char op = check(TokenType::PLUS) ? '+' : '-';
         advance(); // consume operator
         Expr right = term();
         if (!right)
@@ -1904,6 +1913,14 @@ std::string to_string(ErrorCode code)
         return "EXPECTED_CLOSE_PAREN";
     case ErrorCode::EXPECTED_IDENTIFIER:
         return "EXPECTED_IDENTIFIER";
+    case ErrorCode::BUILTIN_SECTION_INVALID_KEY:
+        return "BUILTIN_SECTION_INVALID_KEY";
+    case ErrorCode::EXPECTED_ASSIGNMENT:
+        return "EXPECTED_ASSIGNMENT";
+    case ErrorCode::EXPECTED_INTEGER:
+        return "EXPECTED_INTEGER";
+    case ErrorCode::EXPECTED_TERMINATOR:
+        return "EXPECTED_TERMINATOR";
     }
 
     return std::to_string(static_cast<int>(code));
