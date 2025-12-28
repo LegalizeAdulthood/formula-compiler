@@ -49,11 +49,6 @@ enum class TokenType
     PARAMETER_IDENTIFIER, // @name
     OPEN_PAREN,
     CLOSE_PAREN,
-    OPEN_BRACKET,
-    CLOSE_BRACKET,
-    OPEN_BRACE,
-    CLOSE_BRACE,
-    PERIOD,
     COLON,
     COMMA,
     TERMINATOR,
