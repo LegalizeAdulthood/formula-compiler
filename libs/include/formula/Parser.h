@@ -36,6 +36,8 @@ enum class ErrorCode
     EXPECTED_IDENTIFIER,
 };
 
+std::string to_string(ErrorCode code);
+
 struct Diagnostic
 {
     ErrorCode code{};

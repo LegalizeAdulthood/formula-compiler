@@ -1868,4 +1868,45 @@ ParserPtr create_parser(std::string_view text, const Options &options)
     return std::make_shared<FormulaParser>(text, options);
 }
 
+std::string to_string(ErrorCode code)
+{
+    switch (code)
+    {
+    case ErrorCode::NONE:
+        return "NONE";
+    case ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT:
+        return "BUILTIN_VARIABLE_ASSIGNMENT";
+    case ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT:
+        return "BUILTIN_FUNCTION_ASSIGNMENT";
+    case ErrorCode::EXPECTED_PRIMARY:
+        return "EXPECTED_PRIMARY";
+    case ErrorCode::INVALID_TOKEN:
+        return "INVALID_TOKEN";
+    case ErrorCode::INVALID_SECTION:
+        return "INVALID_SECTION";
+    case ErrorCode::INVALID_SECTION_ORDER:
+        return "INVALID_SECTION_ORDER";
+    case ErrorCode::DUPLICATE_SECTION:
+        return "DUPLICATE_SECTION";
+    case ErrorCode::INVALID_DEFAULT_METHOD:
+        return "INVALID_DEFAULT_METHOD";
+    case ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS:
+        return "BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS";
+    case ErrorCode::EXPECTED_ENDIF:
+        return "EXPECTED_ENDIF";
+    case ErrorCode::EXPECTED_STATEMENT_SEPARATOR:
+        return "EXPECTED_STATEMENT_SEPARATOR";
+    case ErrorCode::BUILTIN_SECTION_INVALID_TYPE:
+        return "BUILTIN_SECTION_INVALID_TYPE";
+    case ErrorCode::EXPECTED_OPEN_PAREN:
+        return "EXPECTED_OPEN_PAREN";
+    case ErrorCode::EXPECTED_CLOSE_PAREN:
+        return "EXPECTED_CLOSE_PAREN";
+    case ErrorCode::EXPECTED_IDENTIFIER:
+        return "EXPECTED_IDENTIFIER";
+    }
+
+    return std::to_string(static_cast<int>(code));
+}
+
 } // namespace formula::parser
