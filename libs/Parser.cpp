@@ -1201,6 +1201,7 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
         error(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
     }
 
+    error(ErrorCode::EXPECTED_IDENTIFIER);
     return false;
 }
 

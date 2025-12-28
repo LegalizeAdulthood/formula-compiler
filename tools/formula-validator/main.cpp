@@ -61,6 +61,8 @@ std::string to_string(ErrorCode code)
         return "BUILTIN_SECTION_INVALID_TYPE";
     case ErrorCode::EXPECTED_OPEN_PAREN:
         return "EXPECTED_OPEN_PAREN";
+    case ErrorCode::EXPECTED_IDENTIFIER:
+        return "EXPECTED_IDENTIFIER";
     }
 
     return std::to_string(static_cast<int>(code));
@@ -123,12 +125,12 @@ int main(const std::vector<std::string_view> &args)
                     }
                 }
                 line_lengths.push_back(entry.body.length() - line_starts.back());
-                std::string filename{file.filename().string()};
+                const std::string filename{file.filename().string()};
                 const auto emit_diag = [&entry, &filename, &line_starts, &line_lengths](
                                            const Diagnostic &diag, const char *level)
                 {
-                    std::cout << filename << '(' << diag.position << "): " //
-                              << entry.name << ": " << level << ": " << to_string(diag.code) << '\n';
+                    std::cout << filename << ": " << entry.name << '(' << diag.position << "): " //
+                              << level << ": " << to_string(diag.code) << '\n';
                     std::cout << "    "
                               << entry.body.substr(
                                      line_starts[diag.position.line - 1], line_lengths[diag.position.line - 1])
