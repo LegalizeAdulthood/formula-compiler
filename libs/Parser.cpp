@@ -26,37 +26,28 @@ namespace formula::parser
 namespace
 {
 
-constexpr TokenType s_builtin_vars[]{
-    TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
-    TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
-    TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
-    TokenType::SCREEN_PIXEL, TokenType::WHITE_SQUARE, TokenType::IS_MAND,    //
-    TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
-};
-
-constexpr std::array<TokenType, 9> s_sections{
-    TokenType::GLOBAL, TokenType::BUILTIN,                //
-    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-    TokenType::DEFAULT, TokenType::SWITCH,                //
-};
-
-lexer::Options lexer_options_for_parser(const Options &options)
+enum class SettingType
 {
-    lexer::Options lexer_options;
-    lexer_options.recognize_extensions = options.recognize_extensions;
-    return lexer_options;
-}
+    BOOLEAN,
+    INTEGER,
+    FLOATING_POINT,
+    COMPLEX,
+    STRING,
+    ENUMERATION,
+    BOOLEAN_EXPRESSION,
+    INTEGER_EXPRESSION
+};
+
+struct SettingMetadata
+{
+    std::string_view name;
+    SettingType type;
+};
 
 class FormulaParser : public Parser
 {
 public:
-    FormulaParser(std::string_view text, const Options &options) :
-        m_ast(std::make_shared<FormulaSections>()),
-        m_lexer(text, lexer_options_for_parser(options)),
-        m_options(options)
-    {
-    }
+    FormulaParser(std::string_view text, const Options &options);
     ~FormulaParser() override = default;
 
     FormulaSectionsPtr parse() override;
@@ -154,7 +145,6 @@ private:
         return std::get<int>(m_curr.value);
     }
 
-private:
     FormulaSectionsPtr m_ast;
     Lexer m_lexer;
     Token m_curr;
@@ -163,6 +153,55 @@ private:
     Options m_options{};
     mutable std::vector<Diagnostic> m_warnings;
     mutable std::vector<Diagnostic> m_errors;
+};
+
+constexpr TokenType s_builtin_vars[]{
+    TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
+    TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
+    TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
+    TokenType::SCREEN_PIXEL, TokenType::WHITE_SQUARE, TokenType::IS_MAND,    //
+    TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
+};
+
+constexpr std::array<TokenType, 9> s_sections{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
+constexpr SettingMetadata s_default_settings[]{
+    {"angle", SettingType::FLOATING_POINT},         //
+    {"center", SettingType::COMPLEX},               //
+    {"helpfile", SettingType::STRING},              //
+    {"helptopic", SettingType::STRING},             //
+    {"magn", SettingType::FLOATING_POINT},          //
+    {"maxiter", SettingType::INTEGER},              //
+    {"method", SettingType::ENUMERATION},           //
+    {"periodicity", SettingType::INTEGER},          //
+    {"perturb", SettingType::BOOLEAN_EXPRESSION},   //
+    {"precision", SettingType::INTEGER_EXPRESSION}, //
+    {"rating", SettingType::ENUMERATION},           //
+    {"render", SettingType::BOOLEAN},               //
+    {"skew", SettingType::FLOATING_POINT},          //
+    {"stretch", SettingType::FLOATING_POINT},       //
+    {"title", SettingType::STRING},                 //
+};
+
+constexpr TokenType s_builtin_fns[]{
+    TokenType::COSXX,                                                      //
+    TokenType::COS, TokenType::SIN, TokenType::TAN, TokenType::COTAN,      //
+    TokenType::COSH, TokenType::SINH, TokenType::TANH, TokenType::COTANH,  //
+    TokenType::SQRT, TokenType::SQR,                                       //
+    TokenType::LOG, TokenType::EXP,                                        //
+    TokenType::CONJ, TokenType::REAL, TokenType::IMAG, TokenType::FLIP,    //
+    TokenType::FN1, TokenType::FN2, TokenType::FN3, TokenType::FN4,        //
+    TokenType::SRAND,                                                      //
+    TokenType::ASIN, TokenType::ACOS, TokenType::ATAN,                     //
+    TokenType::ACOSH, TokenType::ASINH, TokenType::ATANH,                  //
+    TokenType::ABS, TokenType::CABS,                                       //
+    TokenType::FLOOR, TokenType::CEIL, TokenType::TRUNC, TokenType::ROUND, //
+    TokenType::IDENT, TokenType::ZERO, TokenType::ONE,                     //
 };
 
 void split_iterate_bailout(FormulaSections &result, const Expr &expr)
@@ -187,6 +226,20 @@ void split_iterate_bailout(FormulaSections &result, const Expr &expr)
         result.iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
         result.bailout = expr;
     }
+}
+
+lexer::Options lexer_options_for_parser(const Options &options)
+{
+    lexer::Options lexer_options;
+    lexer_options.recognize_extensions = options.recognize_extensions;
+    return lexer_options;
+}
+
+FormulaParser::FormulaParser(std::string_view text, const Options &options) :
+    m_ast(std::make_shared<FormulaSections>()),
+    m_lexer(text, lexer_options_for_parser(options)),
+    m_options(options)
+{
 }
 
 bool FormulaParser::builtin_section()
@@ -234,41 +287,6 @@ bool FormulaParser::builtin_section()
     m_ast->builtin = std::make_shared<SettingNode>("type", value);
     return true;
 }
-
-enum class SettingType
-{
-    BOOLEAN,
-    INTEGER,
-    FLOATING_POINT,
-    COMPLEX,
-    STRING,
-    ENUMERATION,
-    BOOLEAN_EXPRESSION,
-    INTEGER_EXPRESSION
-};
-struct SettingMetadata
-{
-    std::string_view name;
-    SettingType type;
-};
-
-SettingMetadata s_default_settings[]{
-    {"angle", SettingType::FLOATING_POINT},         //
-    {"center", SettingType::COMPLEX},               //
-    {"helpfile", SettingType::STRING},              //
-    {"helptopic", SettingType::STRING},             //
-    {"magn", SettingType::FLOATING_POINT},          //
-    {"maxiter", SettingType::INTEGER},              //
-    {"method", SettingType::ENUMERATION},           //
-    {"periodicity", SettingType::INTEGER},          //
-    {"perturb", SettingType::BOOLEAN_EXPRESSION},   //
-    {"precision", SettingType::INTEGER_EXPRESSION}, //
-    {"rating", SettingType::ENUMERATION},           //
-    {"render", SettingType::BOOLEAN},               //
-    {"skew", SettingType::FLOATING_POINT},          //
-    {"stretch", SettingType::FLOATING_POINT},       //
-    {"title", SettingType::STRING},                 //
-};
 
 std::optional<double> FormulaParser::signed_literal()
 {
@@ -1709,22 +1727,6 @@ Expr FormulaParser::builtin_var()
     }
     return nullptr;
 }
-
-constexpr TokenType s_builtin_fns[]{
-    TokenType::COSXX,                                                      //
-    TokenType::COS, TokenType::SIN, TokenType::TAN, TokenType::COTAN,      //
-    TokenType::COSH, TokenType::SINH, TokenType::TANH, TokenType::COTANH,  //
-    TokenType::SQRT, TokenType::SQR,                                       //
-    TokenType::LOG, TokenType::EXP,                                        //
-    TokenType::CONJ, TokenType::REAL, TokenType::IMAG, TokenType::FLIP,    //
-    TokenType::FN1, TokenType::FN2, TokenType::FN3, TokenType::FN4,        //
-    TokenType::SRAND,                                                      //
-    TokenType::ASIN, TokenType::ACOS, TokenType::ATAN,                     //
-    TokenType::ACOSH, TokenType::ASINH, TokenType::ATANH,                  //
-    TokenType::ABS, TokenType::CABS,                                       //
-    TokenType::FLOOR, TokenType::CEIL, TokenType::TRUNC, TokenType::ROUND, //
-    TokenType::IDENT, TokenType::ZERO, TokenType::ONE,                     //
-};
 
 std::optional<Expr> FormulaParser::builtin_function()
 {
