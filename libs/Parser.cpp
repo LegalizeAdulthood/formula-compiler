@@ -1916,10 +1916,9 @@ Expr FormulaParser::identifier()
         return make_identifier();
     }
 
-    // Also allow some reserved words as identifiers in expression context
-    // TODO: only allow true and false to be identifiers in legacy mode
-    if (!m_options.recognize_extensions &&
-        (check({TokenType::TRUE, TokenType::FALSE}) || (check(TokenType::TYPE_IDENTIFIER) && str() == "color")))
+    // TODO: Also allow some reserved words as identifiers in expression context
+    // only allow true and false to be identifiers in legacy mode
+    if (!m_options.recognize_extensions && check({TokenType::TRUE, TokenType::FALSE}))
     {
         return make_identifier();
     }
