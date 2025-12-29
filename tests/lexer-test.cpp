@@ -825,7 +825,7 @@ class ExtensionKeywordAsIdentifier : public TestWithParam<ExtensionKeywordParam>
 {
 };
 
-TEST_P(ExtensionKeywordAsIdentifier, parsedAsIdentifierWhenExtensionsDisabled)
+TEST_P(ExtensionKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsDisabled)
 {
     const ExtensionKeywordParam &param = GetParam();
     Options options;
@@ -842,32 +842,61 @@ TEST_P(ExtensionKeywordAsIdentifier, parsedAsIdentifierWhenExtensionsDisabled)
 }
 
 static ExtensionKeywordParam s_extension_keywords[]{
-    {"param"},
-    {"endparam"},
-    {"while"},
-    {"endwhile"},
-    {"repeat"},
-    {"until"},
-    {"func"},
-    {"endfunc"},
-    {"heading"},
-    {"endheading"},
+    {"bool"},
+    {"color"},
+    {"complex"},
     {"const"},
+    {"endfunc"},
+    {"endheading"},
+    {"endparam"},
+    {"endwhile"},
+    {"false"},
+    {"float"},
+    {"func"},
+    {"heading"},
     {"import"},
+    {"int"},
     {"new"},
+    {"param"},
+    {"repeat"},
     {"return"},
     {"static"},
     {"this"},
-    {"false"},
     {"true"},
-    {"bool"},
-    {"int"},
-    {"float"},
-    {"complex"},
-    {"color"},
+    {"until"},
+    {"while"},
 };
 
 INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionKeywordAsIdentifier, ValuesIn(s_extension_keywords));
+
+class ContextSensitiveKeywordAsIdentifier : public TestWithParam<ExtensionKeywordParam> {};
+
+TEST_P(ContextSensitiveKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsEnabled)
+{
+    const ExtensionKeywordParam &param = GetParam();
+    Options options;
+    options.recognize_extensions = true;
+    Lexer lexer{param.input, options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::IDENTIFIER, token.type);
+    std::string expected_value{param.input};
+    std::transform(expected_value.begin(), expected_value.end(), expected_value.begin(),
+        [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+    EXPECT_EQ(expected_value, std::get<std::string>(token.value));
+}
+
+static ExtensionKeywordParam s_context_sensitive_keywords[]{
+    {"const"},  //
+    {"import"}, //
+    {"new"},    //
+    {"return"}, //
+    {"static"}, //
+    {"this"},   //
+};
+
+INSTANTIATE_TEST_SUITE_P(TestExtensionsEnabled, ContextSensitiveKeywordAsIdentifier, ValuesIn(s_context_sensitive_keywords));
 
 // Test extension section names parsed as identifier + colon when extensions disabled
 class ExtensionSectionAsIdentifier : public TestWithParam<ExtensionKeywordParam>

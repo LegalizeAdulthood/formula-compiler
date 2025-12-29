@@ -637,8 +637,8 @@ Token Lexer::identifier()
         TokenType type;
     };
 
-    // Base Fractint reserved words
-    static constexpr TextTokenType reserved[]{
+    // reserved words
+    static constexpr TextTokenType RESERVED[]{
         {"if", TokenType::IF},                // keywords
         {"elseif", TokenType::ELSE_IF},       //
         {"else", TokenType::ELSE},            //
@@ -701,39 +701,43 @@ Token Lexer::identifier()
     };
 
     // UltraFractal extension keywords
-    static constexpr TextTokenType extensions[]{
-        {"param", TokenType::PARAM},            //
-        {"endparam", TokenType::END_PARAM},     //
-        {"while", TokenType::WHILE},            //
-        {"endwhile", TokenType::END_WHILE},     //
-        {"repeat", TokenType::REPEAT},          //
-        {"until", TokenType::UNTIL},            //
-        {"func", TokenType::FUNC},              //
-        {"endfunc", TokenType::END_FUNC},       //
-        {"heading", TokenType::HEADING},        //
-        {"endheading", TokenType::END_HEADING}, //
-        {"const", TokenType::CTX_CONST},        //
-        {"import", TokenType::CTX_IMPORT},      //
-        {"new", TokenType::CTX_NEW},            //
-        {"return", TokenType::CTX_RETURN},      //
-        {"static", TokenType::CTX_STATIC},      //
-        {"this", TokenType::CTX_THIS},          //
-        {"false", TokenType::FALSE},            // boolean values
-        {"true", TokenType::TRUE},              //
-        {"bool", TokenType::TYPE_IDENTIFIER},   // type names
-        {"int", TokenType::TYPE_IDENTIFIER},    //
-        {"float", TokenType::TYPE_IDENTIFIER},  //
-        {"complex", TokenType::TYPE_IDENTIFIER},//
-        {"color", TokenType::TYPE_IDENTIFIER},  //
-        {"global", TokenType::GLOBAL},          // Section names (all extensions)
-        {"builtin", TokenType::BUILTIN},        //
-        {"init", TokenType::INIT},              //
-        {"loop", TokenType::LOOP},              //
-        {"bailout", TokenType::BAILOUT},        //
+    static constexpr TextTokenType EXTENSIONS[]{
+        {"bailout", TokenType::BAILOUT},          //
+        {"bool", TokenType::TYPE_IDENTIFIER},     // type names
+        {"builtin", TokenType::BUILTIN},          //
+        {"color", TokenType::TYPE_IDENTIFIER},    //
+        {"complex", TokenType::TYPE_IDENTIFIER},  //
+        {"default", TokenType::DEFAULT},          //
+        {"endfunc", TokenType::END_FUNC},         //
+        {"endheading", TokenType::END_HEADING},   //
+        {"endparam", TokenType::END_PARAM},       //
+        {"endwhile", TokenType::END_WHILE},       //
+        {"false", TokenType::FALSE},              // boolean values
+        {"float", TokenType::TYPE_IDENTIFIER},    //
+        {"func", TokenType::FUNC},                //
+        {"global", TokenType::GLOBAL},            // Section names (all extensions)
+        {"heading", TokenType::HEADING},          //
+        {"init", TokenType::INIT},                //
+        {"int", TokenType::TYPE_IDENTIFIER},      //
+        {"loop", TokenType::LOOP},                //
+        {"param", TokenType::PARAM},              //
         {"perturbinit", TokenType::PERTURB_INIT}, //
         {"perturbloop", TokenType::PERTURB_LOOP}, //
-        {"default", TokenType::DEFAULT},        //
-        {"switch", TokenType::SWITCH},          //
+        {"repeat", TokenType::REPEAT},            //
+        {"switch", TokenType::SWITCH},            //
+        {"true", TokenType::TRUE},                //
+        {"until", TokenType::UNTIL},              //
+        {"while", TokenType::WHILE},              //
+    };
+
+    // UltraFractal context sensitive keywords
+    static constexpr TextTokenType CONTEXT_KEYWORDS[]{
+        {"const", TokenType::CTX_CONST},   //
+        {"import", TokenType::CTX_IMPORT}, //
+        {"new", TokenType::CTX_NEW},       //
+        {"return", TokenType::CTX_RETURN}, //
+        {"static", TokenType::CTX_STATIC}, //
+        {"this", TokenType::CTX_THIS},     //
     };
 
     const auto to_lower = [](std::string text)
@@ -746,9 +750,9 @@ Token Lexer::identifier()
     std::string lower_identifier = to_lower(identifier);
 
     // Check base reserved words
-    if (auto it = std::find_if(std::begin(reserved), std::end(reserved),
+    if (auto it = std::find_if(std::begin(RESERVED), std::end(RESERVED),
             [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });
-        it != std::end(reserved))
+        it != std::end(RESERVED))
     {
         return {it->type, std::string{it->text}, start_loc, length};
     }
@@ -756,17 +760,15 @@ Token Lexer::identifier()
     // Check extension keywords and section names only if extensions are enabled
     if (m_options.recognize_extensions)
     {
-        if (auto it = std::find_if(std::begin(extensions), std::end(extensions),
+        if (auto it = std::find_if(std::begin(EXTENSIONS), std::end(EXTENSIONS),
                 [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });
-            it != std::end(extensions))
+            it != std::end(EXTENSIONS))
         {
             // Section names must be followed by a colon
-            if (
-                it->type == TokenType::GLOBAL || it->type == TokenType::BUILTIN ||
-                it->type == TokenType::INIT || it->type == TokenType::LOOP ||
-                it->type == TokenType::BAILOUT || it->type == TokenType::PERTURB_INIT ||
-                it->type == TokenType::PERTURB_LOOP || it->type == TokenType::DEFAULT ||
-                it->type == TokenType::SWITCH)
+            if (it->type == TokenType::GLOBAL || it->type == TokenType::BUILTIN                                 //
+                || it->type == TokenType::INIT || it->type == TokenType::LOOP || it->type == TokenType::BAILOUT //
+                || it->type == TokenType::PERTURB_INIT || it->type == TokenType::PERTURB_LOOP                   //
+                || it->type == TokenType::DEFAULT || it->type == TokenType::SWITCH)
             {
                 if (current_char() == ':')
                 {

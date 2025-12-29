@@ -1278,7 +1278,6 @@ static ExtensionKeywordIdentifierParam s_extension_identifier_keywords[] = {
     {"true"}, {"false"}, {"color"},                                          //
     {"param"}, {"endparam"}, {"while"}, {"endwhile"}, {"repeat"}, {"until"}, //
     {"func"}, {"endfunc"}, {"heading"}, {"endheading"},                      //
-    {"const"}, {"import"}, {"new"}, {"return"}, {"static"}, {"this"}         //
 };
 
 TEST_P(ExtensionKeywordIdentifier, canBeUsedAsIdentifierWhenExtensionsDisabled)
