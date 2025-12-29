@@ -32,6 +32,11 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         {
             continue;
         }
+        // was the opening brace commented out?
+        if (const auto semi{line.find_first_of(";")}; semi < open_brace)
+        {
+            continue;
+        }
 
         std::string name{line};
         name.erase(open_brace);
@@ -104,7 +109,9 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         bool found_brace{};
         while (std::getline(in, line))
         {
-            if (const auto brace = line.find("}"); brace != std::string::npos)
+            const auto semi{line.find_first_of(";")};
+            if (const auto brace = line.find("}");
+                brace != std::string::npos && (semi == std::string::npos || semi > brace))
             {
                 found_brace = true;
                 line.erase(brace);

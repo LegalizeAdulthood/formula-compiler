@@ -8,6 +8,7 @@
 #include <formula/ParseOptions.h>
 #include <formula/Parser.h>
 
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -31,6 +32,15 @@ inline std::ostream &operator<<(std::ostream &os, const SourceLocation &loc)
 namespace
 {
 
+std::string to_lower(std::string text)
+{
+    for (char &c : text)
+    {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return text;
+}
+
 int main(const std::vector<std::string_view> &args)
 {
     std::vector<std::filesystem::path> files;
@@ -53,7 +63,13 @@ int main(const std::vector<std::string_view> &args)
         int bad{};
         for (const FormulaEntry &entry : load_formula_entries(str))
         {
-            ParserPtr parser{create_parser(entry.body, Options{})};
+            if (entry.name.empty() || to_lower(entry.name) == "comment" )
+            {
+                continue;
+            }
+            Options options{};
+            options.recognize_extensions = false;
+            ParserPtr parser{create_parser(entry.body, options)};
             if (!parser)
             {
                 std::cout << "Error: " << file.filename().string() << '(' << entry.name

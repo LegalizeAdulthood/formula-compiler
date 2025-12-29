@@ -111,3 +111,30 @@ z=c:z=z*z+c,|z|>4})entry"};
               "z=c:z=z*z+c,|z|>4\n",
         entries[0].body);
 }
+
+TEST(TestFormulaEntry, commentBeforeOpenBrace)
+{
+    const char *const frm{R"entry(; Mandelbrot(XAXIS)[float=y]{  ; comment here
+; z=c:z=z*z+c,|z|>4})entry"};
+    std::istringstream str{frm};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_TRUE(entries.empty()) << "entry was commented out";
+}
+
+TEST(TestFormulaEntry, commentBeforeCloseBrace)
+{
+    const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{  ; comment here
+;} this is a phony close
+z=c, frobozz=1964:z=z*z+c,|z|>4
+} ; this is the real close)entry"};
+    std::istringstream str{frm};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_FALSE(entries.empty()) << "entry was parsed";
+    EXPECT_EQ(1U, entries.size());
+    EXPECT_EQ("Mandelbrot", entries[0].name);
+    EXPECT_NE(entries[0].body.find("frobozz"), std::string::npos);
+}
