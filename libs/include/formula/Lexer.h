@@ -21,6 +21,7 @@ enum class LexerErrorCode
     NONE = 0,
     CONTINUATION_WITH_WHITESPACE,
     INVALID_NUMBER,
+    STRING_LITERAL_NOT_SUPPORTED,
 };
 
 enum class TokenType
@@ -193,7 +194,7 @@ struct Token
 
 struct Options
 {
-    bool allow_identifier_prefix{};
+    bool recognize_extensions{true};
 };
 
 class Lexer

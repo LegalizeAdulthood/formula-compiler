@@ -196,10 +196,18 @@ Token Lexer::get_token()
     // Check for quoted strings
     if (ch == '"')
     {
+        if (!m_options.recognize_extensions)
+        {
+            SourceLocation start = m_source_location;
+            // Consume the string to avoid cascading errors
+            Token result = string_literal();
+            error(LexerErrorCode::STRING_LITERAL_NOT_SUPPORTED, start);
+            return {TokenType::INVALID, start, result.length};
+        }
         return string_literal();
     }
 
-    if (m_options.allow_identifier_prefix)
+    if (m_options.recognize_extensions)
     {
         if (ch == '#')
         {
@@ -622,27 +630,19 @@ Token Lexer::identifier()
 
     size_t length = m_position - start;
 
-    // Check for keywords and builtin variables (case-sensitive)
+    // Check for keywords and builtin variables (case-insensitive)
     struct TextTokenType
     {
         std::string_view text;
         TokenType type;
     };
 
+    // Base Fractint reserved words
     static constexpr TextTokenType reserved[]{
         {"if", TokenType::IF},                // keywords
         {"elseif", TokenType::ELSE_IF},       //
         {"else", TokenType::ELSE},            //
         {"endif", TokenType::END_IF},         //
-        {"param", TokenType::PARAM},          //
-        {"endparam", TokenType::END_PARAM},   //
-        {"false", TokenType::FALSE},          // boolean values
-        {"true", TokenType::TRUE},            //
-        {"bool", TokenType::TYPE_IDENTIFIER},       // type names
-        {"int", TokenType::TYPE_IDENTIFIER},         //
-        {"float", TokenType::TYPE_IDENTIFIER},     //
-        {"complex", TokenType::TYPE_IDENTIFIER}, //
-        {"color", TokenType::TYPE_IDENTIFIER},     //
         {"p1", TokenType::P1},                // Built-in variables
         {"p2", TokenType::P2},                //
         {"p3", TokenType::P3},                //
@@ -700,44 +700,90 @@ Token Lexer::identifier()
         {"zero", TokenType::ZERO},            //
     };
 
+    // UltraFractal extension keywords
+    static constexpr TextTokenType extensions[]{
+        {"param", TokenType::PARAM},            //
+        {"endparam", TokenType::END_PARAM},     //
+        {"while", TokenType::WHILE},            //
+        {"endwhile", TokenType::END_WHILE},     //
+        {"repeat", TokenType::REPEAT},          //
+        {"until", TokenType::UNTIL},            //
+        {"func", TokenType::FUNC},              //
+        {"endfunc", TokenType::END_FUNC},       //
+        {"heading", TokenType::HEADING},        //
+        {"endheading", TokenType::END_HEADING}, //
+        {"const", TokenType::CTX_CONST},        //
+        {"import", TokenType::CTX_IMPORT},      //
+        {"new", TokenType::CTX_NEW},            //
+        {"return", TokenType::CTX_RETURN},      //
+        {"static", TokenType::CTX_STATIC},      //
+        {"this", TokenType::CTX_THIS},          //
+        {"false", TokenType::FALSE},            // boolean values
+        {"true", TokenType::TRUE},              //
+        {"bool", TokenType::TYPE_IDENTIFIER},   // type names
+        {"int", TokenType::TYPE_IDENTIFIER},    //
+        {"float", TokenType::TYPE_IDENTIFIER},  //
+        {"complex", TokenType::TYPE_IDENTIFIER},//
+        {"color", TokenType::TYPE_IDENTIFIER},  //
+        {"global", TokenType::GLOBAL},          // Section names (all extensions)
+        {"builtin", TokenType::BUILTIN},        //
+        {"init", TokenType::INIT},              //
+        {"loop", TokenType::LOOP},              //
+        {"bailout", TokenType::BAILOUT},        //
+        {"perturbinit", TokenType::PERTURB_INIT}, //
+        {"perturbloop", TokenType::PERTURB_LOOP}, //
+        {"default", TokenType::DEFAULT},        //
+        {"switch", TokenType::SWITCH},          //
+    };
+
     const auto to_lower = [](std::string text)
     {
         std::transform(text.begin(), text.end(), text.begin(),
             [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
         return text;
     };
+
+    std::string lower_identifier = to_lower(identifier);
+
+    // Check base reserved words
     if (auto it = std::find_if(std::begin(reserved), std::end(reserved),
-            [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
+            [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });
         it != std::end(reserved))
     {
         return {it->type, std::string{it->text}, start_loc, length};
     }
 
-    static constexpr TextTokenType section_names[]{
-        {"global", TokenType::GLOBAL},            // Section names
-        {"builtin", TokenType::BUILTIN},          //
-        {"init", TokenType::INIT},                //
-        {"loop", TokenType::LOOP},                //
-        {"bailout", TokenType::BAILOUT},          //
-        {"perturbinit", TokenType::PERTURB_INIT}, //
-        {"perturbloop", TokenType::PERTURB_LOOP}, //
-        {"default", TokenType::DEFAULT},          //
-        {"switch", TokenType::SWITCH},            //
-    };
-    if (auto it = std::find_if(std::begin(section_names), std::end(section_names),
-            [&identifier, &to_lower](const TextTokenType &kw) { return kw.text == to_lower(identifier); });
-        it != std::end(section_names))
+    // Check extension keywords and section names only if extensions are enabled
+    if (m_options.recognize_extensions)
     {
-        if (current_char() == ':')
+        if (auto it = std::find_if(std::begin(extensions), std::end(extensions),
+                [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });
+            it != std::end(extensions))
         {
-            advance();                   // Consume the colon for section names
-            length = m_position - start; // Recalculate length to include the colon
-            return {it->type, std::string{it->text}, start_loc, length};
+            // Section names must be followed by a colon
+            if (
+                it->type == TokenType::GLOBAL || it->type == TokenType::BUILTIN ||
+                it->type == TokenType::INIT || it->type == TokenType::LOOP ||
+                it->type == TokenType::BAILOUT || it->type == TokenType::PERTURB_INIT ||
+                it->type == TokenType::PERTURB_LOOP || it->type == TokenType::DEFAULT ||
+                it->type == TokenType::SWITCH)
+            {
+                if (current_char() == ':')
+                {
+                    advance();                   // Consume the colon for section names
+                    length = m_position - start; // Recalculate length to include the colon
+                    return {it->type, std::string{it->text}, start_loc, length};
+                }
+            }
+            else
+            {
+                return {it->type, std::string{it->text}, start_loc, length};
+            }
         }
     }
 
-    // Not a reserved word, return as identifier
-    return {TokenType::IDENTIFIER, to_lower(identifier), start_loc, length};
+    // If not recognized as extension section name, treat as identifier (and possibly colon)
+    return {TokenType::IDENTIFIER, lower_identifier, start_loc, length};
 }
 
 Token Lexer::constant_identifier()

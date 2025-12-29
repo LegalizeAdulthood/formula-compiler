@@ -810,4 +810,137 @@ TEST(TestLexer, parameterIdentifier)
     EXPECT_EQ("bailout", std::get<std::string>(token.value));
 }
 
+// Tests for extension keywords parsed as identifiers when extensions are disabled
+struct ExtensionKeywordParam
+{
+    std::string_view input;
+};
+
+void PrintTo(const ExtensionKeywordParam &param, std::ostream *os)
+{
+    *os << param.input;
+}
+
+class ExtensionKeywordAsIdentifier : public TestWithParam<ExtensionKeywordParam>
+{
+};
+
+TEST_P(ExtensionKeywordAsIdentifier, parsedAsIdentifierWhenExtensionsDisabled)
+{
+    const ExtensionKeywordParam &param = GetParam();
+    Options options;
+    options.recognize_extensions = false;
+    Lexer lexer{param.input, options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::IDENTIFIER, token.type);
+    std::string expected_value{param.input};
+    std::transform(expected_value.begin(), expected_value.end(), expected_value.begin(),
+        [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+    EXPECT_EQ(expected_value, std::get<std::string>(token.value));
+}
+
+static ExtensionKeywordParam s_extension_keywords[]{
+    {"param"},
+    {"endparam"},
+    {"while"},
+    {"endwhile"},
+    {"repeat"},
+    {"until"},
+    {"func"},
+    {"endfunc"},
+    {"heading"},
+    {"endheading"},
+    {"const"},
+    {"import"},
+    {"new"},
+    {"return"},
+    {"static"},
+    {"this"},
+    {"false"},
+    {"true"},
+    {"bool"},
+    {"int"},
+    {"float"},
+    {"complex"},
+    {"color"},
+};
+
+INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionKeywordAsIdentifier, ValuesIn(s_extension_keywords));
+
+// Test extension section names parsed as identifier + colon when extensions disabled
+class ExtensionSectionAsIdentifier : public TestWithParam<ExtensionKeywordParam>
+{
+};
+
+TEST_P(ExtensionSectionAsIdentifier, parsedAsIdentifierAndColonWhenExtensionsDisabled)
+{
+    const ExtensionKeywordParam &param = GetParam();
+    std::string input{param.input};
+    input += ':';
+    Options options;
+    options.recognize_extensions = false;
+    Lexer lexer{input, options};
+
+    const Token id_token{lexer.get_token()};
+    const Token colon_token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::IDENTIFIER, id_token.type);
+    std::string expected_value{param.input};
+    std::transform(expected_value.begin(), expected_value.end(), expected_value.begin(),
+        [](char c) { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
+    EXPECT_EQ(expected_value, std::get<std::string>(id_token.value));
+    EXPECT_EQ(TokenType::COLON, colon_token.type);
+}
+
+static ExtensionKeywordParam s_extension_sections[]{
+    {"global"},      //
+    {"builtin"},     //
+    {"init"},        //
+    {"loop"},        //
+    {"bailout"},     //
+    {"perturbinit"}, //
+    {"perturbloop"}, //
+    {"default"},     //
+    {"switch"},      //
+};
+
+INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionSectionAsIdentifier, ValuesIn(s_extension_sections));
+
+TEST(TestLexer, stringLiteralErrorWhenExtensionsDisabled)
+{
+    Options options;
+    options.recognize_extensions = false;
+    Lexer lexer{R"("hello")", options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::INVALID, token.type);
+    ASSERT_FALSE(lexer.get_errors().empty());
+    EXPECT_EQ(LexerErrorCode::STRING_LITERAL_NOT_SUPPORTED, lexer.get_errors().front().code);
+}
+
+TEST(TestLexer, identifierPrefixIgnoredWhenExtensionsDisabled)
+{
+    Options options;
+    options.recognize_extensions = false;
+    Lexer lexer{"#pixel", options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::INVALID, token.type);
+}
+
+TEST(TestLexer, identifierPrefixWorksWhenExtensionsEnabled)
+{
+    Options options;
+    options.recognize_extensions = true;
+    Lexer lexer{"#pixel", options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ(TokenType::CONSTANT_IDENTIFIER, token.type);
+}
+
 } // namespace formula::test
