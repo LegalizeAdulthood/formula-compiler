@@ -41,13 +41,19 @@ constexpr std::array<TokenType, 9> s_sections{
     TokenType::DEFAULT, TokenType::SWITCH,                //
 };
 
+lexer::Options lexer_options_for_parser(const Options &options)
+{
+    lexer::Options lexer_options;
+    lexer_options.recognize_extensions = options.recognize_extensions;
+    return lexer_options;
+}
+
 class FormulaParser : public Parser
 {
 public:
     FormulaParser(std::string_view text, const Options &options) :
         m_ast(std::make_shared<FormulaSections>()),
-        m_text(text),
-        m_lexer(text),
+        m_lexer(text, lexer_options_for_parser(options)),
         m_options(options)
     {
     }
@@ -150,7 +156,6 @@ private:
 
 private:
     FormulaSectionsPtr m_ast;
-    std::string_view m_text;
     Lexer m_lexer;
     Token m_curr;
     std::vector<Token> m_backtrack;
@@ -1198,9 +1203,12 @@ FormulaSectionsPtr FormulaParser::parse()
     advance();
 
     skip_separators();
-    if (const std::optional result = section_formula(); result)
+    if (m_options.recognize_extensions)
     {
-        return result.value() ? m_ast : nullptr;
+        if (const std::optional result = section_formula(); result)
+        {
+            return result.value() ? m_ast : nullptr;
+        }
     }
 
     Expr result;
@@ -1874,7 +1882,8 @@ Expr FormulaParser::identifier()
 
     // Also allow some reserved words as identifiers in expression context
     // TODO: only allow true and false to be identifiers in legacy mode
-    if (check({TokenType::TRUE, TokenType::FALSE}) || (check(TokenType::TYPE_IDENTIFIER) && str() == "color"))
+    if (!m_options.recognize_extensions &&
+        (check({TokenType::TRUE, TokenType::FALSE}) || (check(TokenType::TYPE_IDENTIFIER) && str() == "color")))
     {
         Expr result = std::make_shared<IdentifierNode>(str());
         advance(); // consume the token

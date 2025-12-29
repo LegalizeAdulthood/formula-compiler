@@ -10,6 +10,7 @@ namespace formula::parser
 struct Options
 {
     bool allow_builtin_assignment{true};
+    bool recognize_extensions{true};
 };
 
 } // namespace formula::parser
