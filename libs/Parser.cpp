@@ -908,6 +908,7 @@ bool FormulaParser::switch_section()
 {
     if (!check(TokenType::IDENTIFIER))
     {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
         return false;
     }
     const std::string name{str()};
@@ -915,6 +916,7 @@ bool FormulaParser::switch_section()
 
     if (!check(TokenType::ASSIGN))
     {
+        error(ErrorCode::EXPECTED_ASSIGNMENT);
         return false;
     }
     advance();
@@ -923,6 +925,7 @@ bool FormulaParser::switch_section()
     {
         if (!check(TokenType::STRING))
         {
+            error(ErrorCode::EXPECTED_STRING);
             return false;
         }
         const std::string value{str()};
@@ -930,6 +933,7 @@ bool FormulaParser::switch_section()
 
         if (!check(TokenType::TERMINATOR))
         {
+            error(ErrorCode::EXPECTED_TERMINATOR);
             return false;
         }
         advance();
@@ -939,20 +943,23 @@ bool FormulaParser::switch_section()
     }
 
     // dest_param = builtin
-    const std::string value{str()};
+    std::string value;
     if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
         it != std::end(s_builtin_vars))
     {
+        value = str();
     }
     // dest_param = param
     else if (!check(TokenType::IDENTIFIER))
     {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
         return false;
     }
     advance();
 
     if (!check(TokenType::TERMINATOR))
     {
+        error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
     advance();
@@ -2033,6 +2040,7 @@ std::string to_string(ErrorCode code)
         ERROR_CODE_CASE(EXPECTED_FLOATING_POINT);
         ERROR_CODE_CASE(EXPECTED_COMPLEX);
         ERROR_CODE_CASE(EXPECTED_STRING);
+        ERROR_CODE_CASE(SWITCH_SECTION_INVALID_KEY);
     }
 
     return std::to_string(static_cast<int>(code));

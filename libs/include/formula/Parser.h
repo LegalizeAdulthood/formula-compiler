@@ -43,6 +43,7 @@ enum class ErrorCode
     BUILTIN_SECTION_INVALID_TYPE,
     DEFAULT_SECTION_INVALID_KEY,
     DEFAULT_SECTION_INVALID_METHOD,
+    SWITCH_SECTION_INVALID_KEY,
 };
 
 std::string to_string(ErrorCode code);

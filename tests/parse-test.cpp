@@ -598,6 +598,13 @@ static ParseFailureParam s_parse_failures[]{
     {"defaultPerturbNoValue", "default:\nperturb=", ErrorCode::EXPECTED_PRIMARY},                        //
     {"defaultPerturbBadValue", "default:\nperturb=if", ErrorCode::EXPECTED_PRIMARY},                     //
     {"defaultPerturbNoTerminator", "default:\nperturb=true", ErrorCode::EXPECTED_TERMINATOR},            //
+    {"switchNoTerminator", "switch:", ErrorCode::EXPECTED_TERMINATOR},                                   //
+    {"switchInvalidKey", "switch:\n1", ErrorCode::EXPECTED_IDENTIFIER},                                  //
+    {"switchTypeNoAssignment", "switch:\ntype \"Julia\"", ErrorCode::EXPECTED_ASSIGNMENT},               //
+    {"switchTypeNoTerminator", "switch:\ntype=\"Julia\"", ErrorCode::EXPECTED_TERMINATOR},               //
+    {"switchTypeNoString", "switch:\ntype=3\n", ErrorCode::EXPECTED_STRING},                             //
+    {"switchParamInvalidValue", "switch:\nfoo=3\n", ErrorCode::EXPECTED_IDENTIFIER},                     //
+    {"switchParamNoTerminator", "switch:\nfoo=foo", ErrorCode::EXPECTED_TERMINATOR},                     //
     {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
     {"ifWithoutOpenParen", "if 1", ErrorCode::EXPECTED_OPEN_PAREN},                                      //
     {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
