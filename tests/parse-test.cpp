@@ -553,6 +553,7 @@ static std::string s_reserved_words[]{
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
 static ParseFailureParam s_parse_failures[]{
+    {"ifWithBadCondition", "if(:)\n", ErrorCode::EXPECTED_PRIMARY},                                      //
     {"ifWithoutSeparator", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                            //
     {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                                            //
     {"ifElseWithoutSeparator", "if(1)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                  //
@@ -612,6 +613,9 @@ static ParseFailureParam s_parse_failures[]{
     {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
     {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_IDENTIFIER},                                     //
     {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},                             //
+    {"complexLiteralWithoutComma", "z=(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},                          //
+    {"complexLiteralWithoutClosingParen", "z=(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                    //
+    {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                                      //
 };
 
 TEST_P(ParseFailures, parse)

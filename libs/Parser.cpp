@@ -1998,25 +1998,37 @@ Expr FormulaParser::primary()
         }
 
         // Allow full expressions including assignment in parens
-        if (Expr expr = conjunctive(); expr && check(TokenType::CLOSE_PAREN))
+        if (Expr expr = conjunctive())
         {
-            advance(); // consume ')'
-            return expr;
+            if (check(TokenType::CLOSE_PAREN))
+            {
+                advance(); // consume ')'
+                return expr;
+            }
+            error(ErrorCode::EXPECTED_CLOSE_PAREN);
+            return nullptr;
         }
-        return nullptr; // missing closing parenthesis
+
+        // conjunctive already recorded he error
+        return nullptr;
     }
 
     // Handle modulus operator |expr|
     if (check(TokenType::MODULUS))
     {
         advance();
-        Expr expr = conjunctive(); // Parse the inner expression
-        if (expr && check(TokenType::MODULUS))
+        if (Expr expr = conjunctive())
         {
-            advance(); // consume closing '|'
-            return std::make_shared<UnaryOpNode>('|', expr);
+            if (check(TokenType::MODULUS))
+            {
+                advance(); // consume closing '|'
+                return std::make_shared<UnaryOpNode>('|', expr);
+            }
+            error(ErrorCode::EXPECTED_CLOSE_MODULUS);
+            return nullptr; // missing closing '|'
         }
-        return nullptr; // missing closing '|'
+        // conjunctive already recorded the error
+        return nullptr;
     }
 
     error(ErrorCode::EXPECTED_PRIMARY);
@@ -2053,6 +2065,7 @@ std::string to_string(ErrorCode code)
         ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
         ERROR_CODE_CASE(EXPECTED_OPEN_PAREN);
         ERROR_CODE_CASE(EXPECTED_CLOSE_PAREN);
+        ERROR_CODE_CASE(EXPECTED_CLOSE_MODULUS);
         ERROR_CODE_CASE(EXPECTED_IDENTIFIER);
         ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
         ERROR_CODE_CASE(EXPECTED_ASSIGNMENT);
