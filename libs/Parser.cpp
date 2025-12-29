@@ -1905,11 +1905,15 @@ Expr FormulaParser::number()
 
 Expr FormulaParser::identifier()
 {
+    const auto make_identifier = [this]
+    {
+        const std::string name{str()};
+        advance(); // consume the identifier
+        return std::make_shared<IdentifierNode>(name);
+    };
     if (check(TokenType::IDENTIFIER))
     {
-        Expr result = std::make_shared<IdentifierNode>(str());
-        advance(); // consume the identifier
-        return result;
+        return make_identifier();
     }
 
     // Also allow some reserved words as identifiers in expression context
@@ -1917,19 +1921,15 @@ Expr FormulaParser::identifier()
     if (!m_options.recognize_extensions &&
         (check({TokenType::TRUE, TokenType::FALSE}) || (check(TokenType::TYPE_IDENTIFIER) && str() == "color")))
     {
-        Expr result = std::make_shared<IdentifierNode>(str());
-        advance(); // consume the token
-        return result;
+        return make_identifier();
     }
 
     if (std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type) != std::end(s_builtin_fns))
     {
         if (m_options.allow_builtin_assignment)
         {
-            Expr result = std::make_shared<IdentifierNode>(str());
-            advance(); // consume the token
             warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
-            return result;
+            return make_identifier();
         }
 
         error(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
