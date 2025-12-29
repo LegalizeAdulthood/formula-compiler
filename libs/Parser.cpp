@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -1561,7 +1562,7 @@ Expr FormulaParser::block()
 
 Expr FormulaParser::assignment()
 {
-    Expr left = additive();
+    Expr left{additive()};
 
     // Assignment is right-associative and has lowest precedence
     if (left && check(TokenType::ASSIGN))
@@ -1574,19 +1575,17 @@ Expr FormulaParser::assignment()
             return nullptr;
         }
 
-        // Get the variable name from the IdentifierNode
-        const IdentifierNode *id_node = static_cast<const IdentifierNode *>(left.get());
-        std::string var_name = id_node->name();
-
-        advance();                 // consume '='
-        Expr right = assignment(); // Right-associative: recursive call
-        if (!right)
+        advance();                    // consume '='
+        if (Expr right{assignment()}) // Right-associative: recursive call
         {
-            // assignment already recorded the error
-            return nullptr;
+            // Get the variable name from the IdentifierNode
+            const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
+            assert(id); // is_user_identifier already checked it
+            return std::make_shared<AssignmentNode>(id->name(), right);
         }
 
-        return std::make_shared<AssignmentNode>(var_name, right);
+        // assignment already recorded the error
+        return nullptr;
     }
 
     return left;
