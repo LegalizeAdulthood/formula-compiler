@@ -1271,15 +1271,19 @@ INSTANTIATE_TEST_SUITE_P(TestParsedFormula, ParsedFormulaSuite, ValuesIn(g_expre
 // Extension keywords as identifiers
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ExtensionKeywordIdentifierParam {
+struct ExtensionKeywordIdentifierParam
+{
     std::string_view keyword;
 };
 
-inline void PrintTo(const ExtensionKeywordIdentifierParam &param, std::ostream *os) {
+inline void PrintTo(const ExtensionKeywordIdentifierParam &param, std::ostream *os)
+{
     *os << param.keyword;
 }
 
-class ExtensionKeywordIdentifier : public TestWithParam<ExtensionKeywordIdentifierParam> {};
+class ExtensionKeywordIdentifier : public TestWithParam<ExtensionKeywordIdentifierParam>
+{
+};
 
 static ExtensionKeywordIdentifierParam s_extension_identifier_keywords[] = {
     {"true"}, {"false"}, {"color"},                                          //
@@ -1291,7 +1295,7 @@ TEST_P(ExtensionKeywordIdentifier, canBeUsedAsIdentifierWhenExtensionsDisabled)
 {
     const ExtensionKeywordIdentifierParam &param = GetParam();
     std::string text = std::string(param.keyword) + "=1";
-    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/true, /*recognize_extensions*/false});
+    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/ true, /*recognize_extensions*/ false});
 
     const ast::FormulaSectionsPtr result = parser->parse();
 
@@ -1303,7 +1307,7 @@ TEST_P(ExtensionKeywordIdentifier, cannotBeUsedAsIdentifierWhenExtensionsEnabled
 {
     const ExtensionKeywordIdentifierParam &param = GetParam();
     std::string text = std::string(param.keyword) + "=1";
-    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/true, /*recognize_extensions*/true});
+    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/ true, /*recognize_extensions*/ true});
 
     const ast::FormulaSectionsPtr result = parser->parse();
 

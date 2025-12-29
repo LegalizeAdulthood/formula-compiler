@@ -1461,6 +1461,7 @@ Expr FormulaParser::if_statement_no_endif()
     Expr condition = conjunctive();
     if (!condition)
     {
+        // conjunctive() will have already recorded the error
         return nullptr;
     }
 
@@ -1489,6 +1490,7 @@ Expr FormulaParser::if_statement_no_endif()
         else_block = if_statement_no_endif();
         if (!else_block)
         {
+            // if_statement_no_endif will have already recorded the error
             return nullptr;
         }
     }
@@ -1537,9 +1539,7 @@ Expr FormulaParser::block()
         // Check for statement separator
         if (match({TokenType::COMMA, TokenType::TERMINATOR}))
         {
-            // Skip any whitespace after comma
             skip_separators();
-            // Continue parsing more statements
             continue;
         }
 
@@ -1570,6 +1570,7 @@ Expr FormulaParser::assignment()
         if (!is_user_identifier(left))
         {
             // Left side must be a user identifier, not a reserved word or expression
+            // is_user_identifier already recorded the error
             return nullptr;
         }
 
@@ -1581,6 +1582,7 @@ Expr FormulaParser::assignment()
         Expr right = assignment(); // Right-associative: recursive call
         if (!right)
         {
+            // assignment already recorded the error
             return nullptr;
         }
 
@@ -1603,6 +1605,7 @@ Expr FormulaParser::conjunctive()
         Expr right = comparative();
         if (!right)
         {
+            // comparative already recorded the error
             return nullptr;
         }
 
@@ -1624,22 +1627,35 @@ Expr FormulaParser::comparative()
     {
         std::string op;
         if (check(TokenType::LESS_THAN))
+        {
             op = "<";
+        }
         else if (check(TokenType::LESS_EQUAL))
+        {
             op = "<=";
+        }
         else if (check(TokenType::GREATER_THAN))
+        {
             op = ">";
+        }
         else if (check(TokenType::GREATER_EQUAL))
+        {
             op = ">=";
+        }
         else if (check(TokenType::EQUAL))
+        {
             op = "==";
+        }
         else if (check(TokenType::NOT_EQUAL))
+        {
             op = "!=";
+        }
 
         advance();
         Expr right = assignment();
         if (!right)
         {
+            // assignment already recorded the error
             return nullptr;
         }
 
@@ -1660,6 +1676,7 @@ Expr FormulaParser::additive()
         Expr right = term();
         if (!right)
         {
+            // term already recorded the error
             return nullptr;
         }
         left = std::make_shared<BinaryOpNode>(left, op, right);
@@ -1679,6 +1696,7 @@ Expr FormulaParser::term()
         Expr right = unary();
         if (!right)
         {
+            // unary already recorded the error
             return nullptr;
         }
         left = std::make_shared<BinaryOpNode>(left, op, right);
@@ -1696,6 +1714,7 @@ Expr FormulaParser::unary()
         Expr operand = unary(); // Allow chaining: --1
         if (!operand)
         {
+            // unary already recorded the error
             return nullptr;
         }
         return std::make_shared<UnaryOpNode>(op, operand);
@@ -1711,10 +1730,11 @@ Expr FormulaParser::power()
     // Left-associative: parse from left to right using a loop
     while (left && check(TokenType::POWER))
     {
-        advance();              // consume '^'
-        Expr right = primary(); // Parse the next primary, not recursive power()
+        advance(); // consume '^'
+        Expr right = primary();
         if (!right)
         {
+            // primary already recorded the error
             return nullptr;
         }
         left = std::make_shared<BinaryOpNode>(left, '^', right);
@@ -1732,6 +1752,7 @@ Expr FormulaParser::builtin_var()
         advance(); // consume the builtin variable
         return result;
     }
+    // not an error
     return nullptr;
 }
 
@@ -1754,11 +1775,13 @@ std::optional<Expr> FormulaParser::builtin_function()
             }
             backtrack();
             m_curr = curr;
+            // not an error
             return nullptr;
         }
         // function_call encountered a parsing error, so don't backtrack
         return {};
     }
+    // not an error
     return nullptr;
 }
 
