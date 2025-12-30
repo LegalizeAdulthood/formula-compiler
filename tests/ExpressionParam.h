@@ -16,9 +16,9 @@ struct ExpressionParam
 {
     std::string_view name;
     std::string_view text;
-    Section section;
-    double expected_re;
-    double expected_im;
+    Section section{};
+    double expected_re{};
+    double expected_im{};
 };
 
 inline void PrintTo(const ExpressionParam &param, std::ostream *os)

@@ -88,11 +88,16 @@ private:
     bool switch_section();
     std::optional<bool> section_formula();
     Expr sequence();
+    bool is_builtin_var() const;
+    bool is_builtin_fn() const;
+    bool is_assignable() const;
+    Expr foo();
     Expr statement();
     Expr if_statement();
     Expr if_statement_no_endif();
     Expr block();
-    Expr assignment();
+    Expr variable();
+    Expr assignment_statement();
     Expr conjunctive();
     Expr comparative();
     Expr additive();
@@ -100,6 +105,7 @@ private:
     Expr unary();
     Expr power();
     Expr builtin_var();
+    Expr builtin_fn();
     std::optional<Expr> function_call();
     Expr number();
     Expr identifier();
@@ -111,18 +117,26 @@ private:
     void begin_tracking();
     void end_tracking();
     void backtrack();
+    void split_iterate_bailout(const Expr &expr);
     bool match(TokenType type);
+    bool check(TokenType type) const;
+    bool is_user_identifier(const Expr &expr) const;
+    bool skip_separators();
+
+    bool peek(TokenType type)
+    {
+        return m_lexer.peek_token().type == type;
+    }
+
     bool match(std::initializer_list<TokenType> types)
     {
         return std::any_of(types.begin(), types.end(), [this](TokenType t) { return match(t); });
     }
-    bool check(TokenType type) const;
+
     bool check(std::initializer_list<TokenType> types) const
     {
         return std::any_of(types.begin(), types.end(), [this](TokenType t) { return check(t); });
     }
-    bool is_user_identifier(const Expr &expr) const;
-    bool skip_separators();
 
     void warning(ErrorCode code) const
     {
@@ -137,10 +151,12 @@ private:
     {
         return std::get<std::string>(m_curr.value);
     }
+
     double num() const
     {
         return std::get<double>(m_curr.value);
     }
+
     int integer() const
     {
         return std::get<int>(m_curr.value);
@@ -156,7 +172,7 @@ private:
     mutable std::vector<Diagnostic> m_errors;
 };
 
-constexpr TokenType s_builtin_vars[]{
+constexpr std::array<TokenType, 18> BUILTIN_VARS{
     TokenType::P1, TokenType::P2, TokenType::P3, TokenType::P4,              //
     TokenType::P5, TokenType::PIXEL, TokenType::LAST_SQR, TokenType::RAND,   //
     TokenType::PI, TokenType::E, TokenType::MAX_ITER, TokenType::SCREEN_MAX, //
@@ -164,32 +180,7 @@ constexpr TokenType s_builtin_vars[]{
     TokenType::CENTER, TokenType::MAG_X_MAG, TokenType::ROT_SKEW,            //
 };
 
-constexpr std::array<TokenType, 9> s_sections{
-    TokenType::GLOBAL, TokenType::BUILTIN,                //
-    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-    TokenType::DEFAULT, TokenType::SWITCH,                //
-};
-
-constexpr SettingMetadata s_default_settings[]{
-    {"angle", SettingType::FLOATING_POINT},         //
-    {"center", SettingType::COMPLEX},               //
-    {"helpfile", SettingType::STRING},              //
-    {"helptopic", SettingType::STRING},             //
-    {"magn", SettingType::FLOATING_POINT},          //
-    {"maxiter", SettingType::INTEGER},              //
-    {"method", SettingType::ENUMERATION},           //
-    {"periodicity", SettingType::INTEGER},          //
-    {"perturb", SettingType::BOOLEAN_EXPRESSION},   //
-    {"precision", SettingType::INTEGER_EXPRESSION}, //
-    {"rating", SettingType::ENUMERATION},           //
-    {"render", SettingType::BOOLEAN},               //
-    {"skew", SettingType::FLOATING_POINT},          //
-    {"stretch", SettingType::FLOATING_POINT},       //
-    {"title", SettingType::STRING},                 //
-};
-
-constexpr TokenType s_builtin_fns[]{
+constexpr std::array<TokenType, 37> BUILTIN_FNS{
     TokenType::COSXX,                                                      //
     TokenType::COS, TokenType::SIN, TokenType::TAN, TokenType::COTAN,      //
     TokenType::COSH, TokenType::SINH, TokenType::TANH, TokenType::COTANH,  //
@@ -205,29 +196,30 @@ constexpr TokenType s_builtin_fns[]{
     TokenType::IDENT, TokenType::ZERO, TokenType::ONE,                     //
 };
 
-void split_iterate_bailout(FormulaSections &result, const Expr &expr)
-{
-    if (const auto *seq = dynamic_cast<StatementSeqNode *>(expr.get()); seq)
-    {
-        if (seq->statements().size() > 1)
-        {
-            std::vector<Expr> statements = seq->statements();
-            result.bailout = statements.back();
-            statements.pop_back();
-            result.iterate = std::make_shared<StatementSeqNode>(statements);
-        }
-        else
-        {
-            result.iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
-            result.bailout = expr;
-        }
-    }
-    else
-    {
-        result.iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
-        result.bailout = expr;
-    }
-}
+constexpr std::array<TokenType, 9> SECTIONS{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
+constexpr std::array<SettingMetadata, 15> DEFAULT_SETTINGS{
+    SettingMetadata{"angle", SettingType::FLOATING_POINT}, //
+    {"center", SettingType::COMPLEX},                      //
+    {"helpfile", SettingType::STRING},                     //
+    {"helptopic", SettingType::STRING},                    //
+    {"magn", SettingType::FLOATING_POINT},                 //
+    {"maxiter", SettingType::INTEGER},                     //
+    {"method", SettingType::ENUMERATION},                  //
+    {"periodicity", SettingType::INTEGER},                 //
+    {"perturb", SettingType::BOOLEAN_EXPRESSION},          //
+    {"precision", SettingType::INTEGER_EXPRESSION},        //
+    {"rating", SettingType::ENUMERATION},                  //
+    {"render", SettingType::BOOLEAN},                      //
+    {"skew", SettingType::FLOATING_POINT},                 //
+    {"stretch", SettingType::FLOATING_POINT},              //
+    {"title", SettingType::STRING},                        //
+};
 
 lexer::Options lexer_options_for_parser(const Options &options)
 {
@@ -874,9 +866,9 @@ Expr FormulaParser::default_setting()
     }
     advance(); // consume assignment operator
 
-    auto it = std::find_if(std::begin(s_default_settings), std::end(s_default_settings),
-        [&name](const SettingMetadata &m) { return m.name == name; });
-    if (it == std::end(s_default_settings))
+    auto it = std::find_if(
+        DEFAULT_SETTINGS.begin(), DEFAULT_SETTINGS.end(), [&name](const SettingMetadata &m) { return m.name == name; });
+    if (it == DEFAULT_SETTINGS.end())
     {
         error(ErrorCode::DEFAULT_SECTION_INVALID_KEY);
         return nullptr;
@@ -945,8 +937,7 @@ bool FormulaParser::switch_section()
 
     // dest_param = builtin
     std::string value;
-    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
-        it != std::end(s_builtin_vars))
+    if (const auto it = std::find(BUILTIN_VARS.begin(), BUILTIN_VARS.end(), m_curr.type); it != BUILTIN_VARS.end())
     {
         value = str();
     }
@@ -981,7 +972,7 @@ std::optional<bool> FormulaParser::section_formula()
     };
     const auto is_section = [is_token]
     {
-        return std::find_if(s_sections.begin(), s_sections.end(), is_token) != s_sections.end();
+        return std::find_if(SECTIONS.begin(), SECTIONS.end(), is_token) != SECTIONS.end();
     };
     while (is_section())
     {
@@ -1223,6 +1214,30 @@ std::optional<bool> FormulaParser::section_formula()
     return {}; // wasn't a section-ized formula
 }
 
+void FormulaParser::split_iterate_bailout(const Expr &expr)
+{
+    if (const auto *seq = dynamic_cast<StatementSeqNode *>(expr.get()); seq)
+    {
+        if (seq->statements().size() > 1)
+        {
+            std::vector<Expr> statements = seq->statements();
+            m_ast->bailout = statements.back();
+            statements.pop_back();
+            m_ast->iterate = std::make_shared<StatementSeqNode>(statements);
+        }
+        else
+        {
+            m_ast->iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
+            m_ast->bailout = expr;
+        }
+    }
+    else
+    {
+        m_ast->iterate = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
+        m_ast->bailout = expr;
+    }
+}
+
 // If parsing failed, return nullptr instead of partially constructed AST
 FormulaSectionsPtr FormulaParser::parse()
 {
@@ -1252,9 +1267,10 @@ FormulaSectionsPtr FormulaParser::parse()
         return nullptr;
     }
 
+    Expr init;
     if (match(TokenType::COLON))
     {
-        m_ast->initialize = result;
+        init = result;
         result = sequence();
         if (!result)
         {
@@ -1263,11 +1279,19 @@ FormulaSectionsPtr FormulaParser::parse()
     }
     else
     {
-        m_ast->initialize = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
+        init = std::make_shared<StatementSeqNode>(std::vector<Expr>{});
+    }
+
+    // it's an error if not all the input was consumed
+    if (!check(TokenType::END_OF_INPUT))
+    {
+        error(ErrorCode::EXPECTED_STATEMENT);
+        return nullptr;
     }
 
     // Check if we have multiple top-level newline-separated statements (StatementSeqNode)
-    split_iterate_bailout(*m_ast, result);
+    m_ast->initialize = init;
+    split_iterate_bailout(result);
 
     return m_ast;
 }
@@ -1417,11 +1441,31 @@ Expr FormulaParser::sequence()
     return std::make_shared<StatementSeqNode>(std::move(seq));
 }
 
+bool FormulaParser::is_builtin_var() const
+{
+    return std::find(BUILTIN_VARS.begin(), BUILTIN_VARS.end(), m_curr.type) != BUILTIN_VARS.end();
+}
+
+bool FormulaParser::is_builtin_fn() const
+{
+    return std::find(BUILTIN_FNS.begin(), BUILTIN_FNS.end(), m_curr.type) != BUILTIN_FNS.end();
+}
+
+bool FormulaParser::is_assignable() const
+{
+    return check(TokenType::IDENTIFIER) //
+        || (m_options.allow_builtin_assignment && (is_builtin_var() || is_builtin_fn()));
+}
+
 Expr FormulaParser::statement()
 {
     if (check(TokenType::IF))
     {
         return if_statement();
+    }
+    if (is_assignable() && peek(TokenType::ASSIGN))
+    {
+        return assignment_statement();
     }
     return conjunctive();
 }
@@ -1560,12 +1604,37 @@ Expr FormulaParser::block()
     return std::make_shared<StatementSeqNode>(statements);
 }
 
-Expr FormulaParser::assignment()
+Expr FormulaParser::variable()
 {
-    Expr left{additive()};
+    if (check(TokenType::IDENTIFIER))
+    {
+        return identifier();
+    }
+
+    if (Expr var = builtin_var())
+    {
+        warning(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
+        return var;
+    }
+
+    if (Expr var = builtin_fn())
+    {
+        warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
+        return var;
+    }
+
+    return nullptr;
+}
+
+Expr FormulaParser::assignment_statement()
+{
+    if (!(is_assignable() && peek(TokenType::ASSIGN)))
+    {
+        return additive();
+    }
 
     // Assignment is right-associative and has lowest precedence
-    if (left && check(TokenType::ASSIGN))
+    if (Expr left{variable()})
     {
         // Validate that left side is a user identifier
         if (!is_user_identifier(left))
@@ -1575,20 +1644,30 @@ Expr FormulaParser::assignment()
             return nullptr;
         }
 
-        advance();                    // consume '='
-        if (Expr right{assignment()}) // Right-associative: recursive call
+        if (check(TokenType::ASSIGN))
         {
-            // Get the variable name from the IdentifierNode
-            const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
-            assert(id); // is_user_identifier already checked it
-            return std::make_shared<AssignmentNode>(id->name(), right);
+            advance(); // consume '='
+            if (Expr right = assignment_statement())
+            {
+                // Get the variable name from the IdentifierNode
+                const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
+                assert(id); // is_user_identifier already checked it
+                return std::make_shared<AssignmentNode>(id->name(), right);
+            }
+            if (Expr right = conjunctive())
+            {
+                // Get the variable name from the IdentifierNode
+                const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
+                assert(id); // is_user_identifier already checked it
+                return std::make_shared<AssignmentNode>(id->name(), right);
+            }
+            // conjunctive already recorded the error
+            return nullptr;
         }
-
-        // assignment already recorded the error
-        return nullptr;
+        return left;
     }
 
-    return left;
+    return nullptr;
 }
 
 Expr FormulaParser::conjunctive()
@@ -1617,7 +1696,7 @@ Expr FormulaParser::conjunctive()
 // Handle relational operators: <, <=, >, >=, ==, !=
 Expr FormulaParser::comparative()
 {
-    Expr left = assignment();
+    Expr left = additive();
 
     while (left &&
         check({TokenType::LESS_THAN, TokenType::LESS_EQUAL,    //
@@ -1651,14 +1730,14 @@ Expr FormulaParser::comparative()
         }
 
         advance();
-        Expr right = assignment();
-        if (!right)
+        if (Expr right = additive())
         {
-            // assignment already recorded the error
-            return nullptr;
+            left = std::make_shared<BinaryOpNode>(left, op, right);
+            continue;
         }
 
-        left = std::make_shared<BinaryOpNode>(left, op, right);
+        // additive already recorded the error
+        return nullptr;
     }
 
     return left;
@@ -1744,21 +1823,33 @@ Expr FormulaParser::power()
 
 Expr FormulaParser::builtin_var()
 {
-    if (const auto it = std::find(std::begin(s_builtin_vars), std::end(s_builtin_vars), m_curr.type);
-        it != std::end(s_builtin_vars))
+    if (is_builtin_var())
     {
-        Expr result = std::make_shared<IdentifierNode>(str());
+        const std::string name{str()};
         advance(); // consume the builtin variable
-        return result;
+        return std::make_shared<IdentifierNode>(name);
     }
+
+    // not an error
+    return nullptr;
+}
+
+Expr FormulaParser::builtin_fn()
+{
+    if (is_builtin_fn())
+    {
+        const std::string name{str()};
+        advance();
+        return std::make_shared<IdentifierNode>(name);
+    }
+
     // not an error
     return nullptr;
 }
 
 std::optional<Expr> FormulaParser::builtin_function()
 {
-    if (const auto it = std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type);
-        it != std::end(s_builtin_fns))
+    if (const auto it = std::find(BUILTIN_FNS.begin(), BUILTIN_FNS.end(), m_curr.type); it != BUILTIN_FNS.end())
     {
         begin_tracking();
         const Token curr{m_curr};
@@ -1922,7 +2013,7 @@ Expr FormulaParser::identifier()
         return make_identifier();
     }
 
-    if (std::find(std::begin(s_builtin_fns), std::end(s_builtin_fns), m_curr.type) != std::end(s_builtin_fns))
+    if (std::find(BUILTIN_FNS.begin(), BUILTIN_FNS.end(), m_curr.type) != BUILTIN_FNS.end())
     {
         if (m_options.allow_builtin_assignment)
         {
@@ -1955,6 +2046,13 @@ Expr FormulaParser::primary()
     if (check(TokenType::INVALID))
     {
         error(ErrorCode::EXPECTED_PRIMARY);
+        return nullptr;
+    }
+
+    if (check(TokenType::ASSIGN))
+    {
+        // Error: Assignment operator found in invalid context
+        error(ErrorCode::UNEXPECTED_ASSIGNMENT);
         return nullptr;
     }
 
@@ -2007,7 +2105,7 @@ Expr FormulaParser::primary()
             return nullptr;
         }
 
-        // conjunctive already recorded he error
+        // conjunctive already recorded the error
         return nullptr;
     }
 
@@ -2049,31 +2147,33 @@ std::string to_string(ErrorCode code)
     switch (code)
     {
         ERROR_CODE_CASE(NONE);
-        ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
-        ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
-        ERROR_CODE_CASE(EXPECTED_PRIMARY);
         ERROR_CODE_CASE(INVALID_TOKEN);
-        ERROR_CODE_CASE(INVALID_SECTION);
-        ERROR_CODE_CASE(INVALID_SECTION_ORDER);
-        ERROR_CODE_CASE(DUPLICATE_SECTION);
-        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
-        ERROR_CODE_CASE(BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+        ERROR_CODE_CASE(EXPECTED_PRIMARY);
         ERROR_CODE_CASE(EXPECTED_ENDIF);
         ERROR_CODE_CASE(EXPECTED_STATEMENT_SEPARATOR);
-        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
+        ERROR_CODE_CASE(EXPECTED_COMMA);
         ERROR_CODE_CASE(EXPECTED_OPEN_PAREN);
         ERROR_CODE_CASE(EXPECTED_CLOSE_PAREN);
         ERROR_CODE_CASE(EXPECTED_CLOSE_MODULUS);
         ERROR_CODE_CASE(EXPECTED_IDENTIFIER);
-        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
         ERROR_CODE_CASE(EXPECTED_ASSIGNMENT);
         ERROR_CODE_CASE(EXPECTED_INTEGER);
-        ERROR_CODE_CASE(EXPECTED_TERMINATOR);
-        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
-        ERROR_CODE_CASE(EXPECTED_COMMA);
         ERROR_CODE_CASE(EXPECTED_FLOATING_POINT);
         ERROR_CODE_CASE(EXPECTED_COMPLEX);
         ERROR_CODE_CASE(EXPECTED_STRING);
+        ERROR_CODE_CASE(EXPECTED_TERMINATOR);
+        ERROR_CODE_CASE(EXPECTED_STATEMENT);
+        ERROR_CODE_CASE(UNEXPECTED_ASSIGNMENT);
+        ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
+        ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
+        ERROR_CODE_CASE(INVALID_SECTION);
+        ERROR_CODE_CASE(INVALID_SECTION_ORDER);
+        ERROR_CODE_CASE(DUPLICATE_SECTION);
+        ERROR_CODE_CASE(BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_KEY);
+        ERROR_CODE_CASE(BUILTIN_SECTION_INVALID_TYPE);
+        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
+        ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
         ERROR_CODE_CASE(SWITCH_SECTION_INVALID_KEY);
     }
 

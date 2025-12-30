@@ -170,7 +170,6 @@ static SimpleExpressionParam s_simple_expressions[]{
         "assignment:this_is_another4_variable_name2 literal:4"},                                                    //
     {"modulus", "|-3.0|", "unary_op:| unary_op:- literal:3"},                                                       //
     {"compareLess", "4<3", "binary_op:< literal:4 literal:3"},                                                      //
-    {"compareLessPrecedence", "3<z=4", "binary_op:< literal:3 assignment:z literal:4"},                             //
     {"compareLessEqual", "4<=3", "binary_op:<= literal:4 literal:3"},                                               //
     {"compareGreater", "4>3", "binary_op:> literal:4 literal:3"},                                                   //
     {"compareAssociatesLeft", "4>3<4", "binary_op:< binary_op:> literal:4 literal:3 literal:4"},                    //
@@ -475,14 +474,17 @@ static std::vector<std::string> s_builtin_vars{
 TEST_P(BuiltinVariables, notAssignable)
 {
     const std::string text{GetParam() + "=1"};
-    ParserPtr parser{create_parser(text, Options{false})};
+    Options options;
+    options.allow_builtin_assignment = false;
+    options.recognize_extensions = false;
+    ParserPtr parser{create_parser(text, options)};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
-    ASSERT_FALSE(result);
+    ASSERT_FALSE(result) << "should have parsed '" << text << "'";
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const auto &error{parser->get_errors().front()};
-    EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, error.code);
+    EXPECT_EQ(ErrorCode::EXPECTED_STATEMENT, error.code);
     EXPECT_EQ(GetParam().length() + 2, error.position.column);
 }
 
@@ -512,7 +514,7 @@ TEST_P(Functions, notAssignable)
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
-    ASSERT_FALSE(result);
+    ASSERT_FALSE(result) << "Formula should not have parsed";
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const auto &error{parser->get_errors().front()};
     EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, error.code);
@@ -611,11 +613,13 @@ static ParseFailureParam s_parse_failures[]{
     {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
     {"elseIfWithoutOpenParen", "if(1)\nelseif 1\nendif\n", ErrorCode::EXPECTED_OPEN_PAREN},              //
     {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
-    {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_IDENTIFIER},                                     //
+    {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_STATEMENT},                                      //
     {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},                             //
-    {"complexLiteralWithoutComma", "z=(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},                          //
-    {"complexLiteralWithoutClosingParen", "z=(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                    //
+    {"complexLiteralWithoutComma", "(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},                            //
+    {"complexLiteralWithoutClosingParen", "(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                      //
     {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                                      //
+    {"assignmentAsExpressionParens", "(z=4)+2", ErrorCode::EXPECTED_CLOSE_PAREN},                        //
+    {"assignmentAsExpression", "2+z=4", ErrorCode::EXPECTED_STATEMENT},                                  //
 };
 
 TEST_P(ParseFailures, parse)
@@ -1135,7 +1139,7 @@ TEST_P(InvalidSectionOrdering, parse)
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
-    ASSERT_FALSE(result);
+    ASSERT_FALSE(result) << "Formula should not have parsed";
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     if (param.expected_error != ErrorCode::NONE)
     {
@@ -1236,7 +1240,7 @@ TEST_P(BuiltinDisallows, parse)
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
-    ASSERT_FALSE(result);
+    ASSERT_FALSE(result) << "Formula should not have parsed";
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const Diagnostic &error{parser->get_errors().back()};
     EXPECT_EQ(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS, error.code);

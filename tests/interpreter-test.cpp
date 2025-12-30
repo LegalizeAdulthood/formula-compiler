@@ -110,20 +110,6 @@ TEST(TestFormulaInterpreter, assignment)
     EXPECT_EQ(0.0, z.im);
 }
 
-TEST(TestFormulaInterpreter, assignmentParens)
-{
-    const FormulaPtr formula{create_formula("(z=4)+2", Options{})};
-    ASSERT_TRUE(formula) << "formula should have parsed";
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(6.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-    const Complex z = formula->get_value("z");
-    EXPECT_EQ((formula::Complex{4.0, 0.0}), z);
-}
-
 TEST(TestFormulaInterpreter, chainedAssignment)
 {
     const FormulaPtr formula{create_formula("z1=z2=3", Options{})};
@@ -164,51 +150,6 @@ TEST(TestFormulaInterpreter, identity)
 
     EXPECT_EQ(3.0, result.re);
     EXPECT_EQ(4.0, result.im);
-}
-
-TEST(TestFormulaInterpreter, compareLessPrecedence)
-{
-    const FormulaPtr formula{create_formula("3<z=4", Options{})};
-    ASSERT_TRUE(formula) << "formula should have parsed";
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-    const Complex z = formula->get_value("z");
-    EXPECT_EQ(4.0, z.re);
-    EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestFormulaInterpreter, logicalAndShortCircuitTrue)
-{
-    const FormulaPtr formula{create_formula("0&&z=3", Options{})};
-    ASSERT_TRUE(formula) << "formula should have parsed";
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(0.0, result.re); // 0 is false, so the second part is not evaluated
-    EXPECT_EQ(0.0, result.im);
-    const Complex z = formula->get_value("z");
-    EXPECT_EQ(0.0, z.re); // z should not be set
-    EXPECT_EQ(0.0, z.im);
-}
-
-TEST(TestFormulaInterpreter, logicalOrShortCircuitTrue)
-{
-    const FormulaPtr formula{create_formula("1||z=3", Options{})};
-    ASSERT_TRUE(formula) << "formula should have parsed";
-    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
-
-    const Complex result{formula->interpret(Section::BAILOUT)};
-
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(0.0, result.im);
-    const Complex z = formula->get_value("z");
-    EXPECT_EQ(0.0, z.re); // z should not be set
-    EXPECT_EQ(0.0, z.im);
 }
 
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)
