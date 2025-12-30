@@ -367,6 +367,11 @@ static SimpleExpressionParam s_simple_expressions[]{
         "if_statement:( literal:3 ) { statement_seq:2 { literal:1 literal:2 } } "
         "endif } "
         "endif"},
+    {"conjunctiveAssignment",   //
+        "b = z > x || z > y\n", //
+        "assignment:b binary_op:||"
+        " binary_op:> identifier:z identifier:x"
+        " binary_op:> identifier:z identifier:y"},
 };
 
 TEST_P(SimpleExpressions, parse)

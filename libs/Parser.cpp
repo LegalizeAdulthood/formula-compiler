@@ -1630,7 +1630,8 @@ Expr FormulaParser::assignment_statement()
 {
     if (!(is_assignable() && peek(TokenType::ASSIGN)))
     {
-        return additive();
+        // conjunctive already recorded any error
+        return conjunctive();
     }
 
     // Assignment is right-associative and has lowest precedence
@@ -1654,13 +1655,7 @@ Expr FormulaParser::assignment_statement()
                 assert(id); // is_user_identifier already checked it
                 return std::make_shared<AssignmentNode>(id->name(), right);
             }
-            if (Expr right = conjunctive())
-            {
-                // Get the variable name from the IdentifierNode
-                const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
-                assert(id); // is_user_identifier already checked it
-                return std::make_shared<AssignmentNode>(id->name(), right);
-            }
+
             // conjunctive already recorded the error
             return nullptr;
         }
