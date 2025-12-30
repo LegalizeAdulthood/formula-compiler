@@ -123,7 +123,8 @@ TEST(TestLexer, lineContinuationWithLF)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(12, std::get<int>(token1.value));
+    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
 }
 
 TEST(TestLexer, lineContinuationWithCRLF)
@@ -134,7 +135,8 @@ TEST(TestLexer, lineContinuationWithCRLF)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(12, std::get<int>(token1.value));
+    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
 }
 
 TEST(TestLexer, lineContinuationMultiple)
@@ -145,7 +147,8 @@ TEST(TestLexer, lineContinuationMultiple)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(12, std::get<int>(token1.value));
+    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
 }
 
 TEST(TestLexer, lineContinuationWithSpaces)
@@ -156,7 +159,9 @@ TEST(TestLexer, lineContinuationWithSpaces)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(1, std::get<int>(token1.value));
     EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(2, std::get<int>(token2.value));
 }
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespace)
@@ -167,7 +172,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(12, std::get<int>(token1.value));
+    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
@@ -183,7 +189,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
     const Token token2{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(12, std::get<int>(token1.value));
+    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
     ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
     const LexicalDiagnostic &warning{lexer.get_warnings().front()};
     EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
@@ -196,12 +203,8 @@ TEST(TestLexer, multipleWarnings)
     Lexer lexer{"1\\ \n2\\ \n3\n"};
 
     const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-    const Token token3{lexer.get_token()};
 
     EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
-    EXPECT_EQ(TokenType::INTEGER, token3.type);
     const auto &warnings{lexer.get_warnings()};
     ASSERT_EQ(2, warnings.size()) << "lexer should have produced two warnings";
     EXPECT_TRUE(std::all_of(warnings.begin(), warnings.end(),
@@ -221,9 +224,11 @@ TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
     const Token invalid{lexer.get_token()};
     const Token token2{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(TokenType::INVALID, invalid.type);
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
+    ASSERT_EQ(TokenType::INTEGER, token1.type);
+    EXPECT_EQ(1, std::get<int>(token1.value));
+    ASSERT_EQ(TokenType::INVALID, invalid.type);
+    ASSERT_EQ(TokenType::INTEGER, token2.type);
+    EXPECT_EQ(2, std::get<int>(token2.value));
 }
 
 TEST(TestLexer, positionTracking)
@@ -566,7 +571,7 @@ static TextTokenParam s_params[]{
     {"zero", "zero", TokenType::ZERO},                                        //
     {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 1, 1},  //
-    {"continuation", "\\\n1", TokenType::INTEGER, 1, 1},                      //
+    {"continuation", "\\\n   1", TokenType::INTEGER, 4, 1},                   //
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
@@ -578,6 +583,7 @@ static TextTokenParam s_params[]{
     {"beginParam", "param", TokenType::PARAM},                                //
     {"endParam", "endparam", TokenType::END_PARAM},                           //
     {"caseInsensitiveKeyword", "IF", TokenType::IF},                          //
+    {"tokenContinued", "re\\\n    al", TokenType::REAL},                      //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

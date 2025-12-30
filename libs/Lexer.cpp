@@ -5,6 +5,7 @@
 #include <formula/Lexer.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cctype>
 #include <cstdlib>
 
@@ -322,98 +323,21 @@ void Lexer::skip_whitespace()
     while (m_position < m_input.length())
     {
         char ch = m_input[m_position];
-        // Skip only spaces and tabs, not newlines
+        // Skip only spaces and tabs and continuations, not newlines
         if (ch == ' ' || ch == '\t' || ch == '\r')
         {
             advance();
         }
-        else if (ch == '\\')
-        {
-            // Check for line continuation: backslash followed by optional whitespace and newline
-            size_t look_ahead = m_position + 1;
-            size_t trailing_ws_pos{};
-            const auto warn_trailing_ws = [&trailing_ws_pos, this]
-            {
-                if (trailing_ws_pos != 0)
-                {
-                    SourceLocation loc = position_to_location(trailing_ws_pos);
-                    warning(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, loc);
-                    trailing_ws_pos = 0;
-                }
-            };
-
-            // Skip any trailing whitespace after the backslash
-            while (look_ahead < m_input.length())
-            {
-                char next_ch = m_input[look_ahead];
-                if (next_ch == ' ' || next_ch == '\t')
-                {
-                    trailing_ws_pos = look_ahead;
-                    ++look_ahead;
-                }
-                else if (next_ch == '\r')
-                {
-                    // Check for \r\n
-                    if (look_ahead + 1 < m_input.length() && m_input[look_ahead + 1] == '\n')
-                    {
-                        // Skip backslash, trailing whitespace, CR, and LF
-                        size_t old_pos = m_position;
-                        m_position = look_ahead + 2;
-                        // Update source location
-                        for (size_t i = old_pos; i < m_position; ++i)
-                        {
-                            if (m_input[i] == '\n')
-                            {
-                                ++m_source_location.line;
-                                m_source_location.column = 1;
-                            }
-                        }
-                        warn_trailing_ws();
-                        break;
-                    }
-
-                    // Just \r, treat as continuation
-                    size_t old_pos = m_position;
-                    m_position = look_ahead + 1;
-                    // Update source location
-                    for (size_t i = old_pos; i < m_position; ++i)
-                    {
-                        if (m_input[i] == '\n')
-                        {
-                            ++m_source_location.line;
-                            m_source_location.column = 1;
-                        }
-                    }
-                    warn_trailing_ws();
-                    break;
-                }
-                else if (next_ch == '\n')
-                {
-                    // Skip backslash, trailing whitespace, and newline
-                    size_t old_pos = m_position;
-                    m_position = look_ahead + 1;
-                    // Update source location
-                    ++m_source_location.line;
-                    m_source_location.column = 1;
-                    warn_trailing_ws();
-                    break;
-                }
-                else
-                {
-                    // Backslash not followed by newline, stop skipping whitespace
-                    break;
-                }
-            }
-
-            // If we didn't find a newline after the backslash and optional whitespace, stop
-            if (look_ahead >= m_input.length() || (m_input[look_ahead] != '\n' && m_input[look_ahead] != '\r'))
-            {
-                break;
-            }
-        }
         else if (ch == ';')
         {
             skip_comment();
+        }
+        else if (ch == '\\')
+        {
+            if (!skip_continuation())
+            {
+                break;
+            }
         }
         else
         {
@@ -435,6 +359,47 @@ void Lexer::skip_comment()
             break;
         }
     }
+}
+
+bool Lexer::skip_continuation()
+{
+    char ch = m_input[m_position];
+    while (ch == '\\') // continue until we can't
+    {
+        ++m_position;
+        const auto trailing{m_input.find_first_of(" \t", m_position)};
+        if (trailing == m_position)
+        {
+            warning(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, position_to_location(trailing));
+            m_position = m_input.find_first_not_of(" \t", m_position);
+        }
+        // not eol
+        if (m_input[m_position] != '\n' && m_input[m_position] != '\r')
+        {
+            // Not a continuation
+            --m_position;
+            m_source_location = position_to_location(m_position);
+            return false;
+        }
+        // skip eol
+        while (m_position < m_input.length() && (m_input[m_position] == '\r' || m_input[m_position] == '\n'))
+        {
+            ++m_position;
+        }
+        const auto begin_line{m_position};
+        const auto next{m_input.find_first_not_of(" \t", begin_line)};
+        if (next == std::string::npos)
+        {
+            m_position = m_input.length();
+            m_source_location = position_to_location(m_position);
+            return true;
+        }
+
+        m_position = next;
+        m_source_location = position_to_location(m_position);
+        ch = m_input[m_position];
+    }
+    return true;
 }
 
 bool Lexer::is_number_start() const
@@ -565,20 +530,32 @@ char Lexer::peek_char(size_t offset) const
     return '\0';
 }
 
-void Lexer::advance(size_t count)
+void Lexer::advance()
 {
-    for (size_t i = 0; i < count && m_position < m_input.length(); ++i)
+    if (m_position + 1 >= m_input.length())
     {
-        if (m_input[m_position] == '\n')
+        m_position = m_input.length();
+        return;
+    }
+
+    ++m_position;
+    const char ch = m_input[m_position];
+    if (ch == '\\')
+    {
+        if (!skip_continuation())
         {
-            ++m_source_location.line;
-            m_source_location.column = 1;
+            error(LexerErrorCode::CONTINUATION_WITHOUT_NEWLINE, position_to_location(m_position));
         }
-        else
-        {
-            ++m_source_location.column;
-        }
-        ++m_position;
+    }
+    else if (ch == '\n')
+    {
+        // Normal advance
+        ++m_source_location.line;
+        m_source_location.column = 1;
+    }
+    else
+    {
+        ++m_source_location.column;
     }
 }
 

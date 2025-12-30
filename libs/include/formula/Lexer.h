@@ -22,6 +22,7 @@ enum class LexerErrorCode
     CONTINUATION_WITH_WHITESPACE,
     INVALID_NUMBER,
     STRING_LITERAL_NOT_SUPPORTED,
+    CONTINUATION_WITHOUT_NEWLINE,
 };
 
 enum class TokenType
@@ -246,6 +247,7 @@ private:
     }
     void skip_whitespace();
     void skip_comment();
+    bool skip_continuation();
     Token lex_number();
     bool is_number_start() const;
     Token identifier();
@@ -256,7 +258,7 @@ private:
     bool is_identifier_continue(char c) const;
     char current_char() const;
     char peek_char(size_t offset = 1) const;
-    void advance(size_t count = 1);
+    void advance();
     SourceLocation position_to_location(size_t pos) const;
 
     Options m_options;
