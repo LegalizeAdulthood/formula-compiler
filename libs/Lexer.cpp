@@ -344,6 +344,7 @@ void Lexer::skip_whitespace()
             break;
         }
     }
+    m_source_location = position_to_location(m_position);
 }
 
 void Lexer::skip_comment()
@@ -535,6 +536,7 @@ void Lexer::advance()
     if (m_position + 1 >= m_input.length())
     {
         m_position = m_input.length();
+        m_source_location = position_to_location(m_position);
         return;
     }
 

@@ -570,7 +570,7 @@ static TextTokenParam s_params[]{
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
     {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
-    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 1, 1},  //
+    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 19, 1}, //
     {"continuation", "\\\n   1", TokenType::INTEGER, 4, 1},                   //
     {"true", "true", TokenType::TRUE},                                        //
     {"false", "false", TokenType::FALSE},                                     //

@@ -9,6 +9,14 @@
 namespace formula
 {
 
+static void strip_leading(std::string &text)
+{
+    if (const auto first_non_space = text.find_first_not_of(" \t\r\n"); first_non_space != 0)
+    {
+        text.erase(0, first_non_space);
+    }
+}
+
 static void strip_trailing(std::string &text)
 {
     if (const auto last_non_space = text.find_last_not_of(" \t\r\n"); last_non_space != std::string::npos)
@@ -40,6 +48,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
 
         std::string name{line};
         name.erase(open_brace);
+        strip_leading(name);
         strip_trailing(name);
 
         std::string bracket_value;
