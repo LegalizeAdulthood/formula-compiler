@@ -334,6 +334,9 @@ static CompileError call_binary(
     invoke_node->setRet(0, ret_real);
     invoke_node->setRet(1, ret_imag);
 
+    // Manual intervention: Capture XMM1 (imaginary part) into ret_imag
+    ASMJIT_CHECK(comp.movapd(ret_imag, asmjit::x86::xmm1));
+
     // Combine the two return values into result XMM register
     ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
     ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
