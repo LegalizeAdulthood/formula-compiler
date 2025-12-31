@@ -6,6 +6,7 @@
 
 #include <formula/Visitor.h>
 
+#include <memory>
 #include <ostream>
 
 namespace formula::ast
