@@ -2,7 +2,8 @@
 
 ## Code Formatting
 
-Always observe the .editorconfig and .clang-format settings defined in the root of the repository.
+- Always observe the .editorconfig and .clang-format settings defined in the root of the repository.
+- Always use native line endings when editing source files; if necessary write a python script to normalize the line endings.
 
 # Unit Test Guidelines
 
@@ -55,7 +56,8 @@ TEST_P(ParameterizedTestClass, testMethodName)
 
 ### Examples
 
-#### ? Good Example
+#### Good Example
+
 ```cpp
 TEST_F(TestSimplifyBinaryOp, addTwoNumbers)
 {
@@ -68,7 +70,8 @@ TEST_F(TestSimplifyBinaryOp, addTwoNumbers)
 }
 ```
 
-#### ? Bad Example
+#### Bad Example
+
 ```cpp
 TEST_F(TestSimplifyBinaryOp, addTwoNumbers)
 {
