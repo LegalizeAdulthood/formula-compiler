@@ -152,6 +152,25 @@ void Simplifier::visit(const BinaryOpNode &node)
         }
     }
 
+    // Algebraic simplification: a / (1.0 / b) -> a * b
+    if (node.op() == "/")
+    {
+        if (auto rhs_binop = dynamic_cast<BinaryOpNode *>(rhs.get()))
+        {
+            if (rhs_binop->op() == "/")
+            {
+                if (auto rhs_left = dynamic_cast<LiteralNode *>(rhs_binop->left().get()))
+                {
+                    if (std::get<double>(rhs_left->value()) == 1.0)
+                    {
+                        m_result.push_back(std::make_shared<BinaryOpNode>(lhs, '*', rhs_binop->right()));
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     // keep existing
     m_result.push_back(std::make_shared<BinaryOpNode>(lhs, node.op(), rhs));
 }

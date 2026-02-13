@@ -104,6 +104,18 @@ static SimplifierParam s_simplifier_tests[]{
         "} else {\n"
         "literal:7\n"
         "} endif\n"},
+    {"simplifyDivisionByReciprocal", binary(identifier("z"), '/', binary(number(1.0), '/', identifier("pixel"))),
+        "binary_op:*\n"
+        "identifier:z\n"
+        "identifier:pixel\n"},
+    {"simplifyNestedDivisionByReciprocal",
+        binary(identifier("a"), '/',
+            binary(number(1.0), '/', binary(identifier("b"), '/', binary(number(1.0), '/', identifier("c"))))),
+        "binary_op:*\n"
+        "identifier:a\n"
+        "binary_op:*\n"
+        "identifier:b\n"
+        "identifier:c\n"},
 };
 
 static BinaryOpTestParam s_binary_op_test_params[] = {
