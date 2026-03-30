@@ -206,6 +206,11 @@ static SimpleExpressionParam s_simple_expressions[]{
         "if(0)\n"
         "endif",
         "if_statement:( literal:0 ) { } endif"},
+    {"ifWithoutParens",
+        "if 0\n"
+        "endif",
+        "if_statement:( literal:0 ) { } endif"
+    },
     {"ifBlankLinesBody",
         "if(0)\n"
         "\n"
@@ -269,6 +274,11 @@ static SimpleExpressionParam s_simple_expressions[]{
         "elseif(1)\n"
         "else\n"
         "endif",
+        "if_statement:( literal:0 ) { } else { if_statement:( literal:1 ) { } endif } endif"},
+    {"elseIfWithoutOpenParen",
+        "if 0\n"
+        "elseif 1\n"
+        "endif\n",
         "if_statement:( literal:0 ) { } else { if_statement:( literal:1 ) { } endif } endif"},
     {"ifMultipleElseIfEmptyBody",
         "if(0)\n"
@@ -614,9 +624,7 @@ static ParseFailureParam s_parse_failures[]{
     {"switchParamInvalidValue", "switch:\nfoo=3\n", ErrorCode::EXPECTED_IDENTIFIER},                     //
     {"switchParamNoTerminator", "switch:\nfoo=foo", ErrorCode::EXPECTED_TERMINATOR},                     //
     {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
-    {"ifWithoutOpenParen", "if 1", ErrorCode::EXPECTED_OPEN_PAREN},                                      //
     {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
-    {"elseIfWithoutOpenParen", "if(1)\nelseif 1\nendif\n", ErrorCode::EXPECTED_OPEN_PAREN},              //
     {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
     {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_STATEMENT},                                      //
     {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},                             //

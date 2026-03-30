@@ -1496,23 +1496,11 @@ Expr FormulaParser::if_statement_no_endif()
         return nullptr;
     }
 
-    // Parse condition in parentheses
-    if (!match(TokenType::OPEN_PAREN))
-    {
-        error(ErrorCode::EXPECTED_OPEN_PAREN);
-        return nullptr;
-    }
-
+    // Parse condition
     Expr condition = conjunctive();
     if (!condition)
     {
         // conjunctive() will have already recorded the error
-        return nullptr;
-    }
-
-    if (!match(TokenType::CLOSE_PAREN))
-    {
-        error(ErrorCode::EXPECTED_CLOSE_PAREN);
         return nullptr;
     }
 
