@@ -44,5 +44,7 @@ misc_group_sources("GitHub" FILES
     ".github/workflows/cmake.yml"
     "LICENSE.txt"
     "ReadMe.md")
+misc_group_sources("Docs" FILES
+    "docs/gradient-grammar.txt")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")

@@ -1,0 +1,106 @@
+-- UltraFractal Gradient File (.ugr) Grammar
+--
+-- A .ugr file is a plain text file containing any number of named gradient
+-- blocks.  Line breaks are insignificant whitespace everywhere except inside
+-- comments (which run to end-of-line) and quoted strings.
+
+file          := block*
+block         := block_name '{' comment* section* '}'
+block_name    := identifier
+
+section       := section_header token*
+section_header := identifier ':'        -- identifier immediately followed by colon, no space
+
+token         := key_value | comment
+key_value     := key '=' value
+key           := identifier
+value         := quoted_string | integer | bool
+bool          := 'yes' | 'no'
+integer       := '-'? [0-9]+
+quoted_string := '"' [^"]* '"'
+comment       := ';' <rest of line>
+
+
+-- ============================================================
+-- Section identifiers
+-- ============================================================
+--
+-- Two section types appear in every block:
+--
+--   gradient:   color control points (maps index values to BGR colors)
+--   opacity:    opacity control points (maps index values to opacity)
+--
+-- Both sections are optional and may appear in any order.
+
+
+-- ============================================================
+-- Section-level key=value tokens
+-- ============================================================
+--
+-- The following keys appear at the start of a section and apply to the
+-- section as a whole:
+--
+--   title="..."    Display name of the gradient (quoted string).
+--                  Only meaningful in the gradient: section.
+--
+--   smooth=yes|no  Interpolation mode between control points.
+--                  yes = smooth (cubic) interpolation.
+--                  no  = linear interpolation.
+--
+--   rotation=N     Signed integer.  Rotates the gradient so that color
+--                  mapping onto the fractal starts at a different offset.
+--                  May be negative.
+--
+--   linked=yes     The color and opacity curves share the same control
+--                  points (Link Color and Opacity in the UI).
+
+
+-- ============================================================
+-- Control points
+-- ============================================================
+--
+-- After the section-level keys, the remainder of the token stream is a
+-- flat sequence of interleaved index/value pairs:
+--
+--   gradient: section  =>  index=N color=M   (N is position, M is packed BGR)
+--   opacity:  section  =>  index=N opacity=M (N is position, M is 0..255)
+--
+-- The pairs are NOT syntactically grouped; they are simply adjacent
+-- key=value tokens.  The semantic rule is:
+--   "each index= token introduces a new control point; the immediately
+--    following color= (or opacity=) token gives its value."
+--
+-- index range:  nominally 0..399 (400-unit gradient).
+--               Negative values (e.g. index=-1, index=-66) are valid and
+--               wrap around within the gradient.
+--
+-- Duplicate index values are valid and intentional.  Two consecutive
+-- control points at the same index position create a hard color edge
+-- (instantaneous color transition with no interpolation gap).
+
+
+-- ============================================================
+-- Color encoding  (gradient: section)
+-- ============================================================
+--
+-- Colors are stored as packed BGR integers (little-endian channel order):
+--
+--   B = (color >>  0) & 0xFF      blue  channel  0..255
+--   G = (color >>  8) & 0xFF      green channel  0..255
+--   R = (color >> 16) & 0xFF      red   channel  0..255
+--
+-- Example: color=8546815  =>  0x826AFF  =>  R=0x82 G=0x6A B=0xFF
+--
+-- Note: there is no alpha channel in the color integer; transparency is
+-- handled independently by the opacity: section.
+
+
+-- ============================================================
+-- Opacity encoding  (opacity: section)
+-- ============================================================
+--
+--   opacity=255   completely opaque  (default)
+--   opacity=0     completely transparent
+--
+-- The opacity curve is independent of the color curve and does not
+-- necessarily share control point positions unless linked=yes is set.
