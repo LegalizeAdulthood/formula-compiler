@@ -6,7 +6,7 @@
 **Last Updated**: 2026-05-12 14:19:33
 
 ## Format Summary (from research)
-- File = zero or more named blocks: `BlockName { section* }`
+- File = zero or more named blocks: `BlockName { section section }` (both sections required, either order)
 - Two section types: `gradient:` (BGR color control points) and `opacity:` (opacity control points)
 - Tokens are whitespace-separated `key=value` pairs; line breaks are insignificant
 - Comments: `;` to end-of-line
@@ -33,7 +33,7 @@
   - Skips whitespace (including newlines) and `;` comments between tokens
   - Handles negative integers (leading `-`)
 -  **Implement section parser**
-  - Parses `gradient:` and `opacity:` sections from the flat token stream
+  - Parses `gradient:` and `opacity:` sections from the flat token stream; accepts either order
   - Collects section-level keys (`title`, `smooth`, `rotation`, `linked`) until first `index=` token
   - Collects control points as interleaved `index=N` / `color=M` (or `opacity=M`) pairs
   - Preserves duplicate index entries (hard-edge semantics)
@@ -51,7 +51,7 @@
 -  **Write unit tests**
   - Tokenizer: identifiers, integers (positive and negative), quoted strings, comments, braces, colons
   - Section parser: section-level keys, control point pairs, duplicate indices, negative indices
-  - File parser: multi-block file, blocks with both sections, blocks with only one section
+  - File parser: multi-block file, blocks with gradient: first, blocks with opacity: first
   - BGR conversion: known values (e.g. `8546815` => R=0x82 G=0x6A B=0xFF)
 -  **Validate parser against real sample .ugr files**
   - Parse `Rainbow gradients by Velvet--Glove.ugr` (20 gradients, varied complexity)

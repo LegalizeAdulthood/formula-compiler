@@ -1,21 +1,22 @@
 -- UltraFractal Gradient File (.ugr) Grammar
 --
 -- A .ugr file is a plain text file containing any number of named gradient
--- blocks.  Line breaks are insignificant whitespace everywhere except inside
+-- entries.  Line breaks are insignificant whitespace everywhere except inside
 -- quoted strings.  Comments (`;` to end-of-line) are treated as whitespace
--- by the tokenizer: they may appear anywhere in the file (between blocks,
+-- by the tokenizer: they may appear anywhere in the file (between entries,
 -- between sections, between tokens, or on a line by themselves) and are
 -- consumed before the token stream is produced.  Comments do not appear in
 -- the token stream and are not represented in the data model.
 
-file          := block*
-block         := block_name '{' gradient_section opacity_section '}'
-block_name    := identifier
+file          := entry*
+entry         := entry_name '{' section section '}'
+entry_name    := identifier
 
 section       := section_header token*
 section_header := identifier ':'        -- identifier immediately followed by colon, no space
 
--- Every block contains exactly two sections: gradient: and opacity: (in that order).
+-- Every entry contains exactly two sections: gradient: and opacity:.
+-- The parser accepts them in either order.
 
 token         := key_value
 key_value     := key '=' value
@@ -34,12 +35,13 @@ quoted_string := '"' [^"]* '"'
 -- Section identifiers
 -- ============================================================
 --
--- Two section types appear in every block, in this order:
+-- Two section types appear in every entry:
 --
 --   gradient:   color control points (maps index values to BGR colors)
 --   opacity:    opacity control points (maps index values to opacity)
 --
--- Both sections are required.  The gradient: section always precedes opacity:.
+-- Both sections are required.  UltraFractal writes gradient: first, but the
+-- parser should accept either order.
 
 
 -- ============================================================
