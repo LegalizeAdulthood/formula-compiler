@@ -9,11 +9,13 @@
 -- the token stream and are not represented in the data model.
 
 file          := block*
-block         := block_name '{' section* '}'
+block         := block_name '{' gradient_section opacity_section '}'
 block_name    := identifier
 
 section       := section_header token*
 section_header := identifier ':'        -- identifier immediately followed by colon, no space
+
+-- Every block contains exactly two sections: gradient: and opacity: (in that order).
 
 token         := key_value
 key_value     := key '=' value
@@ -32,12 +34,12 @@ quoted_string := '"' [^"]* '"'
 -- Section identifiers
 -- ============================================================
 --
--- Two section types appear in every block:
+-- Two section types appear in every block, in this order:
 --
 --   gradient:   color control points (maps index values to BGR colors)
 --   opacity:    opacity control points (maps index values to opacity)
 --
--- Both sections are optional and may appear in any order.
+-- Both sections are required.  The gradient: section always precedes opacity:.
 
 
 -- ============================================================

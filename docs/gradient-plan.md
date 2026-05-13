@@ -22,7 +22,7 @@
   - Semantics correlated against UF6 manual and real `.ugr` sample file
 -  **Define data model types**
   - `GradientFile`: list of `GradientEntry`
-  - `GradientEntry`: `name` (string), `gradient_section` (optional), `opacity_section` (optional)
+  - `GradientEntry`: `name` (string), `gradient_section`, `opacity_section`
   - `GradientSection`: `title`, `smooth`, `rotation`, `linked`, list of `ColorControlPoint`
   - `OpacitySection`: `smooth`, `rotation`, `linked`, list of `OpacityControlPoint`
   - `ColorControlPoint`: `index` (int, may be negative), `color` (uint32 BGR packed)
