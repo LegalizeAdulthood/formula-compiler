@@ -1,0 +1,23 @@
+hue function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The hue function calculates the hue of a color and returns it. The hue
+ranges from 0 to 6. To construct a color from hue, saturation, and
+luminance values, use the hsl or hsla functions.
+
+Examples:
+
+    hue(rgb(1, 0, 0))      ; 0.0
+    hue(rgb(0.5, 1, 0.3))  ; 1.714...
+    hue(hsl(1.5, 1, 0.5))  ; 1.5
+
+See Also
+red function
+sat function
+lum function
+alpha function
+Writing direct coloring algorithms

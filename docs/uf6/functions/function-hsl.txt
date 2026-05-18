@@ -1,0 +1,30 @@
+hsl function
+
+  --------------------- -------------
+  Input type            Output type
+  float, float, float   color
+  --------------------- -------------
+
+The hsl function constructs a color from three floating-point values
+that specify the hue, saturation, and luminance of the color. The alpha
+(opacity) value of the color is set to 1.
+
+The hue ranges from 0 to 6, where 0 is red, 1 is yellow, 2 is green, 3
+is cyan, 4 is blue, 5 is purple, and 6 is red again.
+
+The saturation and luminance range from 0 to 1. If the luminance is 0,
+the resulting color is always black. If it is 1, the resulting color is
+always white. Fully saturated colors are obtained when the saturation is
+set to 1 and the luminance is set to 0.5.
+
+Examples:
+
+    hsl(0, 1, 0.5)   ; red
+    hsl(4, 1, 0.75)  ; light blue
+    hsl(0, 0, 0.5)   ; gray
+    hsl(0, 1, 1)     ; white
+
+See Also
+rgb function
+hsla function
+Writing direct coloring algorithms

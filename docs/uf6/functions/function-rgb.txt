@@ -1,0 +1,23 @@
+rgb function
+
+  --------------------- -------------
+  Input type            Output type
+  float, float, float   color
+  --------------------- -------------
+
+The rgb function constructs a color from three floating-point values
+that specify the amount of red, green, and blue. These values can range
+from 0 to 1. The alpha (opacity) value of the resulting color is set
+to 1. You can also use the rgb function to create color constants.
+
+Examples:
+
+    rgb(1, 0, 0)    ; red
+    rgb(0, 1, 0)    ; green
+    rgb(0, 0, 0.5)  ; dark blue
+    rgb(1, 0.5, 0)  ; orange
+
+See Also
+rgba function
+hsl function
+Writing direct coloring algorithms

@@ -1,0 +1,22 @@
+alpha function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The alpha function extracts the alpha (opacity) component of a color and
+returns it. Colors contain four components: red, green, blue, and alpha.
+To construct a color from the individual components, use the rgba
+function.
+
+Examples:
+
+    alpha(rgb(1, 0.2, 0))          ; 1.0
+    alpha(rgba(0.5, 1, 0.3, 0.8))  ; 0.8
+    alpha(hsla(4, 1, 0.5, 0.2))    ; 0.2
+
+See Also
+red function
+hue function
+Writing direct coloring algorithms

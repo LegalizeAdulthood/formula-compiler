@@ -1,0 +1,23 @@
+lum function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The lum function calculates the luminance of a color and returns it. The
+luminance ranges from 0 to 1. To construct a color from hue, saturation,
+and luminance values, use the hsl or hsla functions.
+
+Examples:
+
+    lum(rgb(1, 0, 0))        ; 0.5
+    lum(rgb(0.5, 0.4, 0.3))  ; 0.4
+    lum(hsl(1.5, 1, 0.5))    ; 0.5
+
+See Also
+red function
+hue function
+sat function
+alpha function
+Writing direct coloring algorithms

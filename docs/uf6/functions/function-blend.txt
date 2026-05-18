@@ -1,0 +1,26 @@
+blend function
+
+  --------------------- -------------
+  Input type            Output type
+  color, color, float   color
+  --------------------- -------------
+
+The blend function accepts three parameters: two colors and a
+floating-point value. It interpolates between the two colors depending
+on the value of the third parameter. The alpha values of the colors are
+interpolated as well.
+
+If the third parameter is 0, the first color is returned; if it is 1,
+the second color is returned. Values between 0 and 1 will return a mix
+of the two colors. You can also use other values to extrapolate.
+
+Examples:
+
+    blend(rgb(1, 0, 0), rgba(0, 1, 0, 0.5), 0)    ; rgba(1, 0, 0, 1)
+    blend(rgb(1, 0, 0), rgba(0, 1, 0, 0.5), 0.5)  ; rgba(0.5, 0.5, 0, 0.75)
+    blend(rgb(1, 0, 0), rgba(0, 1, 0, 0.5), 1)    ; rgba(0, 1, 0, 0.5)
+
+See Also
+compose function
+Merging functions
+Writing direct coloring algorithms

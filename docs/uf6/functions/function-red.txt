@@ -1,0 +1,24 @@
+red function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The red function extracts the red component of a color and returns it.
+Colors contain four components: red, green, blue, and alpha. To
+construct a color from the individual components, use the rgb or rgba
+functions.
+
+Examples:
+
+    red(rgb(1, 0, 0))      ; 1.0
+    red(rgb(0.5, 1, 0.3))  ; 0.5
+    red(hsl(0, 1, 0.5))    ; 1.0
+
+See Also
+green function
+blue function
+hue function
+alpha function
+Writing direct coloring algorithms

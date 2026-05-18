@@ -1,0 +1,24 @@
+blue function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The blue function extracts the blue component of a color and returns it.
+Colors contain four components: red, green, blue, and alpha. To
+construct a color from the individual components, use the rgb or rgba
+functions.
+
+Examples:
+
+    blue(rgb(1, 0.2, 0))    ; 0.0
+    blue(rgb(0.5, 1, 0.3))  ; 0.3
+    blue(hsl(4, 1, 0.5))    ; 1.0
+
+See Also
+red function
+green function
+hue function
+alpha function
+Writing direct coloring algorithms

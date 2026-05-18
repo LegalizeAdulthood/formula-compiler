@@ -1,0 +1,23 @@
+sat function
+
+  ------------ -------------
+  Input type   Output type
+  color        float
+  ------------ -------------
+
+The sat function calculates the saturation of a color and returns it.
+The saturation ranges from 0 to 1. To construct a color from hue,
+saturation, and luminance values, use the hsl or hsla functions.
+
+Examples:
+
+    sat(rgb(1, 0, 0))        ; 1.0
+    sat(rgb(0.5, 0.4, 0.3))  ; 0.2499...
+    sat(hsl(1.5, 1, 0.5))    ; 1.0
+
+See Also
+red function
+hue function
+lum function
+alpha function
+Writing direct coloring algorithms

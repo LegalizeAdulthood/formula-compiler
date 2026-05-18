@@ -1,0 +1,22 @@
+rgba function
+
+  ---------------------------- -------------
+  Input type                   Output type
+  float, float, float, float   color
+  ---------------------------- -------------
+
+The rgba function constructs a (transparent) color from four
+floating-point values that specify the amount of red, green, and blue,
+and the opacity of the color. These values can range from 0 to 1. You
+can also use the rgba function to create color constants.
+
+Examples:
+
+    rgba(1, 0, 0, 1)      ; red
+    rgba(1, 0.5, 0, 0.5)  ; half-transparent orange
+    rgba(0, 0, 0, 0)      ; fully transparent black
+
+See Also
+rgb function
+hsl function
+Writing direct coloring algorithms

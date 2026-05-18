@@ -1,0 +1,33 @@
+hsla function
+
+  ---------------------------- -------------
+  Input type                   Output type
+  float, float, float, float   color
+  ---------------------------- -------------
+
+The hsla function constructs a (transparent) color from four
+floating-point values that specify the hue, saturation, luminance, and
+opacity of the color.
+
+The hue ranges from 0 to 6, where 0 is red, 1 is yellow, 2 is green, 3
+is cyan, 4 is blue, 5 is purple, and 6 is red again.
+
+The saturation and luminance range from 0 to 1. If the luminance is 0,
+the resulting color is always black. If it is 1, the resulting color is
+always white. Fully saturated colors are obtained when the saturation is
+set to 1 and the luminance is set to 0.5.
+
+The opacity also ranges from 0 to 1, where 0 is fully transparent, and 1
+is fully opaque.
+
+Examples:
+
+    hsla(0, 1, 0.5, 1)      ; red
+    hsla(4, 1, 0.75, 0.25)  ; almost transparent light blue
+    hsla(0, 0, 0.5, 0.5)    ; half-transparent gray
+    hsla(0, 1, 1, 0)        ; fully transparent white
+
+See Also
+rgb function
+hsl function
+Writing direct coloring algorithms
