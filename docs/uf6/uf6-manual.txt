@@ -1505,7 +1505,7 @@ the structure of the fractal with which we will be working.
 To open a new fractal window, click New on the File menu and select Fractal.
 This opens the "Select Fractal Formula" browser. The left pane shows three folders
 (Compatibility, My Formulas, and Public) and a file named "Standard.ufm".
-When you click on Standard.ufm, its contents — a list of the formulas it contains,
+When you click on Standard.ufm, its contents - a list of the formulas it contains,
 appears in the right pane of the browser window. Each formula appears as a thumbnail
 that shows a preview of the image that the formula will produce.
 
@@ -1675,7 +1675,7 @@ Next tutorial: Learning basic skills
 21
 
 Learning basic skills
-In this tutorial, we are going to learn some basic skills for working with fractals — using Switch Mode, zooming, and
+In this tutorial, we are going to learn some basic skills for working with fractals - using Switch Mode, zooming, and
 working with gradients.
 Let's create a new image using a different fractal formula.
 Click New on the File menu, and then click Fractal.
@@ -1864,8 +1864,8 @@ You can also drag each control point vertically within its panel of color to cha
 various control points up and down to see this.
 Note: Unless you have experience with similar gradient editors in other graphics programs, you will want to spend time
 working with the gradient editor to learn how to manipulate the control points to make the colors you want.
-While you can add, delete, move, and adjust the control points yourself — and you will
-eventually want to become very comfortable with these skills — an easy way to change
+While you can add, delete, move, and adjust the control points yourself - and you will
+eventually want to become very comfortable with these skills - an easy way to change
 colors is to use the Randomize feature.
 To generate a random gradient, right-click in the gradient editor and click Randomize
 Bright (or Randomize Misty) in the pop-up menu that appears. You can repeatedly
@@ -1926,19 +1926,19 @@ Note: You need Ultra Fractal Creative Edition or Extended Edition to use layers.
 This tutorial assumes that you have worked through the Quick Start and Basic Skills tutorials and have saved the "Phoenix
 Julia 1" image from the Basic Skills tutorial.
 Now that we have learned some basic skills, it is time to explore one of Ultra Fractal's
-key features — layering.
+key features - layering.
 Let's open the image we created in the last tutorial. This time we will use the .ufr file,
 which will open the fully-rendered image on screen.
 
 Layers
 
-Click Open on the File menu. Locate the .ufr file — remember that we saved it in the "Fractals" folder — click on the
+Click Open on the File menu. Locate the .ufr file - remember that we saved it in the "Fractals" folder - click on the
 file name (Phoenix Julia 1.ufr) and click Open.
 Now look at the Fractal Properties tool window. Click on the Layers tab and notice that there is a tiny copy of the image
 in a layer named Background.
 
 To add a new layer, simply click the Add Layer button on the Layers tab.
-Now you will see two layers — your original, still labeled "Background", and a new,
+Now you will see two layers - your original, still labeled "Background", and a new,
 identical layer labeled "Layer 1".
 Next: Coloring the new layer
 
@@ -1986,8 +1986,8 @@ Linear.
 
 Editing gradients
 
-Now, looking again at the gradient editor, you will notice that there are only two sets of control points. Those in the leftmost set are all at the bottom of their respective color panels — creating black, while those in the middle of the gradient
-editor are at the top of their panels — creating white.
+Now, looking again at the gradient editor, you will notice that there are only two sets of control points. Those in the leftmost set are all at the bottom of their respective color panels - creating black, while those in the middle of the gradient
+editor are at the top of their panels - creating white.
 Let's move the control points around until we increase the contrast between the white and black areas. As you drag
 the control points, be sure to keep them pulled all the way down (for black) or all the way up (for white) in their
 color panels to prevent introducing color into the gradient.
@@ -2029,7 +2029,7 @@ Another way to view more than one layer at a time is to change the way the layer
 interact with the Merge mode setting. This setting determines how each pixel
 combines with the pixel(s) directly underneath it in other layers.
 Make sure the opacity of the top layer is set at 100% and then click on Normal
-in the Merge mode drop-down box. Select the next option — Multiply.
+in the Merge mode drop-down box. Select the next option - Multiply.
 Notice that the colors from the Background layer are now visible (although they appear
 darker) along with the textures of Layer 1.
 
@@ -2043,7 +2043,7 @@ You can also reverse the order of the layers by clicking on the title of one and
 reversing their order, try changing the merge modes of the Background (top) layer.
 When you are finished exploring all the options, make sure the Background layer is on the bottom. Layer 1 should be
 on top with the Hard Light merge mode selected. Also make sure that both layers are set at 100% opacity.
-Before we go on to the next step, save this image — either by saving the parameter file, or the fractal (as a .ufr).
+Before we go on to the next step, save this image - either by saving the parameter file, or the fractal (as a .ufr).
 Keep the image name (Phoenix Julia 1) the same.
 Next: Adding a third layer
 
@@ -2097,7 +2097,7 @@ Gradient from the Fractal menu.
 Click and drag the set of white control points to the left to position 85. Click and drag the set of black control
 points to position 86.
 This creates a sharp line between the white and black areas of your fractal.
-Now let's open up a new part of the gradient editor — the Opacity bar — by clicking on the little down arrow next to
+Now let's open up a new part of the gradient editor - the Opacity bar - by clicking on the little down arrow next to
 the word Opacity, just above the rotation slider. This opens a fourth horizontal band of color that looks right now
 very much like the other three.
 Just as the opacity setting on the Layers tab controls the transparency of the entire
@@ -2108,7 +2108,7 @@ Transparent gradients
 
 By default, the opacity bar is empty. Let's link it to the color bars so they both contain the same control points.
 Right-click in the gradient editor and click Link Color and Opacity in the pop-up menu that appears.
-Click on the set of white control points — they are the ones at the tops of their respective color bands.
+Click on the set of white control points - they are the ones at the tops of their respective color bands.
 Click and hold that same highlighted control point in the Opacity channel and drag it all the way to the bottom,
 keeping its position at 85.
 Note: This can be a tricky maneuver with all the control points so close together. You can also enter the new opacity value
@@ -2145,7 +2145,7 @@ Add another control point with these settings:
 Red, Green, and Blue set to 255
 Position set to 116
 Opacity set to 0
-This creates a 4th set of control points — this time white, with 100% transparency.
+This creates a 4th set of control points - this time white, with 100% transparency.
 Save this image (either as a parameter or fractal file) as Phoenix Julia 2.
 
 Try playing with the control
@@ -2217,7 +2217,7 @@ the bottom layer for a bit.
 On the Mapping tab of the Layer Properties tool window, delete the Lake transform by clicking the Delete
 button.
 The layer again looks like our Newton 1 image from the Quick Start tutorial.
-Add a new transformation — the Kaleidoscope transformation in Standard.uxf.
+Add a new transformation - the Kaleidoscope transformation in Standard.uxf.
 We are going to keep the default settings for this layer, but this transformation has a lot of interesting effects you may
 want to pursue at a later time.
 
@@ -2288,7 +2288,7 @@ Next: Twist transformation
 Twist transformation
 Add a third layer and rename it Sphere.
 Delete the Kaleidoscope and 3D Mapping transformations from the Mapping tab.
-Add a new transformation — Twist.
+Add a new transformation - Twist.
 This is a fun transform, because you can use the eyedropper to select the center of the
 twist. Remember to right-click in one of the Twist Center parameters to select and
 activate the Eyedropper, or click the eyedropper button that pops up when you click on The Twist transformation
@@ -2410,9 +2410,9 @@ Switch to the Location tab, right-click on one of the Center settings and select
 Then switch to the Mapping tab and right-click on either of the Clipping Center parameters and select Paste
 Complex Value from the right-click menu.
 This ensures that the clipping center is set to the center of the screen.
-On the Mapping tab, find the Region parameter and change it to inside — because we will be clipping out the
+On the Mapping tab, find the Region parameter and change it to inside - because we will be clipping out the
 inside area.
-The image will become black — the designated solid color for this transformation.
+The image will become black - the designated solid color for this transformation.
 To select our frame width, right-click in one of the Right Edge parameter fields and select Eyedropper from the
 menu. Place the eyedropper (your mouse cursor) near the right edge of the image and left-click.
 You can repeat this until your frame is the desired width. You should now have a white frame with a black square inside.
@@ -2474,7 +2474,7 @@ iterate the formula before designating a point "inside" or "outside."
 Inside and outside points
 
 In this case, the bailout setting for the Julia formula is 4 and the bailout for the Triangle Inequality Average coloring is
-1e20 — a much higher number (100 sextillion) that, for our purposes, approximates infinity.
+1e20 - a much higher number (100 sextillion) that, for our purposes, approximates infinity.
 This coloring algorithm is intended to work best when the formula and coloring have matching bailout values, so let's
 change the Bailout value on the Formula tab to 1e20 to match the higher value on the Outside tab.
 Next, open the Gradient Editor and rotate the rotation slider to the left until the Rotation setting is -137.
@@ -2492,7 +2492,7 @@ Change the Transfer Function to Log
 Uncheck the Repeat Gradient box
 Change the Trap Shape to waves
 Now, open the gradient editor to edit the gradient for this layer to meet the following conditions:
-Three control points — You can delete unneeded control points with the right-click menu
+Three control points - You can delete unneeded control points with the right-click menu
 Position the first (left-most) control point at 0 and color it White
 Position the second control point at 35 and color it Black
 Position the third control point at 399, also colored Black
@@ -2521,7 +2521,7 @@ Since the Waves trap tendrils are white, let's make the Box trap shape a differe
 In the gradient editor, edit the set of white control points so that the Red, Green, and Blue settings are 145, 147,
 and 253, respectively.
 Click Link Color and Opacity in the right-click menu in the Gradient editor. This allows us to move and edit the
-color and opacity curves simultaneously. Also, make sure that the opacity part of the gradient editor is visible —
+color and opacity curves simultaneously. Also, make sure that the opacity part of the gradient editor is visible -
 click the small opacity button to expand it if necessary.
 Insert a new point in the gradient editor. Set the Opacity of this control point to 0. Also set the Red, Green, and
 Blue settings to 0 to create Black.
@@ -2564,7 +2564,7 @@ Since we want to maintain their color and opacity values as they are moved, hold
 two points left and right. Notice that moving the two points to the right makes the shapes fatter, and to the left,
 thinner.
 Find a location for these two points that appeals to you, then click elsewhere on the gradient to deselect them.
-Now, let's work more with the next two control points — those that control the outer, scalloped edge. We are going to add
+Now, let's work more with the next two control points - those that control the outer, scalloped edge. We are going to add
 a little sculpted edge to the scalloped frame.
 To the right of the fourth (black/transparent) and fifth (black/opaque) points,
 Insert a new control point. Make it white and set its Opacity to 255. Move it
@@ -2649,7 +2649,7 @@ Click on the Mask layer and then on the Show Mask Only button.
 
 Working with masks
 
-Masks are always shown in black and white — never any colors. White represents the areas that are transparent and black
+Masks are always shown in black and white - never any colors. White represents the areas that are transparent and black
 represents the opaque, masked areas.
 Looking at our Mask layer and its gradient, can you see what we need to do in order to clear out the center of the
 scalloped frame? (Make sure the opacity part of the gradient is visible before you continue.)
@@ -2661,7 +2661,7 @@ Click the Show Mask Only button again (so it is no longer down) and make sure
 that the bottom three layers are now visible.
 You should see the rippling of the TIA layer, the white tendrils of the Wave Trap layer,
 the bluish-purple structure of the Box Trap layer, and the dots of the Gaussian Integer
-layer — masked to only appear outside of the scalloped edge.
+layer - masked to only appear outside of the scalloped edge.
 
 When working with masks, you
 will often toggle the Show
@@ -2815,7 +2815,7 @@ animation quickly or precisely.
 To view a real-time preview of the animation, click the Play button on the
 animation bar. The animation will keep looping until you click somewhere or hit
 a key.
-The level of detail of the preview depends on the speed of your computer — as long as
+The level of detail of the preview depends on the speed of your computer - as long as
 you are using the Guessing drawing method. To make the preview faster, you can
 reduce the size of the fractal window on the Image tab of the Fractal Properties tool
 window.
@@ -2881,7 +2881,7 @@ Make sure the time slider is still at frame 100 and enable Animate mode. Hold do
 inside the fractal window to rotate the zoomed-in fractal at frame 100 back to its original state.
 With Animate mode still enabled, move the time slider to frame 1. Enter 0 in the Rotation Angle input box. Set
 Animate mode to off again.
-Note that it does not matter what tools you use to make changes — the selection box, Alt-dragging, or manually entering
+Note that it does not matter what tools you use to make changes - the selection box, Alt-dragging, or manually entering
 values. They all work together with the current state of the Animate mode toggle.
 Also, note that you can easily change the value that was recorded for an animation key simply by going back to the frame
 where the key is located and adjusting the parameter while Animate mode is enabled.
@@ -2996,7 +2996,7 @@ picture above.
 Finally, click on the range bar for the Gradient category to select it, and then drag its left edge to frame 1. The
 Gradient bar should now range from frame 1 to frame 140.
 Drag the time slider back and forth to view the effect in the fractal window. This is what we wanted, but it turns out that
-frame 140 is too late — almost the entire animation is now quite dark and gray. Let's fix this as well.
+frame 140 is too late - almost the entire animation is now quite dark and gray. Let's fix this as well.
 In the Timeline tool window, drag the right edge of the range bar for the Gradient category to frame 60.
 Again, examine the effect with the time slider and experiment until you are satisfied.
 Next: Adding a new layer
@@ -3055,7 +3055,7 @@ Rendering animations
 From the File Format drop-down list, choose AVI movie (Windows) or Quicktime movie (Mac) . The Export
 Options dialog will pop up so you can set additional options for movies.
 The list of compressors depends on what is installed on your computer. Some are better suited to fractal movies
-than others — it is best to experiment. For now, choose Cinepak Codec by Radius (Windows) or H.264 (Mac) ,
+than others - it is best to experiment. For now, choose Cinepak Codec by Radius (Windows) or H.264 (Mac) ,
 set Quality to 90% and on Windows, Key frame to once in every 15 frames. Click OK.
 If you prefer a different destination file than what Ultra Fractal automatically suggests, enter it into the Destination
 File input box, or click its Browse button.
@@ -3531,7 +3531,7 @@ Click and drag
 While still holding down the left mouse button, move the mouse around to make adjustments. The fractal window
 continually shows a preview of the result. In the status bar, additional information is shown, such as the current rotation
 angle.
-The status bar also shows extra keys that you can hold down for fine adjustments or to constrain rotation to 45°
+The status bar also shows extra keys that you can hold down for fine adjustments or to constrain rotation to 45 degrees
 increments, for example. To use them, first release the key that you have been holding down (still holding down the left
 mouse button) and then press and hold down the appropriate key.
 When you are finished, release the mouse button and the fractal will recalculate to apply your changes. To cancel the
@@ -4924,7 +4924,7 @@ condition (specified by the fractal formula) is met. If the bail-out condition i
 Otherwise, it is colored as an inside pixel.
 Most classic fractal types, such as the Mandelbrot set, are actually a set of points. A pixel can either be inside or outside
 the set. If a pixel is inside, it belongs to the Mandelbrot set, for example.
-   In this image of the Mandelbrot set, the inside area is black. The outside area is colored
+   In this image of the Mandelbrot set, the inside area is black. The outside area is colored
 according to the number of iterations required to meet the bail-out condition.
 
 By iterating the fractal formula, Ultra Fractal decides whether a pixel is inside or outside the set. The pixels that are inside
@@ -5072,7 +5072,7 @@ faster than when using CubeRoot.
 Exp calculates eindex. The color density increases even faster than when using Cube.
 Sin returns the sine of the index value. The result never exceeds -1...1 and it repeats
 itself when the index value increases.
-ArcTan returns the inverse tangent of the index value. The result approaches ½ pi
+ArcTan returns the inverse tangent of the index value. The result approaches 1/2 pi
 when the index value becomes very high
 
 Solid Color
@@ -5472,17 +5472,17 @@ In the plug-in version, Trap Shape is a plug-in parameter that accepts any trap 
 shapes from the Orbit Traps coloring algorithms are available as trap shape plug-ins in Standard.ulb.
 Some trap shapes have additional parameters:
 
-  Diameter
+  Diameter
 
 Specifies the diameter or size of the trap. Larger values usually create decorations further away from
 the center of the fractal.
 
-  Order
+  Order
 
 Specifies the order for the trap, such as the number of leaves for the pinch trap shape. It depends on
 the trap shape how this is interpreted. Larger values usually give more complex traps.
 
-  Frequency
+  Frequency
 
 Specifies the frequency of ripples or waves (where applicable). Larger values create "busier" trap
 shapes with more frills.
@@ -6720,12 +6720,12 @@ shows that keys have been recorded at those frames.
 To make the movie more interesting, let us add a rotate effect. Move the time slider to frame 50, and ensure
 that Animate mode is still on.
 Enter 90 in the Rotation Angle input box on the Location tab of the Layer Properties tool window. This will
-rotate the fractal 90° clockwise at frame 50.
+rotate the fractal 90 degrees clockwise at frame 50.
 Click the Animate button again to turn off Animate mode, because we are done recording this animation for
 now. It is a good habit to leave Animate mode off normally to avoid unintended changes to your animations.
 Click the Play button on the Animation bar to start playing a preview of the animation, or drag the time slider
 back and forth.
-Observe that the animation starts unrotated, rotates to 90° at frame 50, and then rotates back to normal at
+Observe that the animation starts unrotated, rotates to 90 degrees at frame 50, and then rotates back to normal at
 frame 100, while zooming in all the time. The frames where we did not explicitly set new values are
 interpolated to create a smooth animation.
 
