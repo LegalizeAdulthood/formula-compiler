@@ -15,6 +15,12 @@ target_folder(generate-formula-data "Tools")
 set(ID_FRM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/id.frm")
 set(FORMULA_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/formula-data.h")
 set(FORMULA_DATA_CPP "${CMAKE_CURRENT_BINARY_DIR}/formula-data.cpp")
+set(TEST_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
+set(TEST_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/test_data.h")
+
+file(GENERATE
+    OUTPUT "${TEST_DATA_H}"
+    CONTENT "#pragma once\n\n#include <string_view>\n\nconstexpr std::string_view TEST_DATA = R\"data(${TEST_DATA_DIR})data\";\n")
 
 add_custom_command(
     OUTPUT "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
@@ -32,6 +38,7 @@ add_executable("test-formula"
     "ExpressionParam.h" "ExpressionParam.cpp"
     "node-builders.h"
     "FormulaEntry-test.cpp"
+    "${TEST_DATA_H}"
     "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
     "formula-data-test.cpp"
     "Gradient-test.cpp"
