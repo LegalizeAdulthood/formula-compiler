@@ -1,0 +1,29 @@
+Binary Decomposition
+
+[]
+
+The Binary Decomposition coloring algorithm uses just two colors from
+the gradient. It colors fractals according to the "angle" of the last
+value of z from the fractal formula. This results in quite abstract and
+elegant images.
+
+The two colors used are at the beginning and at the middle of the
+gradient.
+
+There is one parameter that selects between two different flavors of the
+same algorithm. Each option creates different patterns. The second
+option reproduces the coloring used for many fractals in the classic
+Beauty of Fractals book.
+
+It often works well to combine this coloring algorithm with other layers
+that contain more different colors. Furthermore, low values (for example
+4) for the bail-out parameter of the fractal formula usually give the
+best results.
+
+Binary Decomposition is available as a coloring algorithm in
+Standard.ucl and as a coloring plug-in in Standard.ulb.
+
+See Also
+Basic
+Decomposition
+Standard coloring algorithms

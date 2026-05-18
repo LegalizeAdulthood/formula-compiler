@@ -1,0 +1,17 @@
+None
+
+[]
+
+The None coloring algorithm is the simplest coloring algorithm
+available. It is loaded by default in Ultra Fractal when a new fractal
+is created.
+
+None reproduces the standard iterations coloring algorithm found in most
+fractal software.
+
+None is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in (called Default) in Standard.ulb.
+
+See Also
+Basic
+Standard coloring algorithms

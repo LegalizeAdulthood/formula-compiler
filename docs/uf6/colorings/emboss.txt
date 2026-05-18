@@ -1,0 +1,16 @@
+Emboss
+
+[]
+
+The Emboss coloring algorithm interprets results from one of the
+Embossed fractal formulas to create fractals with 3D contour lines. It
+is unlikely to give good results with other fractal formulas.
+
+See Embossed (Julia, Mandelbrot, Newton) for more information.
+
+Emboss is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in in Standard.ulb.
+
+See Also
+Lighting
+Standard coloring algorithms

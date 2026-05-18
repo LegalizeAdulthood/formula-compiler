@@ -1,0 +1,65 @@
+Gaussian Integer
+
+[]The Gaussian Integer coloring algorithm colors fractals according to
+how the calculated orbits are related to Gaussian integers.
+
+Gaussian Integer is available as a coloring algorithm in Standard.ucl,
+or as a trap shape plug-in in Standard.ulb that can be used together
+with the Orbit Traps or Direct Orbit Traps coloring plug-ins. See
+Example 2 - Orbit trap plug-ins .
+
+Gaussian integers are complex numbers normalized to integer values. This
+coloring algorithm examines the values of z calculated by the fractal
+formula, and tests them against nearby Gaussian integers.
+
+The resulting images are richly textured, containing many circles, dots,
+and stars. By tweaking the provided parameters, many variations are
+possible.
+
+The following parameters are available:
+
++-----------------------------------+-----------------------------------+
+| Integer Type                      | Specifies the rounding method to  |
+|                                   | use to find the nearest Gaussian  |
+|                                   | integer. The round(z) option      |
+|                                   | usually gives smoother images     |
+|                                   | than the other options.           |
++-----------------------------------+-----------------------------------+
+| Color By                          | Selects how the color of each     |
+|                                   | pixel is determined. For example, |
+|                                   | it can be colored by the minimum  |
+|                                   | distance from a value of z to the |
+|                                   | nearest Gaussian integer.         |
++-----------------------------------+-----------------------------------+
+| Normalization                     | Chooses between several ways of   |
+|                                   | normalizing the distance to the   |
+|                                   | nearest Gaussian integer. If you  |
+|                                   | select factor or f(z), an         |
+|                                   | additional parameter will appear  |
+|                                   | that specifies the normalization  |
+|                                   | factor or function to use.        |
++-----------------------------------+-----------------------------------+
+| Randomize                         | If checked, a small randomization |
+|                                   | factor is added to each value of  |
+|                                   | z before examining its behavior.  |
+|                                   | Additional parameters will appear |
+|                                   | to specify the amount of          |
+|                                   | randomization and a seed value.   |
+|                                   | Each seed value will give         |
+|                                   | different randomization patterns. |
+|                                   |                                   |
+|                                   | In the trap shape plug-in         |
+|                                   | version, this option is not       |
+|                                   | available. However, you can       |
+|                                   | achieve the same effect by        |
+|                                   | selecting the Randomize           |
+|                                   | transformation plug-in from       |
+|                                   | Standard.ulb for the Trap         |
+|                                   | Position parameter in the Orbit   |
+|                                   | Traps plug-in.                    |
++-----------------------------------+-----------------------------------+
+
+See Also
+Example 2 - Orbit trap plug-ins
+Orbit Traps
+Standard coloring algorithms

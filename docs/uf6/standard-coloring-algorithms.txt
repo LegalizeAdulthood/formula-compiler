@@ -1,0 +1,33 @@
+Standard coloring algorithms
+
+Ultra Fractal comes with a set of standard coloring algorithms. They are
+located in the file Standard.ucl in the Formulas folder. It contains the
+following coloring algorithms:
+
+- Basic
+- Binary Decomposition
+- Decomposition
+- Direct Orbit Traps
+- Distance Estimator
+- Emboss
+- Exponential Smoothing
+- Gaussian Integer
+- Gradient
+- Image
+- Lighting
+- None
+- Orbit Traps
+- Plug-In Coloring (Gradient, Direct)
+- Smooth (Mandelbrot)
+- Triangle Inequality Average
+
+All standard coloring algorithms are also implemented as coloring
+plug-ins in Standard.ulb. This makes it possible to use them with
+Plug-In Coloring or in other formulas that accept coloring plug-ins. See
+Plug-Ins and Example 2 - Orbit trap plug-ins for more information.
+
+See Also
+Standard fractal formulas
+Standard transformations
+Coloring algorithms
+Public formulas

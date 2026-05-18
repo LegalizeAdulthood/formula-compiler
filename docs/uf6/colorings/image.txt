@@ -1,0 +1,28 @@
+Image
+
+[]The Image coloring algorithm enables you to load an external image
+into a fractal. It simply displays the image in the inside or outside
+area of the fractal. If you want the entire layer to show the image, the
+Image coloring algorithm is best combined with the standard Pixel
+fractal formula.
+
+The Image parameter contains the image that is displayed. See Using
+images for more information on how to use this parameter.
+
+In the layer, the image is scaled such that it occupies the entire layer
+if the default location is set. To achieve this, load the Pixel fractal
+formula and click the Reset Location button on the Location tab. Of
+course, you can pan, zoom, and rotate at will to frame or distort the
+image.
+
+When zooming in, the individual pixels in the image are interpolated
+using sophisticated bicubic interpolation methods. For the best results
+when zooming out, it is recommended to render the fractal with
+anti-aliasing enabled.
+
+Image is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in in Standard.ulb.
+
+See Also
+Standard coloring algorithms
+Using images

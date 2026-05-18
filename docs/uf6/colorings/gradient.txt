@@ -1,0 +1,26 @@
+Gradient
+
+[]
+
+The Gradient coloring algorithm ignores the information from the fractal
+formula and fills the fractal with all colors from the gradient.
+
+To obtain a completely filled image, select the Gradient coloring
+algorithm in both the Inside and the Outside tabs of the Layer
+Properties tool window. This ensures that all pixels are colored in the
+same way.
+
+The Gradient Type parameter selects how the gradient should be
+displayed: linear (from left to right), radially, or as a cone. Use
+zooming and panning to reposition the gradient as desired.
+
+This coloring algorithm is handy for creating special effects with
+multi-layer images. You can, for example, use it in a mask together with
+a suitable transparent gradient to show only selected portions in a
+regular pattern of the layer that is masked.
+
+Gradient is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in in Standard.ulb.
+
+See Also
+Standard coloring algorithms

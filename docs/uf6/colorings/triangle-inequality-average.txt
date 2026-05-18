@@ -1,0 +1,26 @@
+Triangle Inequality Average
+
+[]
+
+The Triangle Inequality Average coloring algorithm creates smoothly
+colored fractals with large flame-like patterns that extend from the
+fractal outwards.
+
+Because it uses the same smoothing as Smooth (Mandelbrot), it only works
+with most divergent fractal formulas, such as Mandelbrot and Julia.
+
+There are two parameters available: Exponent and Bailout. These should
+be set to match the corresponding parameters of the fractal formula.
+Otherwise, the coloring will not be smooth.
+
+Use very large bail-out values for good results. The default value 1e20
+(a 1 with 20 zeroes) is a good starting point. The Mandelbrot (Built-in)
+formula cannot handle such large values, so use the non-built-in
+Mandelbrot instead.
+
+Triangle Inequality Average is available as a coloring algorithm in
+Standard.ucl and as a coloring plug-in in Standard.ulb.
+
+See Also
+Orbit Traps
+Standard coloring algorithms

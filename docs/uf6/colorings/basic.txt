@@ -1,0 +1,27 @@
+Basic
+
+[]The Basic coloring algorithm implements four simple and classic ways
+of coloring the outside areas of a fractal. It is useful for reproducing
+fractals created with older fractal software.
+
+Basic is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in in Standard.ulb.
+
+The Coloring Type parameter selects how the fractal should be colored:
+
+The Iterations option colors a pixel according to the number of
+iterations that were necessary for the fractal formula to bail out (to
+decide that it's an outside pixel). This is the oldest method used to
+color fractals. It creates images with bands of solid colors. To
+smoothen the bands, use the Smooth (Mandelbrot) coloring algorithm.
+
+The Real, Imaginary, and Sum options use the last value of z in
+combination with the number of iterations to color pixels. They create
+smooth, true-color images. Good results are usually obtained if the
+bail-out parameter of the fractal formula is not set too high. Try 4,
+for example.
+
+See Also
+Binary Decomposition
+Distance Estimator
+Standard coloring algorithms

@@ -1,0 +1,23 @@
+Smooth (Mandelbrot)
+
+[]
+
+The Smooth (Mandelbrot) coloring algorithm creates smoothly colored
+outside regions with fractal formulas such as Mandelbrot and Julia.
+
+It works with most divergent fractal formulas. For Newton and Nova
+fractals, use Exponential Smoothing instead.
+
+There are two parameters available: Exponent and Bail-out value. These
+should be set to match the corresponding parameters of the fractal
+formula. Otherwise, the coloring will not be perfectly smooth.
+
+Usually, the best results are obtained when the Transfer Function in the
+Outside tab is set to Log.
+
+Smooth (Mandelbrot) is available as a coloring algorithm in Standard.ucl
+and as a coloring plug-in in Standard.ulb.
+
+See Also
+Basic
+Standard coloring algorithms

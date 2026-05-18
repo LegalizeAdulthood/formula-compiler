@@ -1,0 +1,24 @@
+Decomposition
+
+[]
+
+The Decomposition coloring algorithm colors fractals according to the
+"angle" of the last value of z from the fractal formula. The angle is
+decomposed and distributed over the full range of the gradient.
+
+This coloring algorithm tends to create circular bands all over the
+image that contain all colors from the gradient. Low values (for example
+4) for the bail-out parameter of the fractal formula usually give the
+best results.
+
+With convergent fractal types, such as Newton or Nova, Decomposition
+usually does not create smoothly colored images, but it can still be
+interesting.
+
+Decomposition is available as a coloring algorithm in Standard.ucl and
+as a coloring plug-in in Standard.ulb.
+
+See Also
+Basic
+Binary Decomposition
+Standard coloring algorithms

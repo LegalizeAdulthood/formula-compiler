@@ -1,0 +1,25 @@
+Distance Estimator
+
+[]
+
+The Distance Estimator coloring algorithm estimates the distance between
+a pixel and the boundary of the fractal (for example the boundary of the
+Mandelbrot set). The pixel is colored accordingly.
+
+This coloring algorithm is especially good at showing the thin
+connecting lines and miniatures that exist everywhere in the Mandelbrot
+set. It works correctly for divergent fractal formulas like Mandelbrot,
+Julia, and Phoenix.
+
+The Exponent parameter should be set to match the exponent or power of
+the fractal formula (this is usually also a parameter). Higher values
+(like 128) for the bail-out parameter of the fractal formula give the
+best results.
+
+Distance Estimator is available as a coloring algorithm in Standard.ucl
+and as a coloring plug-in in Standard.ulb.
+
+See Also
+Basic
+Decomposition
+Standard coloring algorithms

@@ -1,0 +1,153 @@
+Orbit Traps
+
+[]The Orbit Traps coloring algorithm is an extremely versatile
+general-purpose coloring algorithm. It can be applied to almost any
+fractal formula with good results, on both the Inside and Outside tabs.
+
+Orbit Traps is available as a coloring algorithm in Standard.ucl and as
+a coloring plug-in in Standard.ulb. As a coloring plug-in, it uses
+several plug-in parameters instead of normal parameters to make it
+easier to add new trap shapes and coloring options. You need to combine
+the Orbit Traps plug-in with Plug-In Coloring (Gradient). See Example
+2 - Orbit trap plug-ins for an example of how this works in practice.
+
+Orbit Traps works by examining the value of z (as calculated by the
+fractal formula) for each iteration. It tests how close z is to a fixed
+shape (the orbit trap), and colors the pixel according to the closest
+distance, for example.
+
+The possibilities are almost unlimited because there are so many
+combinations of parameters available. It is a good idea to take some
+time to explore the different options in here.
+
+The following parameters are available:
+
++-----------------------------------+-----------------------------------+
+| Trap Position                     | (Plug-in version only.) Provides  |
+|                                   | options to transform the value of |
+|                                   | z before it is passed to the trap |
+|                                   | shape plug-in. This essentially   |
+|                                   | transforms the trap shape. The    |
+|                                   | default Trap Position plug-in     |
+|                                   | provides many common options, but |
+|                                   | it is also possible to select any |
+|                                   | other transformation plug-in, or  |
+|                                   | even to merge multiple            |
+|                                   | transformations with Transform    |
+|                                   | Merge in common.ulb.              |
++-----------------------------------+-----------------------------------+
+| Trap Shape                        | Specifies the shape of the orbit  |
+|                                   | trap. Some options may not look   |
+|                                   | too exciting with the default     |
+|                                   | settings of the other parameters, |
+|                                   | but try changing Trap Coloring    |
+|                                   | and Trap Mode in that case. Not   |
+|                                   | all options work equally well     |
+|                                   | with all fractal types.           |
+|                                   |                                   |
+|                                   | In the plug-in version, Trap      |
+|                                   | Shape is a plug-in parameter that |
+|                                   | accepts any trap shape plug-in.   |
+|                                   | All trap shapes from the Orbit    |
+|                                   | Traps coloring algorithms are     |
+|                                   | available as trap shape plug-ins  |
+|                                   | in Standard.ulb.                  |
+|                                   |                                   |
+|                                   | Some trap shapes have additional  |
+|                                   | parameters:                       |
++-----------------------------------+-----------------------------------+
+|   Diameter                        | Specifies the diameter or size of |
+|                                   | the trap. Larger values usually   |
+|                                   | create decorations further away   |
+|                                   | from the center of the fractal.   |
++-----------------------------------+-----------------------------------+
+|   Order                           | Specifies the order for the trap, |
+|                                   | such as the number of leaves for  |
+|                                   | the pinch trap shape. It depends  |
+|                                   | on the trap shape how this is     |
+|                                   | interpreted. Larger values        |
+|                                   | usually give more complex traps.  |
++-----------------------------------+-----------------------------------+
+|   Frequency                       | Specifies the frequency of        |
+|                                   | ripples or waves (where           |
+|                                   | applicable). Larger values create |
+|                                   | "busier" trap shapes with more    |
+|                                   | frills.                           |
++-----------------------------------+-----------------------------------+
+| Trap Transfer                     | (Plug-in version only.) Provides  |
+|                                   | options to transform the distance |
+|                                   | that is returned by the trap      |
+|                                   | shape plug-in. The default Trap   |
+|                                   | Transfer plug-in is quite         |
+|                                   | powerful, but it is also possible |
+|                                   | to select another transfer        |
+|                                   | plug-in.                          |
++-----------------------------------+-----------------------------------+
+| Trap Mode                         | Selects how the values gathered   |
+|                                   | at each iteration are interpreted |
+|                                   | to produce a color. For example,  |
+|                                   | the magnitude at the closest      |
+|                                   | distance to the trap shape is     |
+|                                   | used if Trap Coloring is set to   |
+|                                   | magnitude, and Trap Mode to       |
+|                                   | closest.                          |
+|                                   |                                   |
+|                                   | Experiment to see which           |
+|                                   | combinations work well together.  |
+|                                   | Some trap modes only work well    |
+|                                   | with specific trap coloring       |
+|                                   | settings, for example.            |
+|                                   |                                   |
+|                                   | The trap only option will show    |
+|                                   | the trap shape only. This is      |
+|                                   | useful for learning how the other |
+|                                   | options work.                     |
+|                                   |                                   |
+|                                   | In the plug-in version, Trap Mode |
+|                                   | is a plug-in parameter that       |
+|                                   | accepts any trap mode plug-in,    |
+|                                   | and the original trap mode        |
+|                                   | options are now also available as |
+|                                   | trap mode plug-ins in             |
+|                                   | Standard.ulb.                     |
++-----------------------------------+-----------------------------------+
+| Trap Threshold                    | Specifies the width of the trap   |
+|                                   | area, used for most trap modes.   |
+|                                   | (In the non-plug-in version, this |
+|                                   | parameter is called Threshold.)   |
++-----------------------------------+-----------------------------------+
+| Trap Coloring                     | The Trap Coloring parameter       |
+|                                   | selects what information is       |
+|                                   | gathered at each iteration. This  |
+|                                   | is later filtered and combined to |
+|                                   | produce the final color.          |
+|                                   |                                   |
+|                                   | In the plug-in version, Trap      |
+|                                   | Coloring is a plug-in parameter   |
+|                                   | that accepts any trap coloring    |
+|                                   | plug-in, and the original trap    |
+|                                   | coloring options are now also     |
+|                                   | available as trap coloring        |
+|                                   | plug-ins in Standard.ulb.         |
++-----------------------------------+-----------------------------------+
+| Use Solid Color                   | If checked, areas outside the     |
+|                                   | trap shape will be colored with   |
+|                                   | the solid color (allowing them to |
+|                                   | be transparent).                  |
++-----------------------------------+-----------------------------------+
+
+The non-plug-in version of Orbit Traps does not have the Trap Position
+plug-in parameter that allows any transformation to transform the trap
+shape, but it does offer some transformation options:
+
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Trap Center    Specifies the center of the trap shape. Values other than (0, 0) will distort the trap shape into the direction of the trap center. Use the eyedropper to select good values for this parameter.
+  Aspect Ratio   Changes the aspect ratio of the trap shape. Values larger than 1 will stretch the trap horizontally; values smaller than 1 will stretch it vertically.
+  Rotation       Rotates the trap shape in clockwise direction (specified in degrees).
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Tutorial: Masking
+Example 2 - Orbit traps plug-ins
+Direct Orbit Traps
+Standard coloring algorithms

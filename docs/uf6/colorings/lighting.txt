@@ -1,0 +1,16 @@
+Lighting
+
+[]
+
+The Lighting coloring algorithm interprets results from one of the Slope
+fractal formulas to create fractals with 3D lighting effects. It will
+probably not give very good results with other fractal formulas.
+
+See Slope (Julia, Mandelbrot, Newton) for more information.
+
+Lighting is available as a coloring algorithm in Standard.ucl and as a
+coloring plug-in in Standard.ulb.
+
+See Also
+Emboss
+Standard coloring algorithms

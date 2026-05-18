@@ -1,0 +1,29 @@
+Plug-In Coloring (Gradient, Direct)
+
+[]Plug-In Coloring is a skeleton coloring algorithm that lets a coloring
+plug-in do the actual work. All coloring algorithms in Standard.ucl are
+also implemented as coloring plug-ins. You can select any of these as
+the coloring plug-in to be used together with Plug-In Coloring.
+
+There are two versions of Plug-In Coloring: a gradient version and a
+direct version. Plug-In Coloring (Gradient) is a normal coloring
+algorithm and works only with gradient coloring plug-ins which return an
+index into the gradient.
+
+Plug-In Coloring (Direct) is a direct coloring algorithm and works with
+coloring plug-ins that directly return a color. It also works with
+gradient coloring plug-ins, but in that case changes to the gradient
+trigger an unnecessary recalculation.
+
+The Coloring Algorithm parameter sets the coloring plug-in to be used.
+By default, the Smooth (Mandelbrot) plug-in from Standard.ulb is
+selected for Plug-In Coloring (Gradient), while Plug-In Coloring
+(Direct) defaults to the Direct Orbit Traps plug-in.
+
+An example of using Plug-In Coloring is given in Example 2 - Orbit trap
+plug-ins.
+
+See Also
+Plug-ins
+Standard coloring algorithms
+Standard plug-ins

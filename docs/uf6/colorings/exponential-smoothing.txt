@@ -1,0 +1,27 @@
+Exponential Smoothing
+
+[]The Exponential Smoothing coloring algorithm creates smoothly colored
+outside areas. It works well for both convergent and divergent fractal
+types, which means that it can be combined with almost any fractal
+formula.
+
+Fractal formulas like Mandelbrot, Julia, and Phoenix have only divergent
+orbits, while types like Newton and Nova have only convergent orbits.
+The Magnet fractal formulas have both divergent and convergent orbits.
+
+With the Color Divergent and Color Convergent parameters, you can enable
+coloring for divergent and convergent orbits. You should always enable
+at least one option. The formula runs slightly faster if you just enable
+the necessary options (only Magnet-like fractals require both parameters
+to be enabled).
+
+The Divergent Density parameter can be used to tweak the color density
+for divergent parts of a fractal. It is only useful when both divergent
+and convergent orbits exist in the fractal.
+
+Exponential Smoothing is available as a coloring algorithm in
+Standard.ucl and as a coloring plug-in in Standard.ulb.
+
+See Also
+Smooth (Mandelbrot)
+Standard coloring algorithms
