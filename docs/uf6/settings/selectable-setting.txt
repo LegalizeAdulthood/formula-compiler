@@ -1,0 +1,24 @@
+selectable setting
+
+This setting is a boolean setting. It specifies whether you can select
+the class that is used for a plug-in parameter. If true, the plug-in
+parameter appears in the formula parameter list as a class name and a
+Browse button that lets you select a descendant class as well. If false,
+the plug-in parameter does not appear at all, and its sub-parameters are
+listed as normal formula parameters. In this case, it looks like the
+plug-in parameter is replaced by its sub-parameters.
+
+The selectable setting defaults to true, so you only need to specify it
+when you want the plug-in parameter to be non-selectable. It can only
+occur inside a parameter block for a plug-in parameter.
+
+Example:
+
+    default:
+      MyClass param MyClassParam
+        selectable = false
+      endheading
+
+See Also
+Plug-in parameters
+Parameter blocks

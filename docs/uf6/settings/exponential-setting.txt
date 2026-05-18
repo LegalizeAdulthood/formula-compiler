@@ -1,0 +1,29 @@
+exponential setting
+
+This setting is a boolean setting. It specifies whether or not a
+floating-point parameter should use exponential interpolation by
+default. The user can always later change this in the Timeline tool
+window. The setting defaults to false, so parameters are normally not
+interpolated exponentially.
+
+The exponential setting can only occur inside parameter blocks for float
+parameters.
+
+If you want your formula to run on earlier versions of Ultra Fractal as
+well where the exponential setting was not available, test for the VER40
+symbol, as shown in the example below.
+
+Example:
+
+    default:
+      float param ExtraMagnification
+        caption = "Extra Magnification"
+        default = 1
+    $ifdef VER40
+        exponential = true
+    $endif
+      endparam
+
+See Also
+caption setting
+Parameters

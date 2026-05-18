@@ -1,0 +1,25 @@
+min setting
+
+This setting is either an int, float or complex value and specifies the
+minimum acceptable value for a parameter. It cannot be used with bool or
+color parameters.
+
+The type of this setting is not important; it is automatically converted
+to the type of the parameter. The value of this setting must be less
+than or equal to the value of the max setting. If this setting is not
+specified, there is no maximum value for the parameter.
+
+This setting can only occur inside a parameter block.
+
+Example:
+
+    default:
+      float param MyParam
+        default = 4
+        min = -8 ; parameter can range from -8.0 to infinity
+      endparam
+
+See Also
+default setting
+max setting
+Parameters

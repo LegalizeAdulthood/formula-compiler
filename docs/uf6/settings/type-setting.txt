@@ -1,0 +1,26 @@
+type setting
+
+This setting is an int value that specifies the built-in fractal formula
+to use. Currently, there are two built-in formulas, so the value of the
+setting can be either 1 or 2. The following types are defined:
+
+  ------ ------------------------- -------------------------------- --------------------------------
+  Type   Description               Parameter 1                      Parameter 2
+  1      Mandelbrot: z = z*z + c   complex start (starting value)   float bailout (bail-out value)
+  2      Julia: z = z*z + c        complex seed (Julia seed)        float bailout (bail-out value)
+  ------ ------------------------- -------------------------------- --------------------------------
+
+Usually you don't need to write your own formulas using the built-in
+formulas, since all built-in types are implemented in Standard.ufm
+distributed with Ultra Fractal.
+
+This setting can only be used in the builtin section in fractal
+formulas.
+
+Example:
+
+    builtin:
+      type = 1
+
+See Also
+Writing fractal formulas

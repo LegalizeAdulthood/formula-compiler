@@ -1,0 +1,29 @@
+expanded setting
+
+This setting is a boolean setting. It specifies whether a heading or
+plug-in parameter is initially expanded when the formula is selected. It
+defaults to true, so you only need to include it when you want a heading
+or plug-in parameter to be collapsed by default.
+
+The expanded setting can only occur inside headings and plug-in
+parameter blocks.
+
+If you want your formula to run on version 3 or earlier of Ultra Fractal
+where the expanded setting was not available, test for the VER40 symbol,
+as shown in the example below.
+
+Example:
+
+    default:
+      heading
+        caption = "Additional Options"
+    $ifdef VER40
+        ; Hide these options because most people won't need them.
+        expanded = false
+    $endif
+      endheading
+      ; Declaration of optional parameters
+
+See Also
+caption setting
+Parameters

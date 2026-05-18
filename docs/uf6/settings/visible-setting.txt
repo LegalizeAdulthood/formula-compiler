@@ -1,0 +1,39 @@
+visible setting
+
+This setting is a boolean expression. It shows or hides a parameter, a
+user function, or a heading according to certain conditions. For
+example, you may want to temporarily hide a parameter when it has no
+effect because of how another parameter is set.
+
+The expression is re-evaluated when a parameter changes. It must be a
+constant expression, but it can use the values of other parameters and
+most predefined symbols.
+
+For plug-in parameters, the visible setting affects all sub-parameters
+of the selected class as well. You can therefore use it to hide all the
+parameters for a class. If you only want to hide the class name and its
+Browse button, use the selectable setting instead.
+
+This setting can occur inside parameter block, function blocks, and
+headings.
+
+Example:
+
+    default:
+      int param Choice
+        enum = "One" "Two"
+        default = 0
+      endparam
+      heading
+        caption = "Options for Two"
+        visible = @Choice == "Two"
+      endheading
+      float param OptionForChoiceTwo
+        default = 4
+        visible = @Choice == "Two"
+        hint = "Only relevant when Choice is set to Two."
+      endparam
+
+See Also
+enabled setting
+Parameters

@@ -1,0 +1,21 @@
+caption setting
+
+This setting is a string setting and specifies the caption of a
+parameter, a user function, or a heading. The caption appears in the
+user interface and is visible to the user. The parameter identifier is
+never visible to the user if a caption is specified. If no caption is
+specified, the parameter identifier is used as the caption.
+
+This setting can only occur inside parameter blocks, function blocks, or
+headings.
+
+Example:
+
+    default:
+      param MyParam
+        caption = "My parameter"
+      endparam
+
+See Also
+hint setting
+Parameters

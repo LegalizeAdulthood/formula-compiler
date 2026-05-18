@@ -1,0 +1,76 @@
+default setting
+
+This setting specifies the default value for a parameter or a user
+function.
+
+Parameters
+
+If the type of the parameter is included in the parameter block, the
+default setting specifies only the default value. In this case, it can
+also be an expression that evaluates to the default value when the
+formula is compiled. The expression can only use constant values,
+including predefined symbols, but not including the values of other
+parameters.
+
+If the type of the parameter is not included in the parameter block, the
+default setting is either a bool, int, float, or complex value and
+specifies the type and the default value of the parameter. The type of
+the parameter is set to the type of this setting. Therefore, you must be
+careful when specifying the default value. Suppose you want a float
+parameter with the default value 4. In this case you have to use the
+value 4.0 instead of 4; otherwise the type of the parameter would be
+int. If the default setting is not specified, the parameter is treated
+as complex, with a default value of (0, 0).
+
+For readability, it is recommended to explicitly specify the type of a
+parameter before the parameter block.
+
+Plug-in parameters
+
+For plug-in parameters, the default setting is a class name that
+specifies the default plug-in to use for this parameter. The default
+plug-in should of course be derived from the parameter class. The class
+name is looked up in the list of imported classes. If omitted, the
+default plug-in is the same as the base class for the parameter.
+
+User functions
+
+The default setting is a function value and specifies the default value
+of the user function. It is important to add parentheses () after the
+function name. If this setting is not specified, the default value of
+the user function is set to sin() for complex user functions, or
+mergenormal() for color user functions.
+
+General
+
+This setting can only occur inside parameter blocks and function blocks.
+
+Examples:
+
+    default:
+      param FloatParam1
+        default = 3.0  ; type implicitly set to float
+      endparam
+      float param FloatParam2
+        default = 3
+      endparam
+      complex param CenterParam
+        default = #center + (2, 0)
+      endparam
+      color param ColorParam
+        default = rgb(1, 0, 0)
+      endparam
+      complex func MyFunc1
+        default = sqr()
+      endfunc
+      color func MyFunc2
+        default = mergesoftlight()
+      endfunc
+      MyClass param MyClassParam
+        default = MyDerivedClass
+      endparam
+
+See Also
+enabled setting
+visible setting
+Parameters

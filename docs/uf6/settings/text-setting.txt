@@ -1,0 +1,23 @@
+text setting
+
+This setting is a string setting and specifies an additional text
+message for a heading in the parameter list. If you include the text
+setting, its text is shown as a small block below the heading itself. If
+you include the text setting and omit the caption setting, the
+horizontal line for the heading is not shown and the heading consists
+solely of the text message. You can use this to give short instructions
+to the users of your formula.
+
+This setting can only occur inside headings.
+
+Example:
+
+    default:
+      heading
+        text = "For best results, use this coloring algorithm together \
+                with My Special Formula in xyz.ufm."
+      endheading
+
+See Also
+caption setting
+Parameters

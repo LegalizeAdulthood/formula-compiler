@@ -1,0 +1,26 @@
+hint setting
+
+This setting is a string value. It specifies a small help text that is
+visible when the user clicks the ? button in the title bar of the Layer
+Properties tool window, and then clicks the parameter.
+
+The hint text may be arbitrarily large. Long strings can be split across
+multiple lines using the backslash \ character. If it is not specified,
+no help is provided.
+
+This setting can only occur inside a parameter block.
+
+Example:
+
+    default:
+      param MyParam
+        hint = "This is a help text for my \
+                own parameter!"
+      endparam
+
+See Also
+helpfile setting
+helptopic setting
+Providing help and hints
+Parameters
+Sections

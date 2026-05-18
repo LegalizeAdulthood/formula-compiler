@@ -1,0 +1,50 @@
+enum setting
+
+This setting is a list of string values. It should be used with a
+parameter of type int, and it changes the way the user can select the
+value of the parameter. Instead of typing in a number, the user can now
+select an item from a drop-down list to set the value of the parameter.
+The item is translated to an integer value (0, 1, 2, etc.) and then
+assigned to the parameter.
+
+Such parameters are called enumerated parameters. Here is an example:
+
+    default:
+      param EnumParam
+        enum = "choice 1" "choice 2" "choice 3"
+        default = 1  ; "choice 2" is the default
+      endparam
+
+The first item corresponds to the value 0, the second to 1, the third to
+2, and so on. The default setting is expressed as an int (since the type
+of the parameter is int) and specifies the default item. Inside the
+formula, you can use the value of the parameter to switch between
+different parts of code.
+
+Example:
+
+    if @EnumParam == 0
+      ; choice 1
+    elseif @EnumParam == "choice 2"
+      ; choice 2
+    else
+      ; choice 3
+    endif
+
+As you can see, the == operator and the != operator can also compare
+enumerated parameters against a string value. This string value must be
+one of the enumerated values for the parameter. This makes formulas
+easier to write and to understand than when using the numerical values
+that correspond to the options.
+
+The enum setting can only occur inside a parameter block.
+
+Because parameters are treated as constants by the compiler, and
+constant expressions are evaluated in advance, the entire if statement
+can be replaced by the proper code part by the compiler. This means that
+you get the choice mechanism offered by enumerated parameters for free
+in terms of calculation speed. See also Optimizations.
+
+See Also
+default setting
+Parameters
