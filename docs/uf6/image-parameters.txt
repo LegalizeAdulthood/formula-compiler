@@ -1,0 +1,45 @@
+Image parameters
+
+Formulas in Ultra Fractal can import external images. This is typically
+used only in direct coloring algorithms, which can subsequently use the
+information from the image to return colors for each pixel that is
+calculated. The standard Image coloring algorithm is a good example.
+
+To be able to import an image, the formula needs to declare an image
+parameter. This takes the form of a plug-in parameter with the built-in
+Image class as the class type:
+
+    default:
+      ...
+      Image param imageParam
+        caption = "Image"
+      endparam
+
+The parameter block can contain the following settings: caption,
+enabled, hint, and visible. You cannot specify a default image. By
+default, the image is always empty.
+
+In the list of parameters in the Layer Properties tool window, the image
+parameter shows up as an image preview and an Open button to select an
+image file. See Using images for an example. The user can select any
+image from the computer and it will be loaded in the preview window.
+
+To access the data from the image, you need to create an Image object
+from the image parameter, just like with plug-in parameters:
+
+    Image img = new @imageParam
+    int numPixels = img.getWidth() * img.getHeight()
+
+You can now access all pixels in the image using the methods of the
+built-in Image class. The Image object created is associated to the
+specified image parameter, so you can easily have multiple image
+parameters if necessary.
+
+Note: You can also create a stand-alone Image object with new Image. For
+example, you could make a copy of an imported image and modify it.
+
+Next: Random values
+
+See Also
+Classes
+Image class

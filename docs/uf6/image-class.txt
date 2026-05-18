@@ -1,0 +1,100 @@
+Image class
+
+The built-in Image class contains methods to work with a bitmap image.
+It contains the following methods:
+
+    func assign(Image source)
+
+The assign function copies all data from another Image object. Assigning
+a null reference will make the image empty.
+
+Assignment is very efficient because only a reference to the underlying
+image data is copied. As soon as you modify the image with resize() or
+setPixel(), however, the image is physically duplicated to ensure the
+source image is not modified.
+
+    color func getColor(complex c)
+
+The getColor function returns the color at the location in the image
+specified by the complex argument c. The complex value is interpreted
+such that the entire image is mapped to the range (-1, -1) .. (1, 1).
+The complex coordinates (-1, -1) correspond to the pixel coordinates (0,
+getHeight()); the complex coordinates (1, 1) correspond to the pixel
+coordinates (getWidth(), 0). Complex coordinates that are outside the
+image will return a fully transparent color.
+
+Because the getColor function uses bicubic interpolation to calculate an
+interpolated color from the pixels nearest to the desired location, it
+is the preferred way of retrieving pixel information from the image.
+
+    bool func getEmpty()
+
+The getEmpty function returns true if the image is empty. This means
+that no image has been selected by the user. In this case, getWidth()
+and getHeight() will return 0.
+
+If the getEmpty function returns false, a valid image has been selected
+by the user if the Image object was created through an image parameter.
+
+    int func getHeight()
+
+The getHeight function returns the height of the selected image in
+pixels, or 0 if the image is empty.
+
+    color func getPixel(int x, int y)
+
+The getPixel function returns the color at the specified pixel
+coordinates. The pixel coordinates (0, 0) correspond to the top left
+corner of the image; the pixel coordinates (getWidth() - 1,
+getHeight() - 1) correspond to the bottom right corner of the image.
+Pixel coordinates outside this range will return a fully transparent
+color.
+
+Since getPixel() does not perform any interpolation, you will usually
+obtain the best results with the interpolating function getColor(). The
+getPixel function is useful if you need to retrieve the color
+information from the image directly.
+
+    int func getWidth()
+
+The getWidth function returns the width of the selected image in pixels,
+or 0 if the image is empty.
+
+    func resize(int newWidth, int newHeight)
+
+The resize function resizes the image to the specified new width and
+height, in pixels. All information from the image is lost and it is
+initialized to an all-black, fully transparent image. In case you want
+to resize an image while keeping its image data, create a new image,
+resize it to the required size, and then use setPixel() on the new image
+and getColor() on the original image to copy all pixels one by one.
+
+    func setPixel(int x, int y, const color newColor)
+
+The setPixel function changes the color of the specified pixel in the
+image. The pixel coordinates (0, 0) correspond to the top left corner of
+the image; the pixel coordinates (getWidth() - 1, getHeight() - 1)
+correspond to the bottom right corner of the image. Calling setPixel()
+with pixel coordinates outside this range will not do anything.
+
+Notes
+
+- See the source code for the standard Image coloring algorithm for an
+  example of how to use the Image class in practice.
+- Usually, Image objects are used to import images. In this case, you
+  create the Image object through an image parameter. This will
+  associate the Image object with the image selected by the user for
+  that image parameter. You can also create stand-alone Image objects,
+  however. This can be useful if you want to modify an imported image.
+- Internally, an Image object requires four bytes per pixel to store its
+  data. For example, a 1024 x 768 image uses about 3.1 MB. Storing image
+  data in an Image object uses less space than storing it into an array
+  of colors, because a color type uses 16 bytes in Ultra Fractal.
+  However, accessing the data in an Image object is slightly less
+  efficient because the internal data format has to be converted to or
+  from the color type.
+
+See Also
+Classes
+Image parameters
+Using images
