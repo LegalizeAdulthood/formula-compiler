@@ -1,0 +1,26 @@
+title setting
+
+This setting is a string value and specifies the title of the formula or
+class, which is shown in the browser and in the Layer Properties tool
+window. The title must be enclosed by double quotes and can contain any
+character, except for the double quote itself.
+
+If the title is not specified, Ultra Fractal uses the entry identifier
+of the formula or class as the title.
+
+This setting can be used in the default section of all types of
+formulas, and in classes.
+
+Examples:
+
+    default:
+      title = "Mandelbrot: Z = Z^2 + C"
+      title = "This is a very long title \
+               which is split across three lines \
+               using the backslash \ character"
+
+See Also
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms
+Plug-in parameters

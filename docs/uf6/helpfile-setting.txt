@@ -1,0 +1,68 @@
+helpfile setting
+
+This setting is a string value and specifies a help file containing help
+on the formula. The help file can be accessed by clicking the More
+button in the Layer Properties tool window, and then clicking Help.
+
+This setting can be used in the default section of all types of
+formulas.
+
+The help file can be a Windows HTML Help file (*.chm), a Windows Help
+file (*.hlp), a collection of HTML files (*.htm or *.html), an Adobe
+Acrobat file (*.pdf), a Microsoft Word file (*.doc), or a plain text
+file (*.txt). The file name specified can be absolute (specifying the
+full path) or relative.
+
+If the file name is a relative path, Ultra Fractal searches for the help
+file in the folder where the formula is installed, and in the Help on
+Formulas folder set in the Options dialog. The Help on Formulas folder
+is the preferred location for installing help files for formulas.
+
+With Windows HTML Help files, Ultra Fractal shows the topic specified by
+the helptopic setting. This should be the path to the topic file within
+the compiled help file. If the helptopic setting is not specified, the
+default topic is shown.
+
+With Windows Help files, Ultra Fractal also shows the topic specified by
+the helptopic setting. If the helptopic setting is not specified, the
+Contents topic in the help file will be shown (if no Contents topic
+exists, this defaults to the first topic in the help file). The
+helptopic setting should be equal to the topic identifier. It should not
+be a mapped topic ID.
+
+With HTML files, Ultra Fractal opens the specified HTML file using the
+default browser (the browser associated with the .htm or .html
+extension). If the helptopic setting is specified, it is used to jump to
+a name identifier within the HTML file (name identifiers are specified
+using the <A NAME="identifier"> tag).
+
+Because a help system based on HTML usually needs many separate HTML
+files and images, it is recommended to group these files into a separate
+folder in the Help for Formulas folder. The name of this folder should
+be equal to the formula file. The helpfile setting should then be
+something like "MyFormulas\index.html".
+
+Of course, you can also place your HTML help files on the Internet and
+specify the location using the helpfile setting, such as
+"http://www.myformulas.com/". In this case you must use the full URL,
+with the http:// prefix.
+
+With Adobe Acrobat, Microsoft Word, or plain text files, Ultra Fractal
+opens the file with the associated application, such as Acrobat Viewer.
+The helptopic setting is not used.
+
+Examples:
+
+    default:
+      helpfile = "MyFormulas.chm"
+      helpfile = "MyFormulas\index.html"
+      helpfile = "MyFormulas.hlp"
+      helpfile = "http://www.myformulas.com/"
+      helpfile = "MyFormulas-Help.pdf"
+
+See Also
+helptopic setting
+Providing help and hints
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms

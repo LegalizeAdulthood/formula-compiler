@@ -1,0 +1,23 @@
+skew setting
+
+This setting is a float value that specifies the default skew angle
+(from the Location tab of the Layer Properties tool window) for the
+fractal formula. If it is not specified, Ultra Fractal uses the default
+value 0. The angle is expressed in degrees, and can range from -180 to
+180 degrees.
+
+This setting can only be used in the default section of fractal
+formulas. When the fractal formula is selected, Ultra Fractal resets the
+skew angle to the specified value.
+
+Example:
+
+    default:
+      skew = -15.0
+
+See Also
+center setting
+magn setting
+angle setting
+stretch setting
+Writing fractal formulas

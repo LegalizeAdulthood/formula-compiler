@@ -1,0 +1,39 @@
+precision setting
+
+This setting is an integer expression, specifying the number of
+additional decimals of precision that the formula needs. By default,
+Ultra Fractal uses enough decimals for the current zooming level, but
+your formula might require additional precision.
+
+Together with the Additional Precision setting in the Formula tab of the
+Layer Properties tool window, the maximum value of the precision
+settings of all formulas in use is added to the default precision level
+to obtain the final number of decimals that is used for fractal
+calculations. This number can be verified in the Statistics tool window.
+
+The expression must only use constant values, including the values of
+parameters and most predefined symbols. It is re-evaluated every time a
+parameter changes, or when one or more of the predefined symbols are
+changed.
+
+The precision setting can be used in the default section of all types of
+formulas.
+
+This is a snippet taken from the 3D Mapping transformation. This
+transformation has its own independent magnification parameter (Fractal
+Magnification), so it needs additional decimals of precision depending
+on the current value of Fractal Magnification. This is exactly what the
+precision setting is for.
+
+    default:
+      precision = round(log(@fracmagn) / log(10))
+      float param fracmagn
+        caption = "Fractal Magnification"
+        default = #magn
+      endparam
+
+See Also
+Arbitrary precision
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms

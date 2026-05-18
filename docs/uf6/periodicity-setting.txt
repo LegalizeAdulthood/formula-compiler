@@ -1,0 +1,23 @@
+periodicity setting
+
+This setting is an int value that specifies the amount of periodicity
+checking that the fractal formula uses by default. If it is not
+specified, Ultra Fractal uses the default value Normal (2). This value
+can range from 0 to 3, where 0 means no periodicity checking, and 3
+means full periodicity checking (called Rough in the Formula tab of the
+Layer Properties tool window).
+
+This setting can only be used in the default section of fractal
+formulas. When the fractal formula is selected, Ultra Fractal resets the
+periodicity checking setting to the specified value.
+
+Example:
+
+    default:
+      periodicity = 0
+
+See Also
+#z (predefined symbol)
+maxiter setting
+method setting
+Writing fractal formulas

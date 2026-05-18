@@ -1,0 +1,43 @@
+rating setting
+
+This setting specifies an optional rating for a formula or class, which
+is shown in the browser. As a formula author, you can use the rating
+setting to let users know which formulas they should try first, and
+which are not generally useful. There are three possible values:
+
+- recommended
+  Use this for the most useful formulas in your files, so people who try
+  your formulas know where to start.
+- average
+  This is the default category for formulas that do no include a rating
+  setting. These formulas are useful, but perhaps not the best ones to
+  start with. For example, they could be intended for specific purposes
+  only instead of being generally useful.
+- notRecommended
+  You could use this for formulas that have been superceded by other,
+  more powerful formulas, or for formulas that contain flaws which you
+  cannot address for backwards compatibility reasons.
+
+If the rating setting is not included, it defaults to average.
+
+This setting can be used in the default section of transformations,
+fractal formulas, coloring algorithms, and classes, and only affects how
+the browser displays the formula or class.
+
+To include the rating setting while keeping your formula compatible with
+Ultra Fractal 4 or earlier, test for the VER50 symbol as shown in the
+example below.
+
+Example:
+
+    default:
+    $IFDEF VER50
+      rating = recommended
+    $ENDIF
+
+See Also
+Formula ratings
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms
+Plug-in parameters

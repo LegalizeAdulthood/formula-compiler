@@ -1,0 +1,62 @@
+render setting
+
+This setting is a bool setting that specifies if the formula is fully
+compatible with rendering to disk. It defaults to true, because most
+formulas are compatible. You only need to set it to false when a formula
+is not directly compatible.
+
+Formulas are not directly compatible with rendering to disk when they
+perform most of their calculations in the global section. Such formulas,
+like the Flame Fractals coloring algorithm, typically use a
+two-dimensional array equal to the size of the screen to precalculate
+the fractal.
+
+The disk rendering engine divides images into horizontal strips to
+reduce memory requirements when calculating large images. If most of the
+fractal calculations are performed in the global section, these are
+redone for each strip. Each strip allocates memory for the entire image,
+and each strip calculates the entire image. Clearly, this is very
+inefficient.
+
+In formulas that perform most of their calculations in the global
+section, you must set the render setting to false. This causes Ultra
+Fractal to render layers that use such a formula in a special mode,
+where it is rendered just once. This enables Ultra Fractal to render
+flame fractals correctly.
+
+Effects of setting the render setting to false are:
+
+- Layers using the formula are not split into strips when rendering,
+  which ensures that the global section is only executed once.
+- Layers using the formula are not eligible for multi-threading or
+  network calculations, since this also involves splitting them into
+  parts.
+- Selecting the Split into tiles option when rendering a fractal using
+  the formula to disk results in a warning message, because this cannot
+  be done efficiently.
+
+Not all formulas that set up a two-dimension array equal to the size of
+the image in the global section need to set the render setting to false.
+Formulas that still perform most of their calculations in the per-pixel
+sections such as the init, loop, and final sections, can benefit from
+network rendering and multi-threading and will work reasonably well with
+the default disk render behavior.
+
+Example of a formula that uses the render setting:
+
+    global:
+      int pixels[#width + 1, #height + 1]
+      ; Do all calculations here
+    final:
+      ; Look up pixel color or index value and assign to
+      ; #pixel or #color
+    default:
+      title = "My Special Formula"
+      render = false
+
+See Also
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms
+Global sections
+Calculation details

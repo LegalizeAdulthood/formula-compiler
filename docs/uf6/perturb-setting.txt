@@ -1,0 +1,32 @@
+perturb setting
+
+The perturb setting is a boolean expression, specifying whether the
+perturbation equations in a fractal formula can be used in combination
+with the current parameter values. This value defaults to true if not
+present.
+
+Often, for example with the standard Mandelbrot formula, not all
+combinations of parameter values will work with perturbation
+calculations. This setting should return false for the parameter values
+that are not supported, so regular arbitrary precision calculations will
+be used instead.
+
+The expression for the perturb setting must only use constant values,
+including the values of parameters and most predefined symbols. It is
+re-evaluated every time a parameter changes, or when one or more of the
+predefined symbols are changed.
+
+The perturb setting can be used in the default section of fractal
+formulas.
+
+Here is a snippet taken from the Mandelbrot formula. This formula has a
+complex power parameter that can be any value, but perturbation
+calculations are only supported for power values of 2, 3 and 4:
+
+    default:
+      perturb = @power == (2, 0) || @power == (3, 0) || @power == (4, 0)
+
+See Also
+Perturbation calculations
+Perturbation equations
+Writing fractal formulas

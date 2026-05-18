@@ -1,0 +1,22 @@
+center setting
+
+This setting is a complex value that specifies the default center
+coordinates (from the Location tab of the Layer Properties tool window)
+for the fractal formula. If it is not specified, Ultra Fractal uses the
+default value (0, 0).
+
+This setting can only be used in the default section of fractal
+formulas. When the fractal formula is selected, Ultra Fractal resets the
+center to the specified value.
+
+Example:
+
+    default:
+      center = (-0.5, 0)
+
+See Also
+magn setting
+angle setting
+stretch setting
+skew setting
+Writing fractal formulas

@@ -1,0 +1,22 @@
+angle setting
+
+This setting is a float value that specifies the default rotation (from
+the Location tab of the Layer Properties tool window) for the fractal
+formula in degrees. If it is not specified, Ultra Fractal uses the
+default value 0. The angle should be between 0 and 360 degrees.
+
+This setting can only be used in the default section of fractal
+formulas. When the fractal formula is selected, Ultra Fractal resets the
+rotation to the specified value.
+
+Example:
+
+    default:
+      angle = 180
+
+See Also
+center setting
+magn setting
+stretch setting
+skew setting
+Writing fractal formulas

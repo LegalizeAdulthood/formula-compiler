@@ -1,0 +1,16 @@
+helptopic setting
+
+This setting is a string value and is used to show help specific to the
+formula. It can be used in the default section of all types of formulas.
+For more information on how to use this setting, see the helpfile
+setting.
+
+    default:
+      helptopic = "MyFirstFormula"
+      helptopic = "AnotherFormula"
+
+See Also
+Providing help and hints
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms
