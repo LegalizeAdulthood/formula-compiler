@@ -1,0 +1,41 @@
+Plug-In Clipping
+
+[]The Plug-In Clipping transformation cuts a shape out of a fractal. The
+shape is determined by a clip shape plug-in, and Plug-In Clipping allows
+any compatible clip shape plug-in to be selected.
+
+By default, the Clipping plug-in from Standard.ulb is selected.
+
+The following parameters are available:
+
+  ----------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Clipping Region               Selects whether to cut the region outside the clipping shape, or inside the clipping shape.
+  Screen-Relative Coordinates   If checked, all coordinates are interpreted as relative to the screen. This makes it harder to enter coordinates (because you can no longer use the eyedropper), but it preserves the location of the clipping shape relative to the screen when zooming. The coordinates are interpreted with (0, 0) at the lower left corner of the fractal window and (1, 1) at the upper right corner.
+  Clipping Shape                This is the clip shape plug-in parameter. You can select any plug-in that represents a clipping shape.
+  ----------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Plug-In Clipping can also show handles around the edges of a clipping
+shape. The number and position of these handles are determined by the
+selected clipping shape. By default, handles are shown in the fractal
+window, but not when rendering or on previews. Under Handle options,
+this can be configured:
+
+  ------------------ ---------------------------------------------------------------------------------------------------------------
+  Show Handles       Sets whether handles are displayed at all.
+  Not on previews    If checked, handles are hidden on previews, for example in the browser or for explore or eyedropper previews.
+  Not on renders     If checked, handles are hidden when rendering to disk.
+  Show Numbers       If checked, a number or label is displayed next to each handle if applicable.
+  Show Lines         If checked, lines are displayed if applicable.
+  Handle Size        Adjusts the apparent size of the handles.
+  Handle Thickness   Adjusts the apparent thickness of the handles.
+  ------------------ ---------------------------------------------------------------------------------------------------------------
+
+Note: Handles are shown by toggling the solid color of the
+transformation on and off, so you might not see them properly if the
+solid color does not contrast with the fractal. Also, they do not work
+well in combination with the Guessing drawing method.
+
+See Also
+Plug-ins
+Standard transformations
+Standard plug-ins

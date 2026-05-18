@@ -1,0 +1,24 @@
+Inverse
+
+[]
+
+The Inverse transformation turns a fractal inside out. The original
+center of the fractal is put infinitely far away, and points that were
+far away end up near the center. Inverse is available as a
+transformation in Standard.uxf and as a transformation plug-in in
+Standard.ulb.
+
+This can change the shape of the fractal in unexpected ways. The example
+image shows the Inverse transformation applied to a standard Mandelbrot
+set. (The inside areas of the Mandelbrot set are colored gray.)
+
+The following parameters are available:
+
+  ------------------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Radius              Specifies the radius of the inversion circle. The transformation inverts all points around this circle. Larger values will simply magnify the inverted fractal.
+  Center              Specifies the coordinates of the center of the inversion circle. This will drastically change the shape and form of the fractal. Use the eyedropper (right-click and click Eyedropper) to select the center by clicking inside the fractal window.
+  Use Screen Center   If checked, the center of the screen is used instead of the Center parameter, so the inversion circle is always centered on the screen. This can give unexpected effects when zooming in.
+  ------------------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Standard transformations

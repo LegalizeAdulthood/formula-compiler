@@ -1,0 +1,27 @@
+Ripples
+
+[]
+
+The Ripples transformation adds a water ripple effect to the fractal.
+The center, strength, and frequency of the ripples are adjustable. It is
+available as a transformation in Standard.uxf and as a transformation
+plug-in in Standard.ulb.
+
+Interesting interference effects are obtained by adding multiple Ripple
+transformations to a fractal, with different center and strength values.
+
+The following parameters are available:
+
+  ------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Ripple Center       Specifies the center of ripples. Use the eyedropper (right-click and click Eyedropper) to select this by clicking on a point inside the fractal window.
+  Use Screen Center   If checked, the ripple center is always centered on the screen. In this case, the Ripple Center parameter is ignored.
+  Ripple Strength     Specifies the strength of the ripples. Larger values give a larger distortion.
+  Ripple Frequency    Specifies the frequency of the ripples. Larger values will create more and smaller ripples.
+  Ripple Fade         Specifies how soon the ripples fade out. Larger values cause the ripples to fade out over a larger distance (so more ripples are visible).
+  Ripple Type         Selects how the ripples distort the fractal. The default Forward and Back option gives the most natural water-like effect, but the other options are also interesting.
+  ------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Lake
+Twist
+Standard transformations

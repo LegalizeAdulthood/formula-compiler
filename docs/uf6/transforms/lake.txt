@@ -1,0 +1,26 @@
+Lake
+
+[]
+
+The Lake transformation mirrors the fractal in a rippled lake. The top
+part of the fractal is not altered, but below the water level,
+everything is mirrored. It is available as a transformation in
+Standard.uxf and as a transformation plug-in in Standard.ulb.
+
+By changing the parameters, you can adjust the height and rotation of
+the water level, and change the size and frequency of the waves.
+
+The following parameters are available:
+
+  ------------------------ ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Water level              Selects the water level. Only the imaginary part of this parameter is used. Use the eyedropper (right-click and click Eyedropper) to select the water level by clicking on a point inside the fractal window.
+  Use screen center        If checked, the water level is always centered on the screen. In this case, the Water level parameter is ignored.
+  Rotation angle           Rotates the water level. To rotate the fractal instead of the water, also enter the same value in the Rotation angle parameter on the Location tab.
+  Use Location tab angle   If checked, the rotation angle from the Location tab is used instead of the Rotation angle parameter. This ensures that the water level is always horizontal.
+  Amplitude                Specifies the amplitude of the waves.
+  Frequency                Specifies the frequency of the waves.
+  ------------------------ ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Ripples
+Standard transformations

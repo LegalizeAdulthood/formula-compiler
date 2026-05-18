@@ -1,0 +1,22 @@
+Glass Hemisphere
+
+[]
+
+The Glass Hemisphere transformation displays the fractal as though it is
+viewed through a spherical lens. It is available as a transformation in
+Standard.uxf and as a transformation plug-in in Standard.ulb.
+
+The location, size, and apparent refractive index of the lens can be
+changed. The refractive index adjusts the strength of the lens.
+
+The following parameters are available:
+
+  ------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Refractive index    Specifies the refractive index of the lens. You can use this to simulate various glass-like materials. Larger values will increase the strength of the lens.
+  Width               Specifies the width of the lens in fractal coordinates.
+  Center              Specifies the coordinates of the center of the lens. Use the eyedropper (right-click and click Eyedropper) to select the center by clicking inside the fractal window.
+  Use Screen Center   If checked, the center of the screen is used instead of the Center parameter, so the lens is always centered on the screen, even when zooming in.
+  ------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Standard transformations

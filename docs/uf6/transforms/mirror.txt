@@ -1,0 +1,25 @@
+Mirror
+
+[]
+
+The Mirror transformation mirrors the fractal along an arbitrary axis.
+It can be useful for mirroring effects with multiple layers. It is
+available as a transformation in Standard.uxf and as a transformation
+plug-in in Standard.ulb.
+
+There are presets for a horizontal and a vertical reflection axis, but
+you can also specify any angle. The center of the axis is configurable,
+too.
+
+The following parameters are available:
+
+  ------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Reflection Axis     Selects the reflection axis. The axis points into the mirroring direction, so it is perpendicular to the imaginary mirror. Select arbitrary to specify any angle for the axis.
+  Reflection Angle    Specifies the rotation angle of the reflection axis, in degrees.
+  Center              Selects the center of the reflection axis. Use the eyedropper (right-click and click Eyedropper) to select a point by inside the fractal window.
+  Use screen center   If checked, the reflection center is always centered on the screen. In this case, the Center parameter is ignored.
+  ------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Kaleidoscope
+Standard transformations

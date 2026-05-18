@@ -1,0 +1,28 @@
+Aspect Ratio
+
+[]
+
+The Aspect Ratio transformation can be used to create fractals for media
+with non-square pixels. You should add it to all layers of the fractal.
+It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+
+The Aspect Ratio parameter specifies the aspect ratio (height / width)
+of the final media. The final media is the computer screen or printed
+poster that will eventually display the fractal. If the value of the
+parameter is equal to the height divided by the width of the fractal
+window, no stretching occurs.
+
+For example, suppose you would like to display a fractal on a 15" x 10"
+screen that has a resolution of 400 x 300 pixels. Here, the pixels are
+wider than tall. You would set the width and height of the fractal
+window to 400 x 300 to obtain the desired size. Then, set the Aspect
+Ratio parameter of this transformation to 0.6667 (10" / 15").
+
+Most computer monitors and printers have square pixels. In this case,
+you do not need to use this transformation. If you just want to stretch
+the fractal, use the Stretch parameter in the Location tab of the Layer
+Properties tool window instead.
+
+See Also
+Standard transformations

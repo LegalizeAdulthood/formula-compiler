@@ -1,0 +1,73 @@
+3D Mapping
+
+[]
+
+The 3D Mapping transformation maps a fractal onto a three-dimensional
+shape, such as a plane or a sphere. It is available as a transformation
+in Standard.uxf and as a transformation plug-in in Standard.ulb.
+
+Once this transformation is in effect, normal zooming and panning will
+just move the 3D shape around with the fractal on it. If you want to
+zoom into the fractal as it is mapped onto the shape, use the Fractal
+Center, Fractal Magnification, and Fractal Rotation parameters.
+
+To use the rotation and translation parameters effectively, you need to
+understand the left-handed 3D coordinate system used by the
+transformation. Here, the X-axis points to the left, the Y-axis points
+upwards, and the Z-axis points into the screen. So, if you use a
+positive Z-translation, the 3D shape will appear to move away, into the
+screen.
+
+The following parameters are available:
+
++-----------------------------------+-----------------------------------+
+| Shape                             | Selects the type of 3D shape that |
+|                                   | the fractal is mapped onto. In    |
+|                                   | the plug-in version of 3D         |
+|                                   | Mapping, this is a plug-in        |
+|                                   | parameter that lets you select    |
+|                                   | any plug-in that implements a     |
+|                                   | mapping shape.                    |
++-----------------------------------+-----------------------------------+
+| X Rotation                        | Rotates the 3D shape around the   |
+| Y Rotation                        | X, Y, or Z axis. To predict the   |
+| Z Rotation                        | direction of rotation, hold up    |
+|                                   | your left hand with your thumb    |
+|                                   | pointing into the positive axis   |
+|                                   | direction (for example, to the    |
+|                                   | left for X rotation). Your        |
+|                                   | (curled) fingers now show the     |
+|                                   | direction of positive rotation    |
+|                                   | around that axis.                 |
++-----------------------------------+-----------------------------------+
+| X Translation                     | Moves the shape around in 3D      |
+| Y Translation                     | space. You always need some       |
+| Z Translation                     | positive Z translation to move    |
+|                                   | the shape "into" the screen,      |
+|                                   | otherwise you will be "inside"    |
+|                                   | the shape and it won't be         |
+|                                   | visible. With the plane shape,    |
+|                                   | use a negative Y translation to   |
+|                                   | look down upon it.                |
++-----------------------------------+-----------------------------------+
+| Fractal Center                    | Specifies the location of the     |
+| Fractal Magnification             | fractal as it is mapped onto the  |
+| Fractal Rotation                  | shape. When adding the            |
+|                                   | transformation, the current       |
+|                                   | coordinates will be used          |
+|                                   | (remember to reset the location   |
+|                                   | to get a proper view of the 3D    |
+|                                   | shape).                           |
+|                                   |                                   |
+|                                   | The easiest way to specify a      |
+|                                   | location is to copy the           |
+|                                   | coordinates from the Location tab |
+|                                   | of a different fractal window     |
+|                                   | that contains the same fractal    |
+|                                   | formula without the 3D Mapping    |
+|                                   | transformation.                   |
++-----------------------------------+-----------------------------------+
+
+See Also
+Tutorial: Learning about transformations
+Standard transformations

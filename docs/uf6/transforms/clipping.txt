@@ -1,0 +1,30 @@
+Clipping
+
+[]The Clipping transformation cuts a geometric shape out of a fractal.
+The shape is filled with a solid color. It can also be transparent, to
+make parts of the underlying layers visible.
+
+Clipping is available as a transformation in Standard.uxf and as a clip
+shape plug-in in Standard.ulb. In plug-in form, it can be used together
+with Plug-In Clipping. In this case, it also shows handles in the
+fractal window to show where the edges of the clipping shape are.
+
+Both rectangular and circular shapes are available. You can choose to
+cut either the region inside or outside the shape. This makes the
+Clipping transformation also useful for creating frames.
+
+The following parameters are available:
+
+  ----------------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Center            Specifies the coordinates of the center of the clipping shape. Use the eyedropper (right-click and click Eyedropper) to select the center by clicking inside the fractal window.
+  Right Edge        Specifies the coordinates of the right edge of the clipping shape. Use the eyedropper to select this.
+  Top Edge          Specifies the coordinates of the top edge of the clipping shape. Use the eyedropper to select this.
+  Shape             Selects the type of shape to use. If you select circle or square, the Top Edge parameter is ignored.
+  Allow Rotation    If checked, the shape is allowed to rotate. In this case, the Right Edge parameter also defines the rotation to use.
+  Region            Selects whether to cut the region outside the clipping shape, or inside the clipping shape. (This parameter is not available in the Clipping plug-in.)
+  Screen-Relative   If checked, all coordinates are interpreted as relative to the screen. This makes it harder to enter coordinates (because you can no longer use the eyedropper), but it preserves the location of the clipping shape relative to the screen when zooming. (This parameter is not available in the Clipping plug-in.)
+  ----------------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Tutorial: Learning about transformations
+Standard transformations

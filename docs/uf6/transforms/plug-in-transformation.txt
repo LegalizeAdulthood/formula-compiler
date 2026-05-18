@@ -1,0 +1,15 @@
+Plug-In Transformation
+
+[]Plug-In Transformation is a skeleton transformation that lets a
+transformation plug-in do the actual work. All transformations in
+Standard.uxf are also implemented as transformation plug-ins. You can
+select any of these as the transformation plug-in to be used together
+with Plug-In Transformation.
+
+The Transformation parameter sets the transformation plug-in to be used.
+By default, the Inverse plug-in from Standard.ulb is selected.
+
+See Also
+Plug-ins
+Standard transformations
+Standard plug-ins

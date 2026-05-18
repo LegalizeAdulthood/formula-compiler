@@ -1,0 +1,65 @@
+Kaleidoscope
+
+[]
+
+The Kaleidoscope transformation fills the screen with rotated copies of
+a small radial slice of the fractal, creating a kaleidoscope effect. It
+is available as a transformation in Standard.uxf and as a transformation
+plug-in in Standard.ulb.
+
+By tweaking the parameters, you can simulate many different kinds of
+symmetry. By default, the slices are aligned and mirrored to make the
+edges match, but there are also other options that produce sharp
+transitions.
+
+Try experimenting with the Center and Rotation angle parameters to
+obtain good results. Some sections of the fractal lend themselves much
+better to the kaleidoscope effect than others.
+
+The following parameters are available:
+
++-----------------------------------+-----------------------------------+
+| Symmetry Order                    | Sets the symmetry order. This is  |
+|                                   | the number of times the slice of  |
+|                                   | the fractal is copied and rotated |
+|                                   | to obtain the final image.        |
++-----------------------------------+-----------------------------------+
+| Symmetry Mode                     | Selects the symmetry mode to use. |
+|                                   | Only the reflective option is     |
+|                                   | guaranteed to produce seamless    |
+|                                   | images. Use the slice only option |
+|                                   | to view the slice of the fractal  |
+|                                   | that is used as a base for the    |
+|                                   | symmetry effect.                  |
++-----------------------------------+-----------------------------------+
+| Center                            | Specifies the coordinates of the  |
+|                                   | symmetry center. Together with    |
+|                                   | the Rotation angle parameter,     |
+|                                   | this selects the slice of the     |
+|                                   | fractal that is used. Try         |
+|                                   | changing this to see the various  |
+|                                   | effects that are possible.        |
+|                                   |                                   |
+|                                   | Use the eyedropper (right-click   |
+|                                   | and click Eyedropper) to select   |
+|                                   | the center by clicking inside the |
+|                                   | fractal window.                   |
++-----------------------------------+-----------------------------------+
+| Use Screen Center                 | If checked, the center of the     |
+|                                   | screen is used instead of the     |
+|                                   | Center parameter, so the symmetry |
+|                                   | center is always centered on the  |
+|                                   | screen. This can give unexpected  |
+|                                   | effects when zooming in.          |
++-----------------------------------+-----------------------------------+
+| Rotation angle                    | Rotates the fractal before        |
+|                                   | determining the slice that will   |
+|                                   | be used as a base for the         |
+|                                   | symmetry effect. This can         |
+|                                   | drastically change the resulting  |
+|                                   | image.                            |
++-----------------------------------+-----------------------------------+
+
+See Also
+Mirror
+Standard transformations

@@ -1,0 +1,24 @@
+Twist
+
+[]
+
+The Twist transformation adds a twisted spiral to the fractal. It
+distorts a small part of the fractal in the form of a spiral, like a
+vortex. It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+
+The center, strength, and size of the vortex are adjustable. This
+transformation is often combined with the Ripples transformation to
+obtain interference effects.
+
+The following parameters are available:
+
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Twist Center   Specifies the center of the twisted spiral. Use the eyedropper (right-click and click Eyedropper) to select this by clicking on a point inside the fractal window.
+  Strength       Specifies the strength of the twist. Larger values create more strongly twisted spirals.
+  Decay Factor   Specifies how soon the spiral loses its strength. Larger values decrease the size of the spiral.
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+Lake
+Standard transformations
