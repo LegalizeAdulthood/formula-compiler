@@ -45,6 +45,7 @@ misc_group_sources("GitHub" FILES
     "LICENSE.txt"
     "ReadMe.md")
 misc_group_sources("Docs" FILES
-    "docs/gradient-grammar.txt")
+    "docs/gradient-grammar.txt"
+    "docs/compiler-directives.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
