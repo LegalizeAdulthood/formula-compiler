@@ -1,0 +1,860 @@
+Transformations
+Note: You need Ultra Fractal Creative Edition or Extended Edition to use transformations.
+Transformations globally transform and warp the shape of a fractal. You can combine various transformations to create
+complex effects. Of course, you can also write your own transformations.
+Transformations are managed in the Mapping tab of the Layer Properties tool window:
+
+The Add button opens a modal browser to select a new transformation. The transformation is then added to the list.
+The Delete button removes the selected transformations from the list.
+The Reload button reloads the selected transformation from disk and recalculates the layer.
+The Edit button opens the selected transformation in the formula editor.
+The More button shows a menu with additional commands.
+The Enable icon before a transformation quickly enables and disables the transformation.
+The Solid Color swatch specifies the solid color for the selected transformations. The solid color can be used by a
+transformation for special purposes. See Solid color.
+The transformation parameters are additional parameters specific to the selected transformations. See Formula
+parameters.
+You can resize the transformations list by dragging the area just above the line that divides the Solid Color setting from
+the transformation parameters. The Reload and Edit buttons hide themselves automatically when there is not enough
+space. In this case, these commands can be found on the More menu.
+Next: Working with transformations
+See Also
+Tutorial: Learning about transformations
+Standard transformations
+Fractal formulas
+Coloring algorithms
+
+156
+
+Working with transformations
+You work with transformations in the Mapping tab of the Layer Properties tool window. The Mapping tab shows a list with
+the transformations used by the active layer.
+Transformations are stored in transformation files (*.uxf). Each file can contain multiple transformations.
+To add a transformation, click the Add button. This opens a modal browser that shows the transformation files on
+your computer and the transformations that they contain. Double-click on a transformation to add it.
+Hold down the Add button to open a menu with transformation presets, together with a Recent menu that provides
+quick access to recently used transformations.
+To remove the selected transformations, click the Delete button.
+To rename the active transformation, click it again or press F2 (like in Windows Explorer).
+To change the order in which transformations appear in the list, drag them up or down. See Multiple
+transformations.
+The Enable icon before each transformation enables and disables it. Use it to temporarily disable a transformation
+so you can judge its effect, or adjust other transformations.
+Some transformations contain additional help. To access it, click the More button, and then click Help from the
+menu that opens. This menu also provided commands to copy and paste the settings and parameters for the
+selected transformation, and to reset all parameters to the default values.
+The bottom pane of the Mapping tab contains parameters specific to the selected transformations. These parameters work
+the same as the parameters for fractal formulas. See Formula parameters.
+Notes
+You can select multiple transformations by holding down the Ctrl key while clicking a transformation. Hold down the
+Shift key while clicking to select a range of transformations. This enables you to easily edit multiple transformations
+together, like you can do with layers.
+If multiple layers are selected, the list in the Mapping tab only shows those transformations that all selected layers
+have in common.
+Right-click inside the list of transformations to open a menu with frequently used commands.
+Next: Multiple transformations
+See Also
+Tutorial: Learning about transformations
+Transformations
+Standard transformations
+Public formulas
+
+157
+
+Multiple transformations
+Ultra Fractal lets you combine multiple transformations to achieve more complex effects. With more than one
+transformation, the order in which the transformations appear in the list in the Mapping tab of the Layer Properties tool
+window is important.
+You can view a transformation as if it transforms the image of the layer as produced by the fractal formula and the
+coloring algorithms. (In fact, it works differently, but you can ignore that unless you are writing your own
+transformations.)
+The transformations are then processed from the bottom of the list to the top. So, if you have two transformations, the top
+one works on the "image" produced by the second transformation.
+Here is an example to illustrate this:
+
+Original
+
+Inverse
+
+Lake
+
+Two variations on the original image are shown. The first uses the Inverse transformation that turns an image "inside out".
+The second variation uses the Lake transformation that mirrors the image horizontally and creates the illusion of water
+ripples.
+What happens if we combine the two transformations?
+
+First Lake, then Inverse
+
+First Inverse, then Lake
+
+If we put Inverse above Lake, we get the first image. If we put Lake on top instead, the second image is produced. This
+shows that a transformation works on the intermediate result produced by the transformations below it.
+Notes
+You can freely experiment with the order of the transformations by dragging them up or down in the list.
+When you add a new transformation, it is always inserted above the selected transformation, so it works on the
+intermediate image produced by that transformation.
+Next: Solid color
+See Also
+Transformations
+Working with transformations
+
+158
+
+Solid color
+In the Mapping tab of the Layer Properties tool window, you can specify a solid color for each transformation. A
+transformation can use this color for special purposes.
+For example, a transformation that maps a fractal onto a plane in 3D space also needs to color the area that is above or
+below the plane. This area is usually colored with the solid color.
+
+This example shows a simple fractal mapped onto a sphere with the 3D Mapping transformation. The area outside the
+sphere is given the solid color (in this case black).
+To change the solid color, click on the Solid Color swatch in the Mapping tab. By default, it is set to black, but you can
+choose any color. You can also change the opacity. By setting the opacity to 0, the solid color and thus the solid areas will
+become transparent, so the lower layers will become visible.
+
+In effect, the transformation not only transforms the shape of the fractal, but also generates a mask for the layer.
+Some transformations are only intended to create masks, and do not transform the pixels at all. You should use them with
+a transparent solid color. An example is the Clipping transformation.
+Notes
+If you make a solid color transparent, layer transparency will be enabled automatically. See Transparent layers.
+The masks created with transformations always have sharp edges. For soft masking with more control over the
+masking shapes, use layer masks instead. See Masks.
+Next: Standard transformations
+See Also
+Transformations
+Working with transformations
+
+159
+
+Standard transformations
+Ultra Fractal comes with a set of standard transformations. They are located in the file Standard.uxf in the Formulas folder.
+It contains the following transformations:
+3D Mapping
+Aspect Ratio
+Clipping
+Glass Hemisphere
+Inverse
+Kaleidoscope
+Lake
+Mirror
+Plug-In Clipping
+Plug-In Transformation
+Ripples
+Twist
+All standard transformations are also implemented as transformation or clip shape plug-ins in Standard.ulb. This makes it
+possible to use them with Plug-In Transformation or Plug-In Clipping, or in other formulas that accept transformation plugins. See About plug-ins for more information.
+See Also
+Standard fractal formulas
+Standard coloring algorithms
+Standard plug-ins
+Transformations
+Public formulas
+
+160
+
+3D Mapping
+The 3D Mapping transformation maps a fractal onto a three-dimensional shape, such as a plane or
+a sphere. It is available as a transformation in Standard.uxf and as a transformation plug-in in
+Standard.ulb.
+Once this transformation is in effect, normal zooming and panning will just move the 3D shape
+around with the fractal on it. If you want to zoom into the fractal as it is mapped onto the shape,
+use the Fractal Center, Fractal Magnification, and Fractal Rotation parameters.
+To use the rotation and translation parameters effectively, you need to understand the left-handed
+3D coordinate system used by the transformation. Here, the X-axis points to the left, the Y-axis points upwards, and the
+Z-axis points into the screen. So, if you use a positive Z-translation, the 3D shape will appear to move away, into the
+screen.
+The following parameters are available:
+Shape
+
+Selects the type of 3D shape that the fractal is mapped onto. In the plug-in version of 3D
+Mapping, this is a plug-in parameter that lets you select any plug-in that implements a
+mapping shape.
+
+X Rotation
+Y Rotation
+Z Rotation
+
+Rotates the 3D shape around the X, Y, or Z axis. To predict the direction of rotation, hold up
+your left hand with your thumb pointing into the positive axis direction (for example, to the left
+for X rotation). Your (curled) fingers now show the direction of positive rotation around that
+axis.
+
+X Translation
+Y Translation
+Z Translation
+
+Moves the shape around in 3D space. You always need some positive Z translation to move the
+shape "into" the screen, otherwise you will be "inside" the shape and it won't be visible. With
+the plane shape, use a negative Y translation to look down upon it.
+
+Fractal Center
+Fractal Magnification
+Fractal Rotation
+
+Specifies the location of the fractal as it is mapped onto the shape. When adding the
+transformation, the current coordinates will be used (remember to reset the location to get a
+proper view of the 3D shape).
+The easiest way to specify a location is to copy the coordinates from the Location tab of a
+different fractal window that contains the same fractal formula without the 3D Mapping
+transformation.
+
+See Also
+Tutorial: Learning about transformations
+Standard transformations
+
+161
+
+Aspect Ratio
+The Aspect Ratio transformation can be used to create fractals for media with non-square pixels.
+You should add it to all layers of the fractal. It is available as a transformation in Standard.uxf and
+as a transformation plug-in in Standard.ulb.
+The Aspect Ratio parameter specifies the aspect ratio (height / width) of the final media. The final
+media is the computer screen or printed poster that will eventually display the fractal. If the value
+of the parameter is equal to the height divided by the width of the fractal window, no stretching
+occurs.
+For example, suppose you would like to display a fractal on a 15" x 10" screen that has a resolution of 400 x 300 pixels.
+Here, the pixels are wider than tall. You would set the width and height of the fractal window to 400 x 300 to obtain the
+desired size. Then, set the Aspect Ratio parameter of this transformation to 0.6667 (10" / 15").
+Most computer monitors and printers have square pixels. In this case, you do not need to use this transformation. If you
+just want to stretch the fractal, use the Stretch parameter in the Location tab of the Layer Properties tool window instead.
+See Also
+Standard transformations
+
+162
+
+Clipping
+The Clipping transformation cuts a geometric shape out of a fractal. The shape is filled with a solid
+color. It can also be transparent, to make parts of the underlying layers visible.
+Clipping is available as a transformation in Standard.uxf and as a clip shape plug-in in
+Standard.ulb. In plug-in form, it can be used together with Plug-In Clipping. In this case, it also
+shows handles in the fractal window to show where the edges of the clipping shape are.
+Both rectangular and circular shapes are available. You can choose to cut either the region inside or
+outside the shape. This makes the Clipping transformation also useful for creating frames.
+The following parameters are available:
+Center
+
+Specifies the coordinates of the center of the clipping shape. Use the eyedropper (right-click and
+click Eyedropper) to select the center by clicking inside the fractal window.
+
+Right Edge
+
+Specifies the coordinates of the right edge of the clipping shape. Use the eyedropper to select this.
+
+Top Edge
+
+Specifies the coordinates of the top edge of the clipping shape. Use the eyedropper to select this.
+
+Shape
+
+Selects the type of shape to use. If you select circle or square, the Top Edge parameter is ignored.
+
+Allow Rotation
+
+If checked, the shape is allowed to rotate. In this case, the Right Edge parameter also defines the
+rotation to use.
+
+Region
+
+Selects whether to cut the region outside the clipping shape, or inside the clipping shape. (This
+parameter is not available in the Clipping plug-in.)
+
+Screen-Relative
+
+If checked, all coordinates are interpreted as relative to the screen. This makes it harder to enter
+coordinates (because you can no longer use the eyedropper), but it preserves the location of the
+clipping shape relative to the screen when zooming. (This parameter is not available in the Clipping
+plug-in.)
+
+See Also
+Tutorial: Learning about transformations
+Standard transformations
+
+163
+
+Glass Hemisphere
+The Glass Hemisphere transformation displays the fractal as though it is viewed through a spherical
+lens. It is available as a transformation in Standard.uxf and as a transformation plug-in in
+Standard.ulb.
+The location, size, and apparent refractive index of the lens can be changed. The refractive index
+adjusts the strength of the lens.
+The following parameters are available:
+Refractive index
+
+Specifies the refractive index of the lens. You can use this to simulate various glass-like materials.
+Larger values will increase the strength of the lens.
+
+Width
+
+Specifies the width of the lens in fractal coordinates.
+
+Center
+
+Specifies the coordinates of the center of the lens. Use the eyedropper (right-click and click
+Eyedropper) to select the center by clicking inside the fractal window.
+
+Use Screen Center If checked, the center of the screen is used instead of the Center parameter, so the lens is always
+centered on the screen, even when zooming in.
+See Also
+Standard transformations
+
+164
+
+Inverse
+The Inverse transformation turns a fractal inside out. The original center of the fractal is put
+infinitely far away, and points that were far away end up near the center. Inverse is available as a
+transformation in Standard.uxf and as a transformation plug-in in Standard.ulb.
+This can change the shape of the fractal in unexpected ways. The example image shows the
+Inverse transformation applied to a standard Mandelbrot set. (The inside areas of the Mandelbrot
+set are colored gray.)
+The following parameters are available:
+Radius
+
+Specifies the radius of the inversion circle. The transformation inverts all points around this circle.
+Larger values will simply magnify the inverted fractal.
+
+Center
+
+Specifies the coordinates of the center of the inversion circle. This will drastically change the shape
+and form of the fractal. Use the eyedropper (right-click and click Eyedropper) to select the center
+by clicking inside the fractal window.
+
+Use Screen Center If checked, the center of the screen is used instead of the Center parameter, so the inversion
+circle is always centered on the screen. This can give unexpected effects when zooming in.
+See Also
+Standard transformations
+
+165
+
+Kaleidoscope
+The Kaleidoscope transformation fills the screen with rotated copies of a small radial slice of the
+fractal, creating a kaleidoscope effect. It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+By tweaking the parameters, you can simulate many different kinds of symmetry. By default, the
+slices are aligned and mirrored to make the edges match, but there are also other options that
+produce sharp transitions.
+Try experimenting with the Center and Rotation angle parameters to obtain good results. Some
+sections of the fractal lend themselves much better to the kaleidoscope effect than others.
+The following parameters are available:
+Symmetry Order
+
+Sets the symmetry order. This is the number of times the slice of the fractal is copied and rotated
+to obtain the final image.
+
+Symmetry Mode
+
+Selects the symmetry mode to use. Only the reflective option is guaranteed to produce seamless
+images. Use the slice only option to view the slice of the fractal that is used as a base for the
+symmetry effect.
+
+Center
+
+Specifies the coordinates of the symmetry center. Together with the Rotation angle parameter,
+this selects the slice of the fractal that is used. Try changing this to see the various effects that are
+possible.
+Use the eyedropper (right-click and click Eyedropper) to select the center by clicking inside the
+fractal window.
+
+Use Screen Center If checked, the center of the screen is used instead of the Center parameter, so the symmetry
+center is always centered on the screen. This can give unexpected effects when zooming in.
+Rotation angle
+
+Rotates the fractal before determining the slice that will be used as a base for the symmetry
+effect. This can drastically change the resulting image.
+
+See Also
+Mirror
+Standard transformations
+
+166
+
+Lake
+The Lake transformation mirrors the fractal in a rippled lake. The top part of the fractal is not
+altered, but below the water level, everything is mirrored. It is available as a transformation in
+Standard.uxf and as a transformation plug-in in Standard.ulb.
+By changing the parameters, you can adjust the height and rotation of the water level, and change
+the size and frequency of the waves.
+The following parameters are available:
+Water level
+
+Selects the water level. Only the imaginary part of this parameter is used. Use the
+eyedropper (right-click and click Eyedropper) to select the water level by clicking on a point
+inside the fractal window.
+
+Use screen center
+
+If checked, the water level is always centered on the screen. In this case, the Water level
+parameter is ignored.
+
+Rotation angle
+
+Rotates the water level. To rotate the fractal instead of the water, also enter the same value
+in the Rotation angle parameter on the Location tab.
+
+Use Location tab angle If checked, the rotation angle from the Location tab is used instead of the Rotation angle
+parameter. This ensures that the water level is always horizontal.
+Amplitude
+
+Specifies the amplitude of the waves.
+
+Frequency
+
+Specifies the frequency of the waves.
+
+See Also
+Ripples
+Standard transformations
+
+167
+
+Mirror
+The Mirror transformation mirrors the fractal along an arbitrary axis. It can be useful for mirroring
+effects with multiple layers. It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+There are presets for a horizontal and a vertical reflection axis, but you can also specify any angle.
+The center of the axis is configurable, too.
+The following parameters are available:
+Reflection Axis
+
+Selects the reflection axis. The axis points into the mirroring direction, so it is perpendicular to
+the imaginary mirror. Select arbitrary to specify any angle for the axis.
+
+Reflection Angle
+
+Specifies the rotation angle of the reflection axis, in degrees.
+
+Center
+
+Selects the center of the reflection axis. Use the eyedropper (right-click and click Eyedropper) to
+select a point by inside the fractal window.
+
+Use screen center
+
+If checked, the reflection center is always centered on the screen. In this case, the Center
+parameter is ignored.
+
+See Also
+Kaleidoscope
+Standard transformations
+
+168
+
+Plug-In Clipping
+The Plug-In Clipping transformation cuts a shape out of a fractal. The shape is determined by a clip
+shape plug-in, and Plug-In Clipping allows any compatible clip shape plug-in to be selected.
+By default, the Clipping plug-in from Standard.ulb is selected.
+The following parameters are available:
+
+Clipping Region
+
+Selects whether to cut the region outside the clipping shape, or inside the clipping shape.
+
+Screen-Relative
+Coordinates
+
+If checked, all coordinates are interpreted as relative to the screen. This makes it harder to enter
+coordinates (because you can no longer use the eyedropper), but it preserves the location of the
+clipping shape relative to the screen when zooming. The coordinates are interpreted with (0, 0) at
+the lower left corner of the fractal window and (1, 1) at the upper right corner.
+
+Clipping Shape
+
+This is the clip shape plug-in parameter. You can select any plug-in that represents a clipping
+shape.
+
+Plug-In Clipping can also show handles around the edges of a clipping shape. The number and position of these handles
+are determined by the selected clipping shape. By default, handles are shown in the fractal window, but not when
+rendering or on previews. Under Handle options, this can be configured:
+Show Handles
+
+Sets whether handles are displayed at all.
+
+Not on previews
+
+If checked, handles are hidden on previews, for example in the browser or for explore or
+eyedropper previews.
+Not on renders
+If checked, handles are hidden when rendering to disk.
+Show Numbers
+If checked, a number or label is displayed next to each handle if applicable.
+Show Lines
+If checked, lines are displayed if applicable.
+Handle Size
+Adjusts the apparent size of the handles.
+Handle Thickness Adjusts the apparent thickness of the handles.
+
+Note: Handles are shown by toggling the solid color of the transformation on and off, so you might not see them properly
+if the solid color does not contrast with the fractal. Also, they do not work well in combination with the Guessing drawing
+method.
+See Also
+Plug-ins
+Standard transformations
+Standard plug-ins
+
+169
+
+Plug-In Transformation
+Plug-In Transformation is a skeleton transformation that lets a transformation plug-in do the actual
+work. All transformations in Standard.uxf are also implemented as transformation plug-ins. You can
+select any of these as the transformation plug-in to be used together with Plug-In Transformation.
+The Transformation parameter sets the transformation plug-in to be used. By default, the Inverse
+plug-in from Standard.ulb is selected.
+See Also
+Plug-ins
+Standard transformations
+Standard plug-ins
+
+170
+
+Ripples
+The Ripples transformation adds a water ripple effect to the fractal. The center, strength, and
+frequency of the ripples are adjustable. It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+Interesting interference effects are obtained by adding multiple Ripple transformations to a fractal,
+with different center and strength values.
+The following parameters are available:
+Ripple Center
+
+Specifies the center of ripples. Use the eyedropper (right-click and click Eyedropper) to select
+this by clicking on a point inside the fractal window.
+
+Use Screen Center
+
+If checked, the ripple center is always centered on the screen. In this case, the Ripple Center
+parameter is ignored.
+
+Ripple Strength
+
+Specifies the strength of the ripples. Larger values give a larger distortion.
+
+Ripple Frequency
+
+Specifies the frequency of the ripples. Larger values will create more and smaller ripples.
+
+Ripple Fade
+
+Specifies how soon the ripples fade out. Larger values cause the ripples to fade out over a larger
+distance (so more ripples are visible).
+
+Ripple Type
+
+Selects how the ripples distort the fractal. The default Forward and Back option gives the most
+natural water-like effect, but the other options are also interesting.
+
+See Also
+Lake
+Twist
+Standard transformations
+
+171
+
+Twist
+The Twist transformation adds a twisted spiral to the fractal. It distorts a small part of the fractal in
+the form of a spiral, like a vortex. It is available as a transformation in Standard.uxf and as a
+transformation plug-in in Standard.ulb.
+The center, strength, and size of the vortex are adjustable. This transformation is often combined
+with the Ripples transformation to obtain interference effects.
+The following parameters are available:
+Twist Center
+
+Specifies the center of the twisted spiral. Use the eyedropper (right-click and click Eyedropper)
+to select this by clicking on a point inside the fractal window.
+
+Strength
+
+Specifies the strength of the twist. Larger values create more strongly twisted spirals.
+
+Decay Factor
+
+Specifies how soon the spiral loses its strength. Larger values decrease the size of the spiral.
+
+See Also
+Lake
+Standard transformations
+
+172
+
+Plug-ins
+Since the first release of Ultra Fractal in 1998, the formulas written for it have become larger
+and more complex. Even though many formulas are quite similar, they could not share any
+common code, but had to be written as stand-alone formulas. For example, if you wanted to
+add just one new feature to an existing formula written by someone else, you had to create
+a new formula, duplicate all the code from the original formula, and only then add some new
+things.
+To improve this situation, Ultra Fractal 5 introduced the ability for formulas to re-use
+common code via plug-ins. You can view a plug-in as a "black box" that adds functionality
+to a formula. Via plug-in parameters, a formula enables you to select the actual plug-in that
+performs an action for the formula.
+The formula declares what kind of functionality it needs and you can select any compatible plug-in to actually implement it.
+This makes it possible for formula authors to write a new plug-in to implement just the new feature that they want to add
+to an existing formula. The formula doesn't have to be changed at all. You just select the new plug-in when you use the
+formula.
+For everyday users, plug-ins make it possible to combine existing elements in new ways without needing to do any
+programming. For formula authors, plug-ins make it easier to write and manage complex formulas.
+Next: Example 1 - Formula plug-ins
+See Also
+Fractal formulas
+Writing formulas
+
+173
+
+Example 1 - Formula plug-ins
+Tip: This example assumes that you are familiar with Ultra Fractal basics as explained in the tutorials.
+As a first example of how plug-ins work in practice, let's take a look at some of the standard plug-ins that come with Ultra
+Fractal.
+First, use the browser to open the Default parameter set in Examples.upr.
+Click the Browse button in the Formula tab of the Layer Properties tool window to select Plug-In Formula in
+Standard.ufm.
+Plug-In Formula is a "skeleton" formula that lets a plug-in implement the actual fractal formula behavior. It has just one
+plug-in parameter called Fractal Formula which is set to the Mandelbrot plug-in by default:
+
+The Mandelbrot plug-in has its own parameters like Starting point, which appear grouped with the plug-in parameter. Let's
+select a different formula plug-in.
+Click the Browse button for the Fractal Formula parameter to select a new plug-in. This opens the browser in
+plug-in mode, so it shows only those plug-ins that are compatible with this plug-in parameter.
+Locate the Newton plug-in in Standard.ulb and click OK.
+Now, a Newton fractal appears instead of a Mandelbrot fractal. Formula authors could make a formula plug-in that works
+with Plug-In Formula to create a different fractal, without having to modify Plug-In Formula itself. Of course, this doesn't
+really do anything new, since you could also just write a new fractal formula. But it does make the formula behavior
+available in a generic form.
+Click the Browse button for the Fractal Formula parameter again, and this time, select the Slope plug-in.
+Briefly go to the Outside tab of the Layer Properties and click the Browse button there to select the Lighting
+coloring algorithm. Then go back to the Formula tab again.
+The combination of the Slope formula plug-in and the Lighting coloring algorithm creates a 3D lighting effect. Previously,
+there were three different Slope formulas for Mandelbrot, Julia, and Newton fractals (these are still in Standard.ufm). Each
+of these formulas duplicates the code for the lighting effect; the only different code is the where the actual fractal formula
+calculation is done. Adding a new fractal type could only be done by creating yet another variation of this formula.
+However, now the Slope formula plug-in contains another plug-in parameter that enables you to select the internal fractal
+formula. You can select any formula plug-in, just like with Plug-In Formula.
+Click the Browse button for the Fractal Formula parameter inside the Slope plug-in (which currently is set to
+Mandelbrot) and select Phoenix (Mandelbrot) instead.
+
+Suddenly, we have a Slope formula that works with any fractal type. New fractal types can be added simply by writing
+them as a formula plug-in, which makes them available for Plug-In Formula, Slope, or any other place where a fractal
+formula can be inserted.
+Next: Example 2 - Orbit trap plug-ins
+See Also
+Plug-ins
+Fractal formulas
+Writing formulas
+
+174
+
+Example 2 - Orbit trap plug-ins
+Tip: This example assumes that you are familiar with Ultra Fractal basics as explained in the tutorials.
+In the previous example, we saw how a formula plug-in can implement the behavior of an entire fractal formula. However,
+it's also possible to use plug-ins in a more fine-grained way, exposing all aspects of a formula for maximum flexibility.
+The Orbit Traps coloring plug-in is an example of this. The old Orbit Traps coloring algorithm (still available in
+Standard.ucl) contained parameters such as trap shape, trap mode and trap coloring, each with a number of options. In
+the new version, implemented as a coloring plug-in in Standard.ulb, these are now plug-in parameters. Every major option
+is now handled by a separate plug-in. Let's have a look:
+First, use the browser to open the Default parameter set in Examples.upr.
+Click the Browse button in the Outside tab of the Layer Properties tool window to select Plug-In Coloring (Gradient)
+in Standard.ucl.
+Like Plug-In Formula, Plug-In Coloring (Gradient) is a skeleton coloring algorithm that lets a coloring plug-in do the work.
+By default, it loads with the Smooth algorithm.
+Click the Browse button for the Coloring Algorithm parameter to select the Orbit Traps plug-in in Standard.ulb.
+As you can see, the Orbit Traps plug-in uses plug-in parameters for all major parameters. All trap shapes, for example, are
+now implemented as separate plug-ins. Let's select a different trap shape.
+Click the Browse button for the Trap Shape parameter to select the Gaussian Integer plug-in.
+
+The old Gaussian Integer coloring algorithm in Standard.ucl actually is a variation on an orbit trap, just with a different
+trap shape. It had limited options to color the trap shape, but now that it is available as a general trap shape plug-in, we
+can combine it with any trap mode or trap coloring.
+For example, you can select Angle to Origin 2 as the trap coloring to get an effect that you couldn't create with the
+original Gaussian Integer coloring algorithm.
+When formula authors write new trap shapes, trap modes or trap colorings and make them available in plug-in library files
+via the public formula library, you can just drop them into this standard Orbit Traps plug-in to use them.
+Next: Working with plug-ins
+See Also
+Plug-ins
+Coloring algorithms
+Writing formulas
+
+175
+
+Working with plug-ins
+Plug-ins are commonly stored in plug-in library files with an .ulb extension. Like all formula files, you can examine and
+organize plug-in library files with the browser. Make sure all files are visible, or set the file type to Plug-Ins.
+Usually though, you'll work with plug-ins via plug-in parameters in the formula parameters list.
+Click the Browse button for a plug-in parameter to select a different plug-in. A modal browser window opens,
+which shows only those plug-ins that are compatible with the current parameter.
+Tip: In the browser window, click the Find Entries button and leave all fields blank to get a list of all compatible
+plug-ins in the formula library.
+Hold down the Browse button for a menu with other options:
+
+Click Recent to open a menu with a list of recently used plug-ins, so you can quickly select one of these.
+Click Copy to copy the currently selected plug-in with all its sub-parameters to the Clipboard.
+Click Paste to copy the plug-in information on the Clipboard to the plug-in parameter. The plug-in parameter must
+be compatible with the plug-in parameter that you copied the plug-in information from, otherwise an error message
+is shown.
+Click Reset Plug-In to select the default plug-in for the plug-in parameter.
+Click Reset Parameters to reset the sub-parameters for the currently selected plug-in to their default values. The
+plug-in itself stays the same.
+Click Edit to open the class declaration for the plug-in in the formula editor.
+Next: Standard plug-ins
+See Also
+Plug-ins
+Working with formulas
+Writing formulas
+
+176
+
+Standard plug-ins
+All standard transformations, fractal formulas and coloring algorithms that come with Ultra Fractal are also available as
+plug-ins in the Standard.ulb file. This file is installed with the other standard formula files in the main formula folder. For
+more information, see the documentation for the standard formulas:
+Standard transformations
+Standard fractal formulas
+Standard coloring algorithms
+For tips on how to use the standard plug-ins, see the plug-in usage examples.
+Generally, to get as much formulas and plug-ins working together as possible, it is necessary for them to share the
+definition for common types of plug-ins. These shared definitions are in the file common.ulb. By adhering to these
+definitions, different formulas and plug-ins from different formula authors can easily work with each other. The
+common.ulb file is installed in the folder for public formulas so it can be updated automatically via the online formula
+database when necessary.
+The common.ulb file is intended mainly for formula authors. For everyday users, it does contain some useful plug-ins:
+Clip Shape Merge allows a single clip shape parameter to accept multiple clip shapes. See Plug-In Clipping.
+Image Trap allows an image to be used as a color trap for the Direct Orbit Traps coloring plug-in.
+Transform Merge allows a single transformation parameter to accept multiple transformations. See Plug-In
+Transformation.
+Trap Shape Block and Trap Shape Merge allows a single trap shape parameter to accept multiple trap shapes,
+and to transform trap shapes. See also Example 2 - Orbit trap plug-ins.
+For formula authors, the common.ulb file is invaluable and almost any plug-in you write should be based on one of the
+base classes found here. If you think modifications or new base classes are needed, please e-mail to info@ultrafractal.com
+or the UF programmers mailing list with your suggestion.
+See Also
+About plug-ins
+Writing formulas
+
+177
+
+
+Writing transformations
+Transformations are put in transformation files with the .uxf extension. They can have the following sections, in this order:
+global
+transform
+default
+If a transformation does not start with a label, it is assumed to start with the transform section. The optional setting
+within parentheses after the entry identifier is ignored.
+The global section is executed only once per image and can be used to fill look-up tables and initialize read-only variables.
+See Global sections.
+The transform section contains one or more statements. The purpose of these statements is to take the predefined
+symbol #pixel, which contains the coordinates of the pixel currently being calculated, transform it and put the result back
+in #pixel. They can also set the predefined boolean symbol #solid to true to give the pixel a solid color instead of
+calculating it. In this case, no further calculations are done for the pixel. The solid color is adjustable on the Mapping tab of
+the Layer Properties tool window.
+The default section can contain the following settings:
+helpfile
+helptopic
+precision
+rating
+render
+title
+It can also contain one or more parameter blocks.
+Next: Writing fractal formulas
+See Also
+Writing formulas
+Transformations
+
+262
+
+
+Global sections
+Sometimes, initializing variables of a formula can require a large number of calculations. Since you would normally
+initialize variables in the init section of a fractal formula or a coloring algorithm (or the transform section of a
+transformation), these calculations are performed again and again for every pixel.
+Often, they only depend on parameter settings, and therefore the results are the same for every pixel. To avoid doing
+many repeated calculations, you can move them to the global section. This is a special section at the start of a formula
+that is executed once per image.
+Use the global section to perform per-image calculations and store the results in variables that can be read in other
+sections. Variables declared here are treated as read-only in other sections, so you cannot use this to share variables
+across pixels (that would not work reliably).
+In the following example, the global section is used to pre-calculate an array of random values that is the same for every
+pixel. These random values are subsequently used to disturb a standard Mandelbrot set.
+
+MandelbrotModified {
+global:
+float values[#maxiter]
+int i = 0
+int seed = 12345678
+while i < 100
+seed = random(seed)
+values[i] = seed / #randomrange
+i = i + 1
+endwhile
+init:
+z = (0,0)
+int iter = 0 ; "i" is already taken
+loop:
+z = sqr(z) + #pixel + values[iter]
+iter = iter + 1
+bailout:
+|z| 4
+}
+Notes
+Global sections are often combined with arrays to compute look-up tables that can speed up the formula
+tremendously.
+You can even declare an array equal to the size of the image (with the #width and #height predefined symbols) and
+calculate the entire fractal in the global section of a coloring algorithm. The final section is then used only to return
+colors or index values from this array. This enables you to implement fractal types like IFS and flame fractals that
+are not natively supported by Ultra Fractal. This technique does have some limitations: it can require a fair amount
+of memory and the progress of the calculation is not reported. It is very slow and memory-intensive with rendering
+to disk, especially with anti-aliasing, and it does not work well with network calculations either. See also the render
+setting.
+Next: Image parameters
+See Also
+Arrays
+Sections
+
+267
+
+Execution sequence
+To help you understand the way Ultra Fractal executes the various sections in all formula types, here is an overview of the
+execution sequence per pixel, written in pseudo-code similar to the formula language.
+Before calculating the image, the global sections are executed:
+
+for each transformation
+execute global section of transformation
+execute global section of fractal formula
+execute global section of inside coloring algorithm
+execute global section of outside coloring algorithm
+Then, for each pixel, the following calculations are performed:
+
+for each transformation
+#solid = false
+execute transform section of transformation
+if #solid == true
+stop and give pixel the solid mapping color
+endfor
+execute init section of fractal formula
+execute init section of inside coloring algorithm (if it exists)
+execute init section of outside coloring algorithm (if it exists)
+int iter = 0
+repeat
+execute loop section of fractal formula
+bool b = the expression in the bailout section of the fractal formula
+if b == true
+; not yet bailed out
+execute loop section of inside coloring algorithm (if it exists)
+execute loop section of outside coloring algorithm (if it exists)
+endif
+iter = iter + 1
+until (b == false) || (iter == #maxiter)
+#numiter = iter
+if #numiter == #maxiter
+; pixel is inside
+execute final section of the inside coloring algorithm
+else
+; pixel is outside
+execute final section of the outside coloring algorithm
+endif
+color the pixel
+Next: Invalid operations
+See Also
+Writing transformations
+Writing fractal formulas
+Writing coloring algorithms
+Global sections
+
+278
+
