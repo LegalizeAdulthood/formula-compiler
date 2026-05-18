@@ -1,0 +1,1481 @@
+Writing formulas
+In Ultra Fractal, every part of the fractal calculation process is controlled by formulas. There
+are three types of formulas: fractal formulas, coloring algorithms, and transformations. A
+formula can be seen as a small, specialized computer program that is compiled and executed
+by Ultra Fractal.
+By writing your own formulas, you can completely customize how a fractal is calculated. It is
+recommended to first learn how to use Ultra Fractal and get comfortable with it before you
+start writing formulas.
+This chapter explains how to write your own formulas. It is divided into five sections:
+The Language basics section introduces the syntax and elements of the formula language. You should study this
+first.
+The Functions and classes section describes how to declare and use your own functions and classes, including
+inheritance and plug-ins.
+The Formulas section shows how to use the formula language in practice to write fractal formulas, coloring
+algorithms, and transformations.
+The Reference section describes all operators, built-in functions, predefined symbols, etc. that are available.
+The Tips section contains additional information on debugging and publishing your formulas.
+Use the Contents tab to navigate to topics in these sections.
+Next: Creating a new formula
+See Also
+Fractal formulas
+Coloring algorithms
+Transformations
+Copyright and tweaking
+
+230
+
+Creating a new formula
+This topic shows step by step how to create your first fractal formula, a basic Mandelbrot set.
+1. Create a new fractal. It does not matter which formula is selected, since it will be replaced by your own.
+2. Click New on the File menu, and then click Fractal Formula File. The formula editor appears with an empty file.
+3. Click New Formula on the Insert menu. Enter "My Mandelbrot" as the title and click OK. The new entry should
+now appear in the formula editor.
+4. After the init: label, insert the following line:
+z=0
+This initializes the complex variable z to (0,0).
+5. After the loop: label, insert the following line:
+z = z * z + #pixel
+This is the main equation for the Mandelbrot set. #pixel refers to the coordinates of the pixel being computed and
+will be different for every pixel. The statements in the loop section will be executed repeatedly.
+6. After the bailout: label, insert the following line:
+|z| < 4
+This defines when Ultra Fractal should stop repeating (or iterating) the statements in the loop section. With this
+condition, the loop section will be iterated as long as |z| (equal to sqr(real(z)) + sqr(imag(z))) remains smaller
+than (4,0).
+7. The formula should now look like this:
+
+MyMandelbrot {
+init:
+z = 0
+loop:
+z = z * z + #pixel
+bailout:
+|z| < 4
+default:
+title = "My Mandelbrot"
+}
+8. Save the new formula by clicking Save As on the File menu. Enter "My Formulas.ufm" as the filename and click
+Save.
+9. Now, click the Browse button in the Formula tab of the Layer Properties tool window. Select "My Mandelbrot"
+from the file "My Formulas" and click Open.
+10. Congratulations! You have just created your first fractal formula.
+Notes
+If compiling the formula results in compiler errors, make sure you have entered the formula correctly. Highlight the
+error in the Compiler Messages tool window and click the Trace button to see where the first error occurred. Correct
+the error and click the Reload button in the Formula tab to try again (changes in the formula will be saved
+automatically).
+Try to experiment with the loop section. For example, change z * z into z * z * z and see what happens. Click the
+Reload button in the Formula tab to reload the formula after you have changed it.
+Next: Formula files and entries
+See Also
+Fractal formulas
+Formula editors
+
+231
+
+Formula files and entries
+Formula files are plain text files with the extensions .ufm (fractal formula files), .ucl (coloring algorithm files), or .uxf
+(transformation files). A formula file can contain any number of formulas (called entries).
+Each entry starts with an entry identifier, followed by the contents of the entry between curly brackets { and }. After the
+entry identifier, an optional value between parentheses can be added. Examples:
+
+My-Formula {
+; entry contents
+}
+Mandelbrot(XAXIS) {
+; this formula uses an optional setting
+}
+comment {
+The comment entry always consists of comments.
+}
+The entry identifier may consist of almost all characters, except spaces and tabs, of course. Since you can specify an
+additional descriptive title for the formula, the identifier can be cryptic as the user never notices it (but it is shown by the
+browser). The identifier is used to distinguish between formulas in the same file, so no two formulas in the same file can
+have the same identifier.
+The semicolon ; is used to add comments to a formula. After a semicolon, the rest of the line is ignored by the compiler.
+You can also add global comments like copyright information to a file by placing them inside a special comment { } entry,
+which is also ignored (but the browser shows it when the file is selected).
+To facilitate working with entries, the built-in formula editor can automatically create new entries and search for existing
+entries. See Formula editors.
+Next: Sections
+See Also
+Creating a new formula
+Fractal formulas
+Inheritance
+
+232
+
+Sections
+Each entry in a formula file is divided into one or more sections. It depends on the formula type which sections are
+supported and what they can contain. This topic describes sections in general. For specific information about a formula
+type, see Transformations, Fractal formulas, and Coloring algorithms.
+Here is an example of a fractal formula:
+
+MyMandelbrot {
+init:
+z = 0
+loop:
+z = sqr(z) + #pixel
+bailout:
+|z| < 4
+default:
+title = "My Mandelbrot"
+}
+This formula contains four sections. There are three types of sections:
+Sections containing statements. These statements can be executed by Ultra Fractal; how and when this happens
+depends on the particular section. Each statement must be on a separate line, or they must be separated by
+commas. Examples of these sections are init and loop.
+Sections containing a boolean expression. There's only one section of this type, the bailout section.
+Sections containing settings related to the formula. Settings always have the form "setting = value". An example is
+the default section.
+As you can see, sections are divided by labels. A label is just the name of the section followed by a colon.
+For compatibility reasons, it is sometimes allowed to omit the label in some sections. For more information, see the
+formula-type specific documentation.
+You can break long statements and settings across several lines using the backslash \ character. The backslash character
+must be the last character on the line for this to work. Any spaces or tab characters on the next line are removed, so if
+you want to add one or more spaces, you must put them on the previous line (the line containing the backslash).
+Example:
+
+default:
+title = "A very long title \
+for my \
+favorite formula"
+This is equal to:
+
+default:
+title = "A very long title for my favorite formula"
+Next: Expressions
+See Also
+Formula files and entries
+Global sections
+Member visibility
+
+233
+
+Expressions
+To recap briefly, a formula is divided into multiple sections, separated by labels. Some sections (for example init and
+loop) can contain statements. Most statements are just expressions, and this topic explains what expressions really are.
+Almost everything is an expression. Variables, parameters and constants are all expressions. By using operators or
+functions, expressions can be composed of one or two subexpressions. Examples:
+
+a
+3
+3 + 2
+sin(a)
+(3 + sin(a)) / 2
+These are all valid expressions (note that "a" is a variable). The important property of an expression is that you can always
+calculate its value, no matter how complicated the expression is. Moreover, you can do something with this value, for
+example assigning it to a variable by using the = (assignment) operator:
+
+b = 3 + 2
+b = (3 + sin(a)) / 2
+These expressions are called assignments. It is important to realize that assignments are expressions themselves, so this
+is also a valid expression:
+
+c = b = 3 + 2
+This gives both c and b the value 5.
+Now, remember that statements can be expressions, so that means any expression is a valid statement. Of course, it does
+not make sense to use expressions like "3" or "(3 + sin(a)) / 2" as statements, since nothing is done with the value of the
+expression, so the statement is ignored by the compiler (and results in a warning message). Only assignments actually use
+the value of the expression, therefore statements usually are assignments.
+Note: do not confuse the = (assignment) operator with the == (equality) operator. The == operator is used to test if two
+expressions are equal, and returns a boolean value (true or false).
+Next: Types
+See Also
+Sections
+Operators
+Built-in functions
+
+234
+
+Types
+To write formulas, you need to be aware of the concept of types. Expressions (constants, variables, parameters, etc.) in
+formulas can have different types. There are five different built-in types. The following table shows each built-in type and
+explains its use.
+bool
+
+Boolean expressions can only have two values: true or false. This type is returned when expressions
+are compared:
+3 < 4 ; true
+false == true ; false
+
+int
+
+Integers are useful for counting. They can have values from -2147483648 to 2147483647. Most
+arithmetic operations can be performed on integers. Example:
+3
+-2
+
+float
+
+Floating-point numbers are the most familiar type of numbers. They can be very small or large, and
+have virtually unlimited precision (see Arbitrary precision). Their greatest benefit is that they can
+represent fractional values. Examples:
+3.1
+-2.9
+1.3e7
+
+complex
+
+Complex expressions represent complex numbers. They consist of two floating-point numbers and are
+used to perform complex arithmetic, which is very useful for fractal calculations. Examples:
+(2.8, 4)
+2.8 + 4i
+
+color
+
+Color expressions represent a color. You can perform operations on colors and store them in color
+variables. Internally, a color is stored as four floating-point values, corresponding to red, green, blue,
+and alpha (opacity) components. Each value ranges from 0 to 1. Colors are intended only for direct
+coloring algorithms.
+
+Note: You can add new types yourself by declaring classes. This is not necessary when you are beginning to write
+formulas, though.
+Next: Constants
+See Also
+Expressions
+Type compatibility
+Operators
+Functions
+
+235
+
+Constants
+Constants are used in formulas to specify fixed values. Example:
+
+x = 3 * x + 4
+Here, 3 and 4 are constants. This topic explains how constants are used in Ultra Fractal formulas, and how Ultra Fractal
+determines the type of a constant (you should be aware of this).
+Boolean constants are of type bool. There are only two boolean constants: true and false.
+Integer constants are of type int. Integer constants are signed numbers within the range -2147483648 .. 2147483647.
+Examples:
+
+5
+-23
+Floating-point constants are of type float. They consist of a signed mantissa, optionally followed by the character E and
+a signed integer exponent to denote a power of ten. The exponent may range from -4931 to 4931. Examples:
+
+3.0
+-1.23482
+98.283E-3
+-1e5
+
+; 0.098283
+; -100000
+
+Complex constants are of type complex. They consist of two floating-point numbers, separated by a comma and
+surrounded by parentheses. Alternatively, you can specify an imaginary number by typing the letter i right behind a
+normal floating-point number. Examples:
+
+(2, 3)
+(3e2, 3.239)
+2.3i
+2 + 1.63i
+
+; (300, 3.239)
+; (0, 2.3)
+; (2, 1.63)
+
+Color constants are of type color. They are created by supplying the rgb, rgba, hsl, and hsla functions with constant
+arguments. Examples:
+
+rgb(0.5, 1, 0)
+hsla(0, 0, 0.5, 0.5)
+
+; orange
+; transparent red
+
+Next: Variables
+See Also
+Expressions
+Types
+
+236
+
+Variables
+Formulas are often composed of several separate calculations. Therefore, it is necessary to store intermediate results in
+memory. To do this, you must use variables.
+Identifiers are used to refer to variables. An identifier must start with a letter, followed by one or more letters, digits or the
+underscore character "_". Here are some examples of valid identifiers:
+
+x
+MyOwnVariable
+var_32
+It does not matter if the letters are lower- or uppercase, so "myvar" and "MyVar" represent the same variable. Some
+identifiers (called keywords) are reserved by the compiler for other purposes: you cannot use them as variables.
+Before you can read from a variable, you must first write to it. To do this, use the = (assignment) operator:
+
+x = 3
+y = 3 + 28 / 7
+The variable is created when it is first written to. By default, the type of the variable is complex, but you can change that
+by placing a type keyword (bool, int, float, complex or color) in front of the assignment. Alternatively, you can declare the
+variable before using it.
+
+int i
+i = 2
+int x = 3
+bool MyBooleanVariable = x > 3
+Assignments are expressions themselves, so their result can be assigned again. This example gives both x and y the value
+1:
+
+x = y = 1
+To read from a variable, use the identifier in an expression. This example reads the value in x and stores it in y:
+
+y = x
+Of course, you can also perform calculations when doing this:
+
+y = x * 3 + 7
+Next: Parameters
+See Also
+Arrays
+Type compatibility
+
+237
+
+Parameters
+Parameters are used to allow users to customize formulas without needing to rewrite them. Parameters are used just like
+variables, with two exceptions: you cannot write to them, and you must prefix them with the @ character (so the compiler
+can determine they are parameters instead of variables). Here is an example that uses a parameter:
+
+Mandelbrot {
+init:
+z = 0
+loop:
+z = z^@power + #pixel
+bailout:
+|z| < 4
+}
+The parameter used here is @power. In the Formula tab, the user can now enter a value for this parameter and view the
+Mandelbrot set of any power using just one formula.
+By default, the type of a parameter is complex. You can change that by adding a param block to the default section of
+your formula and providing the necessary settings. Using the param block, you can also specify enumerated parameters.
+With enumerated parameters, the user does not have to enter a numerical value, but rather chooses an item from a dropdown list.
+It is also possible to use user functions. These can be used just like normal functions, with the exception that the user can
+choose the actual function from a list of all available built-in functions. Here is an example with a user function:
+
+Mandelbrot {
+init:
+z = 0
+loop:
+z = @myfunc(z) + #pixel
+bailout:
+|z| < 4
+}
+Now, the user can use sqr, but also sin and cos and many other functions with this formula. You can customize the
+behavior of the user function using the func block in the default section.
+Notes
+It is possible to write to parameters, although this is not recommended and can make your formulas run slower. It is
+provided for compatibility with old Fractint formulas.
+There are six predefined parameters: p1..p6, and four predefined functions: fn1..fn4. You do not need to use the @
+prefix with these parameters and user functions. However, it is recommended to use your own names instead of
+these (with the @ prefix) to make your formulas easier to understand.
+The param and func blocks also provide settings for changing the caption, default, minimum and maximum values of
+parameters and user functions, as well as adding a small help text.
+Parameters are sorted alphabetically in the user interface, unless you provide a param block for each parameter. In
+this case, the parameters appear in the order of the param blocks in the formula file.
+In the user interface, you can also group parameters together by adding headings.
+For more information on using parameters with classes, see Plug-in parameters.
+Next: Arrays
+See Also
+Providing help and hints
+Writing direct coloring algorithms
+
+238
+
+Arrays
+Arrays are used to store multiple variables in an organized way. Before you can use an array, you must declare it.
+Example:
+
+int myArray[8]
+This declares a static array called myArray with 8 elements. (It is called a static array because the number of elements is
+fixed. To declare a dynamic array that allows the number of elements to be changed later, see Dynamic arrays.)
+You can use the elements in the array like normal variables:
+
+myArray[0] = 1
+myArray[myArray[0]] = 2 * myArray[0] + 1
+You access an element in an array by specifying the index of the element between square brackets [ ]. The index must be
+an integer expression, ranging from 0 to the number of elements - 1 (the value 0 corresponds to the first element in the
+array).
+You can also declare and use multi-dimensional arrays by specifying multiple values between the brackets. When declaring
+an array, the size of each dimension must be a constant integer expression. Parameters and most predefined symbols also
+qualify as constants. Example:
+
+float a[10, 2 * 6 - 2]
+bool flags[#width, #height]
+a[3, 5 - 3] = 1.5
+flags[0, 0] = a[1 + 2, 2] > 0
+You can directly assign arrays with the same size to one another:
+
+color x[10]
+color y[10]
+x = y
+Notes
+Unlike other types of variables, arrays are not initialized upon declaration. Be sure to explicitly initialize all elements
+in arrays before reading from them. They will contain random values otherwise. Reading from an array element that
+has not been initialized does not generate a warning either, so you have to check your formulas carefully.
+You will often use loops to iterate through the elements of an array.
+Arrays are often filled with pre-calculated values in the global section to speed up calculations.
+If you use constant array indices outside the supported bounds, the compiler will produce an error message. If you
+use expressions that evaluate to an invalid index value while the formula is executed, a run-time message is written
+to the Compiler Messages tool window if the debug compiler directive is defined. See Compiler directives.
+If you assign arrays to one another that are incompatible and the size of the arrays is unknown at compile time, a
+run-time message occurs, too.
+Next: Dynamic arrays
+See Also
+Types
+Variables
+
+239
+
+Dynamic arrays
+In addition to static arrays, you can also declare dynamic arrays. Unlike static arrays, which have a predetermined number
+of elements, the number of elements in a dynamic array can be changed at any time. Example:
+
+int anotherArray[]
+This declares a dynamic array called anotherArray. Before you can store anything in this array, you need to call the
+setLength function to set the number of elements that it can contain:
+
+setLength(anotherArray, 12)
+You can now use the elements in the dynamic array:
+
+anotherArray[0] = 8
+anotherArray[1] = anotherArray[0] * 2
+Like static arrays, the index of the element can range from 0 to the number of elements - 1. The index value 0
+corresponds to the first element in the array.
+At any time, you can call setLength again to resize the array. The length function always returns the current size of the
+array:
+
+setLength(anotherArray, 20)
+int currentSize = length(anotherArray)
+
+; returns 20
+
+Unlike static arrays, dynamic arrays cannot be multi-dimensional. If you need a multi-dimensional array, you can simulate
+it like this:
+
+; Simulate a 10x10 two-dimensional array
+int twoDimArray[]
+setLength(twoDimArray, 10 * 10)
+; Initialize the element at position [0, 0]
+twoDimArray[0 * 10 + 0] = 13
+; Initialize the element at position [8, 2]
+twoDimArray[8 * 10 + 2] = 14
+Also unlike static arrays, it is not possible to copy dynamic arrays with a single assignment. This will compile, but result in
+the Arrays are not compatible run-time error message:
+
+int a[]
+int b[]
+setLength(a, 10)
+setLength(b, 10)
+a = b
+; Generates run-time error message
+Use a loop to copy the individual elements instead.
+Notes
+Unlike static arrays, the elements of a dynamic array are zero-initialized by the setLength function.
+As with static arrays, if you try to access elements of the array that are out of range, a run-time error message will
+be written to the Compiler Messages tool window if the debug compiler directive is defined.
+Dynamic arrays are slightly less efficient than static arrays, so use a static array if possible.
+Next: Type compatibility
+See Also
+Arrays
+Types
+
+240
+
+Type compatibility
+As explained in Types, every expression has a type. If an expression is a variable, a constant or a parameter, its type is
+equal to the type of the variable, constant or parameter, of course. This topic explains what happens if an expression is
+composed of two subexpressions with different types.
+Consider this example:
+
+3 + 2.1
+The type of "3" is int, and the type of "2.1" is float. The type of the resulting expression is always the "highest" type of the
+subexpressions. High means "most descriptive" here. For example, complex is higher than float, which is in turn higher
+than int (boolean expressions are treated differently). So, this means the type of the expression above must be float.
+Since its result should be 5.1, this behaves as you would expect.
+This means, however, that "3", a constant of type int, must be converted to "3.0", a constant of type float. This conversion
+is performed automatically by the compiler. You should be aware of the fact that the compiler can only convert types to
+higher types. For example, it cannot convert a float to an int. So this statement is illegal and results in an error message:
+
+int i = 3.1
+Functions like round and real are available to perform these conversions manually, if this is necessary.
+Be aware of the fact that some operators and most functions always return float or complex values. For example, this
+statement is illegal, since the division operator / cannot return an integer result (it returns 1.5):
+
+int i = 3 / 2
+You can look up the behavior of all operators and functions in the Reference section.
+The compiler can convert booleans to other types and vice versa, but it does generate a warning for each conversion. The
+value true is converted to 1, and the value false to 0. An expression of another type (int, float or complex) is converted to
+false if it is equal to 0, otherwise it is converted to true. Please note that this is only supported for compatibility with old
+Fractint formulas. It is not recommended to use this in new formulas.
+Colors cannot be converted automatically. Use the rgb, rgba, hsl, and hsla functions to convert floating-point values to
+colors. Use red, green, blue, hue, sat, lum, and alpha to convert colors to floating-point values.
+For the type compatibility rules for classes, see Inheritance and Casting.
+Next: Conditionals
+See Also
+Expressions
+Variables
+
+241
+
+Conditionals
+This topic describes the if statement. The if statement is used to write pieces of code that should only be executed under
+certain circumstances (conditions). Here is an example:
+
+if a > 3
+b = 2
+else
+b = 1
+a = 2
+endif
+In this code snippet, b is given the value 2 when a is greater than 3, otherwise b is given the value 1, and a is given the
+value 2.
+Here is the complete syntax of the if statement:
+
+if <boolean-expression>
+<statements>
+[elseif <boolean-expression>
+<statements>]
+[else
+<statements>]
+endif
+The parts between brackets [ ] are optional. There can be as many elseif blocks as you find useful. Here is an example
+which finds the largest of three variables a, b and c and places it in x:
+
+if a > b && a > c
+x = a
+elseif b > c
+x = b
+else
+x = c
+endif
+The usage of elseif is not really necessary. The following example does exactly the same thing:
+
+if a > b && a > c
+x = a
+else
+if b > c
+x = b
+else
+x = c
+endif
+endif
+This example uses a nested if statement (an if statement within another if statement). If statements may be nested as
+much as you want.
+When evaluating the boolean operators && and ||, Ultra Fractal uses short circuit evaluation. The expression is evaluated
+from left to right and Ultra Fractal stops as soon as the answer is known. This is more efficient and it allows you to write
+expressions like these:
+
+int i = -1
+float a[10]
+if i >= 0 && a[i] > 2
+...
+endif
+In this case, Ultra Fractal detects that i is negative, so it will never even try to read a[i], which is exactly what we intend
+because -1 would not be a legal index value for the array.
+Notes
+In Fractint, it is necessary to surround the boolean expressions after if and elseif with parentheses. Ultra Fractal does
+not require this, but it is not harmful.
+For more information on boolean operators like &&, see Operators in the Reference section.
+Next: Loops
+See Also
+Expressions
+Types
+
+242
+
+Loops
+Sometimes you may want to repeat a sequence of statements. Ultra Fractal provides two constructs to do this: the while
+loop and the repeat loop. Here is the syntax:
+
+while <boolean-expression>
+<statements>
+endwhile
+repeat
+<statements>
+until <boolean-expression>
+The while loop repeats the statements as long as the boolean expression is true. If the boolean expression is or becomes
+false, the statements are never or no longer executed. The repeat loop, however, repeats the statements until the
+boolean expression becomes true. This means that the statements are always executed at least once.
+If you want the statements to be executed at least once, use the repeat loop. Otherwise, use the while loop.
+Here is an example that calculates x = n! (defined as x = 1*2*3*...*(n-2)*(n-1)*n), first using a while loop, and then
+using a repeat loop:
+
+int n = 23
+; or another value
+float x = 1 ; float because 23! is very large
+while (n > 1)
+x = x * n
+n = n - 1
+endwhile
+int n = 23
+float x = 1
+if n > 1
+repeat
+x = x * n
+n = n - 1
+until n == 1
+endif
+Obviously, the while loop is better suited to calculate the factorial of a number, but in other cases the repeat loop may be
+better.
+As with if statements, loops may be nested as much as you want.
+Next: Functions
+See Also
+Conditionals
+Arrays
+
+243
+
+Functions
+As you write larger formulas, it becomes desirable to avoid code duplication and to have a way to better structure the
+formula code. To do this, you can group code in functions that you can call just like the built-in functions.
+Here is a complete Mandelbrot formula that shows how to declare and use a function that calculates one iteration of the
+Mandelbrot set:
+
+MandelbrotWithFunction {
+init:
+complex func calculateMandelbrot(const complex x)
+return sqr(x) + #pixel
+endfunc
+z = 0
+loop:
+z = calculateMandelbrot(z)
+bailout:
+|z| < 4
+}
+Functions start with the func keyword and end with the endfunc keyword. (These keywords are also used for
+function blocks.)
+The return type of the function is specified before the func keyword. For a function with no return value, leave out
+the type before the func keyword.
+Arguments to the function are declared after the name of the function between parentheses. See Function
+arguments for more information.
+A function needs to return its value with the return keyword. The return keyword causes an immediate exit of the
+function with the specified return value. It is required in functions with a return value. In functions without a return
+value (also called void functions or procedures in other languages), you can use return to exit the function
+prematurely, but it is not required. See Function arguments for an example.
+Functions can declare local variables, but they can also access the variables from the formula in which they are
+declared.
+Functions declared in a formula can only be accessed by the formula itself. If you want to access a function from
+another formula, declare it as a static class method instead.
+Function declarations can occur anywhere in a formula where you can write "normal" formula code. The order in
+which functions are declared does not matter: it is legal to call a function that is declared later in the formula. A
+function can also call itself recursively.
+Functions declared in a global section can write to global variables, but you cannot call these from outside the global
+section, unless the entire function is declared as const (in which case it can only read from any variables):
+
+Test {
+global:
+float x
+float func getXSquared() const
+return x * x
+endfunc
+init:
+z = getXSquared()
+...
+}
+Next: Function arguments
+See Also
+Built-in functions
+Methods
+
+244
+
+Function arguments
+Most function declarations include one or more function arguments. Function arguments are declared after the name of the
+function between parentheses.
+Each argument declaration contains the type and the name of the argument. Within the formula, the argument can
+be used just like a normal variable. Function arguments can be of type bool, int, float, complex, color and object.
+You cannot pass an entire array as a function argument, but you can of course pass individual array elements. To
+pass an entire array, wrap it in an object (see the array wrapper classes in common.ulb).
+Optionally, the const keyword can be put before the type of the argument. This tells the compiler that the function
+will not change the value of the argument, which can make calling the function more efficient (currently this matters
+only for float, complex, and color arguments).
+Sometimes, a function needs more than one return value. In this case, you can declare a by-reference argument
+with a & symbol before the name. Such an argument is passed by reference, instead of by value, which enables the
+function to write a value back to it that the caller will receive.
+Objects are always passed by reference, so it is almost never needed to use the & symbol with object arguments.
+You should use it only in case you want a function to be able to actually change the object variable owned by the
+caller.
+Examples:
+
+complex func square(const complex x)
+; Squares x and returns the result.
+return x * x
+endfunc
+func square2(complex &x)
+; Squares x and returns the result in x.
+x = x * x
+endfunc
+bool func isPowerOfTwo(int value, int &powerOfTwo)
+; Checks if value is a power of 2, such as 32 or 64. If so, returns true
+; and returns the power of two in powerOfTwo. Otherwise returns false.
+powerOfTwo = 0
+if value > 0
+int mask = 1
+int i = 0
+while i < 31
+if value == mask
+powerOfTwo = i
+return true
+endif
+mask = mask * 2
+i = i + 1
+endwhile
+endif
+return false
+endfunc
+; Examples of how to call these functions:
+complex c = (2, 0)
+c = square(c) ; c = (4, 0)
+square2(c)
+; c = (16, 0)
+int pow
+if isPowerOfTwo(64, pow)
+; pow = 6 here, because 2^6 = 64.
+...
+endif
+Next: Classes
+See Also
+Built-in functions
+Methods
+
+245
+
+Classes
+While function declarations in formulas are useful, you cannot access them from another formula. To be able to re-use
+code in multiple formulas, you need to use classes instead.
+A class is a declaration of a set of variables and functions that operate on these variables.
+An object is an instance of its class. This class is the type of the object, just like int is the type of an integer variable.
+The variables of a class are called fields.
+The functions of a class are called methods. Both fields and methods are also known as the members of a class.
+Classes are declared in formula files, or in plug-in library files with the .ulb file extension. A class looks a bit like a regular
+formula entry, but the entry identifier is preceded by the class keyword. Here is an example of a simple class that
+represents a point with integer coordinates:
+
+class Point {
+public:
+func Point(int aX, int aY)
+x = aX
+y = aY
+endfunc
+float func distance(Point p)
+; Returns the distance to the second point p.
+return sqrt(sqr(p.x - x) + sqr(p.y - y))
+endfunc
+int x
+int y
+}
+This class, named Point, contains a constructor, which is a special function that initializes an instance of the class. The
+constructor always has the same name as the class. Also, there is an additional method called distance, and two fields
+called x and y that store the coordinates of the point.
+Next: Objects
+See Also
+Inheritance
+Plug-in parameters
+
+246
+
+Objects
+To use a class, you have to create instances of the class, which are called objects. In Ultra Fractal, you always use a
+reference to the object. Such an object reference can be stored in a variable with the class name as type.
+Let's create some objects using the example Point class given in Classes:
+
+; Declare a new object variable
+Point p
+; Create a new Point object and store it in p.
+p = new Point(3, 4)
+float d = p.distance(new Point(0, 0)) ; Returns 5
+The new operator takes the name of the class as a function, together with the arguments for the constructor. It creates a
+new instance of the Point class and returns a reference to it.
+When you copy an object variable, you only copy the reference to the object, not the object itself. Copying an object
+variable therefore does not create a new object. Example:
+
+Point pt1 = new Point(3, 4)
+Point pt2 = pt1 ; This copies a reference!
+pt2.x = 10
+; Now pt1.x is also 10
+print(pt1.x)
+; This will print 10
+pt2 = new Point(pt1.x, pt1.y) ; Creates a true copy
+pt2.x = 6
+; Only modifies the copy
+print(pt1.x)
+; This still prints 10
+print(pt2.x)
+; This prints 6
+You can also set an object variable to the special value 0, the null reference. This clears the reference, so it points to no
+object at all. This is often useful when programming, for example when building a linked list. You can test if an object
+value is empty by comparing with 0, or by treating it as a boolean expression:
+
+Point p = 0
+if p != 0
+; This will not be executed.
+endif
+if p
+; Will not be executed, same as above.
+endif
+int x = p.x ; Compiles, but illegal!
+if p
+x = p.x
+; This is safe
+endif
+When an object reference can be null, as in the example above, you need to test it first. Only use the object reference if it
+is non-null. If you access a field or method using a null object reference, Ultra Fractal will generate a run-time error and
+halt execution of the current calculation.
+Next: Member visibility
+See Also
+Classes
+Memory management
+
+247
+
+Member visibility
+Like formulas, class declarations are divided in three sections, called public, protected, and private (in this order). Each
+section can contain member declarations: fields and methods. The type of section determines the visibility of the members
+that it contains.
+Members in the public section are accessible to formulas and other classes. This is the public interface of the class:
+the part that is intended to be visible to the outside world.
+Members in the protected section are accessible only to derived classes. This is often useful to change the inherited
+behavior of a class in a descendant. See Inheritance.
+Members in the private section can only be accessed by methods from the same class. Formulas or other classes
+cannot access them. This is useful for storing the internal data for the class, because you are sure that no other class
+can interfere with it.
+Generally, the public section contains the constructor for the class, and the methods that make up its public interface. All
+fields and internal methods should go into the private section. If it is necessary to access a field from outside the class, the
+best design is to create a method to access it (commonly called a getter or setter). This allows you to change the internal
+representation of the class later, while keeping the public interface the same.
+If you do not specify a section, it is assumed to be public. Many examples in this help file use this for brevity, but for real
+classes, it is recommended to define the visibility explicitly.
+Here is an example of a simple Texture class that can distort a complex value:
+
+class Texture {
+public:
+func Texture()
+fAmount = 0.1
+fSeed = 1234
+endfunc
+complex func distort(const complex x)
+; Adds a small random value to x and returns the result.
+return real(x) + getRandomValue() + flip(imag(x) + getRandomValue())
+endfunc
+float func getAmount()
+; Returns the amount of distortion.
+return fAmount
+endfunc
+func setAmount(const float amount)
+; Sets the amount of distortion
+fAmount = amount
+endfunc
+private:
+float fAmount
+int fSeed
+float func getRandomValue()
+; Return a new random value using the current seed.
+fSeed = random(fSeed)
+return fAmount * (fSeed / #randomrange)
+endfunc
+}
+All fields in this class are private, and the amount of distortion can be accessed with getAmount and setAmount. The
+getRandomValue method is private because it is only used within the class.
+For completeness, here is how you would use this class:
+
+Texture tx = new Texture
+print(tx.distort((2, 3)))
+print(tx.distort((2, 3)))
+
+; Prints (1.968, 2.945)
+; Prints (2.001, 3.062)
+
+Note: Classes can also have a default section for specifying the title and parameters of the class. See Plug-in parameters.
+Next: Inheritance
+See Also
+Classes
+Fields
+Methods
+
+248
+
+Inheritance
+Class inheritance enables you to create a new class that derives from an existing class. The derived class is called a
+descendant; the class it derives from is called the ancestor or base class. A descendant inherits all fields and methods
+from the ancestor and can add new fields and methods. Also, the descendant can change the behavior of the ancestor by
+overriding one or more methods.
+To derive from a class, specify its name within parentheses after the name of the class. Example:
+
+class Base {
+int x
+int func getXPlusOne()
+return x + 1
+endfunc
+}
+class Derived(Base) {
+int y
+int func getXPlusY()
+return x + y
+endfunc
+}
+The Derived class contains both the members from itself, and the members from Base. Let's test this:
+
+Derived d = new Derived
+d.x = 2
+d.y = 3
+print(d.getXPlusOne()) ; Prints 3
+print(d.getXPlusY())
+; Prints 5
+You can assign a derived object to a variable that has the type of the ancestor class, because a derived object is always
+compatible with its ancestor:
+
+Derived d = new Derived
+d.x = 4
+d.y = 5
+Base b = d
+print(b.x) ; Prints 4
+print(b.y) ; Compilation error!
+Use inheritance sparingly. Inheritance is only suitable if the descendant class has an "is-a" relationship with the
+ancestor. For example, you should never derive a Rect class (representing a rectangle) from a Point class, because a
+rectangle is not a point. You could however derive a Car class from a Vehicle ancestor, because a car is a type of
+vehicle. If there is not an "is-a" relationship, use the other class as a field. For example, a Rect class could have two
+fields of type Point: leftTop and bottomRight.
+In Ultra Fractal, inheritance is especially useful in combination with plug-in parameters.
+You can include a file name with the ancestor if it is declared in another file. See Importing classes.
+The chain of classes that is built with inheritance is called a class hierarchy.
+If no ancestor is specified, the class descends from the internal Object base class. This means that all classes
+ultimately have Object as a common ancestor. See also Casting.
+See Overriding for more information about overriding methods and changing the behavior of a descendant class.
+Next: Fields
+See Also
+Classes
+Casting
+
+249
+
+Fields
+Member variables in classes are called fields. Fields are used to store the internal data for a class.
+It is recommended to always declare all fields in the private section of a class, unless the class is very simple and
+mainly used to group a set of variables. As an illustration, compare the Point example with the Texture example.
+By convention, field names start with a lowercase "f", such as fMyData. This allows you to easily see the difference
+between fields and local variables or arguments.
+Fields can be of any type, just like variables. They can be arrays, dynamic arrays, or object references. The type of a
+field can even be the type of the class that it is declared in, so you can create recursive data structures like a tree or
+a linked list.
+Unlike formula variables or local function variables, all fields of a class are automatically initialized to 0. Use a
+constructor to initialize them explicitly.
+Here is a very simple example of a linked list node that refers to itself:
+
+class Node {
+Node next
+int data
+}
+Usage example:
+
+Node head = new Node
+head.data = 2
+head.next = new Node
+head.next.data = 3
+Node n = head
+while n
+print(n.data) ; Prints 2 and 3
+n = n.next
+endwhile
+Note that it is not necessary to initialize the next reference when creating a node, because it is automatically initialized to
+0, the null reference.
+Next: Methods
+See Also
+Classes
+Variables
+
+250
+
+Methods
+Member functions in classes are called methods. Methods typically perform operations on the fields of a class. Methods are
+declared just like functions in a formula.
+Methods always operate on an instance of the class (except static methods). The instance is returned by the reserved this
+reference. Here is an example:
+
+class Data {
+int x
+func printMe(Printer p)
+p.printData(this)
+endfunc
+}
+class Printer {
+$define debug
+func printData(Data d)
+print(d.x)
+endfunc
+}
+If you call a method on an object reference, the this reference inside the method will return the object reference that it
+was called on.
+
+Data d = new Data
+d.x = 12
+d.printMe(new Printer)
+
+; Prints 12
+
+In this code fragment, the this reference in Data.printMe() will return the d reference, which is then passed to the Printer
+object.
+Note that objects are always passed to functions and methods by reference (see also Function arguments). For example,
+the Printer.printData() method could change the x value of the Data object that it receives. If you include the & symbol
+with the function argument (as you would do for normal by-reference argument passing), this lets the function modify the
+actual object reference which is often not needed.
+Next: Overriding
+See Also
+Classes
+Fields
+Static methods
+
+251
+
+Overriding
+In a derived class, you can override inherited methods to change their behavior. When overriding a method, the
+declaration must match exactly, including the argument names and types and the return type. (Ultra Fractal supports
+covariant return types, so if the return type is a class, it can also be a descendant of the return type of the inherited
+method.)
+In the overridden method, you can call the inherited method using the ancestor class name and the member operator.
+Here is an example where the Derived class overrides a method inherited from Base, and calls the inherited method:
+
+class Base {
+int func test()
+return 3
+endfunc
+}
+class Derived(Base) {
+int func test()
+return Base.test() * 2
+endfunc
+}
+Ultra Fractal always uses virtual method dispatching for all methods. This means that when you call a method on an
+object, the actual type of the object is determined and the method for that object type is called. This matters when using
+inheritance and method overriding:
+
+Base b = new Base
+print(b.test()) ; Prints 3
+Derived d = new Derived
+print(d.test()) ; Prints 6
+; Test virtual method dispatching
+Base x = b
+print(x.test()) ; Prints 3
+x = d
+print(x.test()) ; Prints 6
+When x.test() is executed, the actual type of x is determined and the corresponding method is called. In the first case, the
+actual type of x is Base, so Base.test() is called, which returns 3. In the second case, Derived.test() is called because the
+actual type of x is Derived, even though x is declared as a reference to Base. This behavior is extremely useful with plug-in
+parameters.
+Note: Unlike methods, member variables are never overridden. If you declare a variable in a derived class with the same
+name as a variable in the ancestor class, the new variable will exist in addition to the (now hidden) inherited variable.
+Because the new variable doesn't have any relationship with the inherited variable, it is legal for it to be of a different type.
+Generally, declaring variables with the same name as inherited variables is not recommended since it can easily lead to
+confusion.
+Next: Constructors
+See Also
+Classes
+Inheritance
+Methods
+
+252
+
+Constructors
+As briefly explained in Classes, a class can contain a constructor. A constructor is a special method that is called
+automatically by the new operator when an instance of the class is created. The task of the constructor is to initialize the
+fields of the just created object.
+The constructor has the form of a method without a return type, and its name must be equal to the name of the class.
+Optionally, the constructor can have one or more arguments, which must be passed when creating an object of the class.
+This makes it possible to immediately initialize the object to the desired state.
+
+class Test {
+func Test(int arg)
+x = arg
+endfunc
+int x
+int y
+}
+Before the constructor is called, all fields of the class are initialized to 0. You only need to initialize those fields that must
+have a different initial value.
+
+Test t = new Test(3)
+print(t.x) ; Prints 3
+print(t.y) ; Prints 0
+When using inheritance, the constructor of the derived class must have the same arguments as the ancestor class. (This
+is required because the constructor is also a virtual method.)
+The constructor of the derived class can call the inherited constructor by using the name of the ancestor as a function.
+Calling the inherited constructor is almost always necessary because otherwise the ancestor will not be initialized correctly.
+Example:
+
+class Derived(Test) {
+func Derived(int arg)
+Test(4) ; Call the inherited constructor
+w = arg
+endfunc
+int w
+}
+Derived d = new Derived(7)
+print(d.x) ; Prints 4
+print(d.w) ; Prints 7
+You can also call a constructor on an already constructed object, in which case it will execute as a normal function. This
+might be useful to reset the object.
+Next: Static methods
+See Also
+Classes
+Inheritance
+Methods
+
+253
+
+Static methods
+Normal methods in a class always operate on an instance of that class, so they need to be called on an object reference. In
+the method, the object reference that it was called on is returned by the this keyword.
+Static methods, in contrast, do not operate on an instance of the class. They can only perform operations on the function
+arguments and on local variables. Therefore, you can use static methods as global functions, except that they are grouped
+by the class that contains them.
+You declare a static function with the static keyword, which must appear just before the function declaration. Example:
+
+class Utils {
+static int func min(int a, int b)
+if a < b
+return a
+else
+return b
+endif
+endfunc
+}
+You can call a static method with the class name, or with an object reference (an instance of the class) and the member
+operator:
+
+; Call with class name (preferred)
+print(Utils.min(3, 5)) ; Prints 3
+; Call with object instance
+Utils u = new Utils
+print(u.min(3, 5))
+; Prints 3
+Calling a static method is slightly more efficient than calling a normal method.
+Next: Casting
+See Also
+Classes
+Variables
+
+254
+
+Casting
+When you assign an object reference to a variable, or pass it to a function, the type of the reference and the expected type
+should be compatible. As explained in Inheritance, a derived object is always compatible with its ancestor. Let's try this:
+
+class Base {
+int x
+}
+class Derived(Base) {
+int y
+}
+Derived d = new Derived
+Base b = d
+; Legal because Base is ancestor of Derived
+b.x = 4
+print(d.x)
+; Prints 4
+Derived d2 = b ; Compilation error: incompatible types!
+The last assignment is illegal because b has type Base, which is not compatible with Derived. However, b really points to
+an object of type Derived, so it should be possible to get the 'original' object back. You can do this with a cast. A cast
+looks like a function call, using the name of the class to cast to as the name of the function:
+
+Derived d = new Derived
+d.y = 5
+Base b = d
+Derived d2 = Derived(b)
+print(d2.y)
+Base b2 = new Base
+d2 = Derived(b2)
+print(d2)
+
+; Cast b to Derived
+; Prints 5
+; This cast fails and returns 0
+; Prints 0
+
+A cast checks if the object is really an instance of the class to cast to. If so, it returns a reference with the desired type.
+Otherwise, it returns a null reference. You can use this to query the type of object that a reference actually points to.
+Because all classes ultimately descend from the internal Object class, you can use Object as a common type to store
+different types of objects in an array, for example. With a cast, you can later test what type of object an element in the
+array really contains.
+For debugging purposes, you can also print the value of an object reference, which will print the class name and the
+reference count of the object:
+
+Object obj = new Derived
+print(obj) ; Prints Derived (1)
+Note: With a plug-in parameter, you can also determine the currently selected class by comparing it to a class with the
+== operator or the != operator. See also Writing plug-ins.
+Next: Plug-in parameters
+See Also
+Classes
+Inheritance
+
+255
+
+Plug-in parameters
+Like formulas, classes can also have parameters and a title, which are declared in the default section. This matters only if
+the class is used by a plug-in parameter for a formula. Classes used by plug-in parameters are called plug-ins.
+When used as a plug-in, the class appears in the list of parameters in the Layer Properties tool window, with the
+parameters for the class grouped with the title of the class. (See Example 1 - Formula plug-ins for a screen shot.)
+Here is a simple example of a class that implements a simple bailout condition for a Mandelbrot-like fractal formula. The
+bailout value is exposed as a parameter.
+
+class Bailout {
+public:
+func Bailout()
+; Empty constructor, see Writing plug-ins
+endfunc
+bool func hasBailedOut(const complex z)
+return |z| > @bailout
+endfunc
+default:
+title = "Simple Bailout"
+float param bailout
+caption = "Bailout value"
+default = 4
+min = 1
+endparam
+}
+To be able to use this class as a plug-in and include its parameters in the parameter list for a formula, declare a plug-in
+parameter in the formula. A plug-in parameter is declared by a parameter block with a class as the parameter type.
+
+MandelbrotTest {
+init:
+z = (0, 0)
+Bailout bo = new @bailoutParam
+loop:
+z = sqr(z) + #pixel
+bailout:
+!bo.hasBailedOut(z)
+default:
+Bailout param bailoutParam
+caption = "Bailout Test"
+endparam
+}
+Notes
+Normally, you create an instance of a class with parameters using new and the class name. In this case, all
+parameters always remain at the default value. The plug-in parameter bailoutParam in the MandelbrotTest formula
+represents a variant of the Bailout class that has different parameter values, set by the user. To create an object
+that uses these user-set parameter values, use the new operator with the plug-in parameter as shown above.
+You can create more than one object from a single plug-in parameter, and you can have multiple plug-in parameters
+of the same class type, which each have their own independent set of parameters.
+Inside the class declaration for a plug-in, all parameters must be declared by a parameter block. (In contrast,
+formulas can have undeclared parameters for Fractint compatibility.)
+Optionally, a class used as a plug-in can also contain a rating setting in its default section.
+Next: Writing plug-ins
+See Also
+Classes
+Parameter blocks
+Function blocks
+Headings
+
+256
+
+Writing plug-ins
+Plug-in parameters make it easy to create different formulas with common features. What's even better is that you can
+write new plug-ins that can be used with the plug-in parameters in existing formulas.
+If you load the MandelbrotTest example in Ultra Fractal, a Browse button is visible next to the name of the default plug-in
+in the list of parameters. This button enables the user to select a different plug-in, as long as it descends from the Bailout
+class. (See Example 1 - Formula plug-ins for an example.)
+Let's write a new plug-in descending from the Bailout class that implements more bailout options:
+
+class ExtendedBailout(Test.ufm:Bailout) {
+public:
+bool func hasBailedOut(const complex z)
+return (@test == "mod" && |z| > @bailout) ||
+\
+(@test == "real" && sqr(real(z)) > @bailout) || \
+(@test == "imag" && sqr(imag(z)) > @bailout)
+endfunc
+default:
+title = "Extended Bailout"
+int param test
+caption = "Bailout Test"
+default = 0
+enum = "mod" "real" "imag"
+endparam
+}
+If you put this code in a plug-in library file (say Test.ulb), you can select the new plug-in by clicking on the Browse button
+next to the Bailout plug-in parameter. The MandelbrotTest formula will now use the bailout code from the ExtendedBailout
+class. As you can see, this system enables you to add new features to a formula even after it has been published, without
+having to modify the formula itself!
+The descendant class must be declared in a plug-in library file with the .ulb file extension so the browser can find it.
+Therefore, the file name of the ancestor needs to be specified as well. The example code above assumes that both
+MandelbrotTest and the Bailout class are declared in a file called Test.ufm. See also Importing classes.
+The ExtendedBailout class overrides the hasBailedOut method to change its behavior. Note that it introduces a new
+parameter called test. The bailout parameter is inherited from the Bailout base class.
+If you want your plug-in to appear in the browser when selecting a value for the plug-in parameter, make sure it has
+a title. Classes without a title are not treated as plug-ins and they are not visible in the browser. (This is useful for
+abstract base classes, as explained in the next paragraph.)
+In this example, the Bailout base class already has a default behavior and a parameter. In practice, it might be
+better to have an abstract base class that only declares the methods that form the public interface for the class.
+Do not include a title for the abstract base class (the browser will only show classes with a title as available plugins). In the plug-in parameter declaration for the formula that uses an abstract class, you can then use the default
+setting to select a descendant of the base class as the default plug-in. This descendant should be placed in a plug-in
+library file. In this way, the abstract base class is never used on its own, just as a base class.
+A descendant can also override parameters from its ancestor by including a parameter block for an inherited
+parameter. This parameter block completely replaces all previous settings for the parameter. With this, you can for
+example change the default value of a parameter, or hide it by setting visible to false. The type of the parameter
+must remain the same.
+In case you do not want to provide the option to the user to select a different plug-in for a plug-in parameter, set the
+selectable setting of the plug-in parameter to false. This completely removes the plug-in title and the Browse button,
+and causes the parameters of the plug-in to be listed between the normal formula parameters.
+The base class must have a constructor (possibly empty), otherwise the constructor of the descendant class will
+never be called. The compiler will generate a warning if you use a base class without a constructor for a plug-in
+parameter, and the selectable setting is not false.
+You can determine the currently selected class of a plug-in parameter by comparing the plug-in parameter to the
+class directly with the == operator or != operator. This allows you to show or enable other parameters depending on
+the currently selected plug-in . (You can also determine the selected plug-in with a cast, but that requires the
+creation of an instance of the plug-in, something you cannot do in visible or enabled settings.)
+Of course, plug-ins can in turn also contain plug-in parameters.
+Next: Parameter forwards
+See Also
+Classes
+Plug-in parameters
+Inheritance
+Overriding
+
+257
+
+Parameter forwards
+When you rewrite an existing formula to take advantage of plug-in parameters, this changes the format of parameter sets
+that are saved while this formula is in use. This means that existing parameter sets cannot be opened anymore. To solve
+this problem, use parameter forwards.
+A parameter forward declares a new parameter name in the formula, and lets it point to a sub-parameter of a plug-in
+parameter. For example, suppose that an earlier version of the MandelbrotTest example handled its bailout condition itself,
+with a float parameter named bailout. Now, however, the equivalent parameter is bailout from the bailoutParam plug-in
+parameter. The following parameter forward expresses this:
+
+MandelbrotTest {
+; ...
+default:
+Bailout param bailoutParam
+caption = "Bailout Test"
+endparam
+param bailout = bailoutParam.bailout
+}
+A parameter forward starts with the param keyword, the name of the old parameter, the = symbol, and then the "path"
+to the new parameter, which contains parameter identifiers separated by dots.
+In this case, when Ultra Fractal loads an old parameter set, the parameter set will contain the value for a parameter
+named bailout. Because the formula does not contain a parameter named bailout, Ultra Fractal will search its parameter
+forwards and will subsequently set the bailout parameter of the class that is the default plug-in for the bailoutParam plugin parameter (in this case the Bailout class).
+For this to work correctly, obviously the default plug-in for the plug-in parameter must be compatible with the previous
+behavior of the formula. (You can set a default plug-in with the default setting.) This is your responsibility as formula
+author.
+Next: Importing classes
+See Also
+Classes
+Plug-in parameters
+
+258
+
+Importing classes
+When a formula or a class contains a class name, for example to declare a variable or a plug-in parameter, Ultra Fractal
+searches for the class in the list of imported files, and then in the current file. To import a file so its classes become
+available, use the import keyword.
+
+class ExtendedBailout(Test.ufm:Bailout) {
+public:
+import "common.ulb"
+; ...
+}
+This modified version of the ExtendedBailout example first imports the file Test.ufm because that is where its ancestor is
+located. Then it imports the plug-in library file common.ulb.
+The import keyword expects a file name within double quotes, without any path information. The file is located
+using the current formula search paths as set in the Folder tab of the Options dialog.
+If a file name is specified in the ancestor specification of a class, this behaves as if this file was imported before
+any other files. The browser, however, needs the specification of the ancestor file name here to be able to check the
+inheritance of classes when selecting plug-in for a plug-in parameter.
+The order in which import statements occur is important. When searching for a class, Ultra Fractal searches the file
+that was last imported first, and so on. Other than that, import statements can occur anywhere in a formula or class.
+Even the statements before an import statement are affected by it, because import statements are read and applied
+before the rest of the code is checked for consistency and type compatibility. For readability, it is recommended to
+put your import statements at the top of a formula or class.
+Plug-in library files with the .ulb extension have two purposes. When looking for plug-ins for plug-in parameters,
+the browser will only look in .ulb files. So plug-ins must always be in a plug-in library file. Also, plug-in library files
+provide a logical place to put classes that are intended to be shared by different fractal formulas, coloring
+algorithms, and transformations.
+The common.ulb file that is installed with Ultra Fractal provides many useful base classes. See The common.ulb file.
+You can also import classes from .ufm, .ucl, or .uxf files if you have to, but this is recommended only for files that
+you control yourself. If you are a formula author and you want to provide common functionality to other authors, put
+them in your own .ulb file. Do not import a class from another author's .ufm/.ucl/.uxf file because it might be
+changed in a future revision of that file. See also Publishing your formulas.
+Next: The common.ulb file
+See Also
+Classes
+Inheritance
+Plug-in parameters
+
+259
+
+The common.ulb file
+Classes and plug-ins can be useful on their own, but they show their true power when you combine them with each other.
+When used well, classes can eliminate duplicate code in everyone's formulas. However, to realize this potential, there
+needs to be a common foundation so all classes can work with each other easily.
+The common.ulb file installed in the Public formula folder provides such a foundation. It contains an extensive collection of
+base classes, standard plug-ins and utility classes. Here is a quick overview of the most important classes and plug-ins:
+The Array classes provide a way to pass arrays to functions, since Ultra Fractal doesn't allow this directly. See also
+Function arguments.
+The Generator and IntegerGenerator classes are base classes for plug-ins that generate a sequence of values, such
+as random number generators.
+The Transfer and IntegerTransfer classes are base classes for plug-ins that take a value and transform it.
+The Formula class and descendants such ConvergentFormula, DivergentFormula and ConvergentDivergentFormula
+wrap a complex fractal formula as a plug-in. See Example 1 - Formula plug-ins for an example of how this works in
+practice.
+The Coloring, GradientColoring and DirectColoring classes wrap coloring algorithms as a plug-in.
+The Transform, UserTransform and ClipShape classes wrap transformations as a plug-in.
+The TrapShape, TrapMode, TrapColoring, TrapPosition, TrapTransfer and ColorTrap classes provide a plug-in
+framework to implement orbit trap coloring algorithms where every aspect of the algorithm is extensible. See
+Example 2 - Orbit trap plug-ins.
+The goal is to provide flexible base classes that help formula authors to write plug-ins and formulas that work with existing
+and future plug-ins and formulas. It is highly recommended to read through the common.ulb file thoroughly before you
+start writing your own plug-ins. Also have a look at how the standard plug-ins in Standard.ulb are implemented.
+The common.ulb file will be continually updated via the online formula database. The Ultra Fractal forum is the best place
+to discuss this and to suggest modifications.
+Documentation for the common.ulb file and any other plug-in library file in the online formula database is accessible via
+formulas.ultrafractal.com/reference.
+Next: Memory management
+See Also
+Classes
+Importing classes
+
+260
+
+Memory management
+Ultra Fractal manages the memory for all objects that are created automatically, and normally you do not have to worry
+about this. However, if you create a large number of objects, or if your objects are large because they use large arrays,
+you might want to know how you can influence memory usage during a calculation.
+The lifetime of an object is managed with reference counting. As long as there is a reference to an object, it will not be
+freed. If the last reference to an object goes out of scope, if another object is stored to the reference, or if it is set to 0,
+the object is freed immediately.
+For debugging purposes, you can print the name and reference count of an object. This example uses the Point example
+class:
+
+Point p = new Point(0, 0)
+print(p)
+; Prints Point (1)
+Point pt2 = p ; Create a second reference
+print(p)
+; Prints Point (2)
+p = 0
+; Clears the first reference
+print(pt2)
+; Prints Point (1)
+pt2 = 0
+; Frees the Point object
+print(pt2)
+; Prints 0
+As you can see, you can free an object by setting all reference that point to it to 0, the null reference. You can use this to
+reclaim memory during a calculation.
+When using recursive data structures, you can easily get the situation where two objects contain references to each other.
+In this case, the reference count of both objects will never reach zero. To solve this, Ultra Fractal keeps a running list of all
+live objects and will free them once the entire calculation is finished. If you need to reclaim memory earlier, you need to
+explicitly set the references to 0 so the objects can be freed. You could say that Ultra Fractal uses deterministic garbage
+collection, in contrast to environments like Java or .NET which use nondeterministic garbage collection.
+Again, normally you do not have to worry about this because the amount of memory consumed by objects is usually very
+modest. But in case memory usage becomes a problem, you can use this information to track down the reference counts
+of objects and make sure they are freed when necessary.
+Next: Writing transformations
+See Also
+Classes
+Objects
+
+261
