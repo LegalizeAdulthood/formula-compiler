@@ -1,0 +1,37 @@
+Coloring algorithms
+
+Coloring algorithms define how fractals are colored. The fractal formula
+creates the basic shape of the fractal, and coloring algorithms provide
+ways to color that shape. This gives you the flexibility to freely
+combine coloring algorithms with any fractal formula.
+
+Coloring algorithms are managed in the Inside and Outside tabs of the
+Layer Properties tool window.
+
+[]
+
+- At the top, the title of the coloring algorithm is shown. Hold the
+  mouse cursor over the title to see the entry identifier and the file
+  name of the coloring algorithm.
+- The Browse button opens a modal browser to select another coloring
+  algorithm.
+- The Reload button reloads the coloring algorithm from disk and
+  recalculates the layer.
+- The Edit button opens the coloring algorithm in the formula editor.
+- The Help button opens the help file for the coloring algorithm, if one
+  exists.
+- The More button shows a menu with additional commands.
+- The coloring settings specify how the information from the coloring
+  algorithm must be interpreted to color the fractal. See Coloring
+  settings.
+- The formula parameters are additional parameters specific to the
+  selected coloring algorithm. See Formula parameters.
+
+Next: Inside and outside
+
+See Also
+Quick Start Tutorial
+Using images
+Standard coloring algorithms
+Fractal formulas
+Transformations

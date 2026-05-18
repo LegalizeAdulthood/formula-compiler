@@ -1,0 +1,72 @@
+Parameters
+
+Parameters are used to allow users to customize formulas without needing
+to rewrite them. Parameters are used just like variables, with two
+exceptions: you cannot write to them, and you must prefix them with the
+@ character (so the compiler can determine they are parameters instead
+of variables). Here is an example that uses a parameter:
+
+    Mandelbrot {
+    init:
+      z = 0
+    loop:
+      z = z^@power + #pixel
+    bailout:
+      |z| < 4
+    }
+
+The parameter used here is @power. In the Formula tab, the user can now
+enter a value for this parameter and view the Mandelbrot set of any
+power using just one formula.
+
+By default, the type of a parameter is complex. You can change that by
+adding a param block to the default section of your formula and
+providing the necessary settings. Using the param block, you can also
+specify enumerated parameters. With enumerated parameters, the user does
+not have to enter a numerical value, but rather chooses an item from a
+drop-down list.
+
+It is also possible to use user functions. These can be used just like
+normal functions, with the exception that the user can choose the actual
+function from a list of all available built-in functions. Here is an
+example with a user function:
+
+    Mandelbrot {
+    init:
+      z = 0
+    loop:
+      z = @myfunc(z) + #pixel
+    bailout:
+      |z| < 4
+    }
+
+Now, the user can use sqr, but also sin and cos and many other functions
+with this formula. You can customize the behavior of the user function
+using the func block in the default section.
+
+Notes
+
+- It is possible to write to parameters, although this is not
+  recommended and can make your formulas run slower. It is provided for
+  compatibility with old Fractint formulas.
+- There are six predefined parameters: p1..p6, and four predefined
+  functions: fn1..fn4. You do not need to use the @ prefix with these
+  parameters and user functions. However, it is recommended to use your
+  own names instead of these (with the @ prefix) to make your formulas
+  easier to understand.
+- The param and func blocks also provide settings for changing the
+  caption, default, minimum and maximum values of parameters and user
+  functions, as well as adding a small help text.
+- Parameters are sorted alphabetically in the user interface, unless you
+  provide a param block for each parameter. In this case, the parameters
+  appear in the order of the param blocks in the formula file.
+- In the user interface, you can also group parameters together by
+  adding headings.
+- For more information on using parameters with classes, see Plug-in
+  parameters.
+
+Next: Arrays
+
+See Also
+Providing help and hints
+Writing direct coloring algorithms

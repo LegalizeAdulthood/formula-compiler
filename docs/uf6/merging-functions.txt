@@ -1,0 +1,49 @@
+Merging functions
+
+  -------------- -------------
+  Input type     Output type
+  color, color   color
+  -------------- -------------
+
+The merging functions reproduce all layer merge modes. They accept two
+color parameters. The second color is merged onto the first color and
+the resulting color is returned. So, the first color is treated as the
+background, and the second color as the "layer" being merged. The alpha
+value of the result is always the alpha value of the second color.
+
+The following functions are available:
+
+  ------------------ --------------------------------------------------------------------------------------------------------------------------------------------------------
+  mergenormal        Directly returns the second color.
+  mergemultiply      Multiplies the first color with the second color. The result is always a darker color.
+  mergescreen        Multiplies the inverse of the first color with the inverse of the second color, and returns the inverse of the result. This is always a lighter color.
+  mergeoverlay       Multiplies or screens the colors, depending on the first color.
+  mergehardlight     Multiplies or screens the colors, depending on the second color.
+  mergesoftlight     Darkens or lightens the colors, depending on the second color.
+  mergedarken        Returns the darkest of the two colors.
+  mergelighten       Returns the lightest of the two colors.
+  mergedifference    Returns the difference between the two colors.
+  mergehue           Returns the hue of the second color, and the saturation and luminance of the first color.
+  mergesaturation    Returns the saturation of the second color, and the hue and luminance of the first color.
+  mergecolor         Returns the hue and saturation of the second color, and the luminance of the first color.
+  mergeluminance     Returns the luminance of the second color, and the hue and saturation of the first color.
+  mergeaddition      Directly adds the two colors, limiting the result at white (1, 1, 1).
+  mergesubtraction   Directly subtracts the second color from the first color, limiting the result at black (0, 0, 0).
+  mergehsladdition   Adds the colors using the HSL color model.
+  mergered           Returns the red component of the second color, and the green and blue components of the first color.
+  mergegreen         Returns the green component of the second color, and the red and blue components of the first color.
+  mergeblue          Returns the blue component of the second color, and the red and green components of the first color.
+  ------------------ --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+With these functions, you can reproduce how layers are merged. Use the
+following formula to merge t on top of b with opacity o:
+
+    compose(b, blend(t, mergeX(b, t), alpha(b)), o)
+
+The merging functions are often used as color user functions. See
+Parameter blocks.
+
+See Also
+blend function
+compose function
+Writing direct coloring algorithms

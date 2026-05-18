@@ -1,0 +1,70 @@
+Writing coloring algorithms
+
+Coloring algorithms are put in coloring algorithm files with the .ucl
+extension. They can have the following sections, in this order:
+
+- global
+- init
+- loop
+- final
+- default
+
+If a coloring algorithm does not start with a label, it is assumed to
+start with the final section (in that case, the init and loop sections
+are not allowed).
+
+The optional setting within parentheses after the entry identifier
+specifies whether the coloring algorithm can be used for inside
+coloring, outside coloring, or both. The possible values are:
+
+  --------- --------------------------------------------------------------------------------
+  INSIDE    The coloring algorithm is only intended for coloring the inside of a fractal.
+  OUTSIDE   The coloring algorithm is only intended for coloring the outside of a fractal.
+  --------- --------------------------------------------------------------------------------
+
+If the setting is omitted, or has another value, the coloring algorithm
+is supposed to be useful for both inside and outside coloring. See also
+Inside and outside.
+
+The global section is executed only once per image and can be used to
+fill look-up tables and initialize read-only variables. See Global
+sections.
+
+The init section is executed only once per pixel, and is useful for
+initializing variables.
+
+The loop section is executed once per iteration, right after the loop
+section of the fractal formula has been executed. It can read the
+current value of #z and perform some calculations on it.
+
+The final section is executed afterwards to determine the actual index
+into the gradient (this index is further transformed by the various
+settings on the Inside or Outside tabs). The index is a float value and
+should be written to the predefined symbol #index. If the settings on
+the Inside or Outside tab are set to their default values (Density = 1,
+Transfer = Normal and Offset = 0), the entire gradient range corresponds
+to the range 0..1 of the index value.
+
+To create a direct coloring algorithm, use the predefined symbol #color
+instead of #index.
+
+It is also possible to set the predefined symbol #solid to true: this
+gives the pixel the solid color set in the Inside or Outside tab of the
+Layer Properties tool window.
+
+The default section can contain the following settings:
+
+- helpfile
+- helptopic
+- precision
+- rating
+- render
+- title
+
+It can also contain one or more parameter blocks.
+
+Next: Writing direct coloring algorithms
+
+See Also
+Writing formulas
+Coloring algorithms

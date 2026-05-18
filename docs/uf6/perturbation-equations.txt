@@ -1,0 +1,95 @@
+Perturbation equations
+
+The perturbation calculation algorithm in Ultra Fractal can dramatically
+speed up deep-zooming, allowing an image to complete in minutes rather
+than hours or even days. You can add perturbation support to your own
+formulas by providing the perturbation equations. Reworking the fractal
+equation to perturbation equations does require some (high school level)
+mathematics, and unfortunately not all fractal types are suitable for
+perturbation calculations.
+
+Let's take the Mandelbrot formula as an example, written in
+pseudo-formula language with z' for the next value of z:
+
+    z' = z^2 + c
+
+This is the reference orbit. To calculate another pixel on the screen,
+we use this orbit and deviate from it slightly. Let's call this orbit z2
+and its location c2:
+
+    z2' = z2^2 + c2
+
+Rewrite this using dz for the difference between z2 and z, and dc for
+the difference between c2 and c:
+
+    z2 = z + dz
+    c2 = c + dc
+    z' + dz' = (z + dz)^2 + c + dc
+
+Now rewrite this to get a formula for the next value of dz, based on the
+current values of dz and z:
+
+    z^2 + c + dz' = z^2 + 2*z*dz + dz^2 + c + dc
+    dz' = 2*z*dz + dz^2 + dc
+
+Note that the z^2 and c terms have cancelled out on both sides, leaving
+us with an equation where all terms are multiplied by dz. Because dz
+starts out small (first 0, then dc which is small because we're zoomed
+in far), all terms are small as well, so they can be calculated using
+regular double precision. For this to work, it's essential that there is
+no "large" z term left. For example, you might be tempted to write the
+equation like this:
+
+    dz' = (z + dz)^2 - z^2 + dc  ; Does not work
+
+That does not work because the magnitude of z is typically around 1, and
+the magnitude of dz is around 1/magnification which is small. With deep
+zooming, regular floating-point precision does not provide enough
+significant decimals to add the two without losing the value of dz.
+
+In short, if your formula can be reduced so all terms are small (in the
+order of dz or dc), it will work with perturbation calculations.
+
+Sometimes, only certain parameter combinations for the formula will
+produce working perturbation equations. For example, with the standard
+Mandelbrot formula, only positive integer powers like 2, 3 and 4 can be
+reduced, but a power like 2.5 or a complex power does not reduce. In
+this case, use the perturb setting to specify when the perturbation
+equations are valid.
+
+To express the perturbation equations in the formula language, add
+perturbinit and perturbloop sections, and use the #dz and #dpixel
+predefined symbols:
+
+    PerturbMandelbrot {
+    init:
+      z = 0
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      |z| < 4
+    perturbinit:
+      #dz = 0
+    perturbloop:
+      #dz = 2 * #z * #dz + sqr(#dz) + #dpixel
+    }
+
+Notes
+
+- The bailout section from the regular formula is also used for
+  perturbation calculations. The #z value is calculated by adding the
+  reference z value and the current #dz value.
+- The #dz predefined symbol is equal to the dz value used in the
+  equations above, and #dpixel is equal to dc.
+- To keep your formula compatible with earlier versions of Ultra Fractal
+  (for example if you publish it in the formula database), use compiler
+  directives and test for the VER60 symbol. See the Mandelbrot formula
+  in Standard.ufm for an example.
+- See the SuperFractalThing web site for the original whitepaper by K.I.
+  Martin that introduced this algorithm.
+
+Next: Providing help and hints
+
+See Also
+Writing fractal formulas
+Perturbation calculations

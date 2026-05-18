@@ -1,0 +1,64 @@
+Global sections
+
+Sometimes, initializing variables of a formula can require a large
+number of calculations. Since you would normally initialize variables in
+the init section of a fractal formula or a coloring algorithm (or the
+transform section of a transformation), these calculations are performed
+again and again for every pixel.
+
+Often, they only depend on parameter settings, and therefore the results
+are the same for every pixel. To avoid doing many repeated calculations,
+you can move them to the global section. This is a special section at
+the start of a formula that is executed once per image.
+
+Use the global section to perform per-image calculations and store the
+results in variables that can be read in other sections. Variables
+declared here are treated as read-only in other sections, so you cannot
+use this to share variables across pixels (that would not work
+reliably).
+
+In the following example, the global section is used to pre-calculate an
+array of random values that is the same for every pixel. These random
+values are subsequently used to disturb a standard Mandelbrot set.
+
+    MandelbrotModified {
+    global:
+      float values[#maxiter]
+      int i = 0
+      int seed = 12345678
+      while i < 100
+        seed = random(seed)
+        values[i] = seed / #randomrange
+        i = i + 1
+      endwhile
+    init:
+      z = (0,0)
+      int iter = 0 ; "i" is already taken
+    loop:
+      z = sqr(z) + #pixel + values[iter]
+      iter = iter + 1
+    bailout:
+      |z| 4
+    }
+
+Notes
+
+- Global sections are often combined with arrays to compute look-up
+  tables that can speed up the formula tremendously.
+- You can even declare an array equal to the size of the image (with the
+  #width and #height predefined symbols) and calculate the entire
+  fractal in the global section of a coloring algorithm. The final
+  section is then used only to return colors or index values from this
+  array. This enables you to implement fractal types like IFS and flame
+  fractals that are not natively supported by Ultra Fractal. This
+  technique does have some limitations: it can require a fair amount of
+  memory and the progress of the calculation is not reported. It is very
+  slow and memory-intensive with rendering to disk, especially with
+  anti-aliasing, and it does not work well with network calculations
+  either. See also the render setting.
+
+Next: Image parameters
+
+See Also
+Arrays
+Sections

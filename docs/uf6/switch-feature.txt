@@ -1,0 +1,77 @@
+Switch feature
+
+The switch feature allows you to switch easily between related fractal
+types. One fractal type can be used as a map for another. This is very
+useful, since Mandelbrot sets, for example, are in fact maps of the
+corresponding Julia sets.
+
+To use the switch feature with your own formulas, you must include the
+switch section as the last section in your fractal formula. Here is an
+example of a typical Mandelbrot formula using the switch section:
+
+    Mandelbrot {
+    init:
+      z = 0
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      |z| < @bailout
+    switch:
+      type = "Julia"
+      seed = #pixel
+      bailout = bailout
+    }
+
+The type setting specifies the identifier of the formula (in the same
+file) to switch to. The other settings can copy parameters and the pixel
+value from the source formula to the destination formula (the formula
+Ultra Fractal is switching to). The #pixel symbol returns the
+coordinates of the point in the fractal window where the user clicked to
+initiate the switch.
+
+When switching, Ultra Fractal now loads the Julia formula, and tries to
+find the parameters seed and bailout in the Julia formula. If these
+parameters can be found, they are set to the pixel value and the bailout
+of the Mandelbrot formula. Otherwise, the settings are ignored.
+
+So, you need to take the following steps to use the switch feature:
+
+1.  Append the switch section to the end of your formula.
+2.  Insert the type setting and use the entry identifier of the formula
+    you want to switch to as the setting value, enclosed in double
+    quotes (like all string values).
+3.  Insert the setting "destination-parameter = #pixel" to let the
+    switch feature be dependent on the point where the user clicked
+    inside the fractal window. If you want, you can use this setting
+    more than once, or just leave it out. The parameter in the
+    destination formula must be complex, otherwise this setting is
+    ignored.
+4.  Optionally, insert additional settings "destination-parameter =
+    source-parameter" to copy other parameters from the source formula
+    to the destination formula. Be sure that the types of the source and
+    destination parameters are the same; otherwise, the setting is
+    ignored. Parameters not explicitly copied here are set to the
+    default values.
+
+Here is an example of a Julia formula that could be used with the
+Mandelbrot formula shown above. Note that the Julia formula allows you
+to switch back to the Mandelbrot formula (of course without using the
+pixel value).
+
+    Julia {
+    init:
+      z = #pixel
+    loop:
+      z = sqr(z) + @seed
+    bailout:
+      |z| < @bailout
+    switch:
+      type = "Mandelbrot"
+      bailout = bailout
+    }
+
+Next: Perturbation equations
+
+See Also
+Writing fractal formulas
+Switch mode

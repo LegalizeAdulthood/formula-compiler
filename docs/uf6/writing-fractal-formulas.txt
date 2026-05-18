@@ -1,0 +1,80 @@
+Writing fractal formulas
+
+Fractal formulas are put in fractal formula files with the .ufm
+extension. They can have the following sections, in this order:
+
+- global
+- builtin
+- init
+- loop
+- bailout
+- perturbinit
+- perturbloop
+- default
+- switch
+
+If a fractal formula does not start with a label, it is assumed to start
+with the init section. If a fractal formula contains an empty label (a
+single colon), it is assumed to start the loop section, and in this
+case, the last statement in the loop section is assumed to be the
+boolean expression from the bailout section (so the formula should not
+contain a separate bailout section). This set of rules ensures
+compatibility with old Fractint formula. It is not recommended to use
+this when writing new formulas, though.
+
+The optional setting within parentheses after the entry identifier
+specifies the symmetry of the fractal formula. See Symmetry.
+
+The global section is executed only once per image and can be used to
+fill look-up tables and initialize read-only variables. See Global
+sections.
+
+The builtin section is used for accessing built-in fractal formulas. If
+this section is used, the global, init, loop, and bailout sections are
+not allowed. The builtin section can contain the following settings:
+
+- type
+
+The init section is executed only once per pixel, and is useful for
+initializing variables.
+
+The loop section is executed once per iteration. It should update the
+value of the predefined complex variable z (you can also write to #z)
+using the old value of z.
+
+The bailout section contains a single boolean expression. The loop
+section is repeated as long as this expression evaluates to true (but it
+is always executed at least once).
+
+The perturbinit and perturbloop sections may be present to provide
+perturbation equations for the formula.
+
+The default section can contain the following settings:
+
+- angle
+- center
+- helpfile
+- helptopic
+- magn
+- maxiter
+- method
+- periodicity
+- perturb
+- precision
+- rating
+- render
+- skew
+- stretch
+- title
+
+It can also contain one or more parameter blocks.
+
+The switch section is used to implement switching from one formula type
+to another (for example from Mandelbrot to Julia). See Switch feature.
+
+Next: Writing coloring algorithms
+
+See Also
+Writing formulas
+Fractal formulas
+Perturbation equations

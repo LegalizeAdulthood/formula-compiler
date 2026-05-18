@@ -1,0 +1,63 @@
+Parameter blocks
+
+Parameter blocks are used to specify the properties of a parameter.
+There can be any number of parameter blocks in the default section of a
+formula, one for every parameter. If more than one parameter block
+specifies settings for the same parameter, only the last setting is
+used.
+
+This is the syntax of parameter blocks:
+
+[type] param <parameter-identifier>
+  <settings>
+endparam
+
+Before the param keyword, you can specify the type of the parameter
+(bool, int, float, complex, color, or a class name). If the type is
+omitted, it is deduced from the default setting. The type is required
+for color parameters and plug-in parameters. It is also required if you
+want to use an expression for the default setting.
+
+Each setting is in the form setting = value. The following settings are
+available:
+
+- caption
+- default
+- enabled
+- enum
+- expanded
+- exponential
+- hint
+- max
+- min
+- selectable
+- text
+- visible
+
+Example:
+
+    Mandelbrot {
+    init:
+      z = 0
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      |z| < @bailout
+    default:
+      title = "Mandelbrot set"
+      float param bailout
+        caption = "Bail-out value"
+        hint = "This is the bail-out value"
+        default = 4.0
+        min = 1
+        max = 256
+        exponential = true
+      endparam
+    }
+
+Note: The param keyword is also used for parameter forwards.
+
+See Also
+Function blocks
+Headings
+Parameters

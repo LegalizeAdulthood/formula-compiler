@@ -1,0 +1,54 @@
+Writing direct coloring algorithms
+
+Direct coloring algorithms directly output a color instead of an index
+value. This is done by assigning a value to the #color predefined symbol
+instead of to #index.
+
+To compute this color, you can use color expressions, color variables,
+and color arithmetic. The following arithmetic operations are available:
+
+  --------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  c1 + c2   Returns a color where each component is the sum of the respective components from c1 and c2. So, red(c1 + c2) is equal to red(c1) + red(c2).
+  c1 - c2   Subtracts the color components in c2 from the respective color components in c1. So, red(c1 - c2) is equal to red(c1) - red(c2).
+  c * f     Multiplies each component of c with a float value. So, red(c * f) is equal to red(c) * f. Note: the float value must be at the righthand side of the * operator.
+  c / f     Divides each component of c by a float value. So, red(c / f) is equal to red(c) / f.
+  --------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+For example, to calculate the average of two colors, use (c1 + c2) / 2.
+Be aware of the fact that the alpha value is treated just like the other
+components. So, c / 2 will not only darken a color, it will also make it
+more transparent.
+
+The following conversion functions are available:
+
+- rgb
+- rgba
+- hsl
+- hsla
+- red
+- green
+- blue
+- hue
+- sat
+- lum
+- alpha
+
+There are some functions for blending and retrieving gradient colors:
+
+- gradient
+- blend
+- compose
+
+There are also functions to reproduce all layer merge modes. They are
+called mergeX, where X stands for the name of the merge mode. See
+Merging functions.
+
+You can use color parameters to let user specify a color. You can also
+use special user functions that allow a user to select a merge mode. See
+Parameter blocks.
+
+Next: Global sections
+
+See Also
+Writing coloring algorithms
+Direct coloring algorithms

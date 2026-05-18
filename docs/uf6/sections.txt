@@ -1,0 +1,62 @@
+Sections
+
+Each entry in a formula file is divided into one or more sections. It
+depends on the formula type which sections are supported and what they
+can contain. This topic describes sections in general. For specific
+information about a formula type, see Transformations, Fractal formulas,
+and Coloring algorithms.
+
+Here is an example of a fractal formula:
+
+    MyMandelbrot {
+    init:
+      z = 0
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      |z| < 4
+    default:
+      title = "My Mandelbrot"
+    }
+
+This formula contains four sections. There are three types of sections:
+
+- Sections containing statements. These statements can be executed by
+  Ultra Fractal; how and when this happens depends on the particular
+  section. Each statement must be on a separate line, or they must be
+  separated by commas. Examples of these sections are init and loop.
+- Sections containing a boolean expression. There's only one section of
+  this type, the bailout section.
+- Sections containing settings related to the formula. Settings always
+  have the form "setting = value". An example is the default section.
+
+As you can see, sections are divided by labels. A label is just the name
+of the section followed by a colon.
+
+For compatibility reasons, it is sometimes allowed to omit the label in
+some sections. For more information, see the formula-type specific
+documentation.
+
+You can break long statements and settings across several lines using
+the backslash \ character. The backslash character must be the last
+character on the line for this to work. Any spaces or tab characters on
+the next line are removed, so if you want to add one or more spaces, you
+must put them on the previous line (the line containing the backslash).
+Example:
+
+    default:
+      title = "A very long title \
+               for my \
+               favorite formula"
+
+This is equal to:
+
+    default:
+      title = "A very long title for my favorite formula"
+
+Next: Expressions
+
+See Also
+Formula files and entries
+Global sections
+Member visibility

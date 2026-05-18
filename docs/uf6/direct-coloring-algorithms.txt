@@ -1,0 +1,36 @@
+Direct coloring algorithms
+
+Normal coloring algorithms return an index value that is looked up in
+the gradient to produce a color for each pixel. This enables you to
+easily change the colors by editing the gradient. On the other hand, it
+limits the colors that can appear in the layer to the colors available
+in the gradient.
+
+Unlike normal coloring algorithms, direct coloring algorithms directly
+return a color for each pixel. They are more powerful because they can
+return any desired color, and perform sophisticated merging operations
+internally.
+
+Direct coloring algorithms can access the gradient and use its colors,
+but they are not limited to those colors. Because of this flexibility,
+editing the gradient will cause the layer to be recalculated. You can
+still use the coloring settings (such as Color Density) to change the
+appearance of the gradient.
+
+Note that because the coloring algorithm decides how the gradient is
+used, the resulting colors in the layer may or may not be directly
+related to the colors in the gradient.
+
+You can tell when a direct coloring algorithm is selected in the Inside
+or Outside tab because the text "Direct coloring algorithm" is visible
+below the title.
+
+[]
+
+An example of a direct coloring algorithm is Direct Orbit Traps.
+
+Next: Standard coloring algorithms
+
+See Also
+Coloring algorithms
+Working with coloring algorithms
