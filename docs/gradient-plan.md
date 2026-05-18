@@ -1,9 +1,9 @@
 # 🎯 Parse UltraFractal Gradient Files (.ugr)
 **Overview**: Parse UltraFractal Gradient Files (.ugr)
 
-**Progress**: 25% [██░░░░░░░░]
+**Progress**: 35% [███░░░░░░░]
 
-**Last Updated**: 2026-05-12 14:19:33
+**Last Updated**: 2026-05-18
 
 ## Format Summary (from research)
 - File = zero or more named blocks: `BlockName { section section }` (both sections required, either order)
@@ -29,10 +29,11 @@
   - `GradientEntry`: `name` (string), `gradient` (GradientSection), `opacity` (OpacitySection)
   - `GradientFile`: `entries` (vector of GradientEntry)
   - Entry point: `GradientFile parse_gradient(std::string_view text)`
--  **Implement tokenizer**
+- ✅ **Implement tokenizer** -- implemented in `libs/Gradient.cpp`
   - Reads a character stream; emits `IDENTIFIER`, `INTEGER`, `QUOTED_STRING`, `EQUALS`, `LEFT_BRACE`, `RIGHT_BRACE`, `COLON`, `END_OF_FILE`
   - Skips whitespace (including newlines) and `;` comments between tokens
   - Handles negative integers (leading `-`)
+  - Supports one-token lookahead via `peek()`
 -  **Implement section parser**
   - Parses `gradient:` and `opacity:` sections from the flat token stream; accepts either order
   - Collects section-level keys (`title`, `smooth`, `rotation`, `linked`) until first `index=` token

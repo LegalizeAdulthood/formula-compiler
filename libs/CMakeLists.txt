@@ -11,7 +11,7 @@ add_library(formula
     include/formula/FormulaEntry.h FormulaEntry.cpp
     functions.h functions.cpp
     include/formula/GLSLEmitter.h GLSLEmitter.cpp
-    include/formula/Gradient.h
+    include/formula/Gradient.h Gradient.cpp
     include/formula/Interpreter.h Interpreter.cpp
     include/formula/Lexer.h Lexer.cpp
     include/formula/Node.h Node.cpp
