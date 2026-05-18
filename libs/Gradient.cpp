@@ -6,6 +6,8 @@
 
 #include <cctype>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace gradient
 {
@@ -31,147 +33,326 @@ struct Token
     std::string value;
 };
 
-class Tokenizer
+class Lexer
 {
 public:
-    explicit Tokenizer(std::string_view text) : m_text(text), m_pos(0)
-    {
-    }
+    explicit Lexer(std::string_view text);
 
-    Token next()
-    {
-        skip_whitespace_and_comments();
-
-        if (m_pos >= m_text.size())
-            return {TokenType::END_OF_FILE, {}};
-
-        const char ch = m_text[m_pos];
-
-        if (ch == '=')
-        {
-            ++m_pos;
-            return {TokenType::EQUALS, "="};
-        }
-        if (ch == '{')
-        {
-            ++m_pos;
-            return {TokenType::LEFT_BRACE, "{"};
-        }
-        if (ch == '}')
-        {
-            ++m_pos;
-            return {TokenType::RIGHT_BRACE, "}"};
-        }
-        if (ch == '"')
-        {
-            return scan_quoted_string();
-        }
-        if (ch == '-' || std::isdigit(static_cast<unsigned char>(ch)))
-        {
-            return scan_integer();
-        }
-        if (std::isalpha(static_cast<unsigned char>(ch)) || ch == '_')
-        {
-            return scan_identifier();
-        }
-
-        throw std::runtime_error(std::string("unexpected character: ") + ch);
-    }
-
-    Token peek()
-    {
-        const std::size_t saved = m_pos;
-        Token t = next();
-        m_pos = saved;
-        return t;
-    }
+    Token next();
+    Token peek();
 
 private:
-    void skip_whitespace_and_comments()
-    {
-        while (m_pos < m_text.size())
-        {
-            const char ch = m_text[m_pos];
-            if (std::isspace(static_cast<unsigned char>(ch)))
-            {
-                ++m_pos;
-            }
-            else if (ch == ';')
-            {
-                while (m_pos < m_text.size() && m_text[m_pos] != '\n')
-                    ++m_pos;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    Token scan_quoted_string()
-    {
-        ++m_pos;
-        std::string value;
-        while (m_pos < m_text.size() && m_text[m_pos] != '"')
-        {
-            value += m_text[m_pos];
-            ++m_pos;
-        }
-        if (m_pos >= m_text.size())
-            throw std::runtime_error("unterminated quoted string");
-        ++m_pos;
-        return {TokenType::QUOTED_STRING, std::move(value)};
-    }
-
-    Token scan_integer()
-    {
-        std::string value;
-        if (m_text[m_pos] == '-')
-        {
-            value += '-';
-            ++m_pos;
-        }
-        while (m_pos < m_text.size() && std::isdigit(static_cast<unsigned char>(m_text[m_pos])))
-        {
-            value += m_text[m_pos];
-            ++m_pos;
-        }
-        return {TokenType::INTEGER, std::move(value)};
-    }
-
-    Token scan_identifier()
-    {
-        std::string value;
-        while (m_pos < m_text.size())
-        {
-            const char ch = m_text[m_pos];
-            if (std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '-')
-            {
-                value += ch;
-                ++m_pos;
-            }
-            else
-            {
-                break;
-            }
-        }
-        if (m_pos < m_text.size() && m_text[m_pos] == ':')
-        {
-            ++m_pos;
-            return {TokenType::COLON, std::move(value)};
-        }
-        return {TokenType::IDENTIFIER, std::move(value)};
-    }
+    void skip_whitespace_and_comments();
+    Token scan_quoted_string();
+    Token scan_integer();
+    Token scan_identifier();
 
     std::string_view m_text;
-    std::size_t m_pos;
+    std::size_t m_pos{0};
 };
+
+Lexer::Lexer(std::string_view text):
+    m_text(text)
+{
+}
+
+Token Lexer::next()
+{
+    skip_whitespace_and_comments();
+
+    if (m_pos >= m_text.size())
+        return {TokenType::END_OF_FILE, {}};
+
+    const char ch = m_text[m_pos];
+
+    if (ch == '=')
+    {
+        ++m_pos;
+        return {TokenType::EQUALS, "="};
+    }
+    if (ch == '{')
+    {
+        ++m_pos;
+        return {TokenType::LEFT_BRACE, "{"};
+    }
+    if (ch == '}')
+    {
+        ++m_pos;
+        return {TokenType::RIGHT_BRACE, "}"};
+    }
+    if (ch == '"')
+    {
+        return scan_quoted_string();
+    }
+    if (ch == '-' || std::isdigit(static_cast<unsigned char>(ch)))
+    {
+        return scan_integer();
+    }
+    if (std::isalpha(static_cast<unsigned char>(ch)) || ch == '_')
+    {
+        return scan_identifier();
+    }
+
+    throw std::runtime_error(std::string("unexpected character: ") + ch);
+}
+
+Token Lexer::peek()
+{
+    const std::size_t saved = m_pos;
+    Token t = next();
+    m_pos = saved;
+    return t;
+}
+
+void Lexer::skip_whitespace_and_comments()
+{
+    while (m_pos < m_text.size())
+    {
+        const char ch = m_text[m_pos];
+        if (std::isspace(static_cast<unsigned char>(ch)))
+        {
+            ++m_pos;
+        }
+        else if (ch == ';')
+        {
+            while (m_pos < m_text.size() && m_text[m_pos] != '\n')
+                ++m_pos;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+Token Lexer::scan_quoted_string()
+{
+    ++m_pos;
+    std::string value;
+    while (m_pos < m_text.size() && m_text[m_pos] != '"')
+    {
+        value += m_text[m_pos];
+        ++m_pos;
+    }
+    if (m_pos >= m_text.size())
+        throw std::runtime_error("unterminated quoted string");
+    ++m_pos;
+    return {TokenType::QUOTED_STRING, std::move(value)};
+}
+
+Token Lexer::scan_integer()
+{
+    std::string value;
+    if (m_text[m_pos] == '-')
+    {
+        value += '-';
+        ++m_pos;
+    }
+    if (m_pos >= m_text.size() || !std::isdigit(static_cast<unsigned char>(m_text[m_pos])))
+        throw std::runtime_error("expected digit");
+    while (m_pos < m_text.size() && std::isdigit(static_cast<unsigned char>(m_text[m_pos])))
+    {
+        value += m_text[m_pos];
+        ++m_pos;
+    }
+    return {TokenType::INTEGER, std::move(value)};
+}
+
+Token Lexer::scan_identifier()
+{
+    std::string value;
+    while (m_pos < m_text.size())
+    {
+        const char ch = m_text[m_pos];
+        if (std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '-')
+        {
+            value += ch;
+            ++m_pos;
+        }
+        else
+        {
+            break;
+        }
+    }
+    if (m_pos < m_text.size() && m_text[m_pos] == ':')
+    {
+        ++m_pos;
+        return {TokenType::COLON, std::move(value)};
+    }
+    return {TokenType::IDENTIFIER, std::move(value)};
+}
+
+void expect_token(const Token &token, TokenType type, const char *description)
+{
+    if (token.type != type)
+        throw std::runtime_error(std::string("expected ") + description);
+}
+
+Token expect_next(Lexer &tokens, TokenType type, const char *description)
+{
+    Token token = tokens.next();
+    expect_token(token, type, description);
+    return token;
+}
+
+int parse_int(const Token &token)
+{
+    expect_token(token, TokenType::INTEGER, "integer");
+    return std::stoi(token.value);
+}
+
+bool parse_bool(const Token &token)
+{
+    expect_token(token, TokenType::IDENTIFIER, "yes or no");
+    if (token.value == "yes")
+        return true;
+    if (token.value == "no")
+        return false;
+    throw std::runtime_error("expected yes or no");
+}
+
+Token parse_key(Lexer &tokens)
+{
+    Token key = expect_next(tokens, TokenType::IDENTIFIER, "key");
+    expect_next(tokens, TokenType::EQUALS, "=");
+    return key;
+}
+
+RGBColor unpack_bgr(int packed)
+{
+    return {static_cast<std::uint8_t>((packed >> 16) & 0xFF), static_cast<std::uint8_t>((packed >> 8) & 0xFF),
+        static_cast<std::uint8_t>(packed & 0xFF)};
+}
+
+bool is_section_end(const Token &token)
+{
+    return token.type == TokenType::COLON || token.type == TokenType::RIGHT_BRACE ||
+        token.type == TokenType::END_OF_FILE;
+}
+
+void parse_gradient_key_value(Lexer &tokens, GradientSection &section)
+{
+    const Token key = parse_key(tokens);
+    if (key.value == "title")
+    {
+        section.title = expect_next(tokens, TokenType::QUOTED_STRING, "quoted string").value;
+    }
+    else if (key.value == "smooth")
+    {
+        section.smooth = parse_bool(tokens.next());
+    }
+    else if (key.value == "rotation")
+    {
+        section.rotation = parse_int(tokens.next());
+    }
+    else if (key.value == "linked")
+    {
+        section.linked = parse_bool(tokens.next());
+    }
+    else if (key.value == "index")
+    {
+        ColorControlPoint point;
+        point.index = parse_int(tokens.next());
+        Token value_key = parse_key(tokens);
+        if (value_key.value != "color")
+            throw std::runtime_error("expected color");
+        point.color = unpack_bgr(parse_int(tokens.next()));
+        section.points.push_back(point);
+    }
+    else
+    {
+        throw std::runtime_error("unexpected gradient key: " + key.value);
+    }
+}
+
+void parse_opacity_key_value(Lexer &tokens, OpacitySection &section)
+{
+    const Token key = parse_key(tokens);
+    if (key.value == "smooth")
+    {
+        section.smooth = parse_bool(tokens.next());
+    }
+    else if (key.value == "rotation")
+    {
+        section.rotation = parse_int(tokens.next());
+    }
+    else if (key.value == "linked")
+    {
+        section.linked = parse_bool(tokens.next());
+    }
+    else if (key.value == "index")
+    {
+        OpacityControlPoint point;
+        point.index = parse_int(tokens.next());
+        Token value_key = parse_key(tokens);
+        if (value_key.value != "opacity")
+            throw std::runtime_error("expected opacity");
+        point.opacity = static_cast<std::uint8_t>(parse_int(tokens.next()));
+        section.points.push_back(point);
+    }
+    else
+    {
+        throw std::runtime_error("unexpected opacity key: " + key.value);
+    }
+}
+
+GradientSection parse_gradient_section(Lexer &tokens)
+{
+    GradientSection section;
+    while (!is_section_end(tokens.peek()))
+        parse_gradient_key_value(tokens, section);
+    return section;
+}
+
+OpacitySection parse_opacity_section(Lexer &tokens)
+{
+    OpacitySection section;
+    while (!is_section_end(tokens.peek()))
+        parse_opacity_key_value(tokens, section);
+    return section;
+}
 
 } // namespace
 
-GradientFile parse_gradient(std::string_view /*text*/)
+GradientFile parse_gradient(std::string_view text)
 {
-    return {};
+    Lexer tokens{text};
+    GradientFile file;
+
+    while (tokens.peek().type != TokenType::END_OF_FILE)
+    {
+        GradientEntry entry;
+        entry.name = expect_next(tokens, TokenType::IDENTIFIER, "entry name").value;
+        expect_next(tokens, TokenType::LEFT_BRACE, "{");
+
+        bool has_gradient{};
+        bool has_opacity{};
+        while (tokens.peek().type != TokenType::RIGHT_BRACE)
+        {
+            Token header = expect_next(tokens, TokenType::COLON, "section header");
+            if (header.value == "gradient")
+            {
+                entry.gradient = parse_gradient_section(tokens);
+                has_gradient = true;
+            }
+            else if (header.value == "opacity")
+            {
+                entry.opacity = parse_opacity_section(tokens);
+                has_opacity = true;
+            }
+            else
+            {
+                throw std::runtime_error("unexpected section: " + header.value);
+            }
+        }
+
+        expect_next(tokens, TokenType::RIGHT_BRACE, "}");
+        if (!has_gradient || !has_opacity)
+            throw std::runtime_error("entry requires gradient and opacity sections");
+        file.entries.push_back(std::move(entry));
+    }
+
+    return file;
 }
 
 } // namespace gradient
