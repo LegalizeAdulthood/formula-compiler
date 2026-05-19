@@ -1,0 +1,29 @@
+acosh function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the hyperbolic arcsine of the argument and
+returns the result. If the argument is of type int, it is first
+converted to float by the compiler.
+
+Examples:
+
+    acosh(2)      ; 1.3170
+    acosh(2.0)    ; 1.3170
+    acosh((2,0))  ; (1.3170, 0)
+
+Notes
+
+- acosh(cosh(x)) is equal to x.
+- The argument should be greater than -1. Otherwise this function will
+  return an invalid value. See Invalid operations.
+
+See Also
+cos function
+acos function
+cosh function

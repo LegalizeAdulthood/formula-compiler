@@ -1,0 +1,21 @@
+real function
+
+  ------------ -------------
+  Input type   Output type
+  complex      float
+  ------------ -------------
+
+This function returns the real part of the complex argument. If the
+argument is of type int or float, it is first converted to complex by
+the compiler.
+
+Examples:
+
+    real(4)          ; 4.0
+    real(4.3)        ; 4.3
+    real((5, 4))     ; 5.0
+    real((-3.2, 3))  ; -3.2
+
+See Also
+flip function
+imag function

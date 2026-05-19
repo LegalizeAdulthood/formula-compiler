@@ -1,0 +1,65 @@
+oldz function
+
+  ------------ -------------
+  Input type   Output type
+  int          complex
+  ------------ -------------
+
+Note: This function is provided for backwards compatibility and should
+no longer be used. You can declare an array[#maxiter + 1] to store the
+values of #z, and process them in the final section of the coloring
+algorithm. This is more efficient and more flexible. See Function oldz
+is deprecated.
+
+This function returns the z value belonging to the specified iteration.
+This function can only be used in the final section of a coloring
+algorithm. If it is used, the value of #z is stored after each iteration
+in the fractal formula, so it can be retrieved by the coloring algorithm
+afterwards. This allows the coloring algorithm to process the values of
+z in arbitrary order. The argument of the function is the iteration in
+which the desired z value was produced.
+
+This piece of code shows how the z value is stored:
+
+    execute init section of fractal formula
+    oldz[0] = #z
+    int iter = 0
+    repeat
+      execute loop section of fractal formula
+      iter = iter + 1
+      bool b = the expression in the bailout section of the fractal formula
+      oldz[iter] = #z
+    until (b == false) || (iter == #maxiter)
+    #numiter = iter
+
+The oldz function will only return valid z values if the argument is in
+the range 0..#numiter. Otherwise, (0,0) is returned. Here is an example
+of a coloring algorithm using oldz:
+
+    oldzexample {
+    final:
+      int iter = 1
+      ; initialize variables
+      while iter <= #numiter
+        the_z = oldz(iter)
+        ; do something with the value of the_z
+        iter = iter + 1
+      endwhile
+      ; color the pixel
+    }
+
+This is equivalent to:
+
+    loopexample {
+    init:
+      ; initialize variables
+    loop:
+      ; do something with the value of #z
+    final:
+      ; color the pixel
+    }
+
+Here, you could better use the normal loop section instead of the oldz
+function, but some coloring algorithms need to process the values of z
+in non-linear order. In that case, you must use the oldz function, or an
+array.

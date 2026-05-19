@@ -1,0 +1,23 @@
+isInf function
+
+  ------------ -------------
+  Input type   Output type
+  float        bool
+  ------------ -------------
+
+This function returns true if its argument is the special infinity
+floating-point value INF. Together with isNaN, you can use isInf to
+check if a floating-point value is still normal, which indicates that
+all previous operations on it were successful.
+
+Examples:
+
+    float x = 1
+    print(x)         ; Prints 1
+    print(isInf(x))  ; Prints false
+    x = x / 0
+    print(x)         ; Prints INF
+    print(isInf(x))  ; Prints true
+
+See Also
+isNaN function

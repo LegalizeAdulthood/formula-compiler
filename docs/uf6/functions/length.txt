@@ -1,0 +1,24 @@
+length function
+
+  --------------- -------------
+  Input type      Output type
+  dynamic array   int
+  --------------- -------------
+
+The length function returns the size of a dynamic array. It always
+returns the last value that was passed to the setLength function. When
+the array is first declared, the length function returns 0.
+
+Because arrays in Ultra Fractal are always zero-based, the array
+elements are numbered from 0 to length(array) - 1.
+
+Examples:
+
+    int a[]
+    print(length(a))  ; Prints 0
+    setLength(a, 50)
+    print(length(a))  ; Prints 50
+    ; You can now safely access a[0] to a[49].
+
+See Also
+Dynamic arrays

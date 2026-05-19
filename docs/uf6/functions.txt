@@ -1,0 +1,17 @@
+Built-in functions
+
+Built-in functions are used to perform operations on expressions that
+are less common than the standard arithmetic operations like addition
+and multiplication. A call to a built-in function consists of the
+function identifier, followed by the expression enclosed in parentheses,
+like this:
+
+    sin(3 * x)
+
+Use the Contents tab to see what built-in functions are available (under
+Writing formulas, Reference, Functions).
+
+You can also declare and use your own functions. See Functions.
+
+See Also
+Operators

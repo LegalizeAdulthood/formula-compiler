@@ -1,0 +1,23 @@
+cos function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the cosine of the argument and returns the
+result. If the argument is of type int, it is first converted to float
+by the compiler.
+
+Examples:
+
+    cos(2)      ; -0.4161
+    cos(2.0)    ; -0.4161
+    cos((2,0))  ; (-0.4161, 0)
+
+See Also
+acos function
+cosh function
+acosh function

@@ -1,0 +1,23 @@
+cotan function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the cotangent of the argument and returns the
+result. If the argument is of type int, it is first converted to float
+by the compiler.
+
+Examples:
+
+    cotan(2)      ; -0.4577
+    cotan(2.0)    ; -0.4577
+    cotan((2,0))  ; (-0.4577, 0)
+
+Note: cotan(x) is equal to cos(x) / sin(x).
+
+See Also
+cotanh function

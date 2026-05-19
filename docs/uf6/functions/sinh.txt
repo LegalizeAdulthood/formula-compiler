@@ -1,0 +1,23 @@
+sinh function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the hyperbolic sine of the argument and returns
+the result. If the argument is of type int, it is first converted to
+float by the compiler.
+
+Examples:
+
+    sinh(2)      ; 3.6269
+    sinh(2.0)    ; 3.6269
+    sinh((2,0))  ; (3.6269, 0)
+
+See Also
+sin function
+asin function
+asinh function

@@ -1,0 +1,25 @@
+sqrt function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the square root of the argument and returns the
+result. If the argument is of type int, it is first converted to float
+by the compiler.
+
+Examples:
+
+    sqrt(4)      ; 2.0
+    sqrt(4.0)    ; 2.0
+    sqrt((4,0))  ; (2,0)
+
+Note: When using floats, the argument should not be negative. For
+negative float arguments, this function returns the invalid value NAN.
+
+See Also
+sqr function
+^ (power) operator

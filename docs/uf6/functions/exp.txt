@@ -1,0 +1,25 @@
+exp function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates e (approx. 2.7183) to the xth power where x is
+the argument and returns the result. If the argument is of type int, it
+is first converted to float by the compiler.
+
+Examples:
+
+    exp(2)      ; 7.3891
+    exp(2.0)    ; 7.3891
+    exp((2,0))  ; (7.3891,0)
+
+Note: log(exp(x)) is equal to x if x is larger than zero (for float
+arguments) or not equal to zero (for complex arguments).
+
+See Also
+log function
+^ (power) operator

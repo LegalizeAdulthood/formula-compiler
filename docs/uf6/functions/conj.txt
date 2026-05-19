@@ -1,0 +1,22 @@
+conj function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function flips the sign of the imaginary part of the argument and
+returns the result. It is defined as follows:
+
+conj(a + bi) = a - bi
+
+Examples:
+
+    conj(2)         ; (2, 0)
+    conj(8.6)       ; (8.6, 0)
+    conj((3, 4))    ; (3, -4)
+    conj((-7, -4))  ; (-7, 4)
+
+See Also
+cabs function

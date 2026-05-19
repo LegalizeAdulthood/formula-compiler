@@ -1,0 +1,31 @@
+trunc function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               int
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function rounds the argument towards zero for float arguments and
+returns the result. For complex arguments, the function is defined as
+follows:
+
+trunc(a + bi) = trunc(a) + trunc(b) * i
+
+If the argument is of type int, it is first converted to float by the
+compiler.
+
+Examples:
+
+    trunc(3.2)       ; 3
+    trunc(3.8)       ; 3
+    trunc(6)         ; 6
+    trunc(-3.2)      ; -3
+    trunc(-3.8)      ; -3
+    trunc((3.2, 7))  ; (3, 7)
+
+See Also
+round function
+ceil function
+floor function

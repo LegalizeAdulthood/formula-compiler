@@ -1,0 +1,26 @@
+atan function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the arctangent of the argument and returns the
+result. If the argument is of type int, it is first converted to float
+by the compiler.
+
+Examples:
+
+    atan(1)      ; 0.7854
+    atan(1.0)    ; 0.7854
+    atan((1,0))  ; (0.7854, 0)
+
+Note: atan(tan(x)) is equal to x if x is within the range -pi..pi.
+
+See Also
+atan2 function
+tan function
+tanh function
+atanh function

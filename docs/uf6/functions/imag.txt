@@ -1,0 +1,22 @@
+imag function
+
+  ------------ -------------
+  Input type   Output type
+  complex      float
+  ------------ -------------
+
+This function returns the imaginary part of the complex argument. If the
+argument is of type int or float, it is first converted to complex by
+the compiler. However, in this case, this function will always return
+0.0.
+
+Examples:
+
+    imag(4)          ; 0.0
+    imag(4.3)        ; 0.0
+    imag((5, 4))     ; 4.0
+    imag((3, -3.2))  ; -3.2
+
+See Also
+flip function
+real function

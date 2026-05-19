@@ -1,0 +1,23 @@
+cosh function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the hyperbolic cosine of the argument and
+returns the result. If the argument is of type int, it is first
+converted to float by the compiler.
+
+Examples:
+
+    cosh(2)      ; 3.7622
+    cosh(2.0)    ; 3.7622
+    cosh((2,0))  ; (3.7622, 0)
+
+See Also
+cos function
+acos function
+acosh function

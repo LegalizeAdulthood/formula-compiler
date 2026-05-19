@@ -1,0 +1,29 @@
+recip function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function divides 1 by the argument and returns the result. So,
+recip(x) is equal to 1/x. Usage of recip(x) is just as fast as 1/x.
+Which one you want to use is a matter of personal preference. If the
+argument is of type int, it is first converted to float by the compiler.
+
+Examples:
+
+    recip(1)       ; 1.0
+    recip(4)       ; 0.25
+    recip((3, 2))  ; (0.2308, -0.1538)
+
+Notes
+
+- The argument should not be equal to 0. Otherwise, this function will
+  return an invalid value. See Invalid operations.
+- This function is mainly intended for user functions. In formulas, you
+  can use 1/x instead of recip(x).
+
+See Also
+/ (division) operator

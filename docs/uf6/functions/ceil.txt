@@ -1,0 +1,31 @@
+ceil function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               int
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function returns the smallest integer greater than or equal to the
+argument for float arguments and returns the result. For complex
+arguments, the function is defined as follows:
+
+ceil(a + bi) = ceil(a) + ceil(b) * i
+
+If the argument is of type int, it is first converted to float by the
+compiler.
+
+Examples:
+
+    ceil(3.2)       ; 4
+    ceil(3.8)       ; 4
+    ceil(6)         ; 6
+    ceil(-3.2)      ; -3
+    ceil(-3.8)      ; -3
+    ceil((3.2, 7))  ; (4, 7)
+
+See Also
+round function
+trunc function
+floor function

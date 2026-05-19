@@ -1,0 +1,26 @@
+abs function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  int                                 int
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the absolute value of the argument and returns
+the result. For complex numbers, this function is defined as follows:
+
+abs(a + bi) = abs(a) + abs(b) * i
+
+Examples:
+
+    abs(2)        ; 2
+    abs(-2)       ; 2
+    abs(-3.2)     ; 3.2
+    abs((3, -2))  ; (3, 2)
+    abs((-5, 1))  ; (5, 1)
+
+See Also
+cabs function
+|...| (modulus squared) operator

@@ -1,0 +1,23 @@
+sqr function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  int                                 int
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function squares the argument and returns the result. So, sqr(x) is
+equal to x*x. Sqr(x) executes just as quickly as x*x. Which one you use
+is a matter of personal preference.
+
+Examples:
+
+    sqr(3)      ; 9
+    sqr(3.0)    ; 9.0
+    sqr((3,0))  ; (9, 0)
+
+See Also
+sqrt function
+^ (power) operator

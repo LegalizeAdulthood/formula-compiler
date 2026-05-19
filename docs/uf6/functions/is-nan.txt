@@ -1,0 +1,23 @@
+isNaN function
+
+  ------------ -------------
+  Input type   Output type
+  float        bool
+  ------------ -------------
+
+This function returns true if its argument is the special not-a-number
+floating-point value NAN. Together with isInf, you can use isNaN to
+check if a floating-point value is still normal, which indicates that
+all previous operations on it were successful.
+
+Examples:
+
+    float x = 1 / 0
+    print(x)         ; Prints INF
+    x = x - x
+    print(x)         ; Prints NAN
+    print(x < 100)   ; Prints true, but the values are not ordered
+    print(isNaN(x))  ; Prints true
+
+See Also
+isInf function

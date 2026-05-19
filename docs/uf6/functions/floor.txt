@@ -1,0 +1,31 @@
+floor function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               int
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function returns the largest integer smaller than or equal to the
+argument for float arguments and returns the result. For complex
+arguments, the function is defined as follows:
+
+floor(a + bi) = floor(a) + floor(b) * i
+
+If the argument is of type int, it is first converted to float by the
+compiler.
+
+Examples:
+
+    floor(3.2)       ; 3
+    floor(3.8)       ; 3
+    floor(6)         ; 6
+    floor(-3.2)      ; -4
+    floor(-3.8)      ; -4
+    floor((3.2, 7))  ; (3, 7)
+
+See Also
+round function
+trunc function
+ceil function

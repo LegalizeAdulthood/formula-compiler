@@ -1,0 +1,19 @@
+zero function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function always returns (0,0). It is not useful inside formulas,
+but it is useful as a value for a user function.
+
+Examples:
+
+    zero(3)      ; (0,0)
+    zero(6.9)    ; (0,0)
+    zero((3,5))  ; (0,0)
+
+See Also
+ident function

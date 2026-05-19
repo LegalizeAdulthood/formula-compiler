@@ -1,0 +1,24 @@
+cabs function
+
+  ------------ -------------
+  Input type   Output type
+  complex      float
+  ------------ -------------
+
+This function calculates the complex modulus of the argument and returns
+the result. It is defined as follows:
+
+cabs(a + bi) = sqrt(a*a + b*b)
+
+Examples:
+
+    cabs(2)       ; 2.0
+    cabs(8.6)     ; 8.6
+    cabs((3, 4))  ; 5.0
+    cabs((4, 5))  ; 6.4031
+
+Note: cabs(z) is equal to sqrt(|z|)
+
+See Also
+abs function
+|...| (modulus squared) operator

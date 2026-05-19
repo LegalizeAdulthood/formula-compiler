@@ -1,0 +1,27 @@
+flip function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function exchanges the real and the imaginary parts of the argument
+and returns the result. It is defined as follows:
+
+flip(a + bi) = b + ai
+
+Examples:
+
+    flip(2)        ; (0, 2)
+    flip(8.6)      ; (0, 8.6)
+    flip((3, 4))   ; (4, 3)
+    flip((-7, 4))  ; (4, -7)
+
+Note: this function is often convenient for composing a complex number
+using two float expressions. For example, the expression real(z) +
+flip(imag(z)) is equal to z.
+
+See Also
+real function
+imag function

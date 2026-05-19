@@ -1,0 +1,31 @@
+log function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the natural logarithm of the argument and
+returns the result. If the argument is of type int, it is first
+converted to float by the compiler.
+
+Examples:
+
+    log(4)      ; 1.3863
+    log(4.0)    ; 1.3863
+    log((4,0))  ; (1.3863,0)
+
+Notes
+
+- log(exp(x)) is equal to x if x is larger than zero (for float
+  arguments) or not equal to zero (for complex arguments).
+- For float arguments, log(x) takes the absolute value of x, so it is
+  actually equal to log(abs(x)). Log(0) returns 0.
+- The natural logarithm is the logarithm with base e (approx. 2.7183).
+  To calculate the logarithm with base b, use the following formula:
+  ^(b)log x = log(x) / log(b).
+
+See Also
+exp function

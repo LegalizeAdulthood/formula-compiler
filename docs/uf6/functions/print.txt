@@ -1,0 +1,43 @@
+print function
+
+  ------------ -------------
+  Input type   Output type
+  anything     n/a
+  ------------ -------------
+
+The print function is used to generate run-time messages. Run-time
+messages are written to the Compiler Messages tool window while the
+formula is being executed. This is very useful when debugging your
+formulas, or when trying new ideas.
+
+To enable run-time messages, the DEBUG symbol has to be defined. See
+Compiler directives.
+
+The print function basically prints anything you throw at it. It can
+print expressions of the types complex, float, int, bool, and color. It
+can also print text and object references. You can use multiple
+arguments to mix the various types of expressions, and they will all be
+printed consecutively on the same line.
+
+Examples:
+
+    $define DEBUG
+    print("Hello, world!")                    ; Hello, world!
+    print("I'm ", 2 * 4, " years old.")       ; I'm 8 years old.
+    print("This is a color: ", rgb(1, 0, 0))  ; This is a color: (1, 0, 0)
+    print("The value of pi is ", #pi)         ; The value is pi is 3.14159...
+    Object obj = new MyClass
+    print(obj)                                ; MyClass (1)
+
+For object references, the print function prints the actual type of the
+object and its reference count. See Casting and Memory management.
+
+If you try the example with the value of pi, look at how the number of
+decimals changes when you adjust the Additional Precision setting in the
+Formula tab of the Layer Properties tool window.
+
+The print function does not return a value, and can only be used as a
+statement, not as an expression. See Expressions.
+
+See Also
+Debugging

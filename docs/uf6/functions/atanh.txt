@@ -1,0 +1,28 @@
+atanh function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the hyperbolic arctangent of the argument and
+returns the result. If the argument is of type int, it is first
+converted to float by the compiler.
+
+Examples:
+
+    atanh(0.5)       ; 0.5493
+    atanh((0.5, 0))  ; (0.5493, 0)
+
+Notes
+
+- atanh(tanh(x)) is equal to x.
+- The argument should be greater than -1 and smaller than 1. Otherwise
+  this function will return an invalid value. See Invalid Operations.
+
+See Also
+tan function
+atan function
+tanh function

@@ -1,0 +1,32 @@
+random function
+
+  ------------ -------------
+  Input type   Output type
+  int          int
+  ------------ -------------
+
+The random function is provided to generate sequences of pseudo-random
+numbers. The argument is an integer seed value, from which a random
+number is derived. Each seed value will generally give a different (and
+unpredictable) result. The same seed value will always give the same
+return value. Note that the return value can be negative.
+
+To generate a sequence of random numbers, use the return value as the
+new seed:
+
+    int seed = 1234
+    seed = random(seed)
+    ; seed now contains the first random value
+    seed = random(seed)
+    ; seed now contains the second random value
+
+This allows you to set up multiple independent sequences of random
+numbers, just by declaring and using multiple seed variables.
+
+- To obtain a random floating-point value between 0 and 1, use abs(seed)
+  / #randomrange.
+- To obtain a random integer between 0 and n - 1, use abs(seed) % n.
+
+See Also
+Random values
+#random

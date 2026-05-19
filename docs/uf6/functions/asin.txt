@@ -1,0 +1,29 @@
+asin function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the arcsine of the argument and returns the
+result. If the argument is of type int, it is first converted to float
+by the compiler.
+
+Examples:
+
+    asin(1)       ; 1.5708
+    asin(1.0)     ; 1.5708
+    asin((1, 0))  ; (1.5708, 0)
+
+Notes
+
+- asin(sin(x)) is equal to x if x is within the range -pi..pi.
+- The argument should not be outside the range -1..1. Otherwise this
+  function will return an invalid value. See Invalid operations.
+
+See Also
+sin function
+sinh function
+asinh function

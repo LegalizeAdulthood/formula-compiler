@@ -1,0 +1,44 @@
+atan2 function
+
+  ------------ -------------
+  Input type   Output type
+  complex      float
+  ------------ -------------
+
+This function calculates the angle (or complex argument) of the argument
+and returns the result. The return value is always in the correct
+quadrant. This function is very useful for many transformations and
+coloring algorithms, and acts the same as the atan2 function in the C
+programming language library.
+
+Here is some sample code to illustrate the behaviour of atan2:
+
+    angle = atan2(arg)
+
+is equivalent to
+
+    if real(arg) > 0
+      angle = atan(imag(arg) / real(arg))
+    elseif real(arg) == 0
+      if imag(arg) > 0
+        angle = 0.5 * #pi
+      else
+        angle = -0.5 * #pi
+      endif
+    else
+      if imag(arg) > 0
+        angle = #pi + atan(imag(arg) / real(arg))
+      else
+        angle = -#pi + atan(imag(arg) / real(arg))
+      endif
+    endif
+
+Examples:
+
+    atan2((1, 1))    ; 0.25 * pi
+    atan2((-1, -1))  ; -0.75 * pi
+
+See Also
+sin function
+cos function
+atan function

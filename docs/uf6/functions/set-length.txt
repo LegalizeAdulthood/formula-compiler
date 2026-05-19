@@ -1,0 +1,25 @@
+setLength function
+
+  -------------------- -------------
+  Input type           Output type
+  dynamic array, int   n/a
+  -------------------- -------------
+
+The setLength function changes the size of a dynamic array. When a
+dynamic array is declared, its size is 0. You need to use setLength to
+set the number of items that the array can contain.
+
+Use the length function to retrieve the current size of the array.
+Because arrays in Ultra Fractal are always zero-based, the array
+elements are numbered from 0 to length(array) - 1.
+
+Examples:
+
+    int a[]
+    print(length(a))  ; Prints 0
+    setLength(a, 50)
+    print(length(a))  ; Prints 50
+    ; You can now safely access a[0] to a[49].
+
+See Also
+Dynamic arrays

@@ -1,0 +1,23 @@
+ident function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  bool                                bool
+  int                                 int
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function returns the argument. It is not useful inside formulas,
+but it is useful as a value for a user function.
+
+Examples:
+
+    ident(true)   ; true
+    ident(3)      ; 3
+    ident(6.9)    ; 6.9
+    ident((3,5))  ; (3,5)
+
+See Also
+zero function

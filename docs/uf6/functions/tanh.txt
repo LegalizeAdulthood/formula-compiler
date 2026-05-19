@@ -1,0 +1,25 @@
+tanh function
+
+  ----------------------------------- -----------------------------------
+  Input type                          Output type
+
+  float                               float
+  complex                             complex
+  ----------------------------------- -----------------------------------
+
+This function calculates the hyperbolic tangent of the argument and
+returns the result. If the argument is of type int, it is first
+converted to float by the compiler.
+
+Examples:
+
+    tanh(2)      ; 0.9640
+    tanh(2.0)    ; 0.9640
+    tanh((2,0))  ; (0.9640, 0)
+
+Note: tanh(x) is equal to sinh(x) / cosh(x).
+
+See Also
+tan function
+atan function
+atanh function
