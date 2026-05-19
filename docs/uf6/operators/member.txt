@@ -1,0 +1,26 @@
+. (member) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Left           Right
+
+  binary         left           8              class or       field or
+                                               object         method
+  -------------- -------------- -------------- -------------- --------------
+
+The member operator is used to access a field or method of an object
+reference, or to access a static method of a class. At the left-hand
+side of the operator, there must be either an object reference or a
+class name. At the right-hand side, there must be the name of a field or
+method of the object, or the name of a static method if used with a
+class name.
+
+The return value is the field or method that is accessed. Examples:
+
+    MyClass c = new MyClass
+    c.field1 = c.field2           ; Field access
+    c.doSomething(c.getValue())   ; Method access
+    MyClass.doStatic()            ; Static method access
+
+See Also
+Classes
+new operator

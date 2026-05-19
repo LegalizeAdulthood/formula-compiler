@@ -1,0 +1,48 @@
+|...| (modulus squared) operator
+
+  ------- ------------ ------------ ------------- --------------
+  Type    Assocation   Precedence   Input types   Output types
+  unary   none         none         complex       float
+  ------- ------------ ------------ ------------- --------------
+
+This operator is different from all other operators, because it is not
+an infix operator (an operator written between its operands, or before
+the operand in the case of an unary operator), but it is a parenthetic
+operator. The operand is written between the | characters. This
+resembles the mathematical notation of the complex modulus operator.
+
+To complicate matters even further, this operator doesn't even calculate
+the complex modulus, it calculates the square of the complex modulus,
+which is defined as:
+
+    |(a, b)| = a*a + b*b
+
+If you consider the complex operand as a point in the complex plane, the
+complex modulus is the distance from that point to the origin (the point
+(0,0)). So this operator calculates the square of that distance.
+
+The reason the squared modulus is returned instead of the modulus itself
+is that it's much faster to calculate the squared modulus (no square
+root operation is necessary). Usually the modulus is compared with
+another modulus, so in that case it doesn't matter if they are both
+squared or not.
+
+When using nested squared modulus operators, overriding parentheses are
+necessary to let the compiler understand how to translate the
+expression.
+
+Examples:
+
+    |(3, 4)|             ; 25
+    |(2, -3)|            ; 13
+    ||(3,2)| + (2,1)|    ; error!
+    |(|(3,2)|) + (2,1)|  ; 226
+
+Notes
+
+- To calculate the complex modulus, use the cabs function.
+- Don't confuse this operator with the || operator.
+
+See Also
+Expressions
+Types

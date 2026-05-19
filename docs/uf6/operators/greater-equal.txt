@@ -1,0 +1,29 @@
+>= (greater than or equal to) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           3              int            bool
+                                               float          
+  -------------- -------------- -------------- -------------- --------------
+
+This operator compares the first operand to the second operand and
+returns false if the first operand is smaller, or true otherwise.
+Examples:
+
+    3 >= 2        ; true
+    5 >= 5        ; true
+    2.12 >= 3     ; false
+    4.23 >= 3.86  ; true
+
+Notes
+
+- This operator can also be used with complex operands (in which case it
+  only compares the real parts), but this is not recommended and results
+  in a compiler warning. You should use real, imag, cabs, or the |...|
+  operator when comparing complex expressions.
+- a >= b is equal to !(a < b)
+
+See Also
+> (greater than) operator
+<= (less than or equal to) operator

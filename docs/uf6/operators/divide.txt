@@ -1,0 +1,33 @@
+/ (division) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           5              float          float
+                                               complex        complex
+                                               color / float  color
+  -------------- -------------- -------------- -------------- --------------
+
+This operator divides the first operand by the second operand and
+returns the result. The type of the result is equal to the largest type
+of the operands (complex is larger than float, and float is larger than
+int). Integer operands are always converted to float prior to dividing
+them.
+
+The divison operator also accepts a color operand on the left side, and
+a float operand on the right side. In this case, it divides each color
+component by the float operand and returns the result.
+
+Examples:
+
+    3 / 2                       ; 1.5
+    (14, 10) / 2                ; (7, 5)
+    (5, 3) / (3, 2)             ; (1.6154, -0.0769)
+    rgba(0.4, 0.3, 0.2, 1) / 2  ; rgba(0.2, 0.15, 0.1, 0.5)
+
+Note: the second operand should not be equal to zero. Otherwise an
+invalid value will be returned. See Invalid operations.
+
+See Also
+Writing direct coloring algorithms
+* (multiplication) operator

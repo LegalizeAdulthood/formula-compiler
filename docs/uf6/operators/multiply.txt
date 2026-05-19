@@ -1,0 +1,29 @@
+* (multiplication) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           5              int            int
+                                               float          float
+                                               complex        complex
+                                               color * float  color
+  -------------- -------------- -------------- -------------- --------------
+
+This operator multiplies both operands and returns the result. The type
+of the result is equal to the largest type of the operands (complex is
+larger than float, and float is larger than int).
+
+The multiplication operator also accepts a color operand on the left
+side, and a float operand on the right side. In this case, it multiplies
+each color component by the float operand and returns the result.
+
+Examples:
+
+    3 * 2                       ; 6
+    3.15 * 9                    ; 28.35
+    (3, 2) * (6, 4)             ; (10, 24)
+    rgba(0.4, 0.3, 0.2, 1) * 2  ; rgba(0.8, 0.6, 0.4, 2)
+
+See Also
+Writing direct coloring algorithms
+/ (division) operator

@@ -1,0 +1,22 @@
+&& (boolean AND) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           2              bool           bool
+  -------------- -------------- -------------- -------------- --------------
+
+This operator performs a Boolean AND operation on the two operands of
+type bool and returns the result, which is also a bool value. If the two
+operands are both equal to true, this operator returns true, otherwise
+it returns false. The && operator is often used with conditionals and
+loops. Examples:
+
+    false && false  ; false
+    true && false   ; false
+    false && true   ; false
+    true && true    ; true
+
+See Also
+|| (boolean OR) operator
+! (boolean negation) operator

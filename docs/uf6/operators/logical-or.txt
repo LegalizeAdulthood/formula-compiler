@@ -1,0 +1,25 @@
+|| (boolean OR) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           2              bool           bool
+  -------------- -------------- -------------- -------------- --------------
+
+This operator performs a Boolean OR operation on the two operands of
+type bool and returns the result, which is also a bool value. If one or
+both of the operands is equal to true, this operator returns true,
+otherwise it returns false. The || operator is often used with
+conditionals and loops. Examples:
+
+    false || false  ; false
+    true || false   ; true
+    false || true   ; true
+    true || true    ; true
+
+Note: don't confuse this operator with the |...| (modulus squared)
+operator.
+
+See Also
+&& (boolean AND) operator
+! (boolean negation) operator

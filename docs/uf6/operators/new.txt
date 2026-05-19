@@ -1,0 +1,24 @@
+new operator
+
+  ------- ------------ ------------ -------------------- ------------------
+  Type    Assocation   Precedence   Input                Output
+  unary   none         9            class or parameter   object reference
+  ------- ------------ ------------ -------------------- ------------------
+
+The new operator creates a new object instance given a class name or a
+plug-in parameter. It allocates memory for the new object, initializes
+it with zeroes, and then calls the constructor for the object, if one
+exists. If the constructor has one or more arguments, these must be
+supplied within parentheses after the class or parameter name.
+
+The return value is a reference to the new object that was created.
+Examples:
+
+    MyClass c = new MyClass              ; Constructor without arguments
+    Point p = new Point(3, 4)            ; Constructor with arguments
+    MyClass c = new @MyClassParam        ; Plug-in parameter
+    MyClass2 c = new @MyClassParam2(12)  ; Plug-in parameter with arguments
+
+See Also
+Classes
+Memory management

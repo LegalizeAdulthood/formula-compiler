@@ -1,0 +1,21 @@
+- (arithmetic negation) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  unary          none           7              int            int
+                                               float          float
+                                               complex        complex
+  -------------- -------------- -------------- -------------- --------------
+
+This operator toggles the sign of the operand, so it makes positive
+numbers negative and negative numbers positive. The type of the result
+is equal to the type of the operand. Examples:
+
+    -(3 + 2) ; -5
+    -(3, 2)  ; (-3, -2)
+    -3.23    ; -3.23
+
+See Also
++ (addition) operator
+- (subtraction) operator

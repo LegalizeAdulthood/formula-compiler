@@ -1,0 +1,18 @@
+! (boolean negation) operator
+
+  ------- ------------ ------------ ------------- --------------
+  Type    Assocation   Precedence   Input types   Output types
+  unary   none         7            bool          bool
+  ------- ------------ ------------ ------------- --------------
+
+This operator works only with bool operands. The result is the inversion
+of the operand. So ! false is equal to true. This operator is often
+convenient with conditionals and loops. Examples:
+
+    !true     ; false
+    !(3 == 2) ; true
+    !(2 < 5)  ; false
+
+See Also
+&& (boolean and) operator
+|| (boolean or) operator

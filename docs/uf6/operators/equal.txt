@@ -1,0 +1,35 @@
+== (equality) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         left           3              bool           bool
+                                               int            
+                                               float          
+                                               complex        
+                                               *              
+  -------------- -------------- -------------- -------------- --------------
+
+This operator compares the operands and returns true if they are equal,
+or false otherwise.
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  * The == operator can also compare enumerated parameters with strings. See enumerated parameters. In addition, it can compare plug-in parameters to classes. See Writing plug-ins.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Examples:
+
+    false == true          ; false
+    2 == 2.0               ; true
+    3.1 == 2               ; false
+    (8, 0) == 8            ; true
+    (5, 3) == (5, 2)       ; false
+    (5, 3) == (5, 3)       ; true
+    @enumParam == "A"      ; tests @enumParam
+    @classParam == MyClass ; tests if the currently selected
+                           ; class is compatible with MyClass
+
+Note: Don't confuse this operator with the = (assignment) operator.
+
+See Also
+!= (inequality) operator

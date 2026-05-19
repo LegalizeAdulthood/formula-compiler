@@ -1,0 +1,28 @@
+= (assignment) operator
+
+  -------------- -------------- -------------- -------------- --------------
+  Type           Assocation     Precedence     Input types    Output types
+
+  binary         right          1              bool           bool
+                                               int            int
+                                               float          float
+                                               complex        complex
+                                               color          color
+  -------------- -------------- -------------- -------------- --------------
+
+This operator assigns the right operand to the left operand (the left
+operand must be a variable) and returns the right operand. In other
+words, it stores the right operand in the variable on the left.
+
+For more information on assignments, see Expressions and Variables.
+
+Examples:
+
+    a = b = (3, 2)
+    a = 3.23 - 8 * (a - 13 / x)
+
+Note: don't confuse this operator with the == (equality) operator.
+
+See Also
+&& (boolean AND) operator
+! (boolean negation) operator
