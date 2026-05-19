@@ -503,13 +503,11 @@ Token Lexer::lex_number()
         double value = std::strtod(number_str.c_str(), &end);
         return {value, start_loc, length};
     }
-    else
-    {
-        // Integer number
-        char *end;
-        int value = static_cast<int>(std::strtol(number_str.c_str(), &end, 10));
-        return {value, start_loc, length};
-    }
+
+    // Integer number
+    char *end;
+    int value = static_cast<int>(std::strtol(number_str.c_str(), &end, 10));
+    return {value, start_loc, length};
 }
 
 char Lexer::current_char() const

@@ -1,55 +1,73 @@
-**Compiler Directives Plan**
+**Compiler Directives Status**
 
 **Summary**
 - Sources: [compiler directives](https://www.ultrafractal.com/help/writing/reference/directives/compilerdirectives.html), [`$define`](https://www.ultrafractal.com/help/writing/reference/directives/define.html), [`$undef`](https://www.ultrafractal.com/help/writing/reference/directives/undef.html), [`$ifdef`](https://www.ultrafractal.com/help/writing/reference/directives/ifdef.html), [`$else`](https://www.ultrafractal.com/help/writing/reference/directives/else.html), [`$endif`](https://www.ultrafractal.com/help/writing/reference/directives/endif.html).
-- Implement as a pre-lexing source filter used by `parser::create_parser()`, preserving line count for diagnostics.
+- Implemented as a standalone `formula::preprocessor::Preprocessor`; clients preprocess source text before handing it to the parser.
+- The preprocessor returns the processed text as `std::string`.
+- It is not wired into the lexer or parser.
 
-**Key Changes**
-- Add a directive preprocessing step before `Lexer`:
-  - Recognize line directives after leading whitespace: `$define NAME`, `$undef NAME`, `$ifdef NAME`, `$else`, `$endif`.
-  - Case-fold directive names and symbols.
-  - Replace directive lines and inactive lines with blank lines, preserving CRLF/LF layout and line numbers.
-  - Pass the filtered text to the existing lexer/parser unchanged.
-- Track symbols with a case-insensitive set:
-  - Predefine `ULTRAFRACTAL`, `VER20`, `VER30`, `VER40`, `VER50`, `VER60`.
-  - `$define` adds a symbol only in an active branch.
-  - `$undef` removes a symbol only in an active branch.
-- Track conditionals with a separate directive stack:
-  - `$ifdef` pushes `{parent_active, condition_matched, active}`.
-  - `$else` is allowed once per `$ifdef` and flips active state to `parent_active && !condition_matched`.
-  - `$endif` pops.
-  - Directives operate across sections and parser `if/else/endif`; no AST interaction.
-- Add parser diagnostics:
+**Implemented**
+- Recognizes line directives after leading spaces or tabs:
+  - `$define NAME`
+  - `$undef NAME`
+  - `$ifdef NAME`
+  - `$else`
+  - `$endif`
+- Directive names and symbols are case-insensitive.
+- Directive lines are omitted from processed output.
+- Inactive branch lines are omitted from processed output.
+- Active ordinary source lines are emitted unchanged.
+- Directive errors still report original source line numbers.
+- Macro names do not expand into source text.
+- Macro state is exposed as `MacroList`.
+- Internal macro lists are normalized to lowercase, unique, and sorted so lookup uses binary search.
+
+**Predefined Macros**
+- `UltraFractalMacros` selects common Ultra Fractal predefined macro sets:
+  - `NONE`
+  - `ULTRAFRACTAL3`
+  - `ULTRAFRACTAL4`
+  - `ULTRAFRACTAL5`
+  - `ULTRAFRACTAL6`
+- `predefined_macros(UltraFractalMacros)` returns a `MacroList` so callers can append custom macros.
+- `Preprocessor(UltraFractalMacros)` delegates through `predefined_macros`.
+- `Preprocessor(const MacroList &predefined)` accepts custom or combined macro lists.
+- UF macro sets are cumulative:
+  - `ULTRAFRACTAL3`: `ULTRAFRACTAL`, `VER20`, `VER30`
+  - `ULTRAFRACTAL4`: adds `VER40`
+  - `ULTRAFRACTAL5`: adds `VER50`
+  - `ULTRAFRACTAL6`: adds `VER60`
+
+**Conditional State**
+- `$define` adds a symbol only in an active branch.
+- `$undef` removes a symbol only in an active branch.
+- `$ifdef` pushes separate preprocessor state with parent activity.
+- `$else` is allowed once per `$ifdef`.
+- `$endif` pops the preprocessor stack.
+- Compiler directive hierarchy is separate from formula sections, loops, and conditionals.
+
+**Diagnostics**
+- Implemented preprocessor diagnostics:
   - `EXPECTED_DIRECTIVE_ENDIF`
   - `UNEXPECTED_DIRECTIVE_ELSE`
   - `UNEXPECTED_DIRECTIVE_ENDIF`
   - `DUPLICATE_DIRECTIVE_ELSE`
   - `EXPECTED_DIRECTIVE_SYMBOL`
   - `INVALID_COMPILER_DIRECTIVE`
-- Do not implement special `DEBUG` behavior beyond ordinary symbol support.
 
 **Tests**
-- Lexer/parser behavior:
-  - `$define TEST` then `$ifdef TEST` includes code.
-  - `$undef TEST` then `$ifdef TEST` excludes code.
-  - `$else` selects inactive branch.
-  - Nested `$ifdef` blocks obey parent activity.
-  - Directives are case-insensitive.
-  - Predefined `VER60` branch is active; unknown symbol branch inactive.
-  - Directives work across `global:`, `init:`, `loop:`, `bailout:`, `default:`.
-- Error cases:
-  - `$ifdef` without `$endif`.
-  - `$else` without `$ifdef`.
-  - `$endif` without `$ifdef`.
-  - duplicate `$else`.
-  - missing symbol after `$define`, `$undef`, `$ifdef`.
-  - unknown `$foo`.
-- Diagnostics:
-  - Error line numbers match original source after filtering.
-  - Inactive invalid code does not produce lexer/parser errors.
+- Unit tests cover:
+  - custom predefined macros
+  - sorted macro state
+  - Ultra Fractal predefined macro sets
+  - combining Ultra Fractal and custom macros
+  - `$define`, `$undef`, `$ifdef`, `$else`, `$endif`
+  - nested inactive conditionals
+  - case-insensitive directives and symbols
+  - CRLF preservation for active retained lines
+  - active source text unchanged
+  - directive error cases
 
-**Assumptions**
-- Directives are standalone line directives; `$define` embedded inside an expression is invalid.
-- Inactive branches are never lexed.
-- Existing parser options keep extension behavior unchanged; directives are always recognized before lexing.
-- No public AST nodes are added; directives affect source inclusion only.
+**Known Gaps**
+- `UltraFractalMacros` stops at UF6; UF docs mention UF7 will define `VER70`.
+- `DEBUG` is only an ordinary macro for preprocessing. UF runtime behavior tied to `DEBUG`, such as runtime messages and some runtime errors, belongs outside this preprocessor.

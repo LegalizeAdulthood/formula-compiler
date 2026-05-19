@@ -61,7 +61,9 @@ Token Lexer::next()
     skip_whitespace_and_comments();
 
     if (m_pos >= m_text.size())
+    {
         return {TokenType::END_OF_FILE, {}};
+    }
 
     const char ch = m_text[m_pos];
 
@@ -116,7 +118,9 @@ void Lexer::skip_whitespace_and_comments()
         else if (ch == ';')
         {
             while (m_pos < m_text.size() && m_text[m_pos] != '\n')
+            {
                 ++m_pos;
+            }
         }
         else
         {
@@ -135,7 +139,9 @@ Token Lexer::scan_quoted_string()
         ++m_pos;
     }
     if (m_pos >= m_text.size())
+    {
         throw std::runtime_error("unterminated quoted string");
+    }
     ++m_pos;
     return {TokenType::QUOTED_STRING, std::move(value)};
 }
@@ -149,7 +155,9 @@ Token Lexer::scan_integer()
         ++m_pos;
     }
     if (m_pos >= m_text.size() || !std::isdigit(static_cast<unsigned char>(m_text[m_pos])))
+    {
         throw std::runtime_error("expected digit");
+    }
     while (m_pos < m_text.size() && std::isdigit(static_cast<unsigned char>(m_text[m_pos])))
     {
         value += m_text[m_pos];
@@ -185,7 +193,9 @@ Token Lexer::scan_identifier()
 void expect_token(const Token &token, TokenType type, const char *description)
 {
     if (token.type != type)
+    {
         throw std::runtime_error(std::string("expected ") + description);
+    }
 }
 
 Token expect_next(Lexer &tokens, TokenType type, const char *description)
@@ -205,9 +215,13 @@ bool parse_bool(const Token &token)
 {
     expect_token(token, TokenType::IDENTIFIER, "yes or no");
     if (token.value == "yes")
+    {
         return true;
+    }
     if (token.value == "no")
+    {
         return false;
+    }
     throw std::runtime_error("expected yes or no");
 }
 
@@ -255,7 +269,9 @@ void parse_gradient_key_value(Lexer &tokens, GradientSection &section)
         point.index = parse_int(tokens.next());
         Token value_key = parse_key(tokens);
         if (value_key.value != "color")
+        {
             throw std::runtime_error("expected color");
+        }
         point.color = unpack_bgr(parse_int(tokens.next()));
         section.points.push_back(point);
     }
@@ -286,7 +302,9 @@ void parse_opacity_key_value(Lexer &tokens, OpacitySection &section)
         point.index = parse_int(tokens.next());
         Token value_key = parse_key(tokens);
         if (value_key.value != "opacity")
+        {
             throw std::runtime_error("expected opacity");
+        }
         point.opacity = static_cast<std::uint8_t>(parse_int(tokens.next()));
         section.points.push_back(point);
     }
@@ -300,7 +318,9 @@ GradientSection parse_gradient_section(Lexer &tokens)
 {
     GradientSection section;
     while (!is_section_end(tokens.peek()))
+    {
         parse_gradient_key_value(tokens, section);
+    }
     return section;
 }
 
@@ -308,7 +328,9 @@ OpacitySection parse_opacity_section(Lexer &tokens)
 {
     OpacitySection section;
     while (!is_section_end(tokens.peek()))
+    {
         parse_opacity_key_value(tokens, section);
+    }
     return section;
 }
 
@@ -348,7 +370,9 @@ GradientFile parse_gradient(std::string_view text)
 
         expect_next(tokens, TokenType::RIGHT_BRACE, "}");
         if (!has_gradient || !has_opacity)
+        {
             throw std::runtime_error("entry requires gradient and opacity sections");
+        }
         file.entries.push_back(std::move(entry));
     }
 

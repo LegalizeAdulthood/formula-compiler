@@ -49,6 +49,7 @@ add_executable("test-formula"
     "lexer-test.cpp"
     "parse-id-formulas-test.cpp"
     "parse-test.cpp"
+    "Preprocessor-test.cpp"
     "simplifier-test.cpp"
     "trim_ws.h" "trim_ws.cpp"
 )
