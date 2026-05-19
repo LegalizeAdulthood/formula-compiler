@@ -1,6 +1,11 @@
 ---
-Checks: '-*,readability-braces-around-statements'
-WarningsAsErrors: 'readability-braces-around-statements'
+Checks: >
+  -*,
+  readability-braces-around-statements,
+  readability-else-after-return
+WarningsAsErrors: >
+  readability-braces-around-statements,
+  readability-else-after-return
 CheckOptions:
   - key: readability-braces-around-statements.ShortStatementLines
     value: '0'
