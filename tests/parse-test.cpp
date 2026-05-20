@@ -747,6 +747,51 @@ TEST(TestFormulaParse, extendedFunctionDeclaration)
         trim_ws(to_string(result->per_image)));
 }
 
+TEST(TestFormulaParse, extendedVoidFunctionDeclaration)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "func square2(complex &x)\n"
+                                               "complex old=x\n"
+                                               "x=x*x\n"
+                                               "return\n"
+                                               "endfunc\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("function_decl:square2(complex &x) { "
+              "statement_seq:3 { "
+              "declaration:complex,old identifier:x "
+              "assignment:x binary_op:* identifier:x identifier:x "
+              "return } }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedFunctionDeclarationsCanAppearInBlocks)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "if enabled\n"
+                                               "int func nested(int n)\n"
+                                               "if n\n"
+                                               "return nested(n-1)\n"
+                                               "endif\n"
+                                               "return 0\n"
+                                               "endfunc\n"
+                                               "endif\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("if_statement:( identifier:enabled ) { "
+              "function_decl:int nested(int n) { "
+              "statement_seq:2 { "
+              "if_statement:( identifier:n ) { "
+              "return: function_call:nested( binary_op:- identifier:n literal:1 ) "
+              "} endif "
+              "return: literal:0 } } } endif",
+        trim_ws(to_string(result->per_image)));
+}
+
 TEST(TestFormulaParse, extendedFormulaKinds)
 {
     Options coloring;
