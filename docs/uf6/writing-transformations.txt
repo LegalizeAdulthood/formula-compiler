@@ -1,0 +1,42 @@
+Writing transformations
+
+Transformations are put in transformation files with the .uxf extension.
+They can have the following sections, in this order:
+
+- global
+- transform
+- default
+
+If a transformation does not start with a label, it is assumed to start
+with the transform section. The optional setting within parentheses
+after the entry identifier is ignored.
+
+The global section is executed only once per image and can be used to
+fill look-up tables and initialize read-only variables. See Global
+sections.
+
+The transform section contains one or more statements. The purpose of
+these statements is to take the predefined symbol #pixel, which contains
+the coordinates of the pixel currently being calculated, transform it
+and put the result back in #pixel. They can also set the predefined
+boolean symbol #solid to true to give the pixel a solid color instead of
+calculating it. In this case, no further calculations are done for the
+pixel. The solid color is adjustable on the Mapping tab of the Layer
+Properties tool window.
+
+The default section can contain the following settings:
+
+- helpfile
+- helptopic
+- precision
+- rating
+- render
+- title
+
+It can also contain one or more parameter blocks.
+
+Next: Writing fractal formulas
+
+See Also
+Writing formulas
+Transformations

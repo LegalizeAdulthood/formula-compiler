@@ -1,0 +1,44 @@
+Symmetry
+
+Some fractal formulas always create images that are symmetric. Ultra
+Fractal can take advantage of the symmetry to speed up the calculation.
+To enable this, you must specify the symmetry of the formula as the
+optional setting between parentheses right after the entry identifier.
+Example:
+
+    Mandelbrot(XAXIS) {
+      ...
+    }
+
+This formula is symmetric around the horizontal x-axis, therefore it
+uses the XAXIS setting. This table lists all possible values for the
+symmetry setting:
+
+  -------- ------------------------------------------------------------------------------
+  XAXIS    Forces symmetry around the horizontal x-axis, or the real axis.
+  YAXIS    Forces symmetry around the vertical y-axis, or the imaginary axis.
+  XYAXIS   Forces symmetry around both the horizontal and the vertical axes.
+  ORIGIN   Forces rotational symmetry around the origin. This is useful for Julia sets.
+  PI       Not implemented.
+  -------- ------------------------------------------------------------------------------
+
+You can append _NOPARM to all values (thus obtaining XAXIS_NOPARM, etc)
+to make sure symmetry is only applied when all complex parameters are
+set to (0, 0). The XAXIS setting also allows the suffixes _NOREAL and
+_NOIMAG to disable symmetry for non-zero real and imaginary parts of all
+complex parameters.
+
+Notes
+
+- Symmetry is always disabled if the rotation angle set in the Location
+  tab is not zero, or if a coloring algorithm that reads the value of #z
+  is selected.
+- It is not recommended and not reliable to use this to enforce symmetry
+  that does not exist in the formula itself. It is only intended as a
+  speed-up for formulas that naturally exhibit symmetry.
+
+Next: Switch feature
+
+See Also
+Writing fractal formulas
+Formula files and entries

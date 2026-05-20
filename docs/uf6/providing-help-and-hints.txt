@@ -1,0 +1,38 @@
+Providing help and hints
+
+To make your formulas easier to use, you might want to add help. There
+are two ways to provide help for formulas.
+
+The easiest way to add help to your formula is to provide hints for all
+parameters. A hint is a small explanatory message that is shown in the
+Fractal Mode tool window when the user hovers over the paramter, or when
+the user clicks the ? button in the title bar of the Layer Properties
+tool window, and then clicks the parameter.
+
+- To add a hint to a parameter, use the hint setting in the parameter
+  block.
+
+Although parameter hints are certainly helpful, they cannot provide an
+overview of the purpose and intended use of the formula. To overcome
+this, you can create a separate help file and specify its name and
+location in the formula file so Ultra Fractal can open it.
+
+Ultra Fractal supports help in HTML files, in Windows Help files
+(*.hlp), in Windows HTML Help files (*.chm), in Adobe Acrobat files
+(*.pdf), in Microsoft Word files (*.doc), and in plain text files
+(*.txt). These help files are usually installed in the Help on Formulas
+folder. By default, its location is "My Documents\Ultra Fractal 5\Help
+on Formulas", but you can change this in the Folders tab of the Options
+dialog.
+
+- To link a formula to an external help file, use the helpfile and
+  helptopic settings in the default section.
+
+Ultra Fractal launches the help file when the user clicks the Help
+button in the Layer Properties tool window.
+
+Next: Debugging
+
+See Also
+Publishing your formulas
+Parameter blocks

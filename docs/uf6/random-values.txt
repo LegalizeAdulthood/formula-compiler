@@ -1,0 +1,33 @@
+Random values
+
+Some formulas need to calculate random values. Ultra Fractal offers two
+ways of obtaining pseudo-random values.
+
+The predefined symbol #random returns a new complex random number for
+every pixel. This exists primarily for compatibility with old Fractint
+formulas.
+
+The preferred way of obtaining a random value is the random function.
+This function accepts an integer seed and returns a new random seed. To
+generate a series of random numbers, you should call the function
+repeatedly, each time supplying the seed returned by the previous call.
+Example:
+
+    int seed = 123456789 ; initial value
+    seed = random(seed)
+    ; seed is now the first random number
+    seed = random(seed)
+    ; seed is now the second random number
+
+To obtain a random floating-point number between 0 and 1, divide
+abs(seed) by the predefined symbol #randomrange. To obtain a random
+integer between 0 and n - 1, use abs(seed) % n.
+
+You can generate multiple independent, reproducible series of random
+numbers just by declaring and using multiple seeds. The random function
+will always return the same result for the same seed value.
+
+Next: Symmetry
+
+See Also
+Global sections
