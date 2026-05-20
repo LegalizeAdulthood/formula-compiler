@@ -68,7 +68,7 @@ int main(const std::vector<std::string_view> &args)
                 continue;
             }
             Options options{};
-            options.recognize_extensions = false;
+            options.dialect = Dialect::BASIC;
             ParserPtr parser{create_parser(entry.body, options)};
             if (!parser)
             {

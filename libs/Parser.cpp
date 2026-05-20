@@ -224,7 +224,7 @@ constexpr std::array<SettingMetadata, 15> DEFAULT_SETTINGS{
 lexer::Options lexer_options_for_parser(const Options &options)
 {
     lexer::Options lexer_options;
-    lexer_options.recognize_extensions = options.recognize_extensions;
+    lexer_options.dialect = options.dialect;
     return lexer_options;
 }
 
@@ -1244,7 +1244,7 @@ FormulaSectionsPtr FormulaParser::parse()
     advance();
 
     skip_separators();
-    if (m_options.recognize_extensions)
+    if (m_options.dialect == Dialect::EXTENDED)
     {
         if (const std::optional result = section_formula(); result)
         {
@@ -1991,7 +1991,7 @@ Expr FormulaParser::identifier()
 
     // TODO: Also allow some reserved words as identifiers in expression context
     // only allow true and false to be identifiers in legacy mode
-    if (!m_options.recognize_extensions && check({TokenType::TRUE, TokenType::FALSE}))
+    if (m_options.dialect != Dialect::EXTENDED && check({TokenType::TRUE, TokenType::FALSE}))
     {
         return make_identifier();
     }

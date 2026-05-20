@@ -197,7 +197,7 @@ Token Lexer::get_token()
     // Check for quoted strings
     if (ch == '"')
     {
-        if (!m_options.recognize_extensions)
+        if (m_options.dialect != Dialect::EXTENDED)
         {
             SourceLocation start = m_source_location;
             // Consume the string to avoid cascading errors
@@ -208,7 +208,7 @@ Token Lexer::get_token()
         return string_literal();
     }
 
-    if (m_options.recognize_extensions)
+    if (m_options.dialect == Dialect::EXTENDED)
     {
         if (ch == '#')
         {
@@ -735,7 +735,7 @@ Token Lexer::identifier()
     }
 
     // Check extension keywords and section names only if extensions are enabled
-    if (m_options.recognize_extensions)
+    if (m_options.dialect == Dialect::EXTENDED)
     {
         if (auto it = std::find_if(std::begin(EXTENSIONS), std::end(EXTENSIONS),
                 [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });

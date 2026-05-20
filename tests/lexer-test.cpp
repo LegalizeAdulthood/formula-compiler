@@ -788,7 +788,7 @@ TEST(TestLexer, putTokenEmptyLexer)
 
 TEST(TestLexer, createWithOptions)
 {
-    Lexer lexer{"42", Options{true}};
+    Lexer lexer{"42", Options{Dialect::EXTENDED}};
 
     const Token token{lexer.get_token()};
 
@@ -798,7 +798,7 @@ TEST(TestLexer, createWithOptions)
 
 TEST(TestLexer, constantIdentifier)
 {
-    Lexer lexer{"#pixel", Options{true}};
+    Lexer lexer{"#pixel", Options{Dialect::EXTENDED}};
 
     const Token token{lexer.get_token()};
 
@@ -808,7 +808,7 @@ TEST(TestLexer, constantIdentifier)
 
 TEST(TestLexer, parameterIdentifier)
 {
-    Lexer lexer{"@bailout", Options{true}};
+    Lexer lexer{"@bailout", Options{Dialect::EXTENDED}};
 
     const Token token{lexer.get_token()};
 
@@ -835,7 +835,7 @@ TEST_P(ExtensionKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsDisabled)
 {
     const ExtensionKeywordParam &param = GetParam();
     Options options;
-    options.recognize_extensions = false;
+    options.dialect = Dialect::BASIC;
     Lexer lexer{param.input, options};
 
     const Token token{lexer.get_token()};
@@ -881,7 +881,7 @@ TEST_P(ContextSensitiveKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsEnabl
 {
     const ExtensionKeywordParam &param = GetParam();
     Options options;
-    options.recognize_extensions = true;
+    options.dialect = Dialect::EXTENDED;
     Lexer lexer{param.input, options};
 
     const Token token{lexer.get_token()};
@@ -915,7 +915,7 @@ TEST_P(ExtensionSectionAsIdentifier, parsedAsIdentifierAndColonWhenExtensionsDis
     std::string input{param.input};
     input += ':';
     Options options;
-    options.recognize_extensions = false;
+    options.dialect = Dialect::BASIC;
     Lexer lexer{input, options};
 
     const Token id_token{lexer.get_token()};
@@ -946,7 +946,7 @@ INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionSectionAsIdentifier, V
 TEST(TestLexer, stringLiteralErrorWhenExtensionsDisabled)
 {
     Options options;
-    options.recognize_extensions = false;
+    options.dialect = Dialect::BASIC;
     Lexer lexer{R"("hello")", options};
 
     const Token token{lexer.get_token()};
@@ -959,7 +959,7 @@ TEST(TestLexer, stringLiteralErrorWhenExtensionsDisabled)
 TEST(TestLexer, identifierPrefixIgnoredWhenExtensionsDisabled)
 {
     Options options;
-    options.recognize_extensions = false;
+    options.dialect = Dialect::BASIC;
     Lexer lexer{"#pixel", options};
 
     const Token token{lexer.get_token()};
@@ -970,7 +970,7 @@ TEST(TestLexer, identifierPrefixIgnoredWhenExtensionsDisabled)
 TEST(TestLexer, identifierPrefixWorksWhenExtensionsEnabled)
 {
     Options options;
-    options.recognize_extensions = true;
+    options.dialect = Dialect::EXTENDED;
     Lexer lexer{"#pixel", options};
 
     const Token token{lexer.get_token()};

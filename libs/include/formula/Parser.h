@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <formula/Dialect.h>
 #include <formula/Node.h>
 #include <formula/SourceLocation.h>
 

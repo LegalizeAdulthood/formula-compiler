@@ -491,7 +491,7 @@ TEST_P(BuiltinVariables, notAssignable)
     const std::string text{GetParam() + "=1"};
     Options options;
     options.allow_builtin_assignment = false;
-    options.recognize_extensions = false;
+    options.dialect = Dialect::BASIC;
     ParserPtr parser{create_parser(text, options)};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
@@ -1316,7 +1316,9 @@ TEST_P(ExtensionKeywordIdentifier, canBeUsedAsIdentifierWhenExtensionsDisabled)
 {
     const ExtensionKeywordIdentifierParam &param = GetParam();
     std::string text = std::string(param.keyword) + "=1";
-    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/ true, /*recognize_extensions*/ false});
+    Options options;
+    options.dialect = Dialect::BASIC;
+    ParserPtr parser = create_parser(text, options);
 
     const ast::FormulaSectionsPtr result = parser->parse();
 
@@ -1328,7 +1330,7 @@ TEST_P(ExtensionKeywordIdentifier, cannotBeUsedAsIdentifierWhenExtensionsEnabled
 {
     const ExtensionKeywordIdentifierParam &param = GetParam();
     std::string text = std::string(param.keyword) + "=1";
-    ParserPtr parser = create_parser(text, Options{/*allow_builtin_assignment*/ true, /*recognize_extensions*/ true});
+    ParserPtr parser = create_parser(text, Options{});
 
     const ast::FormulaSectionsPtr result = parser->parse();
 

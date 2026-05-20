@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <formula/Dialect.h>
 #include <formula/SourceLocation.h>
 
 #include <deque>
@@ -195,7 +196,7 @@ struct Token
 
 struct Options
 {
-    bool recognize_extensions{true};
+    Dialect dialect{Dialect::EXTENDED};
 };
 
 class Lexer

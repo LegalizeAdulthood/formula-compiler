@@ -4,13 +4,15 @@
 //
 #pragma once
 
+#include <formula/Dialect.h>
+
 namespace formula::parser
 {
 
 struct Options
 {
     bool allow_builtin_assignment{true};
-    bool recognize_extensions{true};
+    Dialect dialect{Dialect::EXTENDED};
 };
 
 } // namespace formula::parser
