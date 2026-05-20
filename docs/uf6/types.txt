@@ -1,0 +1,74 @@
+Types
+
+To write formulas, you need to be aware of the concept of types.
+Expressions (constants, variables, parameters, etc.) in formulas can
+have different types. There are five different built-in types. The
+following table shows each built-in type and explains its use.
+
++-----------------------------------+-----------------------------------+
+| bool                              | Boolean expressions can only have |
+|                                   | two values: true or false. This   |
+|                                   | type is returned when expressions |
+|                                   | are compared:                     |
+|                                   |                                   |
+|                                   | 3 < 4 ; true                      |
+|                                   |                                   |
+|                                   | false == true ; false             |
++-----------------------------------+-----------------------------------+
+| int                               | Integers are useful for counting. |
+|                                   | They can have values from         |
+|                                   | -2147483648 to 2147483647. Most   |
+|                                   | arithmetic operations can be      |
+|                                   | performed on integers. Example:   |
+|                                   |                                   |
+|                                   | 3                                 |
+|                                   | -2                                |
++-----------------------------------+-----------------------------------+
+| float                             | Floating-point numbers are the    |
+|                                   | most familiar type of numbers.    |
+|                                   | They can be very small or large,  |
+|                                   | and have virtually unlimited      |
+|                                   | precision (see Arbitrary          |
+|                                   | precision). Their greatest        |
+|                                   | benefit is that they can          |
+|                                   | represent fractional values.      |
+|                                   | Examples:                         |
+|                                   |                                   |
+|                                   | 3.1                               |
+|                                   | -2.9                              |
+|                                   | 1.3e7                             |
++-----------------------------------+-----------------------------------+
+| complex                           | Complex expressions represent     |
+|                                   | complex numbers. They consist of  |
+|                                   | two floating-point numbers and    |
+|                                   | are used to perform complex       |
+|                                   | arithmetic, which is very useful  |
+|                                   | for fractal calculations.         |
+|                                   | Examples:                         |
+|                                   |                                   |
+|                                   | (2.8, 4)                          |
+|                                   | 2.8 + 4i                          |
++-----------------------------------+-----------------------------------+
+| color                             | Color expressions represent a     |
+|                                   | color. You can perform operations |
+|                                   | on colors and store them in color |
+|                                   | variables. Internally, a color is |
+|                                   | stored as four floating-point     |
+|                                   | values, corresponding to red,     |
+|                                   | green, blue, and alpha (opacity)  |
+|                                   | components. Each value ranges     |
+|                                   | from 0 to 1. Colors are intended  |
+|                                   | only for direct coloring          |
+|                                   | algorithms.                       |
++-----------------------------------+-----------------------------------+
+
+Note: You can add new types yourself by declaring classes. This is not
+necessary when you are beginning to write formulas, though.
+
+Next: Constants
+
+See Also
+Expressions
+Type compatibility
+Operators
+Functions

@@ -1,0 +1,62 @@
+Objects
+
+To use a class, you have to create instances of the class, which are
+called objects. In Ultra Fractal, you always use a reference to the
+object. Such an object reference can be stored in a variable with the
+class name as type.
+
+Let's create some objects using the example Point class given in
+Classes:
+
+    ; Declare a new object variable
+    Point p
+    ; Create a new Point object and store it in p.
+    p = new Point(3, 4)
+    float d = p.distance(new Point(0, 0))  ; Returns 5
+
+The new operator takes the name of the class as a function, together
+with the arguments for the constructor. It creates a new instance of the
+Point class and returns a reference to it.
+
+When you copy an object variable, you only copy the reference to the
+object, not the object itself. Copying an object variable therefore does
+not create a new object. Example:
+
+    Point pt1 = new Point(3, 4)
+    Point pt2 = pt1 ; This copies a reference!
+    pt2.x = 10      ; Now pt1.x is also 10
+    print(pt1.x)    ; This will print 10
+    pt2 = new Point(pt1.x, pt1.y) ; Creates a true copy
+    pt2.x = 6       ; Only modifies the copy
+    print(pt1.x)    ; This still prints 10
+    print(pt2.x)    ; This prints 6
+
+You can also set an object variable to the special value 0, the null
+reference. This clears the reference, so it points to no object at all.
+This is often useful when programming, for example when building a
+linked list. You can test if an object value is empty by comparing with
+0, or by treating it as a boolean expression:
+
+    Point p = 0
+    if p != 0
+      ; This will not be executed.
+    endif
+    if p
+      ; Will not be executed, same as above.
+    endif
+    int x = p.x  ; Compiles, but illegal!
+    if p
+      x = p.x    ; This is safe
+    endif
+
+When an object reference can be null, as in the example above, you need
+to test it first. Only use the object reference if it is non-null. If
+you access a field or method using a null object reference, Ultra
+Fractal will generate a run-time error and halt execution of the current
+calculation.
+
+Next: Member visibility
+
+See Also
+Classes
+Memory management

@@ -1,0 +1,77 @@
+Plug-in parameters
+
+Like formulas, classes can also have parameters and a title, which are
+declared in the default section. This matters only if the class is used
+by a plug-in parameter for a formula. Classes used by plug-in parameters
+are called plug-ins.
+
+When used as a plug-in, the class appears in the list of parameters in
+the Layer Properties tool window, with the parameters for the class
+grouped with the title of the class. (See Example 1 - Formula plug-ins
+for a screen shot.)
+
+Here is a simple example of a class that implements a simple bailout
+condition for a Mandelbrot-like fractal formula. The bailout value is
+exposed as a parameter.
+
+    class Bailout {
+    public:
+      func Bailout()
+        ; Empty constructor, see Writing plug-ins
+      endfunc
+      bool func hasBailedOut(const complex z)
+        return |z| > @bailout
+      endfunc
+    default:
+      title = "Simple Bailout"
+      float param bailout
+        caption = "Bailout value"
+        default = 4
+        min = 1
+      endparam
+    }
+
+To be able to use this class as a plug-in and include its parameters in
+the parameter list for a formula, declare a plug-in parameter in the
+formula. A plug-in parameter is declared by a parameter block with a
+class as the parameter type.
+
+    MandelbrotTest {
+    init:
+      z = (0, 0)
+      Bailout bo = new @bailoutParam
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      !bo.hasBailedOut(z)
+    default:
+      Bailout param bailoutParam
+        caption = "Bailout Test"
+      endparam
+    }
+
+Notes
+
+- Normally, you create an instance of a class with parameters using new
+  and the class name. In this case, all parameters always remain at the
+  default value. The plug-in parameter bailoutParam in the
+  MandelbrotTest formula represents a variant of the Bailout class that
+  has different parameter values, set by the user. To create an object
+  that uses these user-set parameter values, use the new operator with
+  the plug-in parameter as shown above.
+- You can create more than one object from a single plug-in parameter,
+  and you can have multiple plug-in parameters of the same class type,
+  which each have their own independent set of parameters.
+- Inside the class declaration for a plug-in, all parameters must be
+  declared by a parameter block. (In contrast, formulas can have
+  undeclared parameters for Fractint compatibility.)
+- Optionally, a class used as a plug-in can also contain a rating
+  setting in its default section.
+
+Next: Writing plug-ins
+
+See Also
+Classes
+Parameter blocks
+Function blocks
+Headings

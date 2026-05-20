@@ -1,0 +1,74 @@
+Function arguments
+
+Most function declarations include one or more function arguments.
+Function arguments are declared after the name of the function between
+parentheses.
+
+- Each argument declaration contains the type and the name of the
+  argument. Within the formula, the argument can be used just like a
+  normal variable. Function arguments can be of type bool, int, float,
+  complex, color and object. You cannot pass an entire array as a
+  function argument, but you can of course pass individual array
+  elements. To pass an entire array, wrap it in an object (see the array
+  wrapper classes in common.ulb).
+- Optionally, the const keyword can be put before the type of the
+  argument. This tells the compiler that the function will not change
+  the value of the argument, which can make calling the function more
+  efficient (currently this matters only for float, complex, and color
+  arguments).
+- Sometimes, a function needs more than one return value. In this case,
+  you can declare a by-reference argument with a & symbol before the
+  name. Such an argument is passed by reference, instead of by value,
+  which enables the function to write a value back to it that the caller
+  will receive.
+- Objects are always passed by reference, so it is almost never needed
+  to use the & symbol with object arguments. You should use it only in
+  case you want a function to be able to actually change the object
+  variable owned by the caller.
+
+Examples:
+
+    complex func square(const complex x)
+    ; Squares x and returns the result.
+      return x * x
+    endfunc
+
+    func square2(complex &x)
+    ; Squares x and returns the result in x.
+      x = x * x
+    endfunc
+
+    bool func isPowerOfTwo(int value, int &powerOfTwo)
+    ; Checks if value is a power of 2, such as 32 or 64. If so, returns true
+    ; and returns the power of two in powerOfTwo. Otherwise returns false.
+      powerOfTwo = 0
+      if value > 0
+        int mask = 1
+        int i = 0
+        while i < 31
+          if value == mask
+            powerOfTwo = i
+            return true
+          endif
+          mask = mask * 2
+          i = i + 1
+        endwhile
+      endif
+      return false
+    endfunc
+
+    ; Examples of how to call these functions:
+    complex c = (2, 0)
+    c = square(c)  ; c = (4, 0)
+    square2(c)     ; c = (16, 0)
+    int pow
+    if isPowerOfTwo(64, pow)
+      ; pow = 6 here, because 2^6 = 64.
+      ...
+    endif
+
+Next: Classes
+
+See Also
+Built-in functions
+Methods

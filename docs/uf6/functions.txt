@@ -1,0 +1,70 @@
+Functions
+
+As you write larger formulas, it becomes desirable to avoid code
+duplication and to have a way to better structure the formula code. To
+do this, you can group code in functions that you can call just like the
+built-in functions.
+
+Here is a complete Mandelbrot formula that shows how to declare and use
+a function that calculates one iteration of the Mandelbrot set:
+
+    MandelbrotWithFunction {
+    init:
+      complex func calculateMandelbrot(const complex x)
+        return sqr(x) + #pixel
+      endfunc
+
+      z = 0
+    loop:
+      z = calculateMandelbrot(z)
+    bailout:
+      |z| < 4
+    }
+
+- Functions start with the func keyword and end with the endfunc
+  keyword. (These keywords are also used for function blocks.)
+- The return type of the function is specified before the func keyword.
+  For a function with no return value, leave out the type before the
+  func keyword.
+- Arguments to the function are declared after the name of the function
+  between parentheses. See Function arguments for more information.
+- A function needs to return its value with the return keyword. The
+  return keyword causes an immediate exit of the function with the
+  specified return value. It is required in functions with a return
+  value. In functions without a return value (also called void functions
+  or procedures in other languages), you can use return to exit the
+  function prematurely, but it is not required. See Function arguments
+  for an example.
+- Functions can declare local variables, but they can also access the
+  variables from the formula in which they are declared.
+- Functions declared in a formula can only be accessed by the formula
+  itself. If you want to access a function from another formula, declare
+  it as a static class method instead.
+- Function declarations can occur anywhere in a formula where you can
+  write "normal" formula code. The order in which functions are declared
+  does not matter: it is legal to call a function that is declared later
+  in the formula. A function can also call itself recursively.
+
+Functions declared in a global section can write to global variables,
+but you cannot call these from outside the global section, unless the
+entire function is declared as const (in which case it can only read
+from any variables):
+
+    Test {
+    global:
+      float x
+
+      float func getXSquared() const
+        return x * x
+      endfunc
+
+    init:
+      z = getXSquared()
+      ...
+    } 
+
+Next: Function arguments
+
+See Also
+Built-in functions
+Methods

@@ -1,0 +1,82 @@
+Conditionals
+
+This topic describes the if statement. The if statement is used to write
+pieces of code that should only be executed under certain circumstances
+(conditions). Here is an example:
+
+    if a > 3
+      b = 2
+    else
+      b = 1
+      a = 2
+    endif
+
+In this code snippet, b is given the value 2 when a is greater than 3,
+otherwise b is given the value 1, and a is given the value 2.
+
+Here is the complete syntax of the if statement:
+
+    if <boolean-expression>
+      <statements>
+    [elseif <boolean-expression>
+      <statements>]
+    [else
+      <statements>]
+    endif
+
+The parts between brackets [ ] are optional. There can be as many elseif
+blocks as you find useful. Here is an example which finds the largest of
+three variables a, b and c and places it in x:
+
+    if a > b && a > c
+      x = a
+    elseif b > c
+      x = b
+    else
+      x = c
+    endif
+
+The usage of elseif is not really necessary. The following example does
+exactly the same thing:
+
+    if a > b && a > c
+      x = a
+    else
+      if b > c
+        x = b
+      else
+        x = c
+      endif
+    endif
+
+This example uses a nested if statement (an if statement within another
+if statement). If statements may be nested as much as you want.
+
+When evaluating the boolean operators && and ||, Ultra Fractal uses
+short circuit evaluation. The expression is evaluated from left to right
+and Ultra Fractal stops as soon as the answer is known. This is more
+efficient and it allows you to write expressions like these:
+
+    int i = -1
+    float a[10]
+    if i >= 0 && a[i] > 2
+      ...
+    endif
+
+In this case, Ultra Fractal detects that i is negative, so it will never
+even try to read a[i], which is exactly what we intend because -1 would
+not be a legal index value for the array.
+
+Notes
+
+- In Fractint, it is necessary to surround the boolean expressions after
+  if and elseif with parentheses. Ultra Fractal does not require this,
+  but it is not harmful.
+- For more information on boolean operators like &&, see Operators in
+  the Reference section.
+
+Next: Loops
+
+See Also
+Expressions
+Types

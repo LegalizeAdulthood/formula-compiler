@@ -1,0 +1,63 @@
+Arrays
+
+Arrays are used to store multiple variables in an organized way. Before
+you can use an array, you must declare it. Example:
+
+    int myArray[8]
+
+This declares a static array called myArray with 8 elements. (It is
+called a static array because the number of elements is fixed. To
+declare a dynamic array that allows the number of elements to be changed
+later, see Dynamic arrays.)
+
+You can use the elements in the array like normal variables:
+
+    myArray[0] = 1
+    myArray[myArray[0]] = 2 * myArray[0] + 1
+
+You access an element in an array by specifying the index of the element
+between square brackets [ ]. The index must be an integer expression,
+ranging from 0 to the number of elements - 1 (the value 0 corresponds to
+the first element in the array).
+
+You can also declare and use multi-dimensional arrays by specifying
+multiple values between the brackets. When declaring an array, the size
+of each dimension must be a constant integer expression. Parameters and
+most predefined symbols also qualify as constants. Example:
+
+    float a[10, 2 * 6 - 2]
+    bool flags[#width, #height]
+    a[3, 5 - 3] = 1.5
+    flags[0, 0] = a[1 + 2, 2] > 0
+
+You can directly assign arrays with the same size to one another:
+
+    color x[10]
+    color y[10]
+    x = y
+
+Notes
+
+- Unlike other types of variables, arrays are not initialized upon
+  declaration. Be sure to explicitly initialize all elements in arrays
+  before reading from them. They will contain random values otherwise.
+  Reading from an array element that has not been initialized does not
+  generate a warning either, so you have to check your formulas
+  carefully.
+- You will often use loops to iterate through the elements of an array.
+- Arrays are often filled with pre-calculated values in the global
+  section to speed up calculations.
+- If you use constant array indices outside the supported bounds, the
+  compiler will produce an error message. If you use expressions that
+  evaluate to an invalid index value while the formula is executed, a
+  run-time message is written to the Compiler Messages tool window if
+  the debug compiler directive is defined. See Compiler directives.
+- If you assign arrays to one another that are incompatible and the size
+  of the arrays is unknown at compile time, a run-time message occurs,
+  too.
+
+Next: Dynamic arrays
+
+See Also
+Types
+Variables

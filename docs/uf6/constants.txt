@@ -1,0 +1,51 @@
+Constants
+
+Constants are used in formulas to specify fixed values. Example:
+
+    x = 3 * x + 4
+
+Here, 3 and 4 are constants. This topic explains how constants are used
+in Ultra Fractal formulas, and how Ultra Fractal determines the type of
+a constant (you should be aware of this).
+
+Boolean constants are of type bool. There are only two boolean
+constants: true and false.
+
+Integer constants are of type int. Integer constants are signed numbers
+within the range -2147483648 .. 2147483647. Examples:
+
+    5
+    -23
+
+Floating-point constants are of type float. They consist of a signed
+mantissa, optionally followed by the character E and a signed integer
+exponent to denote a power of ten. The exponent may range from -4931 to
+4931. Examples:
+
+    3.0
+    -1.23482
+    98.283E-3  ; 0.098283
+    -1e5       ; -100000
+
+Complex constants are of type complex. They consist of two
+floating-point numbers, separated by a comma and surrounded by
+parentheses. Alternatively, you can specify an imaginary number by
+typing the letter i right behind a normal floating-point number.
+Examples:
+
+    (2, 3)
+    (3e2, 3.239)  ; (300, 3.239)
+    2.3i          ; (0, 2.3)
+    2 + 1.63i     ; (2, 1.63)
+
+Color constants are of type color. They are created by supplying the
+rgb, rgba, hsl, and hsla functions with constant arguments. Examples:
+
+    rgb(0.5, 1, 0)        ; orange
+    hsla(0, 0, 0.5, 0.5)  ; transparent red
+
+Next: Variables
+
+See Also
+Expressions
+Types

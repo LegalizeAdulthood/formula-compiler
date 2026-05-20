@@ -1,0 +1,63 @@
+Overriding
+
+In a derived class, you can override inherited methods to change their
+behavior. When overriding a method, the declaration must match exactly,
+including the argument names and types and the return type. (Ultra
+Fractal supports covariant return types, so if the return type is a
+class, it can also be a descendant of the return type of the inherited
+method.)
+
+In the overridden method, you can call the inherited method using the
+ancestor class name and the member operator. Here is an example where
+the Derived class overrides a method inherited from Base, and calls the
+inherited method:
+
+    class Base {
+      int func test()
+        return 3
+      endfunc
+    }
+
+    class Derived(Base) {
+      int func test()
+        return Base.test() * 2
+      endfunc
+    }
+
+Ultra Fractal always uses virtual method dispatching for all methods.
+This means that when you call a method on an object, the actual type of
+the object is determined and the method for that object type is called.
+This matters when using inheritance and method overriding:
+
+    Base b = new Base
+    print(b.test())  ; Prints 3
+    Derived d = new Derived
+    print(d.test())  ; Prints 6
+    ; Test virtual method dispatching
+    Base x = b
+    print(x.test())  ; Prints 3
+    x = d
+    print(x.test())  ; Prints 6
+
+When x.test() is executed, the actual type of x is determined and the
+corresponding method is called. In the first case, the actual type of x
+is Base, so Base.test() is called, which returns 3. In the second case,
+Derived.test() is called because the actual type of x is Derived, even
+though x is declared as a reference to Base. This behavior is extremely
+useful with plug-in parameters.
+
+Note: Unlike methods, member variables are never overridden. If you
+declare a variable in a derived class with the same name as a variable
+in the ancestor class, the new variable will exist in addition to the
+(now hidden) inherited variable. Because the new variable doesn't have
+any relationship with the inherited variable, it is legal for it to be
+of a different type. Generally, declaring variables with the same name
+as inherited variables is not recommended since it can easily lead to
+confusion.
+
+Next: Constructors
+
+See Also
+Classes
+Inheritance
+Methods

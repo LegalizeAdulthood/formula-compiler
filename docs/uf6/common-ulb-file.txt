@@ -1,0 +1,54 @@
+The common.ulb file
+
+Classes and plug-ins can be useful on their own, but they show their
+true power when you combine them with each other. When used well,
+classes can eliminate duplicate code in everyone's formulas. However, to
+realize this potential, there needs to be a common foundation so all
+classes can work with each other easily.
+
+The common.ulb file installed in the Public formula folder provides such
+a foundation. It contains an extensive collection of base classes,
+standard plug-ins and utility classes. Here is a quick overview of the
+most important classes and plug-ins:
+
+- The Array classes provide a way to pass arrays to functions, since
+  Ultra Fractal doesn't allow this directly. See also Function
+  arguments.
+- The Generator and IntegerGenerator classes are base classes for
+  plug-ins that generate a sequence of values, such as random number
+  generators.
+- The Transfer and IntegerTransfer classes are base classes for plug-ins
+  that take a value and transform it.
+- The Formula class and descendants such ConvergentFormula,
+  DivergentFormula and ConvergentDivergentFormula wrap a complex fractal
+  formula as a plug-in. See Example 1 - Formula plug-ins for an example
+  of how this works in practice.
+- The Coloring, GradientColoring and DirectColoring classes wrap
+  coloring algorithms as a plug-in.
+- The Transform, UserTransform and ClipShape classes wrap
+  transformations as a plug-in.
+- The TrapShape, TrapMode, TrapColoring, TrapPosition, TrapTransfer and
+  ColorTrap classes provide a plug-in framework to implement orbit trap
+  coloring algorithms where every aspect of the algorithm is extensible.
+  See Example 2 - Orbit trap plug-ins.
+
+The goal is to provide flexible base classes that help formula authors
+to write plug-ins and formulas that work with existing and future
+plug-ins and formulas. It is highly recommended to read through the
+common.ulb file thoroughly before you start writing your own plug-ins.
+Also have a look at how the standard plug-ins in Standard.ulb are
+implemented.
+
+The common.ulb file will be continually updated via the online formula
+database. The Ultra Fractal forum is the best place to discuss this and
+to suggest modifications.
+
+Documentation for the common.ulb file and any other plug-in library file
+in the online formula database is accessible via
+formulas.ultrafractal.com/reference.
+
+Next: Memory management
+
+See Also
+Classes
+Importing classes

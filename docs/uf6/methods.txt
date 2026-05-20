@@ -1,0 +1,48 @@
+Methods
+
+Member functions in classes are called methods. Methods typically
+perform operations on the fields of a class. Methods are declared just
+like functions in a formula.
+
+Methods always operate on an instance of the class (except static
+methods). The instance is returned by the reserved this reference. Here
+is an example:
+
+    class Data {
+      int x
+      func printMe(Printer p)
+        p.printData(this)
+      endfunc
+    }
+
+    class Printer {
+    $define debug
+      func printData(Data d)
+        print(d.x)
+      endfunc
+    }
+
+If you call a method on an object reference, the this reference inside
+the method will return the object reference that it was called on.
+
+    Data d = new Data
+    d.x = 12
+    d.printMe(new Printer)  ; Prints 12
+
+In this code fragment, the this reference in Data.printMe() will return
+the d reference, which is then passed to the Printer object.
+
+Note that objects are always passed to functions and methods by
+reference (see also Function arguments). For example, the
+Printer.printData() method could change the x value of the Data object
+that it receives. If you include the & symbol with the function argument
+(as you would do for normal by-reference argument passing), this lets
+the function modify the actual object reference which is often not
+needed.
+
+Next: Overriding
+
+See Also
+Classes
+Fields
+Static methods

@@ -1,0 +1,54 @@
+Variables
+
+Formulas are often composed of several separate calculations. Therefore,
+it is necessary to store intermediate results in memory. To do this, you
+must use variables.
+
+Identifiers are used to refer to variables. An identifier must start
+with a letter, followed by one or more letters, digits or the underscore
+character "_". Here are some examples of valid identifiers:
+
+    x
+    MyOwnVariable
+    var_32
+
+It does not matter if the letters are lower- or uppercase, so "myvar"
+and "MyVar" represent the same variable. Some identifiers (called
+keywords) are reserved by the compiler for other purposes: you cannot
+use them as variables.
+
+Before you can read from a variable, you must first write to it. To do
+this, use the = (assignment) operator:
+
+    x = 3
+    y = 3 + 28 / 7
+
+The variable is created when it is first written to. By default, the
+type of the variable is complex, but you can change that by placing a
+type keyword (bool, int, float, complex or color) in front of the
+assignment. Alternatively, you can declare the variable before using it.
+
+    int i
+    i = 2
+    int x = 3
+    bool MyBooleanVariable = x > 3
+
+Assignments are expressions themselves, so their result can be assigned
+again. This example gives both x and y the value 1:
+
+    x = y = 1
+
+To read from a variable, use the identifier in an expression. This
+example reads the value in x and stores it in y:
+
+    y = x
+
+Of course, you can also perform calculations when doing this:
+
+    y = x * 3 + 7
+
+Next: Parameters
+
+See Also
+Arrays
+Type compatibility

@@ -1,0 +1,85 @@
+Member visibility
+
+Like formulas, class declarations are divided in three sections, called
+public, protected, and private (in this order). Each section can contain
+member declarations: fields and methods. The type of section determines
+the visibility of the members that it contains.
+
+- Members in the public section are accessible to formulas and other
+  classes. This is the public interface of the class: the part that is
+  intended to be visible to the outside world.
+- Members in the protected section are accessible only to derived
+  classes. This is often useful to change the inherited behavior of a
+  class in a descendant. See Inheritance.
+- Members in the private section can only be accessed by methods from
+  the same class. Formulas or other classes cannot access them. This is
+  useful for storing the internal data for the class, because you are
+  sure that no other class can interfere with it.
+
+Generally, the public section contains the constructor for the class,
+and the methods that make up its public interface. All fields and
+internal methods should go into the private section. If it is necessary
+to access a field from outside the class, the best design is to create a
+method to access it (commonly called a getter or setter). This allows
+you to change the internal representation of the class later, while
+keeping the public interface the same.
+
+If you do not specify a section, it is assumed to be public. Many
+examples in this help file use this for brevity, but for real classes,
+it is recommended to define the visibility explicitly.
+
+Here is an example of a simple Texture class that can distort a complex
+value:
+
+    class Texture {
+    public:
+      func Texture()
+        fAmount = 0.1
+        fSeed = 1234
+      endfunc
+
+      complex func distort(const complex x)
+      ; Adds a small random value to x and returns the result.
+        return real(x) + getRandomValue() + flip(imag(x) + getRandomValue())
+      endfunc
+
+      float func getAmount()
+      ; Returns the amount of distortion.
+        return fAmount
+      endfunc
+      
+      func setAmount(const float amount)
+      ; Sets the amount of distortion
+        fAmount = amount
+      endfunc
+      
+    private:
+      float fAmount
+      int fSeed
+      
+      float func getRandomValue()
+      ; Return a new random value using the current seed.
+        fSeed = random(fSeed)
+        return fAmount * (fSeed / #randomrange)
+      endfunc
+    }
+
+All fields in this class are private, and the amount of distortion can
+be accessed with getAmount and setAmount. The getRandomValue method is
+private because it is only used within the class.
+
+For completeness, here is how you would use this class:
+
+    Texture tx = new Texture
+    print(tx.distort((2, 3)))  ; Prints (1.968, 2.945)
+    print(tx.distort((2, 3)))  ; Prints (2.001, 3.062)
+
+Note: Classes can also have a default section for specifying the title
+and parameters of the class. See Plug-in parameters.
+
+Next: Inheritance
+
+See Also
+Classes
+Fields
+Methods

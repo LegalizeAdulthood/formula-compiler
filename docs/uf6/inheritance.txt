@@ -1,0 +1,71 @@
+Inheritance
+
+Class inheritance enables you to create a new class that derives from an
+existing class. The derived class is called a descendant; the class it
+derives from is called the ancestor or base class. A descendant inherits
+all fields and methods from the ancestor and can add new fields and
+methods. Also, the descendant can change the behavior of the ancestor by
+overriding one or more methods.
+
+To derive from a class, specify its name within parentheses after the
+name of the class. Example:
+
+    class Base {
+      int x
+      int func getXPlusOne()
+        return x + 1
+      endfunc
+    }
+
+    class Derived(Base) {
+      int y
+      int func getXPlusY()
+        return x + y
+      endfunc
+    }
+
+The Derived class contains both the members from itself, and the members
+from Base. Let's test this:
+
+    Derived d = new Derived
+    d.x = 2
+    d.y = 3
+    print(d.getXPlusOne())  ; Prints 3
+    print(d.getXPlusY())    ; Prints 5
+
+You can assign a derived object to a variable that has the type of the
+ancestor class, because a derived object is always compatible with its
+ancestor:
+
+    Derived d = new Derived
+    d.x = 4
+    d.y = 5
+    Base b = d
+    print(b.x)  ; Prints 4
+    print(b.y)  ; Compilation error!
+
+- Use inheritance sparingly. Inheritance is only suitable if the
+  descendant class has an "is-a" relationship with the ancestor. For
+  example, you should never derive a Rect class (representing a
+  rectangle) from a Point class, because a rectangle is not a point. You
+  could however derive a Car class from a Vehicle ancestor, because a
+  car is a type of vehicle. If there is not an "is-a" relationship, use
+  the other class as a field. For example, a Rect class could have two
+  fields of type Point: leftTop and bottomRight.
+- In Ultra Fractal, inheritance is especially useful in combination with
+  plug-in parameters.
+- You can include a file name with the ancestor if it is declared in
+  another file. See Importing classes.
+- The chain of classes that is built with inheritance is called a class
+  hierarchy.
+- If no ancestor is specified, the class descends from the internal
+  Object base class. This means that all classes ultimately have Object
+  as a common ancestor. See also Casting.
+- See Overriding for more information about overriding methods and
+  changing the behavior of a descendant class.
+
+Next: Fields
+
+See Also
+Classes
+Casting

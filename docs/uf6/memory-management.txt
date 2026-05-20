@@ -1,0 +1,49 @@
+Memory management
+
+Ultra Fractal manages the memory for all objects that are created
+automatically, and normally you do not have to worry about this.
+However, if you create a large number of objects, or if your objects are
+large because they use large arrays, you might want to know how you can
+influence memory usage during a calculation.
+
+The lifetime of an object is managed with reference counting. As long as
+there is a reference to an object, it will not be freed. If the last
+reference to an object goes out of scope, if another object is stored to
+the reference, or if it is set to 0, the object is freed immediately.
+
+For debugging purposes, you can print the name and reference count of an
+object. This example uses the Point example class:
+
+    Point p = new Point(0, 0)
+    print(p)       ; Prints Point (1)
+    Point pt2 = p  ; Create a second reference
+    print(p)       ; Prints Point (2)
+    p = 0          ; Clears the first reference
+    print(pt2)     ; Prints Point (1)
+    pt2 = 0        ; Frees the Point object
+    print(pt2)     ; Prints 0
+
+As you can see, you can free an object by setting all reference that
+point to it to 0, the null reference. You can use this to reclaim memory
+during a calculation.
+
+When using recursive data structures, you can easily get the situation
+where two objects contain references to each other. In this case, the
+reference count of both objects will never reach zero. To solve this,
+Ultra Fractal keeps a running list of all live objects and will free
+them once the entire calculation is finished. If you need to reclaim
+memory earlier, you need to explicitly set the references to 0 so the
+objects can be freed. You could say that Ultra Fractal uses
+deterministic garbage collection, in contrast to environments like Java
+or .NET which use nondeterministic garbage collection.
+
+Again, normally you do not have to worry about this because the amount
+of memory consumed by objects is usually very modest. But in case memory
+usage becomes a problem, you can use this information to track down the
+reference counts of objects and make sure they are freed when necessary.
+
+Next: Writing transformations
+
+See Also
+Classes
+Objects

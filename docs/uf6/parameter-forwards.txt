@@ -1,0 +1,44 @@
+Parameter forwards
+
+When you rewrite an existing formula to take advantage of plug-in
+parameters, this changes the format of parameter sets that are saved
+while this formula is in use. This means that existing parameter sets
+cannot be opened anymore. To solve this problem, use parameter forwards.
+
+A parameter forward declares a new parameter name in the formula, and
+lets it point to a sub-parameter of a plug-in parameter. For example,
+suppose that an earlier version of the MandelbrotTest example handled
+its bailout condition itself, with a float parameter named bailout. Now,
+however, the equivalent parameter is bailout from the bailoutParam
+plug-in parameter. The following parameter forward expresses this:
+
+    MandelbrotTest {
+    ; ...
+    default:
+      Bailout param bailoutParam
+        caption = "Bailout Test"
+      endparam
+      param bailout = bailoutParam.bailout
+    }
+
+A parameter forward starts with the param keyword, the name of the old
+parameter, the = symbol, and then the "path" to the new parameter, which
+contains parameter identifiers separated by dots.
+
+In this case, when Ultra Fractal loads an old parameter set, the
+parameter set will contain the value for a parameter named bailout.
+Because the formula does not contain a parameter named bailout, Ultra
+Fractal will search its parameter forwards and will subsequently set the
+bailout parameter of the class that is the default plug-in for the
+bailoutParam plug-in parameter (in this case the Bailout class).
+
+For this to work correctly, obviously the default plug-in for the
+plug-in parameter must be compatible with the previous behavior of the
+formula. (You can set a default plug-in with the default setting.) This
+is your responsibility as formula author.
+
+Next: Importing classes
+
+See Also
+Classes
+Plug-in parameters

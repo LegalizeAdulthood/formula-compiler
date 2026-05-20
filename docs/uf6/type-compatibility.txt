@@ -1,0 +1,62 @@
+Type compatibility
+
+As explained in Types, every expression has a type. If an expression is
+a variable, a constant or a parameter, its type is equal to the type of
+the variable, constant or parameter, of course. This topic explains what
+happens if an expression is composed of two subexpressions with
+different types.
+
+Consider this example:
+
+    3 + 2.1
+
+The type of "3" is int, and the type of "2.1" is float. The type of the
+resulting expression is always the "highest" type of the subexpressions.
+High means "most descriptive" here. For example, complex is higher than
+float, which is in turn higher than int (boolean expressions are treated
+differently). So, this means the type of the expression above must be
+float. Since its result should be 5.1, this behaves as you would expect.
+
+This means, however, that "3", a constant of type int, must be converted
+to "3.0", a constant of type float. This conversion is performed
+automatically by the compiler. You should be aware of the fact that the
+compiler can only convert types to higher types. For example, it cannot
+convert a float to an int. So this statement is illegal and results in
+an error message:
+
+    int i = 3.1
+
+Functions like round and real are available to perform these conversions
+manually, if this is necessary.
+
+Be aware of the fact that some operators and most functions always
+return float or complex values. For example, this statement is illegal,
+since the division operator / cannot return an integer result (it
+returns 1.5):
+
+    int i = 3 / 2
+
+You can look up the behavior of all operators and functions in the
+Reference section.
+
+The compiler can convert booleans to other types and vice versa, but it
+does generate a warning for each conversion. The value true is converted
+to 1, and the value false to 0. An expression of another type (int,
+float or complex) is converted to false if it is equal to 0, otherwise
+it is converted to true. Please note that this is only supported for
+compatibility with old Fractint formulas. It is not recommended to use
+this in new formulas.
+
+Colors cannot be converted automatically. Use the rgb, rgba, hsl, and
+hsla functions to convert floating-point values to colors. Use red,
+green, blue, hue, sat, lum, and alpha to convert colors to
+floating-point values.
+
+For the type compatibility rules for classes, see Inheritance and
+Casting.
+
+Next: Conditionals
+
+See Also
+Expressions
+Variables

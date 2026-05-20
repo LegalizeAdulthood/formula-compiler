@@ -1,0 +1,92 @@
+Writing plug-ins
+
+Plug-in parameters make it easy to create different formulas with common
+features. What's even better is that you can write new plug-ins that can
+be used with the plug-in parameters in existing formulas.
+
+If you load the MandelbrotTest example in Ultra Fractal, a Browse button
+is visible next to the name of the default plug-in in the list of
+parameters. This button enables the user to select a different plug-in,
+as long as it descends from the Bailout class. (See Example 1 - Formula
+plug-ins for an example.)
+
+Let's write a new plug-in descending from the Bailout class that
+implements more bailout options:
+
+    class ExtendedBailout(Test.ufm:Bailout) {
+    public:
+      bool func hasBailedOut(const complex z)
+        return (@test == "mod" && |z| > @bailout) ||      \
+          (@test == "real" && sqr(real(z)) > @bailout) || \
+          (@test == "imag" && sqr(imag(z)) > @bailout)
+      endfunc
+    default:
+      title = "Extended Bailout"
+      int param test
+        caption = "Bailout Test"
+        default = 0
+        enum = "mod" "real" "imag"
+      endparam
+    }
+
+If you put this code in a plug-in library file (say Test.ulb), you can
+select the new plug-in by clicking on the Browse button next to the
+Bailout plug-in parameter. The MandelbrotTest formula will now use the
+bailout code from the ExtendedBailout class. As you can see, this system
+enables you to add new features to a formula even after it has been
+published, without having to modify the formula itself!
+
+- The descendant class must be declared in a plug-in library file with
+  the .ulb file extension so the browser can find it. Therefore, the
+  file name of the ancestor needs to be specified as well. The example
+  code above assumes that both MandelbrotTest and the Bailout class are
+  declared in a file called Test.ufm. See also Importing classes.
+- The ExtendedBailout class overrides the hasBailedOut method to change
+  its behavior. Note that it introduces a new parameter called test. The
+  bailout parameter is inherited from the Bailout base class.
+- If you want your plug-in to appear in the browser when selecting a
+  value for the plug-in parameter, make sure it has a title. Classes
+  without a title are not treated as plug-ins and they are not visible
+  in the browser. (This is useful for abstract base classes, as
+  explained in the next paragraph.)
+- In this example, the Bailout base class already has a default behavior
+  and a parameter. In practice, it might be better to have an abstract
+  base class that only declares the methods that form the public
+  interface for the class. Do not include a title for the abstract base
+  class (the browser will only show classes with a title as available
+  plug-ins). In the plug-in parameter declaration for the formula that
+  uses an abstract class, you can then use the default setting to select
+  a descendant of the base class as the default plug-in. This descendant
+  should be placed in a plug-in library file. In this way, the abstract
+  base class is never used on its own, just as a base class.
+- A descendant can also override parameters from its ancestor by
+  including a parameter block for an inherited parameter. This parameter
+  block completely replaces all previous settings for the parameter.
+  With this, you can for example change the default value of a
+  parameter, or hide it by setting visible to false. The type of the
+  parameter must remain the same.
+- In case you do not want to provide the option to the user to select a
+  different plug-in for a plug-in parameter, set the selectable setting
+  of the plug-in parameter to false. This completely removes the plug-in
+  title and the Browse button, and causes the parameters of the plug-in
+  to be listed between the normal formula parameters.
+- The base class must have a constructor (possibly empty), otherwise the
+  constructor of the descendant class will never be called. The compiler
+  will generate a warning if you use a base class without a constructor
+  for a plug-in parameter, and the selectable setting is not false.
+- You can determine the currently selected class of a plug-in parameter
+  by comparing the plug-in parameter to the class directly with the ==
+  operator or != operator. This allows you to show or enable other
+  parameters depending on the currently selected plug-in . (You can also
+  determine the selected plug-in with a cast, but that requires the
+  creation of an instance of the plug-in, something you cannot do in
+  visible or enabled settings.)
+- Of course, plug-ins can in turn also contain plug-in parameters.
+
+Next: Parameter forwards
+
+See Also
+Classes
+Plug-in parameters
+Inheritance
+Overriding

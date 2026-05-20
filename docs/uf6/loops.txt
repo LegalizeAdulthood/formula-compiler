@@ -1,0 +1,53 @@
+Loops
+
+Sometimes you may want to repeat a sequence of statements. Ultra Fractal
+provides two constructs to do this: the while loop and the repeat loop.
+Here is the syntax:
+
+    while <boolean-expression>
+      <statements>
+    endwhile
+
+    repeat
+      <statements>
+    until <boolean-expression>
+
+The while loop repeats the statements as long as the boolean expression
+is true. If the boolean expression is or becomes false, the statements
+are never or no longer executed. The repeat loop, however, repeats the
+statements until the boolean expression becomes true. This means that
+the statements are always executed at least once.
+
+If you want the statements to be executed at least once, use the repeat
+loop. Otherwise, use the while loop.
+
+Here is an example that calculates x = n! (defined as x =
+1*2*3*...*(n-2)*(n-1)*n), first using a while loop, and then using a
+repeat loop:
+
+    int n = 23   ; or another value
+    float x = 1  ; float because 23! is very large
+    while (n > 1)
+      x = x * n
+      n = n - 1
+    endwhile
+
+    int n = 23
+    float x = 1
+    if n > 1
+      repeat
+        x = x * n
+        n = n - 1
+      until n == 1
+    endif
+
+Obviously, the while loop is better suited to calculate the factorial of
+a number, but in other cases the repeat loop may be better.
+
+As with if statements, loops may be nested as much as you want.
+
+Next: Functions
+
+See Also
+Conditionals
+Arrays

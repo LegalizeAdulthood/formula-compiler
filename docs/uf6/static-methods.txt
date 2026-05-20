@@ -1,0 +1,41 @@
+Static methods
+
+Normal methods in a class always operate on an instance of that class,
+so they need to be called on an object reference. In the method, the
+object reference that it was called on is returned by the this keyword.
+
+Static methods, in contrast, do not operate on an instance of the class.
+They can only perform operations on the function arguments and on local
+variables. Therefore, you can use static methods as global functions,
+except that they are grouped by the class that contains them.
+
+You declare a static function with the static keyword, which must appear
+just before the function declaration. Example:
+
+    class Utils {
+      static int func min(int a, int b)
+        if a < b
+          return a
+        else
+          return b
+        endif
+      endfunc
+    }
+
+You can call a static method with the class name, or with an object
+reference (an instance of the class) and the member operator:
+
+    ; Call with class name (preferred)
+    print(Utils.min(3, 5))  ; Prints 3
+    ; Call with object instance
+    Utils u = new Utils
+    print(u.min(3, 5))      ; Prints 3
+
+Calling a static method is slightly more efficient than calling a normal
+method.
+
+Next: Casting
+
+See Also
+Classes
+Variables

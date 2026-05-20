@@ -1,0 +1,60 @@
+Constructors
+
+As briefly explained in Classes, a class can contain a constructor. A
+constructor is a special method that is called automatically by the new
+operator when an instance of the class is created. The task of the
+constructor is to initialize the fields of the just created object.
+
+The constructor has the form of a method without a return type, and its
+name must be equal to the name of the class. Optionally, the constructor
+can have one or more arguments, which must be passed when creating an
+object of the class. This makes it possible to immediately initialize
+the object to the desired state.
+
+    class Test {
+      func Test(int arg)
+        x = arg
+      endfunc
+      int x
+      int y
+    }
+
+Before the constructor is called, all fields of the class are
+initialized to 0. You only need to initialize those fields that must
+have a different initial value.
+
+    Test t = new Test(3)
+    print(t.x)  ; Prints 3
+    print(t.y)  ; Prints 0
+
+When using inheritance, the constructor of the derived class must have
+the same arguments as the ancestor class. (This is required because the
+constructor is also a virtual method.)
+
+The constructor of the derived class can call the inherited constructor
+by using the name of the ancestor as a function. Calling the inherited
+constructor is almost always necessary because otherwise the ancestor
+will not be initialized correctly. Example:
+
+    class Derived(Test) {
+      func Derived(int arg)
+        Test(4)  ; Call the inherited constructor
+        w = arg
+      endfunc
+      int w
+    }
+
+    Derived d = new Derived(7)
+    print(d.x)  ; Prints 4
+    print(d.w)  ; Prints 7
+
+You can also call a constructor on an already constructed object, in
+which case it will execute as a normal function. This might be useful to
+reset the object.
+
+Next: Static methods
+
+See Also
+Classes
+Inheritance
+Methods

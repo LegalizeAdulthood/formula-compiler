@@ -1,0 +1,52 @@
+Expressions
+
+To recap briefly, a formula is divided into multiple sections, separated
+by labels. Some sections (for example init and loop) can contain
+statements. Most statements are just expressions, and this topic
+explains what expressions really are.
+
+Almost everything is an expression. Variables, parameters and constants
+are all expressions. By using operators or functions, expressions can be
+composed of one or two subexpressions. Examples:
+
+    a
+    3
+    3 + 2
+    sin(a)
+    (3 + sin(a)) / 2
+
+These are all valid expressions (note that "a" is a variable). The
+important property of an expression is that you can always calculate its
+value, no matter how complicated the expression is. Moreover, you can do
+something with this value, for example assigning it to a variable by
+using the = (assignment) operator:
+
+    b = 3 + 2
+    b = (3 + sin(a)) / 2
+
+These expressions are called assignments. It is important to realize
+that assignments are expressions themselves, so this is also a valid
+expression:
+
+    c = b = 3 + 2
+
+This gives both c and b the value 5.
+
+Now, remember that statements can be expressions, so that means any
+expression is a valid statement. Of course, it does not make sense to
+use expressions like "3" or "(3 + sin(a)) / 2" as statements, since
+nothing is done with the value of the expression, so the statement is
+ignored by the compiler (and results in a warning message). Only
+assignments actually use the value of the expression, therefore
+statements usually are assignments.
+
+Note: do not confuse the = (assignment) operator with the == (equality)
+operator. The == operator is used to test if two expressions are equal,
+and returns a boolean value (true or false).
+
+Next: Types
+
+See Also
+Sections
+Operators
+Built-in functions

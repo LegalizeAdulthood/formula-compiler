@@ -1,0 +1,49 @@
+Fields
+
+Member variables in classes are called fields. Fields are used to store
+the internal data for a class.
+
+- It is recommended to always declare all fields in the private section
+  of a class, unless the class is very simple and mainly used to group a
+  set of variables. As an illustration, compare the Point example with
+  the Texture example.
+- By convention, field names start with a lowercase "f", such as
+  fMyData. This allows you to easily see the difference between fields
+  and local variables or arguments.
+- Fields can be of any type, just like variables. They can be arrays,
+  dynamic arrays, or object references. The type of a field can even be
+  the type of the class that it is declared in, so you can create
+  recursive data structures like a tree or a linked list.
+- Unlike formula variables or local function variables, all fields of a
+  class are automatically initialized to 0. Use a constructor to
+  initialize them explicitly.
+
+Here is a very simple example of a linked list node that refers to
+itself:
+
+    class Node {
+      Node next
+      int data
+    }
+
+Usage example:
+
+    Node head = new Node
+    head.data = 2
+    head.next = new Node
+    head.next.data = 3
+    Node n = head
+    while n
+      print(n.data)  ; Prints 2 and 3
+      n = n.next
+    endwhile
+
+Note that it is not necessary to initialize the next reference when
+creating a node, because it is automatically initialized to 0, the null
+reference.
+
+Next: Methods
+
+See Also
+Classes
+Variables

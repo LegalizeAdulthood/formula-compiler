@@ -1,0 +1,61 @@
+Casting
+
+When you assign an object reference to a variable, or pass it to a
+function, the type of the reference and the expected type should be
+compatible. As explained in Inheritance, a derived object is always
+compatible with its ancestor. Let's try this:
+
+    class Base {
+      int x
+    }
+    class Derived(Base) {
+      int y
+    }
+
+    Derived d = new Derived
+    Base b = d      ; Legal because Base is ancestor of Derived
+    b.x = 4
+    print(d.x)      ; Prints 4
+    Derived d2 = b  ; Compilation error: incompatible types!
+
+The last assignment is illegal because b has type Base, which is not
+compatible with Derived. However, b really points to an object of type
+Derived, so it should be possible to get the 'original' object back. You
+can do this with a cast. A cast looks like a function call, using the
+name of the class to cast to as the name of the function:
+
+    Derived d = new Derived
+    d.y = 5
+    Base b = d
+    Derived d2 = Derived(b)  ; Cast b to Derived
+    print(d2.y)              ; Prints 5
+    Base b2 = new Base
+    d2 = Derived(b2)         ; This cast fails and returns 0
+    print(d2)                ; Prints 0
+
+A cast checks if the object is really an instance of the class to cast
+to. If so, it returns a reference with the desired type. Otherwise, it
+returns a null reference. You can use this to query the type of object
+that a reference actually points to.
+
+Because all classes ultimately descend from the internal Object class,
+you can use Object as a common type to store different types of objects
+in an array, for example. With a cast, you can later test what type of
+object an element in the array really contains.
+
+For debugging purposes, you can also print the value of an object
+reference, which will print the class name and the reference count of
+the object:
+
+    Object obj = new Derived
+    print(obj)  ; Prints Derived (1)
+
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Note: With a plug-in parameter, you can also determine the currently selected class by comparing it to a class with the == operator or the != operator. See also Writing plug-ins.
+  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Next: Plug-in parameters
+
+See Also
+Classes
+Inheritance

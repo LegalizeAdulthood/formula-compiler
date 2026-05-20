@@ -1,0 +1,69 @@
+Dynamic arrays
+
+In addition to static arrays, you can also declare dynamic arrays.
+Unlike static arrays, which have a predetermined number of elements, the
+number of elements in a dynamic array can be changed at any time.
+Example:
+
+    int anotherArray[]
+
+This declares a dynamic array called anotherArray. Before you can store
+anything in this array, you need to call the setLength function to set
+the number of elements that it can contain:
+
+    setLength(anotherArray, 12)
+
+You can now use the elements in the dynamic array:
+
+    anotherArray[0] = 8
+    anotherArray[1] = anotherArray[0] * 2  
+
+Like static arrays, the index of the element can range from 0 to the
+number of elements - 1. The index value 0 corresponds to the first
+element in the array.
+
+At any time, you can call setLength again to resize the array. The
+length function always returns the current size of the array:
+
+    setLength(anotherArray, 20)
+    int currentSize = length(anotherArray)  ; returns 20  
+
+Unlike static arrays, dynamic arrays cannot be multi-dimensional. If you
+need a multi-dimensional array, you can simulate it like this:
+
+    ; Simulate a 10x10 two-dimensional array
+    int twoDimArray[]
+    setLength(twoDimArray, 10 * 10)
+    ; Initialize the element at position [0, 0]
+    twoDimArray[0 * 10 + 0] = 13
+    ; Initialize the element at position [8, 2]
+    twoDimArray[8 * 10 + 2] = 14
+
+Also unlike static arrays, it is not possible to copy dynamic arrays
+with a single assignment. This will compile, but result in the Arrays
+are not compatible run-time error message:
+
+    int a[]
+    int b[]
+    setLength(a, 10)
+    setLength(b, 10)
+    a = b   ; Generates run-time error message 
+
+Use a loop to copy the individual elements instead.
+
+Notes
+
+- Unlike static arrays, the elements of a dynamic array are
+  zero-initialized by the setLength function.
+- As with static arrays, if you try to access elements of the array that
+  are out of range, a run-time error message will be written to the
+  Compiler Messages tool window if the debug compiler directive is
+  defined.
+- Dynamic arrays are slightly less efficient than static arrays, so use
+  a static array if possible.
+
+Next: Type compatibility
+
+See Also
+Arrays
+Types

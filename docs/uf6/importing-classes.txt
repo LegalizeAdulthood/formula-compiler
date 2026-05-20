@@ -1,0 +1,55 @@
+Importing classes
+
+When a formula or a class contains a class name, for example to declare
+a variable or a plug-in parameter, Ultra Fractal searches for the class
+in the list of imported files, and then in the current file. To import a
+file so its classes become available, use the import keyword.
+
+    class ExtendedBailout(Test.ufm:Bailout) {
+    public:
+      import "common.ulb"
+      ; ...
+    }
+
+This modified version of the ExtendedBailout example first imports the
+file Test.ufm because that is where its ancestor is located. Then it
+imports the plug-in library file common.ulb.
+
+- The import keyword expects a file name within double quotes, without
+  any path information. The file is located using the current formula
+  search paths as set in the Folder tab of the Options dialog.
+- If a file name is specified in the ancestor specification of a class,
+  this behaves as if this file was imported before any other files. The
+  browser, however, needs the specification of the ancestor file name
+  here to be able to check the inheritance of classes when selecting
+  plug-in for a plug-in parameter.
+- The order in which import statements occur is important. When
+  searching for a class, Ultra Fractal searches the file that was last
+  imported first, and so on. Other than that, import statements can
+  occur anywhere in a formula or class. Even the statements before an
+  import statement are affected by it, because import statements are
+  read and applied before the rest of the code is checked for
+  consistency and type compatibility. For readability, it is recommended
+  to put your import statements at the top of a formula or class.
+- Plug-in library files with the .ulb extension have two purposes. When
+  looking for plug-ins for plug-in parameters, the browser will only
+  look in .ulb files. So plug-ins must always be in a plug-in library
+  file. Also, plug-in library files provide a logical place to put
+  classes that are intended to be shared by different fractal formulas,
+  coloring algorithms, and transformations.
+- The common.ulb file that is installed with Ultra Fractal provides many
+  useful base classes. See The common.ulb file.
+- You can also import classes from .ufm, .ucl, or .uxf files if you have
+  to, but this is recommended only for files that you control yourself.
+  If you are a formula author and you want to provide common
+  functionality to other authors, put them in your own .ulb file. Do not
+  import a class from another author's .ufm/.ucl/.uxf file because it
+  might be changed in a future revision of that file. See also
+  Publishing your formulas.
+
+Next: The common.ulb file
+
+See Also
+Classes
+Inheritance
+Plug-in parameters

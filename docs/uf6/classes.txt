@@ -1,0 +1,47 @@
+Classes
+
+While function declarations in formulas are useful, you cannot access
+them from another formula. To be able to re-use code in multiple
+formulas, you need to use classes instead.
+
+- A class is a declaration of a set of variables and functions that
+  operate on these variables.
+- An object is an instance of its class. This class is the type of the
+  object, just like int is the type of an integer variable.
+- The variables of a class are called fields.
+- The functions of a class are called methods. Both fields and methods
+  are also known as the members of a class.
+
+Classes are declared in formula files, or in plug-in library files with
+the .ulb file extension. A class looks a bit like a regular formula
+entry, but the entry identifier is preceded by the class keyword. Here
+is an example of a simple class that represents a point with integer
+coordinates:
+
+    class Point {
+    public:
+      func Point(int aX, int aY)
+        x = aX
+        y = aY
+      endfunc
+
+      float func distance(Point p)
+      ; Returns the distance to the second point p.
+        return sqrt(sqr(p.x - x) + sqr(p.y - y))
+      endfunc
+
+      int x
+      int y
+    } 
+
+This class, named Point, contains a constructor, which is a special
+function that initializes an instance of the class. The constructor
+always has the same name as the class. Also, there is an additional
+method called distance, and two fields called x and y that store the
+coordinates of the point.
+
+Next: Objects
+
+See Also
+Inheritance
+Plug-in parameters

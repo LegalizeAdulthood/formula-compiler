@@ -1,0 +1,46 @@
+Formula files and entries
+
+Formula files are plain text files with the extensions .ufm (fractal
+formula files), .ucl (coloring algorithm files), or .uxf (transformation
+files). A formula file can contain any number of formulas (called
+entries).
+
+Each entry starts with an entry identifier, followed by the contents of
+the entry between curly brackets { and }. After the entry identifier, an
+optional value between parentheses can be added. Examples:
+
+    My-Formula {
+    ; entry contents
+    }
+
+    Mandelbrot(XAXIS) {
+    ; this formula uses an optional setting 
+    }
+
+    comment {
+      The comment entry always consists of comments.
+    }
+
+The entry identifier may consist of almost all characters, except spaces
+and tabs, of course. Since you can specify an additional descriptive
+title for the formula, the identifier can be cryptic as the user never
+notices it (but it is shown by the browser). The identifier is used to
+distinguish between formulas in the same file, so no two formulas in the
+same file can have the same identifier.
+
+The semicolon ; is used to add comments to a formula. After a semicolon,
+the rest of the line is ignored by the compiler. You can also add global
+comments like copyright information to a file by placing them inside a
+special comment { } entry, which is also ignored (but the browser shows
+it when the file is selected).
+
+To facilitate working with entries, the built-in formula editor can
+automatically create new entries and search for existing entries. See
+Formula editors.
+
+Next: Sections
+
+See Also
+Creating a new formula
+Fractal formulas
+Inheritance
