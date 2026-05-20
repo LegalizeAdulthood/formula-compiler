@@ -4,9 +4,9 @@
 - Target procedural UF6 runtime first: typed values, declarations,
   arrays, params/constants, loops, returns, user functions, color values,
   and `final`/`transform` sections.
-- Defer object/class execution: `import`, `new`, member access, methods,
+- Defer object/class execution: `new`, member access, methods,
   inheritance, casts, and plug-in object instantiation remain
-  parse-only/no-op or unsupported.
+  unsupported, but imports are resolved before interpretation.
 - Semantics source: UF6 docs under `docs/uf6`, especially
   `variables.txt`, `types.txt`, `type-compatibility.txt`, `arrays.txt`,
   `dynamic-arrays.txt`, `loops.txt`, `functions.txt`,
@@ -25,6 +25,9 @@
     compatible.
 - Extend `Section` with `FINAL` and `TRANSFORM`; wire `get_section` and
   interpreter dispatch for coloring/transformation entries.
+- Add an import-loading pass before interpreter construction: resolve
+  imported files, preprocess and parse their entries, collect class
+  declarations, and surface imported-file syntax errors as load errors.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
@@ -85,6 +88,13 @@
     and `transform` execute on request.
   - `bailout` returns truthiness; `final` may return float/color via
     `interpret_value`; `transform` mutates `#pixel`/`#solid`.
+- Imports:
+  - `import "file"` is not interpreted as a runtime statement.
+  - Imported files are parsed before consistency/type checks, so syntax
+    errors in an imported file fail formula/class loading.
+  - Import order is preserved for later class lookup: last imported file
+    wins; an ancestor file in `class X(File.ufm:Base)` is treated as an
+    implicit import before explicit imports.
 
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and
@@ -102,12 +112,15 @@
   final-section color return.
 - Tests for section dispatch: fractal, coloring `final`, transformation
   `transform`, and global read-only behavior.
+- Tests for import loading: chained imports, import order, missing file,
+  and syntax errors in imported files.
 - Regression: existing basic interpreter tests still pass unchanged.
 
 ## Assumptions
 - Scope is procedural first, per user choice.
-- `import` is collected/ignored at runtime for this milestone; UF
-  semantics say it affects class lookup only.
+- `import` is handled by a pre-interpreter load/parse pass; imported
+  class bodies are parsed and diagnosed, but object execution remains
+  out of scope.
 - Objects/classes remain unsupported in interpreter and throw clear
   runtime errors if evaluated.
 - Uninitialized array reads are deterministic zero/default in this

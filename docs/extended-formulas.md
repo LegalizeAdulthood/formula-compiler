@@ -19,6 +19,9 @@
   built-ins become one-arg calls.
 - Add `EntryKind` to parse options: `FRACTAL`, `COLORING`,
   `TRANSFORMATION`, `CLASS`. Default stays `FRACTAL`.
+- Add import metadata so formula loading can parse import chains before
+  semantic checks. Imports are syntax in the source file, but their
+  effect is loader-level class availability, not runtime execution.
 - Add section rules by kind:
   - fractal: existing order plus perturb sections.
   - coloring: `global`, `init`, `loop`, `final`, `default`.
@@ -53,10 +56,27 @@
    - Preserve legacy fractal splitting rules.
 
 5. Objects/classes later.
-   - Parse class entries, inheritance, imports, visibility, fields,
-     methods, constructors, static methods, member access, `new`, casts,
+   - Parse class entries, inheritance, visibility, fields, methods,
+     constructors, static methods, member access, `new`, casts,
      plug-in params.
    - No semantic validation beyond parse shape in this pass.
+
+6. Importing.
+   - Parse `import "file"` statements anywhere a formula or class can
+     contain statements.
+   - Record import statements in source order without treating them as
+     executable runtime statements.
+   - Add a formula loading pass that resolves imported file names through
+     configured formula search paths, preprocesses and parses imported
+     files, and follows chained imports.
+   - Report missing imported files, import cycles, and syntax errors in
+     imported files as load/parse diagnostics attached to the importing
+     formula.
+   - Treat `class Derived(File.ufm:Base)` as an implicit import of
+     `File.ufm` before explicit imports, matching UF class lookup rules.
+   - Preserve import order for later semantic class lookup: the last
+     imported file is searched first, then earlier imports, then the
+     current file.
 
 ## Tests
 - Lexer: all new tokens, BASIC rejects extended-only syntax, EXTENDED
@@ -67,11 +87,16 @@
 - Functions: typed/void funcs, const args, by-ref args, recursion syntax.
 - Sections: fractal/coloring/transformation/class section order and
   invalid-order errors.
+- Imports: quoted filename syntax, import anywhere, chained imports,
+  import order preservation, implicit ancestor-file import, missing
+  files, cycles, and imported-file syntax errors.
 - Regression: all existing parse tests, ID formulas, and workflow command:
   `cmake --workflow rt-default`
 
 ## Assumptions
 - This pass builds syntax coverage and durable AST only.
-- Type checking, object model, imports, runtime behavior, interpreter, and
-  shader generation come after parse coverage.
+- Import loading parses imported entries and reports syntax/load errors,
+  but class resolution remains semantic work after parse coverage.
+- Type checking, object model, runtime behavior, interpreter, and shader
+  generation come after parse coverage.
 - `Dialect.h` remains shared so lexer does not depend on parser header.
