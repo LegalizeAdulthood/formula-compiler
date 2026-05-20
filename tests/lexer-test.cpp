@@ -320,7 +320,7 @@ TEST(TestLexer, stringWithEscapedQuotes)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, token.type);
     EXPECT_EQ(R"text(He said "Hello" to me)text", std::get<std::string>(token.value));
 }
 
@@ -330,7 +330,7 @@ TEST(TestLexer, stringWithMultipleEscapedQuotes)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, token.type);
     EXPECT_EQ(R"text(She said "Hello, Doctor Frankenstein" and he laughed.)text", std::get<std::string>(token.value));
 }
 
@@ -340,7 +340,7 @@ TEST(TestLexer, emptyString)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, token.type);
     EXPECT_EQ("", std::get<std::string>(token.value));
 }
 
@@ -368,7 +368,7 @@ TEST(TestLexer, stringWithEscapedChar)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, token.type);
     EXPECT_EQ(R"text(line1nline2)text", std::get<std::string>(token.value));
 }
 
@@ -378,7 +378,7 @@ TEST(TestLexer, stringWithEscapedBackslash)
 
     const Token token{lexer.get_token()};
 
-    EXPECT_EQ(TokenType::STRING, token.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, token.type);
     EXPECT_EQ(R"(path\to\file)", std::get<std::string>(token.value));
 }
 
@@ -578,9 +578,9 @@ static TextTokenParam s_params[]{
     {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
     {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 19, 1}, //
     {"continuation", "\\\n   1", TokenType::INTEGER, 4, 1},                   //
-    {"true", "true", TokenType::TRUE},                                        //
-    {"false", "false", TokenType::FALSE},                                     //
-    {"string", R"text("Some text.")text", TokenType::STRING},                 //
+    {"true", "true", TokenType::LIT_TRUE},                                    //
+    {"false", "false", TokenType::LIT_FALSE},                                 //
+    {"string", R"text("Some text.")text", TokenType::QUOTED_STRING},          //
     {"boolType", "bool", TokenType::TYPE_IDENTIFIER},                         //
     {"class", "class", TokenType::CLASS},                                     //
     {"intType", "int", TokenType::TYPE_IDENTIFIER},                           //
@@ -681,7 +681,7 @@ TEST(TestLexer, putTokenDifferentTypes)
     Lexer lexer{"xyz"};
 
     const Token int_token(42, {}, 1);
-    const Token string_token(TokenType::STRING, std::string("hello"), {}, 1);
+    const Token string_token(TokenType::QUOTED_STRING, std::string("hello"), {}, 1);
     const Token op_token(TokenType::PLUS, {}, 1);
     lexer.put_token(int_token);
     lexer.put_token(string_token);
@@ -693,7 +693,7 @@ TEST(TestLexer, putTokenDifferentTypes)
 
     EXPECT_EQ(TokenType::INTEGER, retrieved1.type);
     EXPECT_EQ(42, std::get<int>(retrieved1.value));
-    EXPECT_EQ(TokenType::STRING, retrieved2.type);
+    EXPECT_EQ(TokenType::QUOTED_STRING, retrieved2.type);
     EXPECT_EQ("hello", std::get<std::string>(retrieved2.value));
     EXPECT_EQ(TokenType::PLUS, retrieved3.type);
     EXPECT_EQ(TokenType::IDENTIFIER, original.type);
@@ -901,7 +901,9 @@ static ExtensionKeywordParam s_extension_keywords[]{
 
 INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionKeywordAsIdentifier, ValuesIn(s_extension_keywords));
 
-class ContextSensitiveKeywordAsIdentifier : public TestWithParam<ExtensionKeywordParam> {};
+class ContextSensitiveKeywordAsIdentifier : public TestWithParam<ExtensionKeywordParam>
+{
+};
 
 TEST_P(ContextSensitiveKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsEnabled)
 {
@@ -928,7 +930,8 @@ static ExtensionKeywordParam s_context_sensitive_keywords[]{
     {"this"},   //
 };
 
-INSTANTIATE_TEST_SUITE_P(TestExtensionsEnabled, ContextSensitiveKeywordAsIdentifier, ValuesIn(s_context_sensitive_keywords));
+INSTANTIATE_TEST_SUITE_P(
+    TestExtensionsEnabled, ContextSensitiveKeywordAsIdentifier, ValuesIn(s_context_sensitive_keywords));
 
 // Test extension section names parsed as identifier + colon when extensions disabled
 class ExtensionSectionAsIdentifier : public TestWithParam<ExtensionKeywordParam>

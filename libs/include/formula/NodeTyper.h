@@ -80,4 +80,4 @@ inline NodeType get_node_type(Expr node)
     return v.result();
 }
 
-} // namespace formula
+} // namespace formula::ast

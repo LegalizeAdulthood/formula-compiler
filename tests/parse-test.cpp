@@ -209,8 +209,7 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"ifWithoutParens",
         "if 0\n"
         "endif",
-        "if_statement:( literal:0 ) { } endif"
-    },
+        "if_statement:( literal:0 ) { } endif"},
     {"ifBlankLinesBody",
         "if(0)\n"
         "\n"

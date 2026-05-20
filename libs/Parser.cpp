@@ -219,12 +219,20 @@ constexpr std::array<TokenType, 9> SECTIONS{
 };
 
 constexpr std::array<TokenType, 14> EXTENDED_SECTIONS{
-    TokenType::GLOBAL, TokenType::BUILTIN,                //
-    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-    TokenType::DEFAULT, TokenType::SWITCH,                //
-    TokenType::FINAL, TokenType::TRANSFORM,               //
-    TokenType::PUBLIC, TokenType::PROTECTED, TokenType::PRIVATE,
+    TokenType::GLOBAL,       //
+    TokenType::BUILTIN,      //
+    TokenType::INIT,         //
+    TokenType::LOOP,         //
+    TokenType::BAILOUT,      //
+    TokenType::PERTURB_INIT, //
+    TokenType::PERTURB_LOOP, //
+    TokenType::DEFAULT,      //
+    TokenType::SWITCH,       //
+    TokenType::FINAL,        //
+    TokenType::TRANSFORM,    //
+    TokenType::PUBLIC,       //
+    TokenType::PROTECTED,    //
+    TokenType::PRIVATE,      //
 };
 
 constexpr std::array<SettingMetadata, 15> DEFAULT_SETTINGS{
@@ -459,7 +467,7 @@ Expr FormulaParser::default_complex_setting(const std::string &name)
 
 Expr FormulaParser::default_string_setting(const std::string &name)
 {
-    if (!check(TokenType::STRING))
+    if (!check(TokenType::QUOTED_STRING))
     {
         error(ErrorCode::EXPECTED_STRING);
         return nullptr;
@@ -504,9 +512,9 @@ Expr FormulaParser::default_method_setting()
 
 Expr FormulaParser::default_perturb_setting()
 {
-    if (check({TokenType::TRUE, TokenType::FALSE}))
+    if (check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
     {
-        const bool value{check(TokenType::TRUE)};
+        const bool value{check(TokenType::LIT_TRUE)};
         advance();
 
         if (!check(TokenType::TERMINATOR))
@@ -578,12 +586,12 @@ Expr FormulaParser::default_rating_setting()
 
 Expr FormulaParser::default_render_setting()
 {
-    if (!check({TokenType::TRUE, TokenType::FALSE}))
+    if (!check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
     {
         return nullptr;
     }
 
-    const bool value{check(TokenType::TRUE)};
+    const bool value{check(TokenType::LIT_TRUE)};
     advance();
 
     if (!check(TokenType::TERMINATOR))
@@ -597,7 +605,7 @@ Expr FormulaParser::default_render_setting()
 
 std::optional<Expr> FormulaParser::param_string(const std::string &name)
 {
-    if (!check(TokenType::STRING))
+    if (!check(TokenType::QUOTED_STRING))
     {
         return {};
     }
@@ -610,11 +618,11 @@ std::optional<Expr> FormulaParser::param_default(const std::string &type)
 {
     if (type == "bool")
     {
-        if (!check({TokenType::TRUE, TokenType::FALSE}))
+        if (!check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
         {
             return {};
         }
-        Expr body = std::make_shared<SettingNode>("default", check(TokenType::TRUE));
+        Expr body = std::make_shared<SettingNode>("default", check(TokenType::LIT_TRUE));
         advance();
         return body;
     }
@@ -661,7 +669,7 @@ std::optional<Expr> FormulaParser::param_bool_expr(const std::string &name)
 std::optional<Expr> FormulaParser::param_enum()
 {
     std::vector<std::string> values;
-    while (check(TokenType::STRING))
+    while (check(TokenType::QUOTED_STRING))
     {
         values.push_back(str());
         advance();
@@ -675,11 +683,11 @@ std::optional<Expr> FormulaParser::param_enum()
 
 std::optional<Expr> FormulaParser::param_bool(const std::string &name)
 {
-    if (!check({TokenType::TRUE, TokenType::FALSE}))
+    if (!check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
     {
         return {};
     }
-    Expr body = std::make_shared<SettingNode>(name, check(TokenType::TRUE));
+    Expr body = std::make_shared<SettingNode>(name, check(TokenType::LIT_TRUE));
     advance();
     return body;
 }
@@ -940,7 +948,7 @@ bool FormulaParser::switch_section()
 
     if (name == "type")
     {
-        if (!check(TokenType::STRING))
+        if (!check(TokenType::QUOTED_STRING))
         {
             error(ErrorCode::EXPECTED_STRING);
             return false;
@@ -1442,10 +1450,10 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
         static constexpr std::string_view builtin_vars[]{
-            "p1", "p2", "p3", "p4", "p5",               //
-            "pixel", "lastsqr", "rand", "pi", "e",      //
-            "maxit", "scrnmax", "scrnpix", "whitesq",   //
-            "ismand", "center", "magxmag", "rotskew",   //
+            "p1", "p2", "p3", "p4", "p5",             //
+            "pixel", "lastsqr", "rand", "pi", "e",    //
+            "maxit", "scrnmax", "scrnpix", "whitesq", //
+            "ismand", "center", "magxmag", "rotskew", //
         };
         static constexpr std::string_view builtin_fns[]{
             "sin", "cos", "sinh", "cosh", "cosxx",      //
@@ -1457,10 +1465,10 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             "floor", "ceil", "trunc", "round", "ident", //
             "one", "zero",                              //
         };
-        const bool builtin_var = std::find(std::begin(builtin_vars), std::end(builtin_vars), node->name()) !=
-            std::end(builtin_vars);
-        const bool builtin_fn = std::find(std::begin(builtin_fns), std::end(builtin_fns), node->name()) !=
-            std::end(builtin_fns);
+        const bool builtin_var =
+            std::find(std::begin(builtin_vars), std::end(builtin_vars), node->name()) != std::end(builtin_vars);
+        const bool builtin_fn =
+            std::find(std::begin(builtin_fns), std::end(builtin_fns), node->name()) != std::end(builtin_fns);
         if (!builtin_var && !builtin_fn)
         {
             return true;
@@ -2499,7 +2507,7 @@ Expr FormulaParser::identifier()
 
     // TODO: Also allow some reserved words as identifiers in expression context
     // only allow true and false to be identifiers in legacy mode
-    if (m_options.dialect != Dialect::EXTENDED && check({TokenType::TRUE, TokenType::FALSE}))
+    if (m_options.dialect != Dialect::EXTENDED && check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
     {
         return make_identifier();
     }
@@ -2552,14 +2560,14 @@ Expr FormulaParser::primary()
         return result;
     }
 
-    if (is_extended() && check({TokenType::TRUE, TokenType::FALSE}))
+    if (is_extended() && check({TokenType::LIT_TRUE, TokenType::LIT_FALSE}))
     {
-        const bool value{check(TokenType::TRUE)};
+        const bool value{check(TokenType::LIT_TRUE)};
         advance();
         return std::make_shared<LiteralNode>(value);
     }
 
-    if (is_extended() && check(TokenType::STRING))
+    if (is_extended() && check(TokenType::QUOTED_STRING))
     {
         Expr result = std::make_shared<LiteralNode>(str());
         advance();

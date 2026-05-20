@@ -61,20 +61,20 @@ enum class TokenType
     COLON,
     COMMA,
     TERMINATOR,
-    IF,           // keywords: if statement
-    ELSE_IF,      //
-    ELSE,         //
-    END_IF,       //
-    WHILE,        // while statement
-    END_WHILE,    //
-    REPEAT,       // repeat statement
-    UNTIL,        //
-    FUNC,         // function definition
-    END_FUNC,     //
-    PARAM,        // parameter block
-    END_PARAM,    //
-    HEADING,      // heading block
-    END_HEADING,  //
+    IF,          // keywords: if statement
+    ELSE_IF,     //
+    ELSE,        //
+    END_IF,      //
+    WHILE,       // while statement
+    END_WHILE,   //
+    REPEAT,      // repeat statement
+    UNTIL,       //
+    FUNC,        // function definition
+    END_FUNC,    //
+    PARAM,       // parameter block
+    END_PARAM,   //
+    HEADING,     // heading block
+    END_HEADING, //
     CLASS,
     FINAL,
     TRANSFORM,
@@ -152,10 +152,10 @@ enum class TokenType
     ONE,
     ZERO,
     INVALID,
-    TRUE,             // boolean value
-    FALSE,            // boolean value
-    STRING,           // quoted string
-    TYPE_IDENTIFIER,  // type name (bool, int, float, complex, color)
+    LIT_TRUE,        // boolean literal value
+    LIT_FALSE,       // boolean literal value
+    QUOTED_STRING,   // quoted string
+    TYPE_IDENTIFIER, // type name (bool, int, float, complex, color)
 };
 
 std::string to_string(TokenType value);

@@ -142,9 +142,9 @@ std::string to_string(TokenType value)
         TOKEN_TYPE_CASE(ONE);
         TOKEN_TYPE_CASE(ZERO);
         TOKEN_TYPE_CASE(INVALID);
-        TOKEN_TYPE_CASE(TRUE);
-        TOKEN_TYPE_CASE(FALSE);
-        TOKEN_TYPE_CASE(STRING);
+        TOKEN_TYPE_CASE(LIT_TRUE);
+        TOKEN_TYPE_CASE(LIT_FALSE);
+        TOKEN_TYPE_CASE(QUOTED_STRING);
         TOKEN_TYPE_CASE(TYPE_IDENTIFIER);
         TOKEN_TYPE_CASE(CONSTANT_IDENTIFIER);
     }
@@ -712,7 +712,7 @@ Token Lexer::identifier()
         {"endheading", TokenType::END_HEADING},   //
         {"endparam", TokenType::END_PARAM},       //
         {"endwhile", TokenType::END_WHILE},       //
-        {"false", TokenType::FALSE},              // boolean values
+        {"false", TokenType::LIT_FALSE},              // boolean values
         {"final", TokenType::FINAL},              //
         {"float", TokenType::TYPE_IDENTIFIER},    //
         {"func", TokenType::FUNC},                //
@@ -730,7 +730,7 @@ Token Lexer::identifier()
         {"repeat", TokenType::REPEAT},            //
         {"switch", TokenType::SWITCH},            //
         {"transform", TokenType::TRANSFORM},      //
-        {"true", TokenType::TRUE},                //
+        {"true", TokenType::LIT_TRUE},                //
         {"until", TokenType::UNTIL},              //
         {"while", TokenType::WHILE},              //
     };
@@ -861,7 +861,7 @@ Token Lexer::string_literal()
             // End of string
             advance(); // Skip closing quote
             size_t length = m_position - start;
-            return {TokenType::STRING, str_value, start_loc, length};
+            return {TokenType::QUOTED_STRING, str_value, start_loc, length};
         }
         else if (ch == '\n')
         {
