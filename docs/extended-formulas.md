@@ -22,6 +22,9 @@
 - Add import metadata so formula loading can parse import chains before
   semantic checks. Imports are syntax in the source file, but their
   effect is loader-level class availability, not runtime execution.
+- Add `Options::file_importer`, a
+  `std::function<std::string(std::string_view)>`, so callers supply
+  imported file text. The parser never locates files itself.
 - Add section rules by kind:
   - fractal: existing order plus perturb sections.
   - coloring: `global`, `init`, `loop`, `final`, `default`.
@@ -66,9 +69,9 @@
      contain statements.
    - Record import statements in source order without treating them as
      executable runtime statements.
-   - Add a formula loading pass that resolves imported file names through
-     configured formula search paths, preprocesses and parses imported
-     files, and follows chained imports.
+   - Add a formula loading pass that calls `Options::file_importer` for
+     imported file text, preprocesses and parses imported files, and
+     follows chained imports.
    - Report missing imported files, import cycles, and syntax errors in
      imported files as load/parse diagnostics attached to the importing
      formula.

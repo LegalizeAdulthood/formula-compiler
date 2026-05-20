@@ -6,6 +6,10 @@
 
 #include <formula/Dialect.h>
 
+#include <functional>
+#include <string>
+#include <string_view>
+
 namespace formula::parser
 {
 
@@ -22,6 +26,7 @@ struct Options
     bool allow_builtin_assignment{true};
     Dialect dialect{Dialect::EXTENDED};
     EntryKind entry_kind{EntryKind::FRACTAL};
+    std::function<std::string(std::string_view)> file_importer;
 };
 
 } // namespace formula::parser

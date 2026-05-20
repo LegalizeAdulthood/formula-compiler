@@ -25,9 +25,10 @@
     compatible.
 - Extend `Section` with `FINAL` and `TRANSFORM`; wire `get_section` and
   interpreter dispatch for coloring/transformation entries.
-- Add an import-loading pass before interpreter construction: resolve
-  imported files, preprocess and parse their entries, collect class
-  declarations, and surface imported-file syntax errors as load errors.
+- Add an import-loading pass before interpreter construction: call
+  `Options::file_importer` for imported file text, preprocess and parse
+  imported entries, collect class declarations, and surface
+  imported-file syntax errors as load errors.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
