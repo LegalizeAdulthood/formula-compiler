@@ -11,6 +11,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace formula::ast
@@ -34,12 +35,22 @@ public:
 
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;
+    void visit(const ConstantRefNode &node) override;
+    void visit(const DeclarationNode &node) override;
+    void visit(const FunctionDeclNode &node) override;
     void visit(const FunctionCallNode &node) override;
     void visit(const IdentifierNode &node) override;
     void visit(const IfStatementNode &node) override;
+    void visit(const IndexNode &node) override;
     void visit(const LiteralNode &node) override;
+    void visit(const MemberAccessNode &node) override;
+    void visit(const NewNode &node) override;
+    void visit(const ParameterRefNode &node) override;
+    void visit(const RepeatUntilNode &node) override;
+    void visit(const ReturnNode &node) override;
     void visit(const StatementSeqNode &node) override;
     void visit(const UnaryOpNode &node) override;
+    void visit(const WhileNode &node) override;
 
     const Complex &result() const
     {
@@ -66,6 +77,11 @@ private:
     std::vector<Complex> m_result{1};
     Dictionary m_symbols;
 };
+
+void unsupported_node(std::string_view name)
+{
+    throw std::runtime_error(std::string{name} + " is not supported by the interpreter");
+}
 
 void Interpreter::visit(const AssignmentNode &node)
 {
@@ -159,6 +175,21 @@ void Interpreter::visit(const BinaryOpNode &node)
     }
 }
 
+void Interpreter::visit(const ConstantRefNode &)
+{
+    unsupported_node("ConstantRefNode");
+}
+
+void Interpreter::visit(const DeclarationNode &)
+{
+    unsupported_node("DeclarationNode");
+}
+
+void Interpreter::visit(const FunctionDeclNode &)
+{
+    unsupported_node("FunctionDeclNode");
+}
+
 void Interpreter::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
@@ -203,6 +234,11 @@ void Interpreter::visit(const IfStatementNode &node)
     }
 }
 
+void Interpreter::visit(const IndexNode &)
+{
+    unsupported_node("IndexNode");
+}
+
 void Interpreter::visit(const LiteralNode &node)
 {
     switch (node.value().index())
@@ -220,9 +256,38 @@ void Interpreter::visit(const LiteralNode &node)
         back() = std::get<Complex>(node.value());
         break;
 
+    case 3:
+        back() = {std::get<bool>(node.value()) ? 1.0 : 0.0, 0.0};
+        break;
+
     default:
         throw std::runtime_error("Unknown LiteralNode variant index " + std::to_string(node.value().index()));
     }
+}
+
+void Interpreter::visit(const MemberAccessNode &)
+{
+    unsupported_node("MemberAccessNode");
+}
+
+void Interpreter::visit(const NewNode &)
+{
+    unsupported_node("NewNode");
+}
+
+void Interpreter::visit(const ParameterRefNode &)
+{
+    unsupported_node("ParameterRefNode");
+}
+
+void Interpreter::visit(const RepeatUntilNode &)
+{
+    unsupported_node("RepeatUntilNode");
+}
+
+void Interpreter::visit(const ReturnNode &)
+{
+    unsupported_node("ReturnNode");
 }
 
 void Interpreter::visit(const StatementSeqNode &node)
@@ -248,6 +313,11 @@ void Interpreter::visit(const UnaryOpNode &node)
         back() = {re * re + im * im, 0.0};
     }
     // nothing to be done for unary + since it doesn't change the value
+}
+
+void Interpreter::visit(const WhileNode &)
+{
+    unsupported_node("WhileNode");
 }
 
 } // namespace

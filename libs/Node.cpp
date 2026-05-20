@@ -26,6 +26,21 @@ void BinaryOpNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
+void ConstantRefNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void DeclarationNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void FunctionDeclNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void FunctionCallNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
@@ -41,12 +56,42 @@ void IfStatementNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
+void IndexNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void LiteralNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
 
+void MemberAccessNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void NewNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void ParamBlockNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void ParameterRefNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void RepeatUntilNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void ReturnNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
@@ -62,6 +107,11 @@ void StatementSeqNode::visit(Visitor &visitor) const
 }
 
 void UnaryOpNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void WhileNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);
 }

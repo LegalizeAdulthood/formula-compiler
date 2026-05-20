@@ -25,7 +25,7 @@ namespace
 ///
 /// It merely serves as an example for your own Visitor.
 ///
-class GLSLEmitter : public ast::Visitor
+class GLSLEmitter : public ast::NullVisitor
 {
 public:
     GLSLEmitter();

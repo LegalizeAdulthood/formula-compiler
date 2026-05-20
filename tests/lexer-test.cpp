@@ -245,7 +245,7 @@ TEST(TestLexer, positionTracking)
 
 TEST(TestLexer, singleExclamationInvalid)
 {
-    Lexer lexer{"1!2"};
+    Lexer lexer{"1!2", Options{Dialect::BASIC}};
 
     const Token token1{lexer.get_token()};
     const Token op{lexer.get_token()};
@@ -471,6 +471,9 @@ static TextTokenParam s_params[]{
     {"minus", "-", TokenType::MINUS},                                         //
     {"multiply", "*", TokenType::MULTIPLY},                                   //
     {"divide", "/", TokenType::DIVIDE},                                       //
+    {"percent", "%", TokenType::PERCENT},                                     //
+    {"not", "!", TokenType::NOT},                                             //
+    {"ampersand", "&", TokenType::AMPERSAND},                                 //
     {"modulus", "|", TokenType::MODULUS},                                     //
     {"power", "^", TokenType::POWER},                                         //
     {"assignment", "=", TokenType::ASSIGN},                                   //
@@ -496,6 +499,9 @@ static TextTokenParam s_params[]{
     {"mixedCaseIdentifier", "camelCase", TokenType::IDENTIFIER},              //
     {"leftParenthesis", "(", TokenType::OPEN_PAREN},                          //
     {"rightParenthesis", ")", TokenType::CLOSE_PAREN},                        //
+    {"leftBracket", "[", TokenType::OPEN_BRACKET},                            //
+    {"rightBracket", "]", TokenType::CLOSE_BRACKET},                          //
+    {"dot", ".", TokenType::DOT},                                             //
     {"if", "if", TokenType::IF},                                              //
     {"elseif", "elseif", TokenType::ELSE_IF},                                 //
     {"else", "else", TokenType::ELSE},                                        //
@@ -576,6 +582,7 @@ static TextTokenParam s_params[]{
     {"false", "false", TokenType::FALSE},                                     //
     {"string", R"text("Some text.")text", TokenType::STRING},                 //
     {"boolType", "bool", TokenType::TYPE_IDENTIFIER},                         //
+    {"class", "class", TokenType::CLASS},                                     //
     {"intType", "int", TokenType::TYPE_IDENTIFIER},                           //
     {"floatType", "float", TokenType::TYPE_IDENTIFIER},                       //
     {"complexType", "complex", TokenType::TYPE_IDENTIFIER},                   //
@@ -583,10 +590,29 @@ static TextTokenParam s_params[]{
     {"beginParam", "param", TokenType::PARAM},                                //
     {"endParam", "endparam", TokenType::END_PARAM},                           //
     {"caseInsensitiveKeyword", "IF", TokenType::IF},                          //
+    {"finalSection", "final:", TokenType::FINAL, 1, 6},                       //
+    {"transformSection", "transform:", TokenType::TRANSFORM, 1, 10},          //
+    {"publicSection", "public:", TokenType::PUBLIC, 1, 7},                    //
+    {"protectedSection", "protected:", TokenType::PROTECTED, 1, 10},          //
+    {"privateSection", "private:", TokenType::PRIVATE, 1, 8},                 //
     {"tokenContinued", "re\\\n    al", TokenType::REAL},                      //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));
+
+TEST(TestLexer, extendedOnlyOperatorsInvalidInBasic)
+{
+    Options options;
+    options.dialect = Dialect::BASIC;
+    for (std::string_view input : {"%", "!", "&", "[", "]", "."})
+    {
+        Lexer lexer{input, options};
+
+        const Token token{lexer.get_token()};
+
+        EXPECT_EQ(TokenType::INVALID, token.type) << input;
+    }
+}
 
 TEST(TestLexer, putTokenSingleToken)
 {

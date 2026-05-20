@@ -631,7 +631,6 @@ static ParseFailureParam s_parse_failures[]{
     {"complexLiteralWithoutComma", "(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},                            //
     {"complexLiteralWithoutClosingParen", "(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                      //
     {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                                      //
-    {"assignmentAsExpressionParens", "(z=4)+2", ErrorCode::EXPECTED_CLOSE_PAREN},                        //
     {"assignmentAsExpression", "2+z=4", ErrorCode::EXPECTED_STATEMENT},                                  //
 };
 
@@ -649,6 +648,87 @@ TEST_P(ParseFailures, parse)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
+
+TEST(TestFormulaParse, extendedExpressionForms)
+{
+    const ast::FormulaSectionsPtr result{parse("foo(1, 2, @p, #c) + !bar.baz[3] % new thing(4)", Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("binary_op:+ "
+              "function_call:foo( literal:1 literal:2 parameter_ref:p constant_ref:c ) "
+              "binary_op:% unary_op:! index:[ member:baz { identifier:bar } literal:3 ] new:thing( literal:4 )",
+        trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, extendedDeclarationsAndLoops)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "float x=1\n"
+                                               "int a[2,3]\n"
+                                               "while x\n"
+                                               "x=x-1\n"
+                                               "endwhile\n"
+                                               "repeat\n"
+                                               "x=x+1\n"
+                                               "until x>3\n"
+                                               "return x\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:5 { "
+              "declaration:float,x literal:1 "
+              "declaration:int,a[ literal:2 , literal:3 ] "
+              "while:( identifier:x ) { assignment:x binary_op:- identifier:x literal:1 } "
+              "repeat { assignment:x binary_op:+ identifier:x literal:1 } until ( binary_op:> identifier:x literal:3 ) "
+              "return: identifier:x }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedFunctionDeclaration)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "float func blend(const float a, color &b) const\n"
+                                               "return a\n"
+                                               "endfunc\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("function_decl:float blend(const float a,color &b) const { return: identifier:a }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedFormulaKinds)
+{
+    Options coloring;
+    coloring.entry_kind = EntryKind::COLORING;
+    const ast::FormulaSectionsPtr color_result{parse("global:\n"
+                                                     "int x=1\n"
+                                                     "final:\n"
+                                                     "return x\n"
+                                                     "default:\n"
+                                                     "title=\"color\"\n",
+        coloring)};
+
+    ASSERT_TRUE(color_result);
+    EXPECT_TRUE(color_result->per_image);
+    EXPECT_TRUE(color_result->final);
+    EXPECT_TRUE(color_result->defaults);
+
+    Options transform;
+    transform.entry_kind = EntryKind::TRANSFORMATION;
+    const ast::FormulaSectionsPtr transform_result{parse("global:\n"
+                                                         "int x=1\n"
+                                                         "transform:\n"
+                                                         "return x\n",
+        transform)};
+
+    ASSERT_TRUE(transform_result);
+    EXPECT_TRUE(transform_result->per_image);
+    EXPECT_TRUE(transform_result->transform);
+}
 
 static ParseParam s_single_sections[]{
     {"globalSection",

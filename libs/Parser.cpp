@@ -88,6 +88,20 @@ private:
     bool switch_section();
     std::optional<bool> section_formula();
     Expr sequence();
+    bool is_extended() const;
+    bool is_section_token(TokenType type) const;
+    bool is_block_end() const;
+    bool is_type_start() const;
+    bool check_context(std::string_view keyword) const;
+    bool match_context(std::string_view keyword);
+    std::string type_name();
+    std::vector<Expr> argument_list();
+    Expr expression();
+    Expr declaration_statement();
+    Expr function_declaration(bool is_static = false);
+    Expr return_statement();
+    Expr while_statement();
+    Expr repeat_statement();
     bool is_builtin_var() const;
     bool is_builtin_fn() const;
     bool is_assignable() const;
@@ -104,9 +118,10 @@ private:
     Expr term();
     Expr unary();
     Expr power();
+    Expr postfix();
     Expr builtin_var();
     Expr builtin_fn();
-    std::optional<Expr> function_call();
+    std::optional<std::vector<Expr>> function_call();
     Expr number();
     Expr identifier();
     Expr complex_literal();
@@ -201,6 +216,15 @@ constexpr std::array<TokenType, 9> SECTIONS{
     TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
     TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
     TokenType::DEFAULT, TokenType::SWITCH,                //
+};
+
+constexpr std::array<TokenType, 14> EXTENDED_SECTIONS{
+    TokenType::GLOBAL, TokenType::BUILTIN,                //
+    TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+    TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+    TokenType::DEFAULT, TokenType::SWITCH,                //
+    TokenType::FINAL, TokenType::TRANSFORM,               //
+    TokenType::PUBLIC, TokenType::PROTECTED, TokenType::PRIVATE,
 };
 
 constexpr std::array<SettingMetadata, 15> DEFAULT_SETTINGS{
@@ -966,15 +990,7 @@ std::optional<bool> FormulaParser::section_formula()
     {
         return {};
     }
-    const auto is_token = [this](TokenType tok)
-    {
-        return check(tok);
-    };
-    const auto is_section = [is_token]
-    {
-        return std::find_if(SECTIONS.begin(), SECTIONS.end(), is_token) != SECTIONS.end();
-    };
-    while (is_section())
+    while (is_section_token(m_curr.type))
     {
         TokenType section{m_curr.type};
         advance(); // consume section name and colon (handled by lexer)
@@ -1193,6 +1209,51 @@ std::optional<bool> FormulaParser::section_formula()
                 m_ast->type_switch = result;
                 break;
 
+            case TokenType::FINAL:
+                if (m_ast->final)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                m_ast->final = result;
+                break;
+
+            case TokenType::TRANSFORM:
+                if (m_ast->transform)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                m_ast->transform = result;
+                break;
+
+            case TokenType::PUBLIC:
+                if (m_ast->public_members)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                m_ast->public_members = result;
+                break;
+
+            case TokenType::PROTECTED:
+                if (m_ast->protected_members)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                m_ast->protected_members = result;
+                break;
+
+            case TokenType::PRIVATE:
+                if (m_ast->private_members)
+                {
+                    error(ErrorCode::DUPLICATE_SECTION);
+                    return false;
+                }
+                m_ast->private_members = result;
+                break;
+
             default:
                 return false;
             }
@@ -1264,7 +1325,33 @@ FormulaSectionsPtr FormulaParser::parse()
     }
     if (!result)
     {
+        if (m_errors.empty())
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+        }
         return nullptr;
+    }
+
+    if (m_options.entry_kind == EntryKind::COLORING)
+    {
+        if (!check(TokenType::END_OF_INPUT))
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+            return nullptr;
+        }
+        m_ast->final = result;
+        return m_ast;
+    }
+
+    if (m_options.entry_kind == EntryKind::TRANSFORMATION)
+    {
+        if (!check(TokenType::END_OF_INPUT))
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+            return nullptr;
+        }
+        m_ast->transform = result;
+        return m_ast;
     }
 
     Expr init;
@@ -1274,6 +1361,10 @@ FormulaSectionsPtr FormulaParser::parse()
         result = sequence();
         if (!result)
         {
+            if (m_errors.empty())
+            {
+                error(ErrorCode::EXPECTED_STATEMENT);
+            }
             return nullptr;
         }
     }
@@ -1350,12 +1441,13 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
 {
     if (const IdentifierNode *node = dynamic_cast<const IdentifierNode *>(expr.get()))
     {
-        // Built-in variables and functions are not user identifiers
-        static constexpr std::string_view builtins[]{
+        static constexpr std::string_view builtin_vars[]{
             "p1", "p2", "p3", "p4", "p5",               //
             "pixel", "lastsqr", "rand", "pi", "e",      //
             "maxit", "scrnmax", "scrnpix", "whitesq",   //
             "ismand", "center", "magxmag", "rotskew",   //
+        };
+        static constexpr std::string_view builtin_fns[]{
             "sin", "cos", "sinh", "cosh", "cosxx",      //
             "tan", "cotan", "tanh", "cotanh", "sqr",    //
             "log", "exp", "abs", "conj", "real",        //
@@ -1365,7 +1457,11 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             "floor", "ceil", "trunc", "round", "ident", //
             "one", "zero",                              //
         };
-        if (std::find(std::begin(builtins), std::end(builtins), node->name()) == std::end(builtins))
+        const bool builtin_var = std::find(std::begin(builtin_vars), std::end(builtin_vars), node->name()) !=
+            std::end(builtin_vars);
+        const bool builtin_fn = std::find(std::begin(builtin_fns), std::end(builtin_fns), node->name()) !=
+            std::end(builtin_fns);
+        if (!builtin_var && !builtin_fn)
         {
             return true;
         }
@@ -1377,10 +1473,11 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             return true;
         }
 
-        error(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
+        m_errors.push_back(Diagnostic{
+            builtin_var ? ErrorCode::EXPECTED_STATEMENT : ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, m_curr.location});
     }
 
-    error(ErrorCode::EXPECTED_IDENTIFIER);
+    m_errors.push_back(Diagnostic{ErrorCode::EXPECTED_IDENTIFIER, m_curr.location});
     return false;
 }
 
@@ -1396,9 +1493,323 @@ bool FormulaParser::skip_separators()
     return found;
 }
 
+bool FormulaParser::is_extended() const
+{
+    return m_options.dialect == Dialect::EXTENDED;
+}
+
+bool FormulaParser::is_section_token(TokenType type) const
+{
+    if (is_extended())
+    {
+        return std::find(EXTENDED_SECTIONS.begin(), EXTENDED_SECTIONS.end(), type) != EXTENDED_SECTIONS.end();
+    }
+    return std::find(SECTIONS.begin(), SECTIONS.end(), type) != SECTIONS.end();
+}
+
+bool FormulaParser::is_block_end() const
+{
+    return check({TokenType::END_OF_INPUT, TokenType::END_IF, TokenType::ELSE, TokenType::ELSE_IF, TokenType::END_WHILE,
+               TokenType::UNTIL, TokenType::END_FUNC}) ||
+        is_section_token(m_curr.type);
+}
+
+bool FormulaParser::is_type_start() const
+{
+    return is_extended() && (check(TokenType::TYPE_IDENTIFIER) || check(TokenType::IDENTIFIER));
+}
+
+bool FormulaParser::check_context(std::string_view keyword) const
+{
+    if (!is_extended())
+    {
+        return false;
+    }
+    if (check(TokenType::IDENTIFIER) && str() == keyword)
+    {
+        return true;
+    }
+    if (keyword == "const" && check(TokenType::CTX_CONST))
+    {
+        return true;
+    }
+    if (keyword == "import" && check(TokenType::CTX_IMPORT))
+    {
+        return true;
+    }
+    if (keyword == "new" && check(TokenType::CTX_NEW))
+    {
+        return true;
+    }
+    if (keyword == "return" && check(TokenType::CTX_RETURN))
+    {
+        return true;
+    }
+    if (keyword == "static" && check(TokenType::CTX_STATIC))
+    {
+        return true;
+    }
+    if (keyword == "this" && check(TokenType::CTX_THIS))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool FormulaParser::match_context(std::string_view keyword)
+{
+    if (check_context(keyword))
+    {
+        advance();
+        return true;
+    }
+    return false;
+}
+
+std::string FormulaParser::type_name()
+{
+    if (!is_type_start())
+    {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
+        return {};
+    }
+    const std::string type{str()};
+    advance();
+    return type;
+}
+
+std::vector<Expr> FormulaParser::argument_list()
+{
+    std::vector<Expr> args;
+    if (!match(TokenType::OPEN_PAREN))
+    {
+        error(ErrorCode::EXPECTED_OPEN_PAREN);
+        return args;
+    }
+    if (match(TokenType::CLOSE_PAREN))
+    {
+        return args;
+    }
+    do
+    {
+        Expr arg = expression();
+        if (!arg)
+        {
+            return {};
+        }
+        args.push_back(arg);
+    } while (match(TokenType::COMMA));
+    if (!match(TokenType::CLOSE_PAREN))
+    {
+        error(ErrorCode::EXPECTED_CLOSE_PAREN);
+        return {};
+    }
+    return args;
+}
+
+Expr FormulaParser::expression()
+{
+    if (is_extended())
+    {
+        return assignment_statement();
+    }
+    return conjunctive();
+}
+
+Expr FormulaParser::declaration_statement()
+{
+    const std::string type{type_name()};
+    if (type.empty())
+    {
+        return nullptr;
+    }
+    if (!check(TokenType::IDENTIFIER))
+    {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
+        return nullptr;
+    }
+    const std::string name{str()};
+    advance();
+
+    std::vector<Expr> dimensions;
+    if (match(TokenType::OPEN_BRACKET))
+    {
+        if (match(TokenType::CLOSE_BRACKET))
+        {
+            dimensions.push_back(nullptr);
+        }
+        else
+        {
+            do
+            {
+                Expr dimension = expression();
+                if (!dimension)
+                {
+                    return nullptr;
+                }
+                dimensions.push_back(dimension);
+            } while (match(TokenType::COMMA));
+            if (!match(TokenType::CLOSE_BRACKET))
+            {
+                error(ErrorCode::EXPECTED_CLOSE_PAREN);
+                return nullptr;
+            }
+        }
+    }
+
+    Expr initializer;
+    if (match(TokenType::ASSIGN))
+    {
+        initializer = expression();
+        if (!initializer)
+        {
+            return nullptr;
+        }
+    }
+
+    return std::make_shared<DeclarationNode>(type, name, std::move(dimensions), initializer);
+}
+
+Expr FormulaParser::function_declaration(bool is_static)
+{
+    std::string return_type;
+    if (!check(TokenType::FUNC))
+    {
+        return_type = type_name();
+    }
+
+    if (!match(TokenType::FUNC))
+    {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
+        return nullptr;
+    }
+    if (!check(TokenType::IDENTIFIER))
+    {
+        error(ErrorCode::EXPECTED_IDENTIFIER);
+        return nullptr;
+    }
+    const std::string name{str()};
+    advance();
+
+    std::vector<FunctionArgument> args;
+    if (match(TokenType::OPEN_PAREN))
+    {
+        if (!check(TokenType::CLOSE_PAREN))
+        {
+            do
+            {
+                FunctionArgument arg;
+                arg.is_const = match_context("const");
+                arg.type = type_name();
+                if (arg.type.empty())
+                {
+                    return nullptr;
+                }
+                arg.is_by_ref = match(TokenType::AMPERSAND);
+                if (!check(TokenType::IDENTIFIER))
+                {
+                    error(ErrorCode::EXPECTED_IDENTIFIER);
+                    return nullptr;
+                }
+                arg.name = str();
+                advance();
+                args.push_back(std::move(arg));
+            } while (match(TokenType::COMMA));
+        }
+        if (!match(TokenType::CLOSE_PAREN))
+        {
+            error(ErrorCode::EXPECTED_CLOSE_PAREN);
+            return nullptr;
+        }
+    }
+
+    const bool is_const = match_context("const");
+    skip_separators();
+    Expr body = block();
+    if (!match(TokenType::END_FUNC))
+    {
+        error(ErrorCode::EXPECTED_STATEMENT);
+        return nullptr;
+    }
+    return std::make_shared<FunctionDeclNode>(return_type, name, std::move(args), body, is_const, is_static);
+}
+
+Expr FormulaParser::return_statement()
+{
+    if (!match_context("return"))
+    {
+        return nullptr;
+    }
+    if (check({TokenType::TERMINATOR, TokenType::COMMA, TokenType::END_FUNC, TokenType::END_OF_INPUT}))
+    {
+        return std::make_shared<ReturnNode>(nullptr);
+    }
+    Expr result = expression();
+    if (!result)
+    {
+        if (m_errors.empty())
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+        }
+        return nullptr;
+    }
+    return std::make_shared<ReturnNode>(result);
+}
+
+Expr FormulaParser::while_statement()
+{
+    if (!match(TokenType::WHILE))
+    {
+        return nullptr;
+    }
+    Expr condition = expression();
+    if (!condition)
+    {
+        return nullptr;
+    }
+    if (!skip_separators())
+    {
+        error(ErrorCode::EXPECTED_STATEMENT_SEPARATOR);
+        return nullptr;
+    }
+    Expr body = block();
+    if (!match(TokenType::END_WHILE))
+    {
+        error(ErrorCode::EXPECTED_STATEMENT);
+        return nullptr;
+    }
+    return std::make_shared<WhileNode>(condition, body);
+}
+
+Expr FormulaParser::repeat_statement()
+{
+    if (!match(TokenType::REPEAT))
+    {
+        return nullptr;
+    }
+    skip_separators();
+    Expr body = block();
+    if (!match(TokenType::UNTIL))
+    {
+        error(ErrorCode::EXPECTED_STATEMENT);
+        return nullptr;
+    }
+    Expr condition = expression();
+    if (!condition)
+    {
+        return nullptr;
+    }
+    return std::make_shared<RepeatUntilNode>(body, condition);
+}
+
 Expr FormulaParser::sequence()
 {
     skip_separators();
+
+    if (is_block_end())
+    {
+        return nullptr;
+    }
 
     // Parse the first statement
     Expr first = statement();
@@ -1417,7 +1828,7 @@ Expr FormulaParser::sequence()
         skip_separators();
 
         // Check if we've reached end of input
-        if (check(TokenType::END_OF_INPUT))
+        if (is_block_end())
         {
             break;
         }
@@ -1459,15 +1870,64 @@ bool FormulaParser::is_assignable() const
 
 Expr FormulaParser::statement()
 {
+    if (is_extended() && check_context("static"))
+    {
+        advance();
+        return function_declaration(true);
+    }
+    if (is_extended() && check(TokenType::FUNC))
+    {
+        return function_declaration();
+    }
+    if (is_extended() && is_type_start())
+    {
+        begin_tracking();
+        const Token curr{m_curr};
+        advance();
+        const bool typed_function = check(TokenType::FUNC);
+        backtrack();
+        m_curr = curr;
+        if (typed_function)
+        {
+            return function_declaration();
+        }
+    }
     if (check(TokenType::IF))
     {
         return if_statement();
     }
-    if (is_assignable() && peek(TokenType::ASSIGN))
+    if (is_extended() && check(TokenType::WHILE))
     {
-        return assignment_statement();
+        return while_statement();
     }
-    return conjunctive();
+    if (is_extended() && check(TokenType::REPEAT))
+    {
+        return repeat_statement();
+    }
+    if (is_extended() && check_context("return"))
+    {
+        return return_statement();
+    }
+    if (is_extended() && is_type_start())
+    {
+        begin_tracking();
+        const Token curr{m_curr};
+        const std::string type{str()};
+        advance();
+        bool declaration = check(TokenType::IDENTIFIER);
+        if (declaration)
+        {
+            advance();
+            declaration = !check(TokenType::OPEN_PAREN);
+        }
+        backtrack();
+        m_curr = curr;
+        if (declaration || type == "bool" || type == "int" || type == "float" || type == "complex" || type == "color")
+        {
+            return declaration_statement();
+        }
+    }
+    return assignment_statement();
 }
 
 Expr FormulaParser::if_statement()
@@ -1553,7 +2013,7 @@ Expr FormulaParser::block()
     // Parse statements in the block
     std::vector<Expr> statements;
 
-    while (!check({TokenType::END_IF, TokenType::ELSE, TokenType::ELSE_IF}))
+    while (!is_block_end())
     {
         Expr stmt = statement();
         if (!stmt)
@@ -1616,41 +2076,39 @@ Expr FormulaParser::variable()
 
 Expr FormulaParser::assignment_statement()
 {
-    if (!(is_assignable() && peek(TokenType::ASSIGN)))
+    Expr left = conjunctive();
+    if (!left)
     {
-        // conjunctive already recorded any error
-        return conjunctive();
+        return nullptr;
     }
 
-    // Assignment is right-associative and has lowest precedence
-    if (Expr left{variable()})
+    if (!match(TokenType::ASSIGN))
     {
-        // Validate that left side is a user identifier
-        if (!is_user_identifier(left))
-        {
-            // Left side must be a user identifier, not a reserved word or expression
-            // is_user_identifier already recorded the error
-            return nullptr;
-        }
-
-        if (check(TokenType::ASSIGN))
-        {
-            advance(); // consume '='
-            if (Expr right = assignment_statement())
-            {
-                // Get the variable name from the IdentifierNode
-                const IdentifierNode *id{dynamic_cast<const IdentifierNode *>(left.get())};
-                assert(id); // is_user_identifier already checked it
-                return std::make_shared<AssignmentNode>(id->name(), right);
-            }
-
-            // conjunctive already recorded the error
-            return nullptr;
-        }
         return left;
     }
 
-    return nullptr;
+    if (const auto *id = dynamic_cast<const IdentifierNode *>(left.get()); id && !is_user_identifier(left))
+    {
+        if (m_errors.empty())
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+        }
+        return nullptr;
+    }
+    if (!dynamic_cast<const IdentifierNode *>(left.get()) && !dynamic_cast<const IndexNode *>(left.get()) &&
+        !dynamic_cast<const MemberAccessNode *>(left.get()) && !dynamic_cast<const ParameterRefNode *>(left.get()) &&
+        !dynamic_cast<const ConstantRefNode *>(left.get()))
+    {
+        error(ErrorCode::EXPECTED_STATEMENT);
+        return nullptr;
+    }
+
+    Expr right = assignment_statement();
+    if (!right)
+    {
+        return nullptr;
+    }
+    return std::make_shared<AssignmentNode>(left, right);
 }
 
 Expr FormulaParser::conjunctive()
@@ -1750,9 +2208,9 @@ Expr FormulaParser::term()
 {
     Expr left = unary();
 
-    while (left && check({TokenType::MULTIPLY, TokenType::DIVIDE}))
+    while (left && check({TokenType::MULTIPLY, TokenType::DIVIDE, TokenType::PERCENT}))
     {
-        char op = check(TokenType::MULTIPLY) ? '*' : '/';
+        char op = check(TokenType::MULTIPLY) ? '*' : (check(TokenType::DIVIDE) ? '/' : '%');
         advance(); // consume operator
         Expr right = unary();
         if (!right)
@@ -1768,9 +2226,9 @@ Expr FormulaParser::term()
 
 Expr FormulaParser::unary()
 {
-    if (check({TokenType::PLUS, TokenType::MINUS}))
+    if (check({TokenType::PLUS, TokenType::MINUS, TokenType::NOT}))
     {
-        char op = check(TokenType::PLUS) ? '+' : '-';
+        char op = check(TokenType::PLUS) ? '+' : (check(TokenType::MINUS) ? '-' : '!');
         advance();              // consume operator
         Expr operand = unary(); // Allow chaining: --1
         if (!operand)
@@ -1786,13 +2244,13 @@ Expr FormulaParser::unary()
 
 Expr FormulaParser::power()
 {
-    Expr left = primary();
+    Expr left = postfix();
 
     // Left-associative: parse from left to right using a loop
     while (left && check(TokenType::POWER))
     {
         advance(); // consume '^'
-        Expr right = primary();
+        Expr right = postfix();
         if (!right)
         {
             // primary already recorded the error
@@ -1801,6 +2259,72 @@ Expr FormulaParser::power()
         left = std::make_shared<BinaryOpNode>(left, '^', right);
     }
 
+    return left;
+}
+
+Expr FormulaParser::postfix()
+{
+    Expr left = primary();
+    while (left)
+    {
+        if (check(TokenType::OPEN_PAREN))
+        {
+            const auto error_count = m_errors.size();
+            std::vector<Expr> args = argument_list();
+            if (m_errors.size() != error_count)
+            {
+                return nullptr;
+            }
+            if (const auto *id = dynamic_cast<const IdentifierNode *>(left.get()); id)
+            {
+                left = std::make_shared<FunctionCallNode>(id->name(), std::move(args));
+                continue;
+            }
+            if (const auto *member = dynamic_cast<const MemberAccessNode *>(left.get()); member)
+            {
+                left = std::make_shared<FunctionCallNode>(member->member(), std::move(args));
+                continue;
+            }
+            error(ErrorCode::EXPECTED_IDENTIFIER);
+            return nullptr;
+        }
+        if (match(TokenType::OPEN_BRACKET))
+        {
+            std::vector<Expr> indices;
+            if (!check(TokenType::CLOSE_BRACKET))
+            {
+                do
+                {
+                    Expr index = expression();
+                    if (!index)
+                    {
+                        return nullptr;
+                    }
+                    indices.push_back(index);
+                } while (match(TokenType::COMMA));
+            }
+            if (!match(TokenType::CLOSE_BRACKET))
+            {
+                error(ErrorCode::EXPECTED_CLOSE_PAREN);
+                return nullptr;
+            }
+            left = std::make_shared<IndexNode>(left, std::move(indices));
+            continue;
+        }
+        if (match(TokenType::DOT))
+        {
+            if (!check(TokenType::IDENTIFIER))
+            {
+                error(ErrorCode::EXPECTED_IDENTIFIER);
+                return nullptr;
+            }
+            const std::string member{str()};
+            advance();
+            left = std::make_shared<MemberAccessNode>(left, member);
+            continue;
+        }
+        break;
+    }
     return left;
 }
 
@@ -1838,24 +2362,24 @@ std::optional<Expr> FormulaParser::builtin_function()
         const Token curr{m_curr};
         const std::string name{str()};
         advance(); // consume the function name
+        const auto error_count = m_errors.size();
         std::optional args{function_call()};
+        if (m_errors.size() != error_count)
+        {
+            end_tracking();
+            return Expr{};
+        }
         if (args.has_value())
         {
-            if (args.value())
-            {
-                end_tracking();
-                return std::make_shared<FunctionCallNode>(name, args.value());
-            }
-            backtrack();
-            m_curr = curr;
-            // not an error
-            return nullptr;
+            end_tracking();
+            return std::make_shared<FunctionCallNode>(name, args.value());
         }
-        // function_call encountered a parsing error, so don't backtrack
+        backtrack();
+        m_curr = curr;
         return {};
     }
     // not an error
-    return nullptr;
+    return {};
 }
 
 Expr FormulaParser::complex()
@@ -1924,29 +2448,13 @@ Expr FormulaParser::complex()
     return nullptr;
 }
 
-std::optional<Expr> FormulaParser::function_call()
+std::optional<std::vector<Expr>> FormulaParser::function_call()
 {
     if (check(TokenType::OPEN_PAREN))
     {
-        advance(); // consume left paren
-        if (const Expr expr = complex_literal())
-        {
-            return expr;
-        }
-
-        if (const Expr args = conjunctive())
-        {
-            if (check(TokenType::CLOSE_PAREN))
-            {
-                advance(); // consume right paren
-                return args;
-            }
-
-            error(ErrorCode::EXPECTED_CLOSE_PAREN);
-            return {};
-        }
+        return argument_list();
     }
-    return nullptr;
+    return {};
 }
 
 Expr FormulaParser::number()
@@ -2044,15 +2552,66 @@ Expr FormulaParser::primary()
         return result;
     }
 
+    if (is_extended() && check({TokenType::TRUE, TokenType::FALSE}))
+    {
+        const bool value{check(TokenType::TRUE)};
+        advance();
+        return std::make_shared<LiteralNode>(value);
+    }
+
+    if (is_extended() && check(TokenType::STRING))
+    {
+        Expr result = std::make_shared<LiteralNode>(str());
+        advance();
+        return result;
+    }
+
+    if (is_extended() && check(TokenType::PARAMETER_IDENTIFIER))
+    {
+        Expr result = std::make_shared<ParameterRefNode>(str());
+        advance();
+        return result;
+    }
+
+    if (is_extended() && check(TokenType::CONSTANT_IDENTIFIER))
+    {
+        Expr result = std::make_shared<ConstantRefNode>(str());
+        advance();
+        return result;
+    }
+
+    if (is_extended() && match_context("new"))
+    {
+        std::string type;
+        if (check({TokenType::IDENTIFIER, TokenType::TYPE_IDENTIFIER, TokenType::PARAMETER_IDENTIFIER}))
+        {
+            type = str();
+            advance();
+        }
+        else
+        {
+            error(ErrorCode::EXPECTED_IDENTIFIER);
+            return nullptr;
+        }
+        std::vector<Expr> args;
+        if (check(TokenType::OPEN_PAREN))
+        {
+            const auto error_count = m_errors.size();
+            args = argument_list();
+            if (m_errors.size() != error_count)
+            {
+                return nullptr;
+            }
+        }
+        return std::make_shared<NewNode>(type, std::move(args));
+    }
+
     if (std::optional<Expr> result = builtin_function())
     {
         if (result.value())
         {
             return result.value();
         }
-    }
-    else
-    {
         return nullptr;
     }
 
@@ -2077,7 +2636,7 @@ Expr FormulaParser::primary()
         }
 
         // Allow full expressions including assignment in parens
-        if (Expr expr = conjunctive())
+        if (Expr expr = expression())
         {
             if (check(TokenType::CLOSE_PAREN))
             {
@@ -2096,7 +2655,7 @@ Expr FormulaParser::primary()
     if (check(TokenType::MODULUS))
     {
         advance();
-        if (Expr expr = conjunctive())
+        if (Expr expr = expression())
         {
             if (check(TokenType::MODULUS))
             {

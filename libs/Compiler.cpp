@@ -77,12 +77,22 @@ public:
 
     void visit(const AssignmentNode &node) override;
     void visit(const BinaryOpNode &node) override;
+    void visit(const ConstantRefNode &node) override;
+    void visit(const DeclarationNode &node) override;
+    void visit(const FunctionDeclNode &node) override;
     void visit(const FunctionCallNode &node) override;
     void visit(const IdentifierNode &node) override;
     void visit(const IfStatementNode &node) override;
+    void visit(const IndexNode &node) override;
     void visit(const LiteralNode &node) override;
+    void visit(const MemberAccessNode &node) override;
+    void visit(const NewNode &node) override;
+    void visit(const ParameterRefNode &node) override;
+    void visit(const RepeatUntilNode &node) override;
+    void visit(const ReturnNode &node) override;
     void visit(const StatementSeqNode &node) override;
     void visit(const UnaryOpNode &node) override;
+    void visit(const WhileNode &node) override;
 
     bool success() const
     {
@@ -97,6 +107,56 @@ private:
     std::vector<asmjit::x86::Xmm> m_result;
     CompileError &m_err;
 };
+
+void Compiler::visit(const ConstantRefNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const DeclarationNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const FunctionDeclNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const IndexNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const MemberAccessNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const NewNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const ParameterRefNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const RepeatUntilNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const ReturnNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
+
+void Compiler::visit(const WhileNode &)
+{
+    m_err = asmjit::kErrorInvalidState;
+}
 
 void Compiler::visit(const LiteralNode &node)
 {

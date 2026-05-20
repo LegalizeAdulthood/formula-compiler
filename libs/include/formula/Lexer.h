@@ -36,6 +36,7 @@ enum class TokenType
     MINUS,
     MULTIPLY,
     DIVIDE,
+    PERCENT,
     POWER,
     ASSIGN,
     LESS_THAN,
@@ -47,11 +48,16 @@ enum class TokenType
     LOGICAL_AND,
     LOGICAL_OR,
     MODULUS,
+    NOT,
+    AMPERSAND,
+    DOT,
     IDENTIFIER,           // variable name or enum value
     CONSTANT_IDENTIFIER,  // #name
     PARAMETER_IDENTIFIER, // @name
     OPEN_PAREN,
     CLOSE_PAREN,
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
     COLON,
     COMMA,
     TERMINATOR,
@@ -69,6 +75,12 @@ enum class TokenType
     END_PARAM,    //
     HEADING,      // heading block
     END_HEADING,  //
+    CLASS,
+    FINAL,
+    TRANSFORM,
+    PUBLIC,
+    PROTECTED,
+    PRIVATE,
     CTX_CONST,    // context-sensitive keywords
     CTX_IMPORT,   //
     CTX_NEW,      //

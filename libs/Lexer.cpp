@@ -28,6 +28,7 @@ std::string to_string(TokenType value)
         TOKEN_TYPE_CASE(MINUS);
         TOKEN_TYPE_CASE(MULTIPLY);
         TOKEN_TYPE_CASE(DIVIDE);
+        TOKEN_TYPE_CASE(PERCENT);
         TOKEN_TYPE_CASE(POWER);
         TOKEN_TYPE_CASE(ASSIGN);
         TOKEN_TYPE_CASE(LESS_THAN);
@@ -39,9 +40,14 @@ std::string to_string(TokenType value)
         TOKEN_TYPE_CASE(LOGICAL_AND);
         TOKEN_TYPE_CASE(LOGICAL_OR);
         TOKEN_TYPE_CASE(MODULUS);
+        TOKEN_TYPE_CASE(NOT);
+        TOKEN_TYPE_CASE(AMPERSAND);
+        TOKEN_TYPE_CASE(DOT);
         TOKEN_TYPE_CASE(IDENTIFIER);
         TOKEN_TYPE_CASE(OPEN_PAREN);
         TOKEN_TYPE_CASE(CLOSE_PAREN);
+        TOKEN_TYPE_CASE(OPEN_BRACKET);
+        TOKEN_TYPE_CASE(CLOSE_BRACKET);
         TOKEN_TYPE_CASE(COLON);
         TOKEN_TYPE_CASE(COMMA);
         TOKEN_TYPE_CASE(TERMINATOR);
@@ -59,6 +65,12 @@ std::string to_string(TokenType value)
         TOKEN_TYPE_CASE(END_PARAM);
         TOKEN_TYPE_CASE(HEADING);
         TOKEN_TYPE_CASE(END_HEADING);
+        TOKEN_TYPE_CASE(CLASS);
+        TOKEN_TYPE_CASE(FINAL);
+        TOKEN_TYPE_CASE(TRANSFORM);
+        TOKEN_TYPE_CASE(PUBLIC);
+        TOKEN_TYPE_CASE(PROTECTED);
+        TOKEN_TYPE_CASE(PRIVATE);
         TOKEN_TYPE_CASE(CTX_CONST);
         TOKEN_TYPE_CASE(CTX_IMPORT);
         TOKEN_TYPE_CASE(CTX_NEW);
@@ -223,6 +235,10 @@ Token Lexer::get_token()
     // Check for operators
     SourceLocation start = m_source_location;
     advance();
+    const auto extended_token = [this, start](TokenType type)
+    {
+        return Token{m_options.dialect == Dialect::EXTENDED ? type : TokenType::INVALID, start, 1};
+    };
 
     switch (ch)
     {
@@ -234,6 +250,8 @@ Token Lexer::get_token()
         return {TokenType::MULTIPLY, start, 1};
     case '/':
         return {TokenType::DIVIDE, start, 1};
+    case '%':
+        return extended_token(TokenType::PERCENT);
     case '^':
         return {TokenType::POWER, start, 1};
     case '=':
@@ -267,8 +285,7 @@ Token Lexer::get_token()
             advance();
             return {TokenType::NOT_EQUAL, start, 2};
         }
-        // Single ! is not recognized
-        return {TokenType::INVALID, start, 1};
+        return extended_token(TokenType::NOT);
     case '&':
         // Check for && (LOGICAL_AND)
         if (current_char() == '&')
@@ -276,8 +293,7 @@ Token Lexer::get_token()
             advance();
             return {TokenType::LOGICAL_AND, start, 2};
         }
-        // Single & is not recognized
-        return {TokenType::INVALID, start, 1};
+        return extended_token(TokenType::AMPERSAND);
     case '|':
         // Check for || (LOGICAL_OR) vs | (MODULUS)
         if (current_char() == '|')
@@ -291,6 +307,12 @@ Token Lexer::get_token()
         return {TokenType::OPEN_PAREN, start, 1};
     case ')':
         return {TokenType::CLOSE_PAREN, start, 1};
+    case '[':
+        return extended_token(TokenType::OPEN_BRACKET);
+    case ']':
+        return extended_token(TokenType::CLOSE_BRACKET);
+    case '.':
+        return extended_token(TokenType::DOT);
     case ':':
         return {TokenType::COLON, start, 1};
     case ',':
@@ -682,6 +704,7 @@ Token Lexer::identifier()
         {"bailout", TokenType::BAILOUT},          //
         {"bool", TokenType::TYPE_IDENTIFIER},     // type names
         {"builtin", TokenType::BUILTIN},          //
+        {"class", TokenType::CLASS},              //
         {"color", TokenType::TYPE_IDENTIFIER},    //
         {"complex", TokenType::TYPE_IDENTIFIER},  //
         {"default", TokenType::DEFAULT},          //
@@ -690,6 +713,7 @@ Token Lexer::identifier()
         {"endparam", TokenType::END_PARAM},       //
         {"endwhile", TokenType::END_WHILE},       //
         {"false", TokenType::FALSE},              // boolean values
+        {"final", TokenType::FINAL},              //
         {"float", TokenType::TYPE_IDENTIFIER},    //
         {"func", TokenType::FUNC},                //
         {"global", TokenType::GLOBAL},            // Section names (all extensions)
@@ -700,8 +724,12 @@ Token Lexer::identifier()
         {"param", TokenType::PARAM},              //
         {"perturbinit", TokenType::PERTURB_INIT}, //
         {"perturbloop", TokenType::PERTURB_LOOP}, //
+        {"private", TokenType::PRIVATE},          //
+        {"protected", TokenType::PROTECTED},      //
+        {"public", TokenType::PUBLIC},            //
         {"repeat", TokenType::REPEAT},            //
         {"switch", TokenType::SWITCH},            //
+        {"transform", TokenType::TRANSFORM},      //
         {"true", TokenType::TRUE},                //
         {"until", TokenType::UNTIL},              //
         {"while", TokenType::WHILE},              //
@@ -745,7 +773,10 @@ Token Lexer::identifier()
             if (it->type == TokenType::GLOBAL || it->type == TokenType::BUILTIN                                 //
                 || it->type == TokenType::INIT || it->type == TokenType::LOOP || it->type == TokenType::BAILOUT //
                 || it->type == TokenType::PERTURB_INIT || it->type == TokenType::PERTURB_LOOP                   //
-                || it->type == TokenType::DEFAULT || it->type == TokenType::SWITCH)
+                || it->type == TokenType::DEFAULT || it->type == TokenType::SWITCH                              //
+                || it->type == TokenType::FINAL || it->type == TokenType::TRANSFORM                             //
+                || it->type == TokenType::PUBLIC || it->type == TokenType::PROTECTED                            //
+                || it->type == TokenType::PRIVATE)
             {
                 if (current_char() == ':')
                 {
@@ -759,6 +790,8 @@ Token Lexer::identifier()
                 return {it->type, std::string{it->text}, start_loc, length};
             }
         }
+
+        (void) CONTEXT_KEYWORDS;
     }
 
     // If not recognized as extension section name, treat as identifier (and possibly colon)
