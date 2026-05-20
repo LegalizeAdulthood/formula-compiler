@@ -875,6 +875,7 @@ TEST_P(ExtensionKeywordAsIdentifier, lexedAsIdentifierWhenExtensionsDisabled)
 
 static ExtensionKeywordParam s_extension_keywords[]{
     {"bool"},
+    {"class"},
     {"color"},
     {"complex"},
     {"const"},
@@ -964,10 +965,15 @@ static ExtensionKeywordParam s_extension_sections[]{
     {"init"},        //
     {"loop"},        //
     {"bailout"},     //
+    {"final"},       //
     {"perturbinit"}, //
     {"perturbloop"}, //
     {"default"},     //
     {"switch"},      //
+    {"transform"},   //
+    {"public"},      //
+    {"protected"},   //
+    {"private"},     //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestExtensionsDisabled, ExtensionSectionAsIdentifier, ValuesIn(s_extension_sections));
