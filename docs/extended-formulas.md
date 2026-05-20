@@ -70,13 +70,15 @@
      plug-in params.
    - No semantic validation beyond parse shape in this pass.
 
-6. Importing.
+6. Import metadata.
    - Parse `import "file"` statements anywhere a formula or class can
      contain statements.
    - Record import directives in source order without returning them as
      executable section AST statements.
    - Store directives on the parsed entry, e.g. filename, source
      location, and whether the import was implicit.
+
+7. File and class indexes.
    - Add a formula loading pass that calls `Options::file_importer` for
      imported file text, preprocesses and parses imported files, follows
      chained imports, and retains only referenced imported ASTs.
@@ -85,22 +87,33 @@
    - Report missing imported files, import cycles, and syntax errors in
      imported files as load/parse diagnostics attached to the importing
      formula.
+   - Load imported files first into `FormulaEntry` records and build a
+     file-level class header index. Do not retain every imported class
+     AST.
    - Treat `class Derived(File.ufm:Base)` as an implicit import of
      `File.ufm` before explicit imports, matching UF class lookup rules.
    - Build a file-level class index for every loaded file. Each indexed
      class can parse or expose its AST when referenced. Each entry has an
      import scope from its implicit import, explicit imports in source
      order, and the current file.
+
+8. Reference collection.
    - Fully parse the referencing entry first, then post-process its AST
      with a reference-collection visitor. Collect class references from
      base class specs, declarations, casts, `new`, and plug-in params.
+
+9. Reference resolution.
    - Resolve collected class names by searching explicit imports from
      last to first, then the implicit ancestor import, then the current
      file. Store resolution results as references to parsed class ASTs.
      Report unresolved class names as diagnostics.
+
+10. Lazy imported AST retention.
    - Parse and retain only resolved imported entities referenced by the
      current AST. Repeat reference collection and resolution for each
      retained imported AST until no new referenced entities are found.
+
+11. Public load result.
    - Expose resolved imports as attached parse/load metadata: main entry
      AST, referenced imported ASTs, import graph, diagnostics, and a
      resolved class table. Do not retain unreferenced imported entry ASTs
