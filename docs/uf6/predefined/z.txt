@@ -1,0 +1,48 @@
+#z (predefined symbol)
+
+  --------- --------------------------------------------- --------------------- ----------
+  Type      Readable                                      Writeable             Constant
+  complex   In fractal formulas and coloring algorithms   In fractal formulas   No
+  --------- --------------------------------------------- --------------------- ----------
+
+This predefined symbol represents the main variable of the fractal
+formula. The fractal formula should update the value of z for each
+iteration. The coloring algorithm can use the value of #z to determine a
+proper #index value. The predefined symbol #z is also used for
+periodicity checking.
+
+As an example the code for a Mandelbrot set is shown here. As you can
+see, the value of #z is updated each iteration, so the coloring
+algorithm can read it in its loop section.
+
+    Mandelbrot {
+    init:
+      z = 0
+    loop:
+      z = z*z + #pixel
+    bailout:
+      |z| < 4
+    }
+
+Here is a sample coloring algorithm:
+
+    Coloring {
+    init:
+      float closest = 1e20
+    loop:
+      float d = |#z|
+      ; determine the value of z closest to the origin
+      if d < closest 
+        closest = d
+      endif
+    final:
+      #index = 0.01 * #numiter + 0.1 * closest
+    }
+
+Note: to avoid unnecessary # prefixes, the # prefix may be omitted
+before #z in fractal formulas. However, it is required in coloring
+algorithms.
+
+See Also
+Writing fractal formulas
+Writing coloring algorithms

@@ -1,0 +1,24 @@
+#randomrange (predefined symbol)
+
+  ------- ---------- ----------- ----------
+  Type    Readable   Writeable   Constant
+  float   Always     Never       Yes
+  ------- ---------- ----------- ----------
+
+This predefined symbol returns the maximum value that can be returned by
+the random function + 1. Divide the return value of the random function
+by #randomrange to obtain a random floating-point number between (but
+not including) -1 and 1.
+
+To obtain a random value between 0 and (but not including) 1, use the
+abs function to convert the return value of the random function to a
+positive number before dividing it.
+
+Example:
+
+    ; calculate a random float between 0 and 1
+    float x = abs(random(1234)) / #randomrange
+
+See Also
+random function
+Random values

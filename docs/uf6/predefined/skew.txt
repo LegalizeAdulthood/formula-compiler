@@ -1,0 +1,24 @@
+#skew (predefined symbol)
+
+  ------- ---------- ----------- ----------
+  Type    Readable   Writeable   Constant
+  float   Always     Never       Yes
+  ------- ---------- ----------- ----------
+
+This predefined symbol returns the skew angle as set in the Location tab
+in the Layer Properties tool window. Although the angle in the Location
+tab is expressed in degrees, this predefined symbol returns the angle in
+radians. You can convert from radians to degrees using the following
+formula:
+
+degrees = (radians * 180) / #pi
+
+Example:
+
+    float x = #skew
+
+See Also
+#center (predefined symbol)
+#magn (predefined symbol)
+#angle (predefined symbol)
+#stretch (predefined symbol)

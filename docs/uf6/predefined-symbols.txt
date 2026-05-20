@@ -1,0 +1,19 @@
+Predefined symbols
+
+Predefined symbols are used by formulas to read values from the
+environment (Ultra Fractal) and optionally return values to the
+environment. Predefined symbols are always prefixed by a # character, to
+avoid conflicts between variables and predefined symbols.
+
+Most read-only predefined symbols are treated as constants, so they can
+be used in array declarations and in settings that accept expressions,
+such as default.
+
+Not all predefined symbols can always be accessed. This depends on the
+formula type and the section within the formula type.
+
+Use the Contents tab to see what predefined symbols are available.
+
+See Also
+Constants
+Variables

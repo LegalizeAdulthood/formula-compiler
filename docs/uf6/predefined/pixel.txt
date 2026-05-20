@@ -1,0 +1,27 @@
+#pixel (predefined symbol)
+
+  --------- ----------------------------------- -------------------- ----------
+  Type      Readable                            Writeable            Constant
+  complex   Always, except in global sections   In transformations   No
+  --------- ----------------------------------- -------------------- ----------
+
+This predefined symbol returns the complex fractal coordinates of the
+pixel currently being calculated. Transformations can change the pixel
+value based upon its previous value to transform the image. Note that
+#pixel is expressed in the fractal coordinate space which depends on the
+current center and magnification settings, unlike #x, #y and
+#screenpixel which use the screen coordinate space.
+
+Example:
+
+    complex c = #pixel
+
+See #z for an example on the usage of #pixel.
+
+Note: this predefined symbol is also accessible without the # prefix,
+for Fractint compatibility.
+
+See Also
+#x (predefined symbol)
+#y (predefined symbol)
+#screenpixel (predefined symbol)

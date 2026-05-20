@@ -1,0 +1,32 @@
+#calculationPurpose (predefined symbol)
+
+  ------ ---------- ----------- ----------
+  Type   Readable   Writeable   Constant
+  int    Always     Never       Yes
+  ------ ---------- ----------- ----------
+
+This predefined symbol returns a value that indicates the purpose for
+which the current calculation is used. A formula can change its behavior
+depending on this value. For example, you could use a higher-quality but
+slower calculation when rendering.
+
+Possible values are:
+
+  ------- ----------------------------------------------------------------------------------------------------------------------------------------
+  Value   Meaning
+  0       Normal: the formula is used by a regular fractal window
+  1       Thumbnail: the formula is used by the browser to show thumbnails
+  2       Render: the formula is used by the disk rendering engine to produce a high-quality final image
+  3       Live preview: the formula is used for a live preview image in the Fractal Mode tool window (when exploring, eyedropping, or switching)
+  ------- ----------------------------------------------------------------------------------------------------------------------------------------
+
+Example:
+
+    if #calculationPurpose == 2
+      ; Formula is used in a disk render operation
+    else
+      ; Normal fractal window or thumbnail/preview calculation
+    endif
+
+See Also
+Predefined symbols

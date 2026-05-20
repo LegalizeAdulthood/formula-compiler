@@ -1,0 +1,28 @@
+#index (predefined symbol)
+
+  ------- ---------- --------------------------------------------- ----------
+  Type    Readable   Writeable                                     Constant
+  float   Never      In the final section of coloring algorithms   No
+  ------- ---------- --------------------------------------------- ----------
+
+Coloring algorithms use this predefined symbol to return a color index.
+The range 0..1 for the index value corresponds to the entire gradient
+when all controls in the Inside or Outside tab of the Layer Properties
+tool window are set to their default values (Density = 1, Transfer =
+Linear, Offset = 0). If Repeat Gradient is set to true, the gradient
+"wraps around", so the index value 1.1 actually corresponds to 0.1.
+
+Before executing the coloring algorithm, the index value is set to 0, so
+that is the value that will be used if the coloring algorithm doesn't
+change it.
+
+Example:
+
+    #index = 0.5
+
+See #z for an example on the usage of #index.
+
+See Also
+#solid (predefined symbol)
+#color (predefined symbol)
+Writing coloring algorithms

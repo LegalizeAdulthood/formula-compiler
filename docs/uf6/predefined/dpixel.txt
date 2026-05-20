@@ -1,0 +1,20 @@
+#dpixel (predefined symbol)
+
+  --------- ------------------------------------------------------------- ----------- ----------
+  Type      Readable                                                      Writeable   Constant
+  complex   In perturbinit and perturbloop sections of fractal formulas   Never       No
+  --------- ------------------------------------------------------------- ----------- ----------
+
+The #dpixel predefined symbol returns the difference between the
+location of the current pixel and the location of the reference orbit
+when performing perturbation calculations. See perturbation equations
+for more information.
+
+See #dz for an example of a formula using the #dpixel predefined symbol.
+
+See Also
+Writing fractal formulas
+Perturbation equations
+Perturbation calculations
+#dz (predefined symbol)
+#pixel (predefined symbol)

@@ -1,0 +1,27 @@
+#color (predefined symbol)
+
+  ------- ---------- --------------------------------------------- ----------
+  Type    Readable   Writeable                                     Constant
+  color   Never      In the final section of coloring algorithms   No
+  ------- ---------- --------------------------------------------- ----------
+
+Direct coloring algorithms use this predefined symbol to return a color.
+This color is directly visible in the layer. To compute the color,
+direct coloring algorithms can use #z and #numiter just like normal
+coloring algorithms, and combine it with color parameters or colors from
+the gradient using the gradient function.
+
+Before executing the coloring algorithm, #color is set to black, so that
+is the value that will be used if the coloring algorithm doesn't change
+it.
+
+Example:
+
+    #color = rgb(0.5, 0.8, 0.3)
+
+Note: You cannot mix #color and #index in the same coloring algorithm.
+
+See Also
+#solid (predefined symbol)
+#index (predefined symbol)
+Writing direct coloring algorithms

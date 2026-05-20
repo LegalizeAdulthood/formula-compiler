@@ -1,0 +1,19 @@
+#maxiter (predefined symbol)
+
+  ------ --------------------------------------------- ----------- ----------
+  Type   Readable                                      Writeable   Constant
+  int    In fractal formulas and coloring algorithms   Never       Yes
+  ------ --------------------------------------------- ----------- ----------
+
+This predefined symbol returns the maximum iterations value set in the
+Formula tab of the Layer Properties tool window.
+
+Example:
+
+    int i = #maxiter
+
+Note: this predefined symbol can also be accessed as maxit both with and
+without the # prefix for Fractint compatibility.
+
+See Also
+#numiter (predefined symbol)

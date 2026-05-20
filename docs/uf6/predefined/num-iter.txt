@@ -1,0 +1,19 @@
+#numiter (predefined symbol)
+
+  ------ --------------------------------------------- ----------- ----------
+  Type   Readable                                      Writeable   Constant
+  int    In the final section of coloring algorithms   Never       No
+  ------ --------------------------------------------- ----------- ----------
+
+This predefined symbol returns the number of iterations: the number of
+times the loop section in the fractal formulas has been repeated. The
+coloring algorithm can use this value to determine a proper color index.
+
+Example:
+
+    int i = #numiter
+
+See #z for an example on the usage of #numiter.
+
+See Also
+#maxiter (predefined symbol)

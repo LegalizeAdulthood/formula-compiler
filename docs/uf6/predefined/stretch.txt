@@ -1,0 +1,19 @@
+#stretch (predefined symbol)
+
+  ------- ---------- ----------- ----------
+  Type    Readable   Writeable   Constant
+  float   Always     Never       Yes
+  ------- ---------- ----------- ----------
+
+This predefined symbol returns the stretch factor as set in the Location
+tab in the Layer Properties tool window.
+
+Example:
+
+    float x = #stretch
+
+See Also
+#center (predefined symbol)
+#magn (predefined symbol)
+#angle (predefined symbol)
+#skew (predefined symbol)

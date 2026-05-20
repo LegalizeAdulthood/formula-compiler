@@ -1,0 +1,17 @@
+#height (predefined symbol)
+
+  ------ ---------- ----------- ----------
+  Type   Readable   Writeable   Constant
+  int    Always     Never       Yes
+  ------ ---------- ----------- ----------
+
+This predefined symbol returns the height of the fractal image in
+pixels.
+
+Example:
+
+    int i = #height
+
+See Also
+#width (predefined symbol)
+#screenmax (predefined symbol)

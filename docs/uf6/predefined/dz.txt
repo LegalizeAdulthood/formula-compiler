@@ -1,0 +1,33 @@
+#dz (predefined symbol)
+
+  --------- ------------------------------------------------------------- ----------
+  Type      Readable and writeable                                        Constant
+  complex   In perturbinit and perturbloop sections of fractal formulas   No
+  --------- ------------------------------------------------------------- ----------
+
+The #dz predefined symbol represents the difference between the current
+z value and the z value of the reference orbit when performing
+perturbation calculations. See perturbation equations for more
+information.
+
+Example of a Mandelbrot formula that supports perturbation calculations:
+
+    PerturbMandelbrot {
+    init:
+      z = 0
+    loop:
+      z = sqr(z) + #pixel
+    bailout:
+      |z| < 4
+    perturbinit:
+      #dz = 0
+    perturbloop:
+      #dz = 2 * #z * #dz + sqr(#dz) + #dpixel
+    }
+
+See Also
+Writing fractal formulas
+Perturbation equations
+Perturbation calculations
+#dpixel (predefined symbol)
+#z (predefined symbol)

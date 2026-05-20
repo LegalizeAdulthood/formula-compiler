@@ -1,0 +1,20 @@
+#whitesq (predefined symbol)
+
+  ------ ----------------------------------- ----------- ----------
+  Type   Readable                            Writeable   Constant
+  bool   Always, except in global sections   Never       No
+  ------ ----------------------------------- ----------- ----------
+
+This predefined symbol returns true if the x-coordinate and the
+y-coordinate of the pixel being calculated give an odd number when added
+together; otherwise, it returns false. If you think of the screen as a
+large checkerboard with white and black squares with the size of a
+single pixel, #whitesq returns true for every white pixel.
+
+Example:
+
+    bool b = #whitesq
+
+See Also
+#x (predefined symbol)
+#y (predefined symbol)

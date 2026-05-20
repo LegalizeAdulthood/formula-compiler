@@ -1,0 +1,23 @@
+#screenmax (predefined symbol)
+
+  --------- ---------- ----------- ----------
+  Type      Readable   Writeable   Constant
+  complex   Always     Never       Yes
+  --------- ---------- ----------- ----------
+
+This predefined symbol contains the width and the height of the fractal
+image packed in a complex number. The real part contains the width; the
+imaginary part contains the height. The width and height can also be
+accessed separately using the #width and #height predefined symbols.
+
+Examples:
+
+    int image_width = round(real(#screenmax))
+    int image_height = round(imag(#screenmax))
+
+Note: this predefined symbol can also be accessed as scrnmax both with
+and without the # prefix for Fractint compatibility.
+
+See Also
+#width (predefined symbol)
+#height (predefined symbol)

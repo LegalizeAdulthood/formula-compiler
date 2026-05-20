@@ -1,0 +1,22 @@
+#random (predefined symbol)
+
+  --------- ----------------------------------- ----------- ----------
+  Type      Readable                            Writeable   Constant
+  complex   Always, except in global sections   Never       No
+  --------- ----------------------------------- ----------- ----------
+
+This predefined symbol returns a random complex value. The real and
+imaginary parts of this predefined symbol contain a random value between
+0 and 1. The random value is changed for every pixel.
+
+Example:
+
+    complex c = #random
+
+Note: this predefined symbol can also be accessed as rand both with and
+without the # prefix for Fractint compatibility.
+
+See Also
+#randomrange (predefined symbol)
+random function
+Random values

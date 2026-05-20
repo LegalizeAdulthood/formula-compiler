@@ -1,0 +1,24 @@
+#angle (predefined symbol)
+
+  ------- ---------- ----------- ----------
+  Type    Readable   Writeable   Constant
+  float   Always     Never       Yes
+  ------- ---------- ----------- ----------
+
+This predefined symbol returns the angle as set in the Location tab in
+the Layer Properties tool window. Although the angle in the Location tab
+is expressed in degrees, this predefined symbol returns the angle in
+radians. You can convert from radians to degrees using the following
+formula:
+
+degrees = (radians * 180) / #pi
+
+Example:
+
+    float x = #angle
+
+See Also
+#center (predefined symbol)
+#magn (predefined symbol)
+#stretch (predefined symbol)
+#skew (predefined symbol)

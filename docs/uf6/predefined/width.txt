@@ -1,0 +1,16 @@
+#width (predefined symbol)
+
+  ------ ---------- ----------- ----------
+  Type   Readable   Writeable   Constant
+  int    Always     Never       Yes
+  ------ ---------- ----------- ----------
+
+This predefined symbol returns the width of the fractal image in pixels.
+
+Example:
+
+    int i = #width
+
+See Also
+#height (predefined symbol)
+#screenmax (predefined symbol)

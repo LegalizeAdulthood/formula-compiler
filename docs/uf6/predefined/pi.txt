@@ -1,0 +1,20 @@
+#pi (predefined symbol)
+
+  ------- ---------- ----------- ----------
+  Type    Readable   Writeable   Constant
+  float   Always     Never       Yes
+  ------- ---------- ----------- ----------
+
+This predefined symbol returns the value of pi, which is approximately
+equal to 3.141592653589793. The precision of the return value depends on
+the number of decimals in use. See Arbitrary precision.
+
+Example:
+
+    float x = #pi
+
+Note: this predefined symbol is also accessible without the # prefix,
+for Fractint compatibility.
+
+See Also
+#e (predefined symbol)

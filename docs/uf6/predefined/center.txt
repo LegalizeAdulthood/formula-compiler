@@ -1,0 +1,19 @@
+#center (predefined symbol)
+
+  --------- ---------- ----------- ----------
+  Type      Readable   Writeable   Constant
+  complex   Always     Never       Yes
+  --------- ---------- ----------- ----------
+
+This predefined symbol returns the center as set in the Location tab in
+the Layer Properties tool window.
+
+Example:
+
+    complex c = #center
+
+See Also
+#angle (predefined symbol)
+#magn (predefined symbol)
+#stretch (predefined symbol)
+#skew (predefined symbol)

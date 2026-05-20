@@ -1,0 +1,39 @@
+#y (predefined symbol)
+
+  ------ ----------------------------------- ----------- ----------
+  Type   Readable                            Writeable   Constant
+  int    Always, except in global sections   Never       No
+  ------ ----------------------------------- ----------- ----------
+
+This predefined symbol returns the y-coordinate of the pixel currently
+being calculated. You can also use the predefined symbol #screenpixel to
+retrieve the y-coordinate, but there is an important difference.
+
+The coordinates accessible through #screenpixel are float coordinates,
+while #x and #y contain int coordinates. For normal fractal
+calculations, this doesn't matter. It does matter, however, when using
+the Render to Disk feature with anti-aliasing. In this case, Ultra
+Fractal can subdivide pixels and calculate pixels that actually fall
+between the physical pixels on the screen. The coordinates of these
+subdivided pixels cannot be properly expressed using int values, of
+course.
+
+So if your formula uses the #x and #y predefined symbols, it won't work
+properly with anti-aliasing. It will work properly with anti-aliasing if
+it uses the #screenpixel predefined symbol instead. You should decide
+how your formula should work and choose the right predefined symbol for
+the job. Of course, you can also experiment and see which choice works
+best with your formula.
+
+Example:
+
+    int i = #y
+
+Note: When anti-aliasing, #y ranges from 0 up to and including #height.
+If you use #y to index an array, you should declare the array with size
+[#height + 1].
+
+See Also
+#x (predefined symbol)
+#screenpixel (predefined symbol)
+#pixel (predefined symbol)
