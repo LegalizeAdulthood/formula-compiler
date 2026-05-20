@@ -685,6 +685,54 @@ TEST(TestFormulaParse, extendedDeclarationsAndLoops)
         trim_ws(to_string(result->per_image)));
 }
 
+TEST(TestFormulaParse, extendedTypedDeclarations)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "bool flag=true\n"
+                                               "complex c=(1,2)\n"
+                                               "color shade\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:3 { "
+              "declaration:bool,flag literal:true "
+              "declaration:complex,c literal:(1,2) "
+              "declaration:color,shade }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedDynamicArrays)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "int values[]\n"
+                                               "setLength(values, 3)\n"
+                                               "values[0]=1\n"
+                                               "values[1]=values[0]+1\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:4 { "
+              "declaration:int,values[] "
+              "function_call:setlength( identifier:values literal:3 ) "
+              "assignment:{ index:[ identifier:values literal:0 ] } literal:1 "
+              "assignment:{ index:[ identifier:values literal:1 ] } "
+              "binary_op:+ index:[ identifier:values literal:0 ] literal:1 }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedReturnWithoutExpression)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "return\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("return", trim_ws(to_string(result->per_image)));
+}
+
 TEST(TestFormulaParse, extendedFunctionDeclaration)
 {
     const ast::FormulaSectionsPtr result{parse("global:\n"
