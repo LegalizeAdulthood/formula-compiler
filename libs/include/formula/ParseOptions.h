@@ -27,6 +27,7 @@ struct Options
     Dialect dialect{Dialect::EXTENDED};
     EntryKind entry_kind{EntryKind::FRACTAL};
     std::function<std::string(std::string_view)> file_importer;
+    std::string source_filename;
 };
 
 } // namespace formula::parser

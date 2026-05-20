@@ -49,8 +49,11 @@ class Preprocessor
 {
 public:
     Preprocessor();
+    explicit Preprocessor(std::string source_filename);
     explicit Preprocessor(const MacroList &predefined);
+    Preprocessor(const MacroList &predefined, std::string source_filename);
     explicit Preprocessor(UltraFractalMacros predefined);
+    Preprocessor(UltraFractalMacros predefined, std::string source_filename);
 
     std::string process(std::string_view input);
 
@@ -67,6 +70,7 @@ public:
 private:
     MacroList m_predefined;
     MacroList m_macros;
+    std::string m_source_filename;
     std::vector<Diagnostic> m_errors;
 };
 

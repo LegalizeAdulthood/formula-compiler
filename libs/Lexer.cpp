@@ -161,6 +161,7 @@ Lexer::Lexer(std::string_view input, Options options) :
     m_options(options),
     m_input(input)
 {
+    m_source_location.filename = m_options.source_filename;
 }
 
 Token Lexer::get_token()
@@ -583,7 +584,7 @@ void Lexer::advance()
 
 SourceLocation Lexer::position_to_location(size_t pos) const
 {
-    SourceLocation loc{1, 1};
+    SourceLocation loc{1, 1, m_options.source_filename};
     for (size_t i = 0; i < pos && i < m_input.length(); ++i)
     {
         if (m_input[i] == '\n')

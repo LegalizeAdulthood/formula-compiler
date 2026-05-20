@@ -648,6 +648,19 @@ TEST_P(ParseFailures, parse)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failures));
 
+TEST(TestFormulaParse, diagnosticsRetainSourceFilename)
+{
+    Options options;
+    options.source_filename = "common.ulb";
+    ParserPtr parser{create_parser("1a", options)};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    EXPECT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ("common.ulb", parser->get_errors().back().position.filename);
+}
+
 TEST(TestFormulaParse, extendedExpressionForms)
 {
     const ast::FormulaSectionsPtr result{

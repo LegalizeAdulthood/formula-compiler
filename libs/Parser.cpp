@@ -259,6 +259,7 @@ lexer::Options lexer_options_for_parser(const Options &options)
 {
     lexer::Options lexer_options;
     lexer_options.dialect = options.dialect;
+    lexer_options.source_filename = options.source_filename;
     return lexer_options;
 }
 

@@ -239,6 +239,17 @@ TEST(TestPreprocessor, reportsUnclosedIfdef)
     EXPECT_EQ(2U, preprocessor.errors()[0].position.line);
 }
 
+TEST(TestPreprocessor, diagnosticsRetainSourceFilename)
+{
+    Preprocessor preprocessor{MacroList{}, "common.ulb"};
+
+    const std::string result = preprocessor.process("$else\n");
+
+    EXPECT_TRUE(result.empty());
+    ASSERT_EQ(1U, preprocessor.errors().size());
+    EXPECT_EQ("common.ulb", preprocessor.errors()[0].position.filename);
+}
+
 TEST(TestPreprocessor, reportsUnexpectedElse)
 {
     Preprocessor preprocessor;

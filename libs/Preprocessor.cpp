@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace formula::preprocessor
@@ -121,9 +123,9 @@ Line next_line(std::string_view input, std::size_t &pos)
     return {text, input.substr(newline_start, pos - newline_start)};
 }
 
-void add_error(std::vector<Diagnostic> &errors, ErrorCode code, std::size_t line)
+void add_error(std::vector<Diagnostic> &errors, ErrorCode code, std::size_t line, std::string_view filename)
 {
-    errors.push_back(Diagnostic{code, SourceLocation{line, 1}});
+    errors.push_back(Diagnostic{code, SourceLocation{line, 1, std::string{filename}}});
 }
 
 bool contains_macro(const MacroList &macros, std::string_view macro)
@@ -189,13 +191,29 @@ Preprocessor::Preprocessor() :
 }
 
 Preprocessor::Preprocessor(const MacroList &predefined) :
+    Preprocessor{predefined, {}}
+{
+}
+
+Preprocessor::Preprocessor(std::string source_filename) :
+    Preprocessor{UltraFractalMacros::NONE, std::move(source_filename)}
+{
+}
+
+Preprocessor::Preprocessor(const MacroList &predefined, std::string source_filename) :
     m_predefined{normalize_macros(predefined)},
-    m_macros{m_predefined}
+    m_macros{m_predefined},
+    m_source_filename{std::move(source_filename)}
 {
 }
 
 Preprocessor::Preprocessor(UltraFractalMacros predefined) :
     Preprocessor{predefined_macros(predefined)}
+{
+}
+
+Preprocessor::Preprocessor(UltraFractalMacros predefined, std::string source_filename) :
+    Preprocessor{predefined_macros(predefined), std::move(source_filename)}
 {
 }
 
@@ -224,7 +242,7 @@ std::string Preprocessor::process(std::string_view input)
                 const std::string symbol = lower(first_word(body));
                 if (!is_symbol(symbol) || !trim(body).empty())
                 {
-                    add_error(m_errors, ErrorCode::EXPECTED_DIRECTIVE_SYMBOL, line_number);
+                    add_error(m_errors, ErrorCode::EXPECTED_DIRECTIVE_SYMBOL, line_number, m_source_filename);
                 }
                 else if (directive == "define")
                 {
@@ -250,15 +268,15 @@ std::string Preprocessor::process(std::string_view input)
             {
                 if (!trim(body).empty())
                 {
-                    add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number);
+                    add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number, m_source_filename);
                 }
                 else if (conditionals.empty())
                 {
-                    add_error(m_errors, ErrorCode::UNEXPECTED_DIRECTIVE_ELSE, line_number);
+                    add_error(m_errors, ErrorCode::UNEXPECTED_DIRECTIVE_ELSE, line_number, m_source_filename);
                 }
                 else if (conditionals.back().saw_else)
                 {
-                    add_error(m_errors, ErrorCode::DUPLICATE_DIRECTIVE_ELSE, line_number);
+                    add_error(m_errors, ErrorCode::DUPLICATE_DIRECTIVE_ELSE, line_number, m_source_filename);
                 }
                 else
                 {
@@ -272,11 +290,11 @@ std::string Preprocessor::process(std::string_view input)
             {
                 if (!trim(body).empty())
                 {
-                    add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number);
+                    add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number, m_source_filename);
                 }
                 else if (conditionals.empty())
                 {
-                    add_error(m_errors, ErrorCode::UNEXPECTED_DIRECTIVE_ENDIF, line_number);
+                    add_error(m_errors, ErrorCode::UNEXPECTED_DIRECTIVE_ENDIF, line_number, m_source_filename);
                 }
                 else
                 {
@@ -285,7 +303,7 @@ std::string Preprocessor::process(std::string_view input)
             }
             else
             {
-                add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number);
+                add_error(m_errors, ErrorCode::INVALID_COMPILER_DIRECTIVE, line_number, m_source_filename);
             }
 
             ++line_number;
@@ -307,7 +325,7 @@ std::string Preprocessor::process(std::string_view input)
 
     if (!conditionals.empty())
     {
-        add_error(m_errors, ErrorCode::EXPECTED_DIRECTIVE_ENDIF, line_number);
+        add_error(m_errors, ErrorCode::EXPECTED_DIRECTIVE_ENDIF, line_number, m_source_filename);
     }
 
     return output;

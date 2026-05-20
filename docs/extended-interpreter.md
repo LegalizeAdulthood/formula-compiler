@@ -28,7 +28,8 @@
 - Add an import-loading pass before interpreter construction: call
   `Options::file_importer` for imported file text, preprocess and parse
   imported entries, collect class declarations, and surface
-  imported-file syntax errors as load errors.
+  imported-file syntax errors as load errors with the imported filename
+  in the source location.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics

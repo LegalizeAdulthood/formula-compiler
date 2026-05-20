@@ -22,9 +22,14 @@
 - Add import metadata so formula loading can parse import chains before
   semantic checks. Imports are syntax in the source file, but their
   effect is loader-level class availability, not runtime execution.
+- Add a per-entry import scope. The parse/load phase uses it to resolve
+  class names found in base classes, declarations, casts, `new`, and
+  plug-in parameters against imported files and the current file.
 - Add `Options::file_importer`, a
   `std::function<std::string(std::string_view)>`, so callers supply
   imported file text. The parser never locates files itself.
+- Add `Options::source_filename` and preserve it in diagnostics so
+  imported source locations keep their original filename.
 - Add section rules by kind:
   - fractal: existing order plus perturb sections.
   - coloring: `global`, `init`, `loop`, `final`, `default`.
@@ -67,19 +72,26 @@
 6. Importing.
    - Parse `import "file"` statements anywhere a formula or class can
      contain statements.
-   - Record import statements in source order without treating them as
-     executable runtime statements.
+   - Record import directives in source order without returning them as
+     executable section AST statements.
+   - Store directives on the parsed entry, e.g. filename, source
+     location, and whether the import was implicit.
    - Add a formula loading pass that calls `Options::file_importer` for
      imported file text, preprocesses and parses imported files, and
      follows chained imports.
+   - Set `Options::source_filename` while preprocessing and parsing
+     imported text so every diagnostic keeps file, line, and column.
    - Report missing imported files, import cycles, and syntax errors in
      imported files as load/parse diagnostics attached to the importing
      formula.
    - Treat `class Derived(File.ufm:Base)` as an implicit import of
      `File.ufm` before explicit imports, matching UF class lookup rules.
-   - Preserve import order for later semantic class lookup: the last
-     imported file is searched first, then earlier imports, then the
-     current file.
+   - Build a file-level class index for every loaded file. Each entry
+     has an import scope from its implicit import, explicit imports in
+     source order, and current file.
+   - Resolve class names during parse/load by searching explicit
+     imports from last to first, then the implicit ancestor import, then
+     the current file. Report unresolved class names as diagnostics.
 
 ## Tests
 - Lexer: all new tokens, BASIC rejects extended-only syntax, EXTENDED
@@ -91,15 +103,19 @@
 - Sections: fractal/coloring/transformation/class section order and
   invalid-order errors.
 - Imports: quoted filename syntax, import anywhere, chained imports,
-  import order preservation, implicit ancestor-file import, missing
-  files, cycles, and imported-file syntax errors.
+  import order preservation, imported diagnostic filenames, implicit
+  ancestor-file import, imported class-name resolution, missing files,
+  cycles, and imported-file syntax errors.
 - Regression: all existing parse tests, ID formulas, and workflow command:
   `cmake --workflow rt-default`
 
 ## Assumptions
 - This pass builds syntax coverage and durable AST only.
-- Import loading parses imported entries and reports syntax/load errors,
-  but class resolution remains semantic work after parse coverage.
+- Import loading parses imported entries and validates that referenced
+  class names exist in the entry import scope. Detailed type, member,
+  and overload checks remain semantic work after parse coverage.
+- Import directives are metadata and loader work, not executable AST
+  nodes.
 - Type checking, object model, runtime behavior, interpreter, and shader
   generation come after parse coverage.
 - `Dialect.h` remains shared so lexer does not depend on parser header.

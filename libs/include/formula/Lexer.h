@@ -209,6 +209,7 @@ struct Token
 struct Options
 {
     Dialect dialect{Dialect::EXTENDED};
+    std::string source_filename;
 };
 
 class Lexer

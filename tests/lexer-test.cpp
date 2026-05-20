@@ -39,6 +39,17 @@ TEST(TestLexer, skipsTrailingWhitespace)
     EXPECT_EQ(TokenType::END_OF_INPUT, end_token.type);
 }
 
+TEST(TestLexer, tokenLocationsRetainSourceFilename)
+{
+    Options options;
+    options.source_filename = "common.ulb";
+    Lexer lexer{"z", options};
+
+    const Token token{lexer.get_token()};
+
+    EXPECT_EQ("common.ulb", token.location.filename);
+}
+
 TEST(TestLexer, multipleNumbers)
 {
     Lexer lexer{"1 2.5 3"};
