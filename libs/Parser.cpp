@@ -90,6 +90,7 @@ private:
     Expr sequence();
     bool is_extended() const;
     bool is_section_token(TokenType type) const;
+    std::optional<size_t> section_rank(TokenType type) const;
     bool is_block_end() const;
     bool is_type_start() const;
     bool check_context(std::string_view keyword) const;
@@ -998,9 +999,30 @@ std::optional<bool> FormulaParser::section_formula()
     {
         return {};
     }
+    std::optional<size_t> last_section_rank;
     while (is_section_token(m_curr.type))
     {
         TokenType section{m_curr.type};
+        if (section == TokenType::BUILTIN &&
+            (m_ast->per_image || m_ast->initialize || m_ast->iterate || m_ast->bailout))
+        {
+            error(ErrorCode::BUILTIN_SECTION_DISALLOWS_OTHER_SECTIONS);
+            return false;
+        }
+
+        std::optional<size_t> rank{section_rank(section)};
+        if (!rank)
+        {
+            error(ErrorCode::INVALID_SECTION);
+            return false;
+        }
+        if (last_section_rank && *rank < *last_section_rank)
+        {
+            error(ErrorCode::INVALID_SECTION_ORDER);
+            return false;
+        }
+        last_section_rank = rank;
+
         advance(); // consume section name and colon (handled by lexer)
 
         if (!check(TokenType::TERMINATOR))
@@ -1362,6 +1384,17 @@ FormulaSectionsPtr FormulaParser::parse()
         return m_ast;
     }
 
+    if (m_options.entry_kind == EntryKind::CLASS)
+    {
+        if (!check(TokenType::END_OF_INPUT))
+        {
+            error(ErrorCode::EXPECTED_STATEMENT);
+            return nullptr;
+        }
+        m_ast->public_members = result;
+        return m_ast;
+    }
+
     Expr init;
     if (match(TokenType::COLON))
     {
@@ -1513,6 +1546,41 @@ bool FormulaParser::is_section_token(TokenType type) const
         return std::find(EXTENDED_SECTIONS.begin(), EXTENDED_SECTIONS.end(), type) != EXTENDED_SECTIONS.end();
     }
     return std::find(SECTIONS.begin(), SECTIONS.end(), type) != SECTIONS.end();
+}
+
+std::optional<size_t> FormulaParser::section_rank(TokenType type) const
+{
+    const auto find_rank = [type](std::initializer_list<TokenType> sections) -> std::optional<size_t>
+    {
+        size_t rank{};
+        for (TokenType section : sections)
+        {
+            if (section == type)
+            {
+                return rank;
+            }
+            ++rank;
+        }
+        return {};
+    };
+
+    switch (m_options.entry_kind)
+    {
+    case EntryKind::FRACTAL:
+        return find_rank({TokenType::GLOBAL, TokenType::BUILTIN, TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT,
+            TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP, TokenType::DEFAULT, TokenType::SWITCH});
+
+    case EntryKind::COLORING:
+        return find_rank({TokenType::GLOBAL, TokenType::INIT, TokenType::LOOP, TokenType::FINAL, TokenType::DEFAULT});
+
+    case EntryKind::TRANSFORMATION:
+        return find_rank({TokenType::GLOBAL, TokenType::TRANSFORM, TokenType::DEFAULT});
+
+    case EntryKind::CLASS:
+        return find_rank({TokenType::PUBLIC, TokenType::PROTECTED, TokenType::PRIVATE, TokenType::DEFAULT});
+    }
+
+    return {};
 }
 
 bool FormulaParser::is_block_end() const

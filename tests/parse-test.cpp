@@ -822,6 +822,141 @@ TEST(TestFormulaParse, extendedFormulaKinds)
     EXPECT_TRUE(transform_result->transform);
 }
 
+TEST(TestFormulaParse, extendedClassSections)
+{
+    Options options;
+    options.entry_kind = EntryKind::CLASS;
+    const ast::FormulaSectionsPtr result{parse("public:\n"
+                                               "func Texture()\n"
+                                               "endfunc\n"
+                                               "protected:\n"
+                                               "float amount\n"
+                                               "private:\n"
+                                               "int seed\n"
+                                               "default:\n"
+                                               "title=\"Texture\"\n",
+        options)};
+
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(result->public_members);
+    EXPECT_TRUE(result->protected_members);
+    EXPECT_TRUE(result->private_members);
+    EXPECT_TRUE(result->defaults);
+}
+
+TEST(TestFormulaParse, extendedUnsectionedClassDefaultsToPublic)
+{
+    Options options;
+    options.entry_kind = EntryKind::CLASS;
+    const ast::FormulaSectionsPtr result{parse("func Texture()\n"
+                                               "endfunc\n",
+        options)};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->public_members);
+    EXPECT_EQ("function_decl:texture() { }", trim_ws(to_string(result->public_members)));
+}
+
+TEST(TestFormulaParse, coloringRejectsFractalSections)
+{
+    Options options;
+    options.entry_kind = EntryKind::COLORING;
+    ParserPtr parser{create_parser("bailout:\n"
+                                   "1\n",
+        options)};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, parser->get_errors().back().code);
+}
+
+TEST(TestFormulaParse, transformationRejectsColoringSections)
+{
+    Options options;
+    options.entry_kind = EntryKind::TRANSFORMATION;
+    ParserPtr parser{create_parser("final:\n"
+                                   "1\n",
+        options)};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, parser->get_errors().back().code);
+}
+
+TEST(TestFormulaParse, classRejectsFormulaSections)
+{
+    Options options;
+    options.entry_kind = EntryKind::CLASS;
+    ParserPtr parser{create_parser("global:\n"
+                                   "1\n",
+        options)};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, parser->get_errors().back().code);
+}
+
+TEST(TestFormulaParse, extendedKindSectionsMustBeOrdered)
+{
+    Options coloring;
+    coloring.entry_kind = EntryKind::COLORING;
+    ParserPtr color_parser{create_parser("final:\n"
+                                         "1\n"
+                                         "loop:\n"
+                                         "1\n",
+        coloring)};
+
+    const ast::FormulaSectionsPtr color_result{color_parser->parse()};
+
+    ASSERT_FALSE(color_result);
+    ASSERT_FALSE(color_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION_ORDER, color_parser->get_errors().back().code);
+
+    Options klass;
+    klass.entry_kind = EntryKind::CLASS;
+    ParserPtr class_parser{create_parser("private:\n"
+                                         "int seed\n"
+                                         "public:\n"
+                                         "func Texture()\n"
+                                         "endfunc\n",
+        klass)};
+
+    const ast::FormulaSectionsPtr class_result{class_parser->parse()};
+
+    ASSERT_FALSE(class_result);
+    ASSERT_FALSE(class_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION_ORDER, class_parser->get_errors().back().code);
+}
+
+TEST(TestFormulaParse, fractalRejectsOtherKindSections)
+{
+    ParserPtr final_parser{create_parser("final:\n"
+                                         "1\n",
+        Options{})};
+
+    const ast::FormulaSectionsPtr final_result{final_parser->parse()};
+
+    ASSERT_FALSE(final_result);
+    ASSERT_FALSE(final_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, final_parser->get_errors().back().code);
+
+    ParserPtr transform_parser{create_parser("transform:\n"
+                                             "1\n",
+        Options{})};
+
+    const ast::FormulaSectionsPtr transform_result{transform_parser->parse()};
+
+    ASSERT_FALSE(transform_result);
+    ASSERT_FALSE(transform_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, transform_parser->get_errors().back().code);
+}
+
 static ParseParam s_single_sections[]{
     {"globalSection",
         "global:\n"
