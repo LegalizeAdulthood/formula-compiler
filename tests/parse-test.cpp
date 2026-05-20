@@ -650,13 +650,16 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ParseFailures, ValuesIn(s_parse_failu
 
 TEST(TestFormulaParse, extendedExpressionForms)
 {
-    const ast::FormulaSectionsPtr result{parse("foo(1, 2, @p, #c) + !bar.baz[3] % new thing(4)", Options{})};
+    const ast::FormulaSectionsPtr result{
+        parse("foo(1, 2, @p, #c) + !bar.baz[3] % new thing(4) + Derived(base)", Options{})};
 
     ASSERT_TRUE(result);
     ASSERT_TRUE(result->bailout);
     EXPECT_EQ("binary_op:+ "
+              "binary_op:+ "
               "function_call:foo( literal:1 literal:2 parameter_ref:p constant_ref:c ) "
-              "binary_op:% unary_op:! index:[ member:baz { identifier:bar } literal:3 ] new:thing( literal:4 )",
+              "binary_op:% unary_op:! index:[ member:baz { identifier:bar } literal:3 ] new:thing( literal:4 ) "
+              "function_call:derived( identifier:base )",
         trim_ws(to_string(result->bailout)));
 }
 
@@ -842,6 +845,47 @@ TEST(TestFormulaParse, extendedClassSections)
     EXPECT_TRUE(result->protected_members);
     EXPECT_TRUE(result->private_members);
     EXPECT_TRUE(result->defaults);
+}
+
+TEST(TestFormulaParse, extendedClassObjectSyntax)
+{
+    Options options;
+    options.entry_kind = EntryKind::CLASS;
+    const ast::FormulaSectionsPtr result{parse("import \"common.ulb\"\n"
+                                               "public:\n"
+                                               "func Texture()\n"
+                                               "amount=0.1\n"
+                                               "endfunc\n"
+                                               "static int func min(int a, int b)\n"
+                                               "return a\n"
+                                               "endfunc\n"
+                                               "protected:\n"
+                                               "float amount\n"
+                                               "private:\n"
+                                               "complex func distort(const complex x)\n"
+                                               "return this.amount + x\n"
+                                               "endfunc\n"
+                                               "default:\n"
+                                               "title=\"Texture\"\n",
+        options)};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->public_members);
+    EXPECT_EQ("statement_seq:3 { "
+              "import:\"common.ulb\" "
+              "function_decl:texture() { assignment:amount literal:0.1 } "
+              "function_decl:int min(int a,int b) static { return: identifier:a } "
+              "}",
+        trim_ws(to_string(result->public_members)));
+    ASSERT_TRUE(result->protected_members);
+    EXPECT_EQ("declaration:float,amount", trim_ws(to_string(result->protected_members)));
+    ASSERT_TRUE(result->private_members);
+    EXPECT_EQ("function_decl:complex distort(const complex x) { "
+              "return: binary_op:+ member:amount { identifier:this } identifier:x "
+              "}",
+        trim_ws(to_string(result->private_members)));
+    ASSERT_TRUE(result->defaults);
+    EXPECT_EQ("setting:title=\"Texture\"", trim_ws(to_string(result->defaults)));
 }
 
 TEST(TestFormulaParse, extendedUnsectionedClassDefaultsToPublic)
@@ -1137,6 +1181,11 @@ static SimpleExpressionParam s_default_values[]{
         "endparam",
         "param_block:color,foo {\n"
         "}\n"}, //
+    {"emptyClassParamBlock",
+        "Bailout param foo\n"
+        "endparam",
+        "param_block:bailout,foo {\n"
+        "}\n"}, //
     {"captionParamBlock",
         "bool param foo\n"
         "caption=\"My parameter\"\n"
@@ -1176,6 +1225,13 @@ static SimpleExpressionParam s_default_values[]{
         "endparam",
         "param_block:complex,foo {\n"
         "setting:default=(4,5)\n"
+        "}\n"},
+    {"defaultClassParamBlock",
+        "Bailout param foo\n"
+        "default=Bailout\n"
+        "endparam",
+        "param_block:bailout,foo {\n"
+        "setting:default=bailout\n"
         "}\n"},
     {"enabledParamBlock",
         "bool param foo\n"

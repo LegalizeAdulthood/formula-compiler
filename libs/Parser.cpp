@@ -98,6 +98,7 @@ private:
     std::string type_name();
     std::vector<Expr> argument_list();
     Expr expression();
+    Expr import_statement();
     Expr declaration_statement();
     Expr function_declaration(bool is_static = false);
     Expr return_statement();
@@ -654,6 +655,13 @@ std::optional<Expr> FormulaParser::param_default(const std::string &type)
             return std::make_shared<SettingNode>("default", value.value());
         }
     }
+    if (type != "bool" && type != "int" && type != "float" && type != "complex" && type != "color" //
+        && !type.empty() && check({TokenType::IDENTIFIER, TokenType::TYPE_IDENTIFIER}))
+    {
+        Expr body = std::make_shared<SettingNode>("default", EnumName{str()});
+        advance();
+        return body;
+    }
     return {};
 }
 
@@ -730,7 +738,7 @@ Expr FormulaParser::default_param_block()
     std::string type;
     if (!check(TokenType::PARAM))
     {
-        if (!check(TokenType::TYPE_IDENTIFIER))
+        if (!check({TokenType::TYPE_IDENTIFIER, TokenType::IDENTIFIER}))
         {
             return nullptr;
         }
@@ -878,7 +886,8 @@ Expr FormulaParser::default_section()
 
 Expr FormulaParser::default_setting()
 {
-    if (check({TokenType::TYPE_IDENTIFIER, TokenType::PARAM}))
+    if (check({TokenType::TYPE_IDENTIFIER, TokenType::PARAM}) ||
+        (check(TokenType::IDENTIFIER) && peek(TokenType::PARAM)))
     {
         return default_param_block();
     }
@@ -1305,6 +1314,27 @@ std::optional<bool> FormulaParser::section_formula()
     return {}; // wasn't a section-ized formula
 }
 
+std::vector<Expr> sequence_items(const Expr &expr)
+{
+    if (const auto *seq = dynamic_cast<const StatementSeqNode *>(expr.get()); seq)
+    {
+        return seq->statements();
+    }
+    return {expr};
+}
+
+Expr merge_sequences(const Expr &lhs, const Expr &rhs)
+{
+    std::vector<Expr> statements = sequence_items(lhs);
+    const std::vector<Expr> rhs_statements = sequence_items(rhs);
+    statements.insert(statements.end(), rhs_statements.begin(), rhs_statements.end());
+    if (statements.size() == 1)
+    {
+        return statements.front();
+    }
+    return std::make_shared<StatementSeqNode>(statements);
+}
+
 void FormulaParser::split_iterate_bailout(const Expr &expr)
 {
     if (const auto *seq = dynamic_cast<StatementSeqNode *>(expr.get()); seq)
@@ -1386,6 +1416,20 @@ FormulaSectionsPtr FormulaParser::parse()
 
     if (m_options.entry_kind == EntryKind::CLASS)
     {
+        if (is_section_token(m_curr.type))
+        {
+            const Expr public_prefix{result};
+            if (const std::optional sections_result = section_formula(); sections_result)
+            {
+                if (!sections_result.value())
+                {
+                    return nullptr;
+                }
+                m_ast->public_members =
+                    m_ast->public_members ? merge_sequences(public_prefix, m_ast->public_members) : public_prefix;
+                return m_ast;
+            }
+        }
         if (!check(TokenType::END_OF_INPUT))
         {
             error(ErrorCode::EXPECTED_STATEMENT);
@@ -1692,6 +1736,22 @@ Expr FormulaParser::expression()
     return conjunctive();
 }
 
+Expr FormulaParser::import_statement()
+{
+    if (!match_context("import"))
+    {
+        return nullptr;
+    }
+    if (!check(TokenType::QUOTED_STRING))
+    {
+        error(ErrorCode::EXPECTED_STRING);
+        return nullptr;
+    }
+    Expr result = std::make_shared<ImportNode>(str());
+    advance();
+    return result;
+}
+
 Expr FormulaParser::declaration_statement()
 {
     const std::string type{type_name()};
@@ -1946,6 +2006,10 @@ bool FormulaParser::is_assignable() const
 
 Expr FormulaParser::statement()
 {
+    if (is_extended() && check_context("import"))
+    {
+        return import_statement();
+    }
     if (is_extended() && check_context("static"))
     {
         advance();

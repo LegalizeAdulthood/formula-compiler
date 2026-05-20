@@ -64,6 +64,27 @@ Mandelbrot(XAXIS) [float=y] {
         entries[0].body);
 }
 
+TEST(TestFormulaEntry, classEntry)
+{
+    const char *const frm{R"entry(
+class Derived(Test.ufm:Base) {
+public:
+}
+)entry"};
+    std::istringstream str{frm};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_FALSE(entries.empty());
+    EXPECT_EQ("Derived", entries[0].name);
+    EXPECT_EQ("Test.ufm:Base", entries[0].paren_value);
+    EXPECT_TRUE(entries[0].is_class);
+    EXPECT_EQ("\n"
+              "public:\n"
+              "\n",
+        entries[0].body);
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

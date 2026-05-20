@@ -38,6 +38,7 @@ public:
     void visit(const ast::FunctionDeclNode &node) override;
     void visit(const ast::FunctionCallNode &node) override;
     void visit(const ast::IdentifierNode &node) override;
+    void visit(const ast::ImportNode &node) override;
     void visit(const ast::IfStatementNode &node) override;
     void visit(const ast::IndexNode &node) override;
     void visit(const ast::LiteralNode &node) override;

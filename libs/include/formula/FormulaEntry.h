@@ -17,6 +17,7 @@ struct FormulaEntry
     std::string paren_value;
     std::string bracket_value;
     std::string body;
+    bool is_class{};
 };
 
 std::vector<FormulaEntry> load_formula_entries(std::istream &in);

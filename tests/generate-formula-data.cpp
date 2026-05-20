@@ -69,7 +69,7 @@ static bool generate_header(const std::string &filename)
     }
 
     file << //
-R"(// SPDX-License-Identifier: GPL-3.0-only
+        R"(// SPDX-License-Identifier: GPL-3.0-only
 //
 // Copyright 2025 Richard Thomson
 //
@@ -119,7 +119,9 @@ const FormulaEntry g_formulas[] =
     for (size_t i = 0; i < formulas.size(); ++i)
     {
         const auto &entry = formulas[i];
-        file << "    {\"" << entry.name << R"(", "", "", ")" << escape_for_cpp(entry.body) << "\"}";
+        file << "    {\"" << entry.name << "\", \"" << escape_for_cpp(entry.paren_value) << "\", \""
+             << escape_for_cpp(entry.bracket_value) << "\", \"" << escape_for_cpp(entry.body) << "\", "
+             << (entry.is_class ? "true" : "false") << "}";
         if (i < formulas.size() - 1)
         {
             file << ",";

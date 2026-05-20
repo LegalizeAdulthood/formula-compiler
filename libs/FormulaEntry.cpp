@@ -83,6 +83,14 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             }
         }
 
+        bool is_class{};
+        if (name.rfind("class", 0) == 0 && (name.size() == 5 || name[5] == ' ' || name[5] == '\t'))
+        {
+            is_class = true;
+            name.erase(0, 5);
+            strip_leading(name);
+        }
+
         // skip entries with no name or where the name is "comment".
         if (name.empty() || name == "comment")
         {
@@ -105,12 +113,13 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             // Single-line entry - don't append newline
             line.erase(brace);
             body.append(line);
-            formulas.push_back({name, paren_value, bracket_value, body});
+            formulas.push_back({name, paren_value, bracket_value, body, is_class});
             continue;
         }
 
         // Multi-line entry
-        const auto accum = [&body, &line]() {
+        const auto accum = [&body, &line]()
+        {
             body.append(line);
             body.append(1, '\n');
         };
@@ -131,7 +140,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         }
         if (found_brace)
         {
-            formulas.push_back({name, paren_value, bracket_value, body});
+            formulas.push_back({name, paren_value, bracket_value, body, is_class});
         }
     }
 

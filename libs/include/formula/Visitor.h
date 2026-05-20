@@ -15,6 +15,7 @@ class SettingNode;
 class FunctionDeclNode;
 class FunctionCallNode;
 class IdentifierNode;
+class ImportNode;
 class IfStatementNode;
 class IndexNode;
 class LiteralNode;
@@ -42,6 +43,7 @@ public:
     virtual void visit(const FunctionDeclNode &node) = 0;
     virtual void visit(const FunctionCallNode &node) = 0;
     virtual void visit(const IdentifierNode &node) = 0;
+    virtual void visit(const ImportNode &node) = 0;
     virtual void visit(const IfStatementNode &node) = 0;
     virtual void visit(const IndexNode &node) = 0;
     virtual void visit(const LiteralNode &node) = 0;
@@ -82,6 +84,9 @@ public:
     {
     }
     void visit(const IdentifierNode &node) override
+    {
+    }
+    void visit(const ImportNode &node) override
     {
     }
     void visit(const IfStatementNode &node) override

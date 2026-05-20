@@ -22,7 +22,7 @@ inline void PrintTo(const FormulaEntry &entry, std::ostream *os)
     *os << entry.name;
 }
 
-}
+} // namespace formula
 
 namespace formula::test
 {
@@ -50,8 +50,13 @@ static std::string prepare_content(std::string_view text)
 TEST_P(ParseIdFormulaSuite, parsed)
 {
     const FormulaEntry &entry{GetParam()};
+    Options options;
+    if (entry.is_class)
+    {
+        options.entry_kind = EntryKind::CLASS;
+    }
 
-    FormulaPtr result{create_formula(prepare_content(entry.body), Options{})};
+    FormulaPtr result{create_formula(prepare_content(entry.body), options)};
 
     EXPECT_TRUE(result) << entry.name;
 }
