@@ -24,7 +24,8 @@
   effect is loader-level class availability, not runtime execution.
 - Add a per-entry import scope. The parse/load phase uses it to resolve
   class names found in base classes, declarations, casts, `new`, and
-  plug-in parameters against imported files and the current file.
+  plug-in parameters against parsed imported class ASTs and the current
+  file.
 - Add `Options::file_importer`, a
   `std::function<std::string(std::string_view)>`, so callers supply
   imported file text. The parser never locates files itself.
@@ -77,8 +78,8 @@
    - Store directives on the parsed entry, e.g. filename, source
      location, and whether the import was implicit.
    - Add a formula loading pass that calls `Options::file_importer` for
-     imported file text, preprocesses and parses imported files, and
-     follows chained imports.
+     imported file text, preprocesses and parses imported files, follows
+     chained imports, and retains only referenced imported ASTs.
    - Set `Options::source_filename` while preprocessing and parsing
      imported text so every diagnostic keeps file, line, and column.
    - Report missing imported files, import cycles, and syntax errors in
@@ -86,12 +87,25 @@
      formula.
    - Treat `class Derived(File.ufm:Base)` as an implicit import of
      `File.ufm` before explicit imports, matching UF class lookup rules.
-   - Build a file-level class index for every loaded file. Each entry
-     has an import scope from its implicit import, explicit imports in
-     source order, and current file.
-   - Resolve class names during parse/load by searching explicit
-     imports from last to first, then the implicit ancestor import, then
-     the current file. Report unresolved class names as diagnostics.
+   - Build a file-level class index for every loaded file. Each indexed
+     class can parse or expose its AST when referenced. Each entry has an
+     import scope from its implicit import, explicit imports in source
+     order, and the current file.
+   - Fully parse the referencing entry first, then post-process its AST
+     with a reference-collection visitor. Collect class references from
+     base class specs, declarations, casts, `new`, and plug-in params.
+   - Resolve collected class names by searching explicit imports from
+     last to first, then the implicit ancestor import, then the current
+     file. Store resolution results as references to parsed class ASTs.
+     Report unresolved class names as diagnostics.
+   - Parse and retain only resolved imported entities referenced by the
+     current AST. Repeat reference collection and resolution for each
+     retained imported AST until no new referenced entities are found.
+   - Expose resolved imports as attached parse/load metadata: main entry
+     AST, referenced imported ASTs, import graph, diagnostics, and a
+     resolved class table. Do not retain unreferenced imported entry ASTs
+     and do not inline imported class ASTs into the main entry's
+     executable section AST.
 
 ## Tests
 - Lexer: all new tokens, BASIC rejects extended-only syntax, EXTENDED
@@ -104,18 +118,25 @@
   invalid-order errors.
 - Imports: quoted filename syntax, import anywhere, chained imports,
   import order preservation, imported diagnostic filenames, implicit
-  ancestor-file import, imported class-name resolution, missing files,
-  cycles, and imported-file syntax errors.
+  ancestor-file import, referenced imported AST retention, imported
+  class-reference resolution, missing files, cycles, and imported-file
+  syntax errors.
 - Regression: all existing parse tests, ID formulas, and workflow command:
   `cmake --workflow rt-default`
 
 ## Assumptions
 - This pass builds syntax coverage and durable AST only.
-- Import loading parses imported entries and validates that referenced
-  class names exist in the entry import scope. Detailed type, member,
+- Import loading parses imported files enough to build class indexes,
+  retains only referenced imported ASTs, and resolves referenced class
+  names to those ASTs in the entry import scope. Detailed type, member,
   and overload checks remain semantic work after parse coverage.
+- Referenced imported entities are discovered by a post-parse AST walk.
+  Resolution is iterative because retained imported ASTs can introduce
+  more class references.
 - Import directives are metadata and loader work, not executable AST
   nodes.
+- Imported class ASTs are attached through parse/load metadata, not
+  physically embedded into the importing entry AST.
 - Type checking, object model, runtime behavior, interpreter, and shader
   generation come after parse coverage.
 - `Dialect.h` remains shared so lexer does not depend on parser header.
