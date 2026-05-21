@@ -943,30 +943,70 @@ Expr FormulaParser::default_setting()
 
 bool FormulaParser::switch_section()
 {
-    if (!check(TokenType::IDENTIFIER))
+    std::vector<Expr> settings;
+    while (true)
     {
-        error(ErrorCode::EXPECTED_IDENTIFIER);
-        return false;
-    }
-    const std::string name{str()};
-    advance();
-
-    if (!check(TokenType::ASSIGN))
-    {
-        error(ErrorCode::EXPECTED_ASSIGNMENT);
-        return false;
-    }
-    advance();
-
-    if (name == "type")
-    {
-        if (!check(TokenType::QUOTED_STRING))
+        while (check(TokenType::TERMINATOR))
         {
-            error(ErrorCode::EXPECTED_STRING);
+            advance();
+        }
+
+        if (check({TokenType::END_OF_INPUT,                           //
+                TokenType::GLOBAL, TokenType::BUILTIN,                //
+                TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
+                TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
+                TokenType::DEFAULT, TokenType::SWITCH}))
+        {
+            break;
+        }
+
+        if (!check(TokenType::IDENTIFIER))
+        {
+            error(ErrorCode::EXPECTED_IDENTIFIER);
             return false;
         }
-        const std::string value{str()};
+        const std::string name{str()};
         advance();
+
+        if (!check(TokenType::ASSIGN))
+        {
+            error(ErrorCode::EXPECTED_ASSIGNMENT);
+            return false;
+        }
+        advance();
+
+        if (name == "type")
+        {
+            if (!check(TokenType::QUOTED_STRING))
+            {
+                error(ErrorCode::EXPECTED_STRING);
+                return false;
+            }
+            settings.push_back(std::make_shared<SettingNode>(name, str()));
+            advance();
+        }
+        else
+        {
+            // dest_param = builtin
+            std::string value;
+            if (const auto it = std::find(BUILTIN_VARS.begin(), BUILTIN_VARS.end(), m_curr.type);
+                it != BUILTIN_VARS.end())
+            {
+                value = str();
+            }
+            // dest_param = param or #pixel
+            else if (!check({TokenType::IDENTIFIER, TokenType::CONSTANT_IDENTIFIER}))
+            {
+                error(ErrorCode::EXPECTED_IDENTIFIER);
+                return false;
+            }
+            else
+            {
+                value = str();
+            }
+            advance();
+            settings.push_back(std::make_shared<SettingNode>(name, SwitchParam{value}));
+        }
 
         if (!check(TokenType::TERMINATOR))
         {
@@ -974,33 +1014,22 @@ bool FormulaParser::switch_section()
             return false;
         }
         advance();
-
-        m_ast->type_switch = std::make_shared<SettingNode>(name, value);
-        return true;
     }
 
-    // dest_param = builtin
-    std::string value;
-    if (const auto it = std::find(BUILTIN_VARS.begin(), BUILTIN_VARS.end(), m_curr.type); it != BUILTIN_VARS.end())
-    {
-        value = str();
-    }
-    // dest_param = param
-    else if (!check(TokenType::IDENTIFIER))
-    {
-        error(ErrorCode::EXPECTED_IDENTIFIER);
-        return false;
-    }
-    advance();
-
-    if (!check(TokenType::TERMINATOR))
+    if (settings.empty())
     {
         error(ErrorCode::EXPECTED_TERMINATOR);
         return false;
     }
-    advance();
 
-    m_ast->type_switch = std::make_shared<SettingNode>(name, SwitchParam{value});
+    if (settings.size() == 1)
+    {
+        m_ast->type_switch = settings.front();
+    }
+    else
+    {
+        m_ast->type_switch = std::make_shared<StatementSeqNode>(settings);
+    }
     return true;
 }
 

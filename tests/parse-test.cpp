@@ -1405,6 +1405,27 @@ TEST(TestParse, switchParameter)
     EXPECT_EQ("setting:seed=pixel\n", to_string(section));
 }
 
+TEST(TestParse, switchMultipleParameters)
+{
+    Options options;
+    options.dialect = Dialect::EXTENDED;
+    const ast::FormulaSectionsPtr result{parse("switch:\n"
+                                               "type=\"Julia\"\n"
+                                               "seed=#pixel\n"
+                                               "bailout=bailout\n",
+        options)};
+
+    ASSERT_TRUE(result);
+    const ast::Expr &section{result->type_switch};
+    ASSERT_TRUE(section);
+    EXPECT_EQ("statement_seq:3 {\n"
+              "setting:type=\"Julia\"\n"
+              "setting:seed=pixel\n"
+              "setting:bailout=bailout\n"
+              "}\n",
+        to_string(section));
+}
+
 static InvalidSectionParam s_invalid_sections[]{
     {"unknownSection",
         "global:\n"
