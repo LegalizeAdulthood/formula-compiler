@@ -8,6 +8,7 @@
 #include <formula/Preprocessor.h>
 
 #include <cassert>
+#include <cctype>
 #include <sstream>
 #include <unordered_map>
 #include <utility>
@@ -39,6 +40,32 @@ static void strip_trailing(std::string &text)
     {
         text.clear();
     }
+}
+
+static std::string uppercase(std::string text)
+{
+    for (char &ch : text)
+    {
+        ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+    }
+    return text;
+}
+
+static FormulaEntryFlags entry_flags_from_paren(std::string_view paren_value)
+{
+    std::string value{paren_value};
+    strip_leading(value);
+    strip_trailing(value);
+    value = uppercase(std::move(value));
+    if (value == "INSIDE")
+    {
+        return FormulaEntryFlags::COLORING_INSIDE;
+    }
+    if (value == "OUTSIDE")
+    {
+        return FormulaEntryFlags::COLORING_OUTSIDE;
+    }
+    return FormulaEntryFlags::NONE;
 }
 
 static ClassHeader class_header(const FormulaEntry &entry, std::size_t index)
@@ -137,6 +164,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
                 assert(false);
             }
         }
+        const FormulaEntryFlags flags{entry_flags_from_paren(paren_value)};
 
         bool is_class{};
         if (name.rfind("class", 0) == 0 && (name.size() == 5 || name[5] == ' ' || name[5] == '\t'))
@@ -168,7 +196,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             // Single-line entry - don't append newline
             line.erase(brace);
             body.append(line);
-            formulas.push_back({name, paren_value, bracket_value, body, is_class});
+            formulas.push_back({name, paren_value, bracket_value, body, is_class, flags});
             continue;
         }
 
@@ -195,7 +223,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         }
         if (found_brace)
         {
-            formulas.push_back({name, paren_value, bracket_value, body, is_class});
+            formulas.push_back({name, paren_value, bracket_value, body, is_class, flags});
         }
     }
 

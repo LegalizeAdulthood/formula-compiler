@@ -87,6 +87,42 @@ Mandelbrot(XAXIS) [float=y] {
         entries[0].body);
 }
 
+TEST(TestFormulaEntry, coloringEntryFlags)
+{
+    const char *const formulas{R"entry(
+InsideColor( INSIDE ) {
+}
+OutsideColor(outside) {
+}
+BothColor(BOTH) {
+}
+)entry"};
+    std::istringstream str{formulas};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_EQ(3U, entries.size());
+    EXPECT_EQ(FormulaEntryFlags::COLORING_INSIDE, entries[0].flags);
+    EXPECT_EQ(FormulaEntryFlags::COLORING_OUTSIDE, entries[1].flags);
+    EXPECT_EQ(FormulaEntryFlags::NONE, entries[2].flags);
+}
+
+TEST(TestFormulaEntry, transformationParenOptionIsNotColoringFlag)
+{
+    const char *const transform{R"entry(
+DiagonalTiling(diagonal tiling) {
+}
+)entry"};
+    std::istringstream str{transform};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_EQ(1U, entries.size());
+    EXPECT_EQ("DiagonalTiling", entries[0].name);
+    EXPECT_EQ("diagonal tiling", entries[0].paren_value);
+    EXPECT_EQ(FormulaEntryFlags::NONE, entries[0].flags);
+}
+
 TEST(TestFormulaEntry, classEntry)
 {
     const char *const frm{R"entry(

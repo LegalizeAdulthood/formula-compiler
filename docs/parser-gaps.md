@@ -2,10 +2,6 @@
 
 ## Section Handling
 
-- Coloring entry flags such as `(INSIDE)` and `(OUTSIDE)` are not captured.
-  Transformation entry options in parentheses should be accepted or ignored
-  consistently when entry headers are parsed.
-
 Switch sections now parse multiple settings, including `type`,
 `destination = #pixel`, and `destination = source_parameter`.
 
@@ -26,3 +22,7 @@ defaults accept only class-valid metadata.
 
 Default and switch sections now stop on the full section-token set so
 misplaced extended sections report section errors.
+
+Entry headers now capture coloring `INSIDE`/`OUTSIDE` flags. Other
+parenthesized entry options remain accepted as raw header text without
+setting coloring flags.

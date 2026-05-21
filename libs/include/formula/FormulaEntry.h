@@ -18,6 +18,28 @@
 namespace formula
 {
 
+enum class FormulaEntryFlags : unsigned
+{
+    NONE = 0,
+    COLORING_INSIDE = 1U << 0,
+    COLORING_OUTSIDE = 1U << 1,
+};
+
+constexpr unsigned operator+(FormulaEntryFlags value)
+{
+    return static_cast<unsigned>(value);
+}
+
+constexpr FormulaEntryFlags operator|(FormulaEntryFlags lhs, FormulaEntryFlags rhs)
+{
+    return static_cast<FormulaEntryFlags>(+lhs | +rhs);
+}
+
+constexpr FormulaEntryFlags operator&(FormulaEntryFlags lhs, FormulaEntryFlags rhs)
+{
+    return static_cast<FormulaEntryFlags>(+lhs & +rhs);
+}
+
 struct FormulaEntry
 {
     std::string name;
@@ -25,6 +47,7 @@ struct FormulaEntry
     std::string bracket_value;
     std::string body;
     bool is_class{};
+    FormulaEntryFlags flags{};
 };
 
 struct ClassHeader
