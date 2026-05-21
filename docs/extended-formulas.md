@@ -119,6 +119,13 @@
      resolved class table. Do not retain unreferenced imported entry ASTs
      and do not inline imported class ASTs into the main entry's
      executable section AST.
+   - `LoadedFormula::files` is the public metadata container. It carries
+     loaded file records, `import_graph`, `class_index`,
+     `entry_references`, `resolved_references`, `retained_classes`, and
+     diagnostics.
+   - Public loading resolves root-entry references, then expands retained
+     imported AST metadata from that referenced graph. Full-file reference
+     resolution remains available as an explicit lower-level API.
 
 ## Tests
 - Lexer: all new tokens, BASIC rejects extended-only syntax, EXTENDED
@@ -132,8 +139,8 @@
 - Imports: quoted filename syntax, import anywhere, chained imports,
   import order preservation, imported diagnostic filenames, implicit
   ancestor-file import, referenced imported AST retention, imported
-  class-reference resolution, missing files, cycles, and imported-file
-  syntax errors.
+  class-reference resolution, public import graph metadata, missing files,
+  cycles, and imported-file syntax errors.
 - Regression: all existing parse tests, ID formulas, and workflow command:
   `cmake --workflow rt-default`
 
