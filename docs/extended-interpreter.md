@@ -82,6 +82,20 @@
     `isNaN`, `isInf`.
   - `print(...)` formats values and records runtime messages in the
     interpreter state; returns no value.
+- Builtin `Image` class:
+  - Treat `Image` as a builtin class/type that is not defined in any
+    imported file. Parameter blocks such as `Image param imageParam`
+    must not produce unresolved-class diagnostics.
+  - Add an `ImageValue` runtime handle for image parameters. The handle
+    represents either an empty image or host-supplied image data.
+  - Initialize image parameters from formula parameter state, not by
+    constructing imported class ASTs.
+  - Implement the documented image methods and properties from the UF6
+    image-parameter docs. Until each operation exists, member access and
+    calls on `Image` must throw clear unsupported-node or unsupported
+    member errors.
+  - Define host APIs for binding image parameter data before execution.
+    The default image parameter value is empty.
 - Sections:
   - `global:` executes as `PER_IMAGE`; variables written there persist
     and are read-only from other sections.
@@ -111,6 +125,9 @@
 - Tests for arrays: static multidimensional indexing, dynamic
   `setLength`, `length`, bounds failures, static copy, dynamic copy
   rejection.
+- Tests for builtin `Image`: image param blocks do not resolve through
+  imports, default image values are empty, host-bound image data can be
+  read, and unsupported image members fail clearly.
 - Tests for color construction, extraction, color arithmetic,
   final-section color return.
 - Tests for section dispatch: fractal, coloring `final`, transformation

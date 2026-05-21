@@ -76,6 +76,9 @@
   and storage pointer.
 - Represent objects as runtime handles with class metadata and field
   storage.
+- Represent builtin `Image` values as runtime handles to host image data.
+  `Image` is a builtin class/type and is not backed by an imported class
+  AST.
 
 ## Public API
 - Preserve:
@@ -151,6 +154,7 @@
   - bounds checks
   - string operations
   - color conversion helpers
+  - image parameter access and sampling
   - random number generation
   - object allocation
   - virtual/member method dispatch
@@ -248,6 +252,9 @@
 - Support `@param` as a typed value read.
 - Support parameter blocks that reference imported class types as object
   parameter metadata.
+- Support `Image` parameter blocks as builtin image parameter metadata.
+  They do not resolve through imports, do not require a retained AST, and
+  default to an empty host image handle.
 - Support `#pixel`, `#z`, `#index`, `#color`, `#solid`, and other
   environment constants as typed state reads/writes where UF permits.
 - Preserve current symbol-label behavior for existing complex built-ins.
@@ -279,6 +286,10 @@
 
 ## Objects And Classes
 - Use retained imported AST metadata for referenced class definitions.
+- Treat `Image` as a builtin class outside the import graph. It needs a
+  builtin descriptor so member access, method calls, and parameter
+  binding can share the object/member lowering path without requiring a
+  parsed class definition.
 - Build class descriptors during semantic analysis:
   - class name
   - base class
@@ -296,6 +307,10 @@
 - Support casts after object model type checks exist.
 - Support plug-in object parameters as object references initialized from
   parameter metadata.
+- Support builtin image parameters as image handles initialized from host
+  parameter bindings. Add helpers or direct lowering for documented image
+  operations. Unsupported image members must produce compile diagnostics
+  or runtime traps with stable messages.
 - Reject unsupported object features with precise diagnostics until each
   feature is implemented.
 
@@ -392,15 +407,20 @@
     - Consume retained imported AST metadata and resolved references for
       class and plug-in parameter type checks.
 
-13. Object/class descriptors.
+13. Builtin Image class.
+    - Add builtin image parameter metadata, runtime handles, host binding
+      APIs, and helpers for documented image operations.
+    - Keep `Image` out of import resolution and retained AST metadata.
+
+14. Object/class descriptors.
     - Build descriptors, layouts, inheritance metadata, and visibility
       checks.
 
-14. Object execution.
+15. Object execution.
     - Compile `new`, constructors, field access, method calls, casts, and
       object plug-in params.
 
-15. Optimization and cleanup.
+16. Optimization and cleanup.
     - Inline hot helpers, remove redundant conversions, and stabilize
       generated code organization.
 
