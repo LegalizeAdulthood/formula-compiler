@@ -532,6 +532,35 @@ TEST(TestFormulaEntry, entryReferenceCollectorReportsParseErrors)
     EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
 }
 
+TEST(TestFormulaEntry, fileReferenceCollectorStoresEntryReferences)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex = new Texture()\nloop:\nz = pixel\n}\n"},
+        {"common.ulb", "class Texture(Base) {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+
+    ASSERT_EQ(2U, result.entry_references.size());
+    EXPECT_EQ("main.ufm", result.entry_references[0].filename);
+    EXPECT_EQ(0U, result.entry_references[0].file_index);
+    EXPECT_EQ(0U, result.entry_references[0].entry_index);
+    ASSERT_EQ(2U, result.entry_references[0].references.size());
+    EXPECT_EQ(FormulaReferenceKind::DECLARATION, result.entry_references[0].references[0].kind);
+    EXPECT_EQ("texture", result.entry_references[0].references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, result.entry_references[0].references[1].kind);
+    EXPECT_EQ("texture", result.entry_references[0].references[1].class_name);
+    EXPECT_EQ("common.ulb", result.entry_references[1].filename);
+    ASSERT_EQ(1U, result.entry_references[1].references.size());
+    EXPECT_EQ(FormulaReferenceKind::BASE_CLASS, result.entry_references[1].references[0].kind);
+    EXPECT_EQ("Base", result.entry_references[1].references[0].class_name);
+    EXPECT_TRUE(result.diagnostics.empty());
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

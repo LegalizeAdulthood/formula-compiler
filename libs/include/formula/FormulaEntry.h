@@ -93,12 +93,37 @@ struct RetainedFormulaClass
     ast::FormulaSectionsPtr ast;
 };
 
+enum class FormulaReferenceKind
+{
+    BASE_CLASS,
+    DECLARATION,
+    FUNCTION_RETURN,
+    FUNCTION_ARGUMENT,
+    NEW_OBJECT,
+};
+
+struct FormulaReference
+{
+    FormulaReferenceKind kind{};
+    std::string class_name;
+    SourceLocation location;
+};
+
+struct FormulaEntryReferences
+{
+    std::string filename;
+    std::size_t file_index{};
+    std::size_t entry_index{};
+    std::vector<FormulaReference> references;
+};
+
 struct FormulaFileSet
 {
     std::vector<FormulaFile> files;
     std::vector<FormulaFileReference> file_index;
     std::vector<FormulaClassReference> class_index;
     std::vector<RetainedFormulaClass> retained_classes;
+    std::vector<FormulaEntryReferences> entry_references;
     std::vector<FormulaFileDiagnostic> diagnostics;
 };
 

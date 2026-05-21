@@ -321,4 +321,18 @@ FormulaEntryReferences collect_formula_entry_references(
     return result;
 }
 
+void collect_formula_file_references(FormulaFileSet &files)
+{
+    files.entry_references.clear();
+    const std::size_t file_count = files.files.size();
+    for (std::size_t file_index = 0; file_index < file_count; ++file_index)
+    {
+        const std::size_t entry_count = files.files[file_index].entries.size();
+        for (std::size_t entry_index = 0; entry_index < entry_count; ++entry_index)
+        {
+            files.entry_references.push_back(collect_formula_entry_references(files, file_index, entry_index));
+        }
+    }
+}
+
 } // namespace formula
