@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <formula/FileEntry.h>
 #include <formula/Node.h>
 #include <formula/SourceLocation.h>
 
@@ -13,6 +14,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace formula
@@ -42,12 +44,25 @@ constexpr FormulaEntryFlags operator&(FormulaEntryFlags lhs, FormulaEntryFlags r
 
 struct FormulaEntry
 {
-    std::string name;
-    std::string paren_value;
-    std::string bracket_value;
-    std::string body;
+    FileEntry file_entry;
     bool is_class{};
     FormulaEntryFlags flags{};
+
+    FormulaEntry() = default;
+    FormulaEntry(
+        FileEntry entry, bool is_class_value = false, FormulaEntryFlags flags_value = FormulaEntryFlags::NONE) :
+        file_entry(std::move(entry)),
+        is_class(is_class_value),
+        flags(flags_value)
+    {
+    }
+    FormulaEntry(std::string name, std::string paren_value, std::string bracket_value, std::string body,
+        bool is_class_value = false, FormulaEntryFlags flags_value = FormulaEntryFlags::NONE) :
+        file_entry{std::move(name), std::move(paren_value), std::move(bracket_value), std::move(body)},
+        is_class(is_class_value),
+        flags(flags_value)
+    {
+    }
 };
 
 struct ClassHeader

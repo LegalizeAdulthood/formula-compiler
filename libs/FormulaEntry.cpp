@@ -71,13 +71,13 @@ static FormulaEntryFlags entry_flags_from_paren(std::string_view paren_value)
 
 static ClassHeader class_header(const FormulaEntry &entry, std::size_t index)
 {
-    ClassHeader result{entry.name, {}, {}, index};
-    if (!entry.is_class || entry.paren_value.empty())
+    ClassHeader result{entry.file_entry.name, {}, {}, index};
+    if (!entry.is_class || entry.file_entry.paren_value.empty())
     {
         return result;
     }
 
-    std::string base{entry.paren_value};
+    std::string base{entry.file_entry.paren_value};
     strip_leading(base);
     strip_trailing(base);
 
@@ -115,15 +115,13 @@ static void append_entry_import(FormulaFile &file, std::size_t entry_index, Form
 std::vector<FormulaEntry> load_formula_entries(std::istream &in)
 {
     std::vector<FormulaEntry> formulas;
-    for (const FileEntry &file_entry : load_file_entries(in))
+    for (FileEntry &file_entry : load_file_entries(in))
     {
-        std::string name{file_entry.name};
+        std::string &name{file_entry.name};
         strip_leading(name);
         strip_trailing(name);
 
-        const std::string &paren_value{file_entry.paren_value};
-        const std::string &bracket_value{file_entry.bracket_value};
-        const FormulaEntryFlags flags{entry_flags_from_paren(paren_value)};
+        const FormulaEntryFlags flags{entry_flags_from_paren(file_entry.paren_value)};
 
         bool is_class{};
         if (name.rfind("class", 0) == 0 && (name.size() == 5 || name[5] == ' ' || name[5] == '\t'))
@@ -139,7 +137,7 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
             continue;
         }
 
-        formulas.push_back({name, paren_value, bracket_value, file_entry.body, is_class, flags});
+        formulas.push_back({std::move(file_entry), is_class, flags});
     }
 
     return formulas;
@@ -236,7 +234,7 @@ static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEn
     FormulaFileSet &result, const std::vector<std::string> &import_stack)
 {
     std::vector<FormulaImportDirective> imports;
-    if (entry.body.find("import") == std::string::npos)
+    if (entry.file_entry.body.find("import") == std::string::npos)
     {
         return imports;
     }
@@ -245,7 +243,7 @@ static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEn
     options.source_filename = std::string{filename};
     options.entry_kind = entry.is_class ? parser::EntryKind::CLASS : parser::EntryKind::FRACTAL;
 
-    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    const parser::ParserPtr parser{parser::create_parser(entry.file_entry.body, options)};
     const ast::FormulaSectionsPtr ast{parser->parse()};
     if (!parser->get_errors().empty())
     {
@@ -374,7 +372,7 @@ ast::FormulaSectionsPtr parse_formula_class(FormulaFileSet &files, const Formula
     options.source_filename = file.filename;
     options.entry_kind = parser::EntryKind::CLASS;
 
-    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    const parser::ParserPtr parser{parser::create_parser(entry.file_entry.body, options)};
     ast::FormulaSectionsPtr ast{parser->parse()};
     if (!parser->get_errors().empty())
     {

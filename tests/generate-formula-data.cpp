@@ -119,9 +119,9 @@ const FormulaEntry g_formulas[] =
     for (size_t i = 0; i < formulas.size(); ++i)
     {
         const auto &entry = formulas[i];
-        file << "    {\"" << entry.name << "\", \"" << escape_for_cpp(entry.paren_value) << "\", \""
-             << escape_for_cpp(entry.bracket_value) << "\", \"" << escape_for_cpp(entry.body) << "\", "
-             << (entry.is_class ? "true" : "false") << "}";
+        file << "    {{\"" << entry.file_entry.name << "\", \"" << escape_for_cpp(entry.file_entry.paren_value)
+             << "\", \"" << escape_for_cpp(entry.file_entry.bracket_value) << "\", \""
+             << escape_for_cpp(entry.file_entry.body) << "\"}, " << (entry.is_class ? "true" : "false") << "}";
         if (i < formulas.size() - 1)
         {
             file << ",";

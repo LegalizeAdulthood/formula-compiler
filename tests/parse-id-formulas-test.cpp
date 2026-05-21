@@ -19,7 +19,7 @@ namespace formula
 
 inline void PrintTo(const FormulaEntry &entry, std::ostream *os)
 {
-    *os << entry.name;
+    *os << entry.file_entry.name;
 }
 
 } // namespace formula
@@ -56,9 +56,9 @@ TEST_P(ParseIdFormulaSuite, parsed)
         options.entry_kind = EntryKind::CLASS;
     }
 
-    FormulaPtr result{create_formula(prepare_content(entry.body), options)};
+    FormulaPtr result{create_formula(prepare_content(entry.file_entry.body), options)};
 
-    EXPECT_TRUE(result) << entry.name;
+    EXPECT_TRUE(result) << entry.file_entry.name;
 }
 
 INSTANTIATE_TEST_SUITE_P(TestIdFormula, ParseIdFormulaSuite, ValuesIn(g_formulas, g_formulas + g_formula_count));

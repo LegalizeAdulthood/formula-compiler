@@ -463,7 +463,7 @@ FormulaEntryReferences collect_formula_entry_references(
     options.source_filename = file.filename;
     options.entry_kind = entry.is_class ? parser::EntryKind::CLASS : parser::EntryKind::FRACTAL;
 
-    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    const parser::ParserPtr parser{parser::create_parser(entry.file_entry.body, options)};
     const ast::FormulaSectionsPtr ast{parser->parse()};
     if (!parser->get_errors().empty())
     {

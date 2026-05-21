@@ -63,16 +63,16 @@ int main(const std::vector<std::string_view> &args)
         int bad{};
         for (const FormulaEntry &entry : load_formula_entries(str))
         {
-            if (entry.name.empty() || to_lower(entry.name) == "comment" )
+            if (entry.file_entry.name.empty() || to_lower(entry.file_entry.name) == "comment")
             {
                 continue;
             }
             Options options{};
             options.dialect = Dialect::BASIC;
-            ParserPtr parser{create_parser(entry.body, options)};
+            ParserPtr parser{create_parser(entry.file_entry.body, options)};
             if (!parser)
             {
-                std::cout << "Error: " << file.filename().string() << '(' << entry.name
+                std::cout << "Error: " << file.filename().string() << '(' << entry.file_entry.name
                           << "): couldn't create parser\n";
                 ++bad;
                 continue;
@@ -87,24 +87,24 @@ int main(const std::vector<std::string_view> &args)
                 line_starts.push_back(0);
                 std::vector<std::size_t> line_lengths;
                 std::size_t line{1U};
-                for (size_t i = 0; i < entry.body.length(); i++)
+                for (size_t i = 0; i < entry.file_entry.body.length(); i++)
                 {
-                    if (entry.body[i] == '\n')
+                    if (entry.file_entry.body[i] == '\n')
                     {
                         line_lengths.push_back(line_lengths.empty() ? i : i - line_starts[line - 1]);
                         line_starts.push_back(i + 1);
                         ++line;
                     }
                 }
-                line_lengths.push_back(entry.body.length() - line_starts.back());
+                line_lengths.push_back(entry.file_entry.body.length() - line_starts.back());
                 const std::string filename{file.filename().string()};
                 const auto emit_diag = [&entry, &filename, &line_starts, &line_lengths](
                                            const Diagnostic &diag, const char *level)
                 {
-                    std::cout << filename << ": " << entry.name << '(' << diag.position << "): " //
+                    std::cout << filename << ": " << entry.file_entry.name << '(' << diag.position << "): " //
                               << level << ": " << to_string(diag.code) << '\n';
                     std::cout << "    "
-                              << entry.body.substr(
+                              << entry.file_entry.body.substr(
                                      line_starts[diag.position.line - 1], line_lengths[diag.position.line - 1])
                               << '\n';
                     std::cout << "   " << std::string(diag.position.column, ' ') << "^\n";
@@ -117,7 +117,7 @@ int main(const std::vector<std::string_view> &args)
                 {
                     emit_diag(diag, "Error");
                 }
-                std::cout << "Error: " << filename << '(' << entry.name << "): couldn't parse body\n";
+                std::cout << "Error: " << filename << '(' << entry.file_entry.name << "): couldn't parse body\n";
                 ++bad;
             }
         }

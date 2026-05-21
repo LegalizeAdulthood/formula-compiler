@@ -41,10 +41,10 @@ Mandelbrot(XAXIS) {
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_EQ("XAXIS", entries[0].paren_value);
-    EXPECT_TRUE(entries[0].bracket_value.empty());
-    EXPECT_EQ("\n", entries[0].body);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
+    EXPECT_TRUE(entries[0].file_entry.bracket_value.empty());
+    EXPECT_EQ("\n", entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, bracketValue)
@@ -58,10 +58,10 @@ Mandelbrot [float=y] {
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_TRUE(entries[0].paren_value.empty());
-    EXPECT_EQ("float=y", entries[0].bracket_value);
-    EXPECT_EQ("\n", entries[0].body);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_TRUE(entries[0].file_entry.paren_value.empty());
+    EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
+    EXPECT_EQ("\n", entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, parenBracketValue)
@@ -75,10 +75,10 @@ Mandelbrot(XAXIS) [float=y] {
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_EQ("XAXIS", entries[0].paren_value);
-    EXPECT_EQ("float=y", entries[0].bracket_value);
-    EXPECT_EQ("\n", entries[0].body);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
+    EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
+    EXPECT_EQ("\n", entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, coloringEntryFlags)
@@ -112,8 +112,8 @@ DiagonalTiling(diagonal tiling) {
     auto entries{load_formula_entries(str)};
 
     ASSERT_EQ(1U, entries.size());
-    EXPECT_EQ("DiagonalTiling", entries[0].name);
-    EXPECT_EQ("diagonal tiling", entries[0].paren_value);
+    EXPECT_EQ("DiagonalTiling", entries[0].file_entry.name);
+    EXPECT_EQ("diagonal tiling", entries[0].file_entry.paren_value);
     EXPECT_EQ(FormulaEntryFlags::NONE, entries[0].flags);
 }
 
@@ -129,12 +129,12 @@ public:
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Derived", entries[0].name);
-    EXPECT_EQ("Test.ufm:Base", entries[0].paren_value);
+    EXPECT_EQ("Derived", entries[0].file_entry.name);
+    EXPECT_EQ("Test.ufm:Base", entries[0].file_entry.paren_value);
     EXPECT_TRUE(entries[0].is_class);
     EXPECT_EQ("\n"
               "public:\n",
-        entries[0].body);
+        entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, fileIndexesClassHeaders)
@@ -1236,10 +1236,10 @@ TEST(TestFormulaEntry, singleLine)
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_EQ("XAXIS", entries[0].paren_value);
-    EXPECT_EQ("float=y", entries[0].bracket_value);
-    EXPECT_EQ("z=c:z=z*z+c,|z|>4", entries[0].body);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
+    EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
+    EXPECT_EQ("z=c:z=z*z+c,|z|>4", entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, adjacentEntries)
@@ -1250,10 +1250,10 @@ TEST(TestFormulaEntry, adjacentEntries)
     auto entries{load_formula_entries(str)};
 
     ASSERT_EQ(2U, entries.size());
-    EXPECT_EQ("First", entries[0].name);
-    EXPECT_EQ("1", entries[0].body);
-    EXPECT_EQ("Second", entries[1].name);
-    EXPECT_EQ("2", entries[1].body);
+    EXPECT_EQ("First", entries[0].file_entry.name);
+    EXPECT_EQ("1", entries[0].file_entry.body);
+    EXPECT_EQ("Second", entries[1].file_entry.name);
+    EXPECT_EQ("2", entries[1].file_entry.body);
 }
 
 TEST(TestFormulaEntry, bodyEndsWithCloseBrace)
@@ -1265,12 +1265,12 @@ z=c:z=z*z+c,|z|>4})entry"};
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_EQ("XAXIS", entries[0].paren_value);
-    EXPECT_EQ("float=y", entries[0].bracket_value);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
+    EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
     EXPECT_EQ("\n"
               "z=c:z=z*z+c,|z|>4",
-        entries[0].body);
+        entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, commentAfterOpenBrace)
@@ -1282,12 +1282,12 @@ z=c:z=z*z+c,|z|>4})entry"};
     auto entries{load_formula_entries(str)};
 
     ASSERT_FALSE(entries.empty());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_EQ("XAXIS", entries[0].paren_value);
-    EXPECT_EQ("float=y", entries[0].bracket_value);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
+    EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
     EXPECT_EQ("  ; comment here\n"
               "z=c:z=z*z+c,|z|>4",
-        entries[0].body);
+        entries[0].file_entry.body);
 }
 
 TEST(TestFormulaEntry, commentBeforeOpenBrace)
@@ -1313,6 +1313,6 @@ z=c, frobozz=1964:z=z*z+c,|z|>4
 
     ASSERT_FALSE(entries.empty()) << "entry was parsed";
     EXPECT_EQ(1U, entries.size());
-    EXPECT_EQ("Mandelbrot", entries[0].name);
-    EXPECT_NE(entries[0].body.find("frobozz"), std::string::npos);
+    EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
+    EXPECT_NE(entries[0].file_entry.body.find("frobozz"), std::string::npos);
 }

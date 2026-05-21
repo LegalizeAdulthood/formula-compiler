@@ -23,8 +23,8 @@ TEST(FormulaDataTest, allEntriesHaveNamesAndContent)
     for (size_t i = 0; i < g_formula_count; ++i)
     {
         const auto &entry = g_formulas[i];
-        EXPECT_GT(entry.name.length(), 0) << "Entry " << i << " has empty name";
-        EXPECT_GT(entry.body.length(), 0) << "Entry " << i << " has empty content";
+        EXPECT_GT(entry.file_entry.name.length(), 0) << "Entry " << i << " has empty name";
+        EXPECT_GT(entry.file_entry.body.length(), 0) << "Entry " << i << " has empty content";
     }
 }
 
@@ -35,7 +35,7 @@ TEST(FormulaDataTest, canFindMandelbrotFormula)
 
     for (size_t i = 0; i < g_formula_count; ++i)
     {
-        if (g_formulas[i].name == search_name)
+        if (g_formulas[i].file_entry.name == search_name)
         {
             found = true;
             break;
@@ -50,7 +50,7 @@ TEST(FormulaDataTest, noCommentEntries)
     for (size_t i = 0; i < g_formula_count; ++i)
     {
         const FormulaEntry &entry = g_formulas[i];
-        EXPECT_NE("comment", entry.name) << "Found comment entry at index " << i;
+        EXPECT_NE("comment", entry.file_entry.name) << "Found comment entry at index " << i;
     }
 }
 
