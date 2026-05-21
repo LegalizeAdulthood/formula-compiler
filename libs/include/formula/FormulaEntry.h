@@ -66,6 +66,8 @@ struct FormulaFileDiagnostic
 {
     FormulaFileDiagnosticCode code{};
     std::string filename;
+    SourceLocation location;
+    std::string detail;
     std::vector<std::string> import_stack;
 };
 

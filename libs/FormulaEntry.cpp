@@ -226,7 +226,18 @@ FormulaFile load_formula_file(std::istream &in, std::string filename)
 static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode code, std::string_view filename,
     const std::vector<std::string> &import_stack)
 {
-    result.diagnostics.push_back(FormulaFileDiagnostic{code, std::string{filename}, import_stack});
+    result.diagnostics.push_back(FormulaFileDiagnostic{code, std::string{filename}, {}, {}, import_stack});
+}
+
+static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode code, std::string_view filename,
+    SourceLocation location, std::string detail, const std::vector<std::string> &import_stack)
+{
+    if (location.filename.empty())
+    {
+        location.filename = std::string{filename};
+    }
+    result.diagnostics.push_back(
+        FormulaFileDiagnostic{code, std::string{filename}, std::move(location), std::move(detail), import_stack});
 }
 
 static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEntry &entry, std::string_view filename,
@@ -244,6 +255,15 @@ static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEn
 
     const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
     const ast::FormulaSectionsPtr ast{parser->parse()};
+    if (!parser->get_errors().empty())
+    {
+        for (const parser::Diagnostic &error : parser->get_errors())
+        {
+            add_diagnostic(result, FormulaFileDiagnosticCode::PARSE_ERROR, filename, error.position,
+                parser::to_string(error.code), import_stack);
+        }
+        return imports;
+    }
     if (!ast)
     {
         add_diagnostic(result, FormulaFileDiagnosticCode::PARSE_ERROR, filename, import_stack);
@@ -290,7 +310,11 @@ static void load_formula_file_tree(std::string_view filename, const FormulaFileI
     text = preprocessor.process(text);
     if (!preprocessor.errors().empty())
     {
-        add_diagnostic(result, FormulaFileDiagnosticCode::PREPROCESS_ERROR, filename, import_stack);
+        for (const preprocessor::Diagnostic &error : preprocessor.errors())
+        {
+            add_diagnostic(result, FormulaFileDiagnosticCode::PREPROCESS_ERROR, filename, error.position,
+                preprocessor::to_string(error.code), import_stack);
+        }
         states[key] = LoadState::LOADED;
         import_stack.pop_back();
         return;

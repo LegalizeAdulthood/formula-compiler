@@ -221,9 +221,33 @@ TEST(TestFormulaEntry, fileTreeReportsPreprocessErrors)
     ASSERT_EQ(1U, result.diagnostics.size());
     EXPECT_EQ(FormulaFileDiagnosticCode::PREPROCESS_ERROR, result.diagnostics[0].code);
     EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
+    EXPECT_EQ(5U, result.diagnostics[0].location.line);
+    EXPECT_EQ("EXPECTED_DIRECTIVE_ENDIF", result.diagnostics[0].detail);
     ASSERT_EQ(1U, result.diagnostics[0].import_stack.size());
     EXPECT_EQ("main.ufm", result.diagnostics[0].import_stack[0]);
     EXPECT_TRUE(result.files.empty());
+}
+
+TEST(TestFormulaEntry, fileTreeReportsParseErrors)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"bad.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"bad.ulb", "class Bad {\nimport\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::PARSE_ERROR, result.diagnostics[0].code);
+    EXPECT_EQ("bad.ulb", result.diagnostics[0].filename);
+    EXPECT_EQ("bad.ulb", result.diagnostics[0].location.filename);
+    EXPECT_EQ(2U, result.diagnostics[0].location.line);
+    EXPECT_EQ("EXPECTED_STRING", result.diagnostics[0].detail);
+    ASSERT_EQ(2U, result.diagnostics[0].import_stack.size());
+    EXPECT_EQ("main.ufm", result.diagnostics[0].import_stack[0]);
+    EXPECT_EQ("bad.ulb", result.diagnostics[0].import_stack[1]);
 }
 
 TEST(TestFormulaEntry, fileTreeReportsMissingImport)
