@@ -112,6 +112,11 @@ class Derived(Test.ufm:Base) {
     EXPECT_EQ("Test.ufm", file.classes[1].base_file);
     EXPECT_EQ("Base", file.classes[1].base_class);
     EXPECT_EQ(2U, file.classes[1].entry_index);
+    ASSERT_EQ(1U, file.entry_imports.size());
+    EXPECT_EQ(2U, file.entry_imports[0].entry_index);
+    ASSERT_EQ(1U, file.entry_imports[0].imports.size());
+    EXPECT_EQ("Test.ufm", file.entry_imports[0].imports[0].filename);
+    EXPECT_TRUE(file.entry_imports[0].imports[0].implicit);
 }
 
 TEST(TestFormulaEntry, fileIndexesLocalBaseClass)
@@ -164,6 +169,12 @@ TEST(TestFormulaEntry, fileTreeLoadsExplicitImports)
     EXPECT_EQ("common.ulb", result.files[1].filename);
     ASSERT_EQ(1U, result.files[1].classes.size());
     EXPECT_EQ("Texture", result.files[1].classes[0].name);
+    ASSERT_EQ(1U, result.files[0].entry_imports.size());
+    EXPECT_EQ(0U, result.files[0].entry_imports[0].entry_index);
+    ASSERT_EQ(1U, result.files[0].entry_imports[0].imports.size());
+    EXPECT_EQ("common.ulb", result.files[0].entry_imports[0].imports[0].filename);
+    EXPECT_FALSE(result.files[0].entry_imports[0].imports[0].implicit);
+    EXPECT_EQ("main.ufm", result.files[0].entry_imports[0].imports[0].location.filename);
 }
 
 TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)

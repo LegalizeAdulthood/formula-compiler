@@ -68,6 +68,22 @@ static ClassHeader class_header(const FormulaEntry &entry, std::size_t index)
     return result;
 }
 
+static void append_entry_import(FormulaFile &file, std::size_t entry_index, FormulaImportDirective import)
+{
+    for (FormulaEntryImports &entry_imports : file.entry_imports)
+    {
+        if (entry_imports.entry_index == entry_index)
+        {
+            entry_imports.imports.push_back(std::move(import));
+            return;
+        }
+    }
+    FormulaEntryImports entry_imports;
+    entry_imports.entry_index = entry_index;
+    entry_imports.imports.push_back(std::move(import));
+    file.entry_imports.push_back(std::move(entry_imports));
+}
+
 std::vector<FormulaEntry> load_formula_entries(std::istream &in)
 {
     std::vector<FormulaEntry> formulas;
@@ -195,7 +211,13 @@ FormulaFile load_formula_file(std::istream &in, std::string filename)
     {
         if (result.entries[index].is_class)
         {
-            result.classes.push_back(class_header(result.entries[index], index));
+            ClassHeader header{class_header(result.entries[index], index)};
+            if (!header.base_file.empty())
+            {
+                append_entry_import(result, index,
+                    FormulaImportDirective{header.base_file, SourceLocation{1, 1, result.filename}, true});
+            }
+            result.classes.push_back(std::move(header));
         }
     }
     return result;
@@ -207,10 +229,10 @@ static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode cod
     result.diagnostics.push_back(FormulaFileDiagnostic{code, std::string{filename}, import_stack});
 }
 
-static std::vector<std::string> entry_imports(const FormulaEntry &entry, std::string_view filename,
+static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEntry &entry, std::string_view filename,
     FormulaFileSet &result, const std::vector<std::string> &import_stack)
 {
-    std::vector<std::string> imports;
+    std::vector<FormulaImportDirective> imports;
     if (entry.body.find("import") == std::string::npos)
     {
         return imports;
@@ -230,7 +252,7 @@ static std::vector<std::string> entry_imports(const FormulaEntry &entry, std::st
 
     for (const ast::ImportDirective &import : ast->imports)
     {
-        imports.push_back(import.filename);
+        imports.push_back(FormulaImportDirective{import.filename, import.location, false});
     }
     return imports;
 }
@@ -277,17 +299,21 @@ static void load_formula_file_tree(std::string_view filename, const FormulaFileI
     std::istringstream in{text};
     FormulaFile file{load_formula_file(in, key)};
     std::vector<std::string> imports;
-    for (const ClassHeader &klass : file.classes)
+    for (std::size_t index = 0; index < file.entries.size(); ++index)
     {
-        if (!klass.base_file.empty())
+        std::vector<FormulaImportDirective> explicit_imports{
+            collect_entry_imports(file.entries[index], key, result, import_stack)};
+        for (FormulaImportDirective &import : explicit_imports)
         {
-            imports.push_back(klass.base_file);
+            append_entry_import(file, index, std::move(import));
         }
     }
-    for (const FormulaEntry &entry : file.entries)
+    for (const FormulaEntryImports &entry_imports : file.entry_imports)
     {
-        std::vector<std::string> explicit_imports{entry_imports(entry, key, result, import_stack)};
-        imports.insert(imports.end(), explicit_imports.begin(), explicit_imports.end());
+        for (const FormulaImportDirective &import : entry_imports.imports)
+        {
+            imports.push_back(import.filename);
+        }
     }
     result.files.push_back(std::move(file));
 

@@ -4,6 +4,8 @@
 //
 #pragma once
 
+#include <formula/SourceLocation.h>
+
 #include <cstddef>
 #include <functional>
 #include <iostream>
@@ -31,11 +33,25 @@ struct ClassHeader
     std::size_t entry_index{};
 };
 
+struct FormulaImportDirective
+{
+    std::string filename;
+    SourceLocation location;
+    bool implicit{};
+};
+
+struct FormulaEntryImports
+{
+    std::size_t entry_index{};
+    std::vector<FormulaImportDirective> imports;
+};
+
 struct FormulaFile
 {
     std::string filename;
     std::vector<FormulaEntry> entries;
     std::vector<ClassHeader> classes;
+    std::vector<FormulaEntryImports> entry_imports;
 };
 
 enum class FormulaFileDiagnosticCode
