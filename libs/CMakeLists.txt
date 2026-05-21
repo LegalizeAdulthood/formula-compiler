@@ -16,6 +16,7 @@ add_library(formula
     include/formula/Lexer.h Lexer.cpp
     include/formula/Node.h Node.cpp
     include/formula/NodeTyper.h
+    include/formula/Parameter.h Parameter.cpp
     include/formula/ParseOptions.h
     include/formula/Parser.h Parser.cpp
     include/formula/Preprocessor.h Preprocessor.cpp
