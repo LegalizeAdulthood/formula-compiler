@@ -4,77 +4,13 @@
 //
 #include <formula/Parameter.h>
 
-#include <algorithm>
+#include <iterator>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace formula::parameter
 {
-
-namespace
-{
-
-std::string remove_line_continuations(std::string_view input)
-{
-    std::string result;
-    result.reserve(input.length());
-    for (size_t i = 0; i < input.length();)
-    {
-        if (input[i] == '\\' && i + 1 < input.length() && (input[i + 1] == '\r' || input[i + 1] == '\n'))
-        {
-            i += 2;
-            if (i <= input.length() && input[i - 1] == '\r' && i < input.length() && input[i] == '\n')
-            {
-                ++i;
-            }
-            while (i < input.length() && (input[i] == ' ' || input[i] == '\t'))
-            {
-                ++i;
-            }
-            continue;
-        }
-        result.append(1, input[i]);
-        ++i;
-    }
-    return result;
-}
-
-} // namespace
-
-#define TOKEN_TYPE_CASE(name_) \
-    case TokenType::name_:     \
-        return #name_
-
-std::string to_string(TokenType type)
-{
-    switch (type)
-    {
-        TOKEN_TYPE_CASE(NONE);
-        TOKEN_TYPE_CASE(END_OF_INPUT);
-        TOKEN_TYPE_CASE(SECTION_LABEL);
-        TOKEN_TYPE_CASE(KEY);
-        TOKEN_TYPE_CASE(ASSIGN);
-        TOKEN_TYPE_CASE(RAW_ATOM);
-        TOKEN_TYPE_CASE(QUOTED_STRING);
-        TOKEN_TYPE_CASE(COMMENT);
-        TOKEN_TYPE_CASE(COMPRESSED_PAYLOAD);
-    }
-    return "TokenType(" + std::to_string(static_cast<int>(type)) + ")";
-}
-
-#define LEXER_ERROR_CASE(name_) \
-    case LexerErrorCode::name_: \
-        return #name_
-
-std::string to_string(LexerErrorCode code)
-{
-    switch (code)
-    {
-        LEXER_ERROR_CASE(NONE);
-        LEXER_ERROR_CASE(UNTERMINATED_QUOTED_STRING);
-    }
-    return "LexerErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
-}
 
 #define PARSE_ERROR_CASE(name_) \
     case ParseErrorCode::name_: \
@@ -86,585 +22,388 @@ std::string to_string(ParseErrorCode code)
     {
         PARSE_ERROR_CASE(NONE);
         PARSE_ERROR_CASE(EXPECTED_SECTION_LABEL);
-        PARSE_ERROR_CASE(EXPECTED_KEY);
-        PARSE_ERROR_CASE(EXPECTED_ASSIGN);
+        PARSE_ERROR_CASE(EXPECTED_ASSIGNMENT);
         PARSE_ERROR_CASE(EXPECTED_VALUE);
+        PARSE_ERROR_CASE(UNTERMINATED_QUOTED_STRING);
     }
     return "ParseErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
-}
-
-Lexer::Lexer(std::string_view input) :
-    Lexer(input, Options{})
-{
-}
-
-Lexer::Lexer(std::string_view input, Options options) :
-    m_options(std::move(options)),
-    m_input(remove_line_continuations(input))
-{
-    m_source_location = m_options.source_location;
-    if (!m_options.source_filename.empty())
-    {
-        m_source_location.filename = m_options.source_filename;
-    }
-}
-
-Token Lexer::get_token()
-{
-    if (!m_peek_tokens.empty())
-    {
-        Token result{m_peek_tokens.front()};
-        m_peek_tokens.pop_front();
-        return result;
-    }
-
-    skip_whitespace();
-
-    if (at_end())
-    {
-        return {TokenType::END_OF_INPUT, m_source_location, 0};
-    }
-
-    const char ch{current_char()};
-    if (ch == ';')
-    {
-        return comment();
-    }
-    if (ch == ':' && peek_char() == ':')
-    {
-        return compressed_payload();
-    }
-    if (ch == '=')
-    {
-        const SourceLocation start{m_source_location};
-        advance();
-        m_after_assign = true;
-        return {TokenType::ASSIGN, start, 1};
-    }
-    if (ch == '"')
-    {
-        return quoted_string();
-    }
-
-    return atom();
-}
-
-Token Lexer::peek_token()
-{
-    if (m_peek_tokens.empty())
-    {
-        m_peek_tokens.push_back(get_token());
-    }
-    return m_peek_tokens.front();
-}
-
-void Lexer::put_token(Token token)
-{
-    m_peek_tokens.push_back(std::move(token));
-}
-
-void Lexer::skip_whitespace()
-{
-    while (!at_end() && is_space(current_char()))
-    {
-        advance();
-    }
-}
-
-Token Lexer::comment()
-{
-    const size_t start{m_position};
-    const SourceLocation start_loc{m_source_location};
-    advance();
-    const size_t value_start{m_position};
-    while (!at_end() && current_char() != '\n' && current_char() != '\r')
-    {
-        advance();
-    }
-    return {TokenType::COMMENT, std::string{m_input.substr(value_start, m_position - value_start)}, start_loc,
-        m_position - start};
-}
-
-Token Lexer::atom()
-{
-    const size_t start{m_position};
-    const SourceLocation start_loc{m_source_location};
-    const bool allow_colon{m_after_assign};
-    const size_t end{scan_atom_end(allow_colon)};
-
-    if (!allow_colon && end > start && end < m_input.length() && m_input[end] == ':')
-    {
-        while (m_position <= end)
-        {
-            advance();
-        }
-        m_after_assign = false;
-        return {
-            TokenType::SECTION_LABEL, std::string{m_input.substr(start, end - start)}, start_loc, m_position - start};
-    }
-
-    if (end == start)
-    {
-        advance();
-        m_after_assign = false;
-        return {TokenType::RAW_ATOM, std::string{m_input.substr(start, 1)}, start_loc, 1};
-    }
-
-    while (m_position < end)
-    {
-        advance();
-    }
-
-    const TokenType type{!m_after_assign && atom_is_key(end) ? TokenType::KEY : TokenType::RAW_ATOM};
-    m_after_assign = false;
-    return {type, std::string{m_input.substr(start, end - start)}, start_loc, end - start};
-}
-
-Token Lexer::quoted_string()
-{
-    const size_t start{m_position};
-    const SourceLocation start_loc{m_source_location};
-    std::string value;
-
-    advance();
-    while (!at_end())
-    {
-        const char ch{current_char()};
-        if (ch == '"')
-        {
-            advance();
-            m_after_assign = false;
-            return {TokenType::QUOTED_STRING, value, start_loc, m_position - start};
-        }
-        if (ch == '\\' && (peek_char() == '\n' || peek_char() == '\r'))
-        {
-            advance();
-            if (current_char() == '\r')
-            {
-                advance();
-            }
-            if (current_char() == '\n')
-            {
-                advance();
-            }
-            while (!at_end() && (current_char() == ' ' || current_char() == '\t'))
-            {
-                advance();
-            }
-            continue;
-        }
-        if (ch == '\\' && (peek_char() == '"' || peek_char() == '\\'))
-        {
-            advance();
-            value.append(1, current_char());
-            advance();
-            continue;
-        }
-        if (ch == '\n' || ch == '\r')
-        {
-            error(LexerErrorCode::UNTERMINATED_QUOTED_STRING, start_loc);
-            m_after_assign = false;
-            return {TokenType::QUOTED_STRING, value, start_loc, m_position - start};
-        }
-        value.append(1, ch);
-        advance();
-    }
-
-    error(LexerErrorCode::UNTERMINATED_QUOTED_STRING, start_loc);
-    m_after_assign = false;
-    return {TokenType::QUOTED_STRING, value, start_loc, m_position - start};
-}
-
-Token Lexer::compressed_payload()
-{
-    const size_t start{m_position};
-    const SourceLocation start_loc{m_source_location};
-    while (!at_end() && current_char() != '}')
-    {
-        advance();
-    }
-    m_after_assign = false;
-    return {TokenType::COMPRESSED_PAYLOAD, std::string{m_input.substr(start, m_position - start)}, start_loc,
-        m_position - start};
-}
-
-bool Lexer::atom_is_key(size_t end) const
-{
-    const size_t next{skip_space_from(end)};
-    return next < m_input.length() && m_input[next] == '=';
-}
-
-size_t Lexer::scan_atom_end(bool allow_colon) const
-{
-    size_t pos{m_position};
-    while (pos < m_input.length() && !is_atom_delimiter(m_input[pos], allow_colon))
-    {
-        ++pos;
-    }
-    return pos;
-}
-
-size_t Lexer::skip_space_from(size_t pos) const
-{
-    while (pos < m_input.length() && is_space(m_input[pos]))
-    {
-        ++pos;
-    }
-    return pos;
-}
-
-bool Lexer::is_space(char ch) const
-{
-    return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
-}
-
-bool Lexer::is_atom_delimiter(char ch, bool allow_colon) const
-{
-    switch (ch)
-    {
-    case '{':
-    case '}':
-    case '=':
-    case '"':
-    case ';':
-        return true;
-    case ':':
-        return !allow_colon;
-    default:
-        return is_space(ch);
-    }
-}
-
-char Lexer::current_char() const
-{
-    if (m_position < m_input.length())
-    {
-        return m_input[m_position];
-    }
-    return '\0';
-}
-
-char Lexer::peek_char(size_t offset) const
-{
-    const size_t pos{m_position + offset};
-    if (pos < m_input.length())
-    {
-        return m_input[pos];
-    }
-    return '\0';
-}
-
-void Lexer::advance()
-{
-    if (at_end())
-    {
-        return;
-    }
-
-    const char ch{m_input[m_position]};
-    if (ch == '\r')
-    {
-        ++m_position;
-        if (!at_end() && current_char() == '\n')
-        {
-            ++m_position;
-        }
-        ++m_source_location.line;
-        m_source_location.column = 1;
-        return;
-    }
-    if (ch == '\n')
-    {
-        ++m_position;
-        ++m_source_location.line;
-        m_source_location.column = 1;
-        return;
-    }
-
-    ++m_position;
-    ++m_source_location.column;
 }
 
 namespace
 {
 
-bool is_value_token(TokenType type)
+struct ProcessedLine
 {
-    return type == TokenType::RAW_ATOM || type == TokenType::QUOTED_STRING;
+    std::string text;
+    std::size_t line{};
+};
+
+struct CommentStrippedLine
+{
+    std::string text;
+    bool in_quote{};
+};
+
+struct ParsedValue
+{
+    std::string text;
+    std::size_t end{};
+};
+
+bool is_space(char ch)
+{
+    return ch == ' ' || ch == '\t';
 }
 
-class ParameterBodyParser
+std::size_t skip_space(std::string_view text, std::size_t pos)
+{
+    while (pos < text.length() && is_space(text[pos]))
+    {
+        ++pos;
+    }
+    return pos;
+}
+
+std::string_view trim(std::string_view text)
+{
+    while (!text.empty() && is_space(text.front()))
+    {
+        text.remove_prefix(1);
+    }
+    while (!text.empty() && is_space(text.back()))
+    {
+        text.remove_suffix(1);
+    }
+    return text;
+}
+
+bool ends_with_continuation(std::string_view text)
+{
+    text = trim(text);
+    return !text.empty() && text.back() == '\\';
+}
+
+CommentStrippedLine strip_comment(std::string_view line, bool in_quote)
+{
+    std::string result;
+    bool escaped{};
+    for (char ch : line)
+    {
+        if (escaped)
+        {
+            result.push_back(ch);
+            escaped = false;
+            continue;
+        }
+        if (ch == '\\' && in_quote)
+        {
+            result.push_back(ch);
+            escaped = true;
+            continue;
+        }
+        if (ch == '"')
+        {
+            in_quote = !in_quote;
+            result.push_back(ch);
+            continue;
+        }
+        if (ch == ';' && !in_quote)
+        {
+            break;
+        }
+        result.push_back(ch);
+    }
+    return {std::move(result), in_quote};
+}
+
+std::vector<std::string> split_physical_lines(std::string_view input)
+{
+    std::vector<std::string> result;
+    std::string line;
+    for (std::size_t i = 0; i < input.length();)
+    {
+        const char ch{input[i]};
+        if (ch == '\r' || ch == '\n')
+        {
+            result.push_back(std::move(line));
+            line.clear();
+            ++i;
+            if (ch == '\r' && i < input.length() && input[i] == '\n')
+            {
+                ++i;
+            }
+            continue;
+        }
+        line.push_back(ch);
+        ++i;
+    }
+    if (!line.empty() || input.empty())
+    {
+        result.push_back(std::move(line));
+    }
+    return result;
+}
+
+std::vector<ProcessedLine> preprocess_lines(std::string_view input)
+{
+    std::vector<ProcessedLine> result;
+    std::string current;
+    std::size_t current_line{};
+    bool continuing{};
+    bool quote_continues{};
+    const std::vector<std::string> physical_lines{split_physical_lines(input)};
+
+    for (std::size_t i = 0; i < physical_lines.size(); ++i)
+    {
+        if (!continuing)
+        {
+            current_line = i + 1;
+        }
+
+        CommentStrippedLine stripped{strip_comment(physical_lines[i], quote_continues)};
+        std::string piece{std::move(stripped.text)};
+        if (continuing)
+        {
+            piece.erase(0, piece.find_first_not_of(" \t"));
+        }
+        current.append(piece);
+
+        if (ends_with_continuation(current))
+        {
+            current.erase(current.find_last_not_of(" \t") + 1);
+            current.pop_back();
+            continuing = true;
+            quote_continues = stripped.in_quote;
+            continue;
+        }
+
+        result.push_back({std::move(current), current_line});
+        current.clear();
+        continuing = false;
+        quote_continues = false;
+    }
+
+    if (!current.empty())
+    {
+        result.push_back({std::move(current), current_line});
+    }
+
+    return result;
+}
+
+SourceLocation location_at(SourceLocation start, std::size_t line, std::size_t column)
+{
+    SourceLocation result{std::move(start)};
+    if (line > 1)
+    {
+        result.line += line - 1;
+        result.column = column;
+    }
+    else
+    {
+        result.column += column - 1;
+    }
+    return result;
+}
+
+bool is_section_label(std::string_view line)
+{
+    line = trim(line);
+    if (line.empty() || line.back() != ':')
+    {
+        return false;
+    }
+    line.remove_suffix(1);
+    return !line.empty() && line.find_first_of(" \t=") == std::string_view::npos;
+}
+
+std::string section_name(std::string_view line)
+{
+    line = trim(line);
+    line.remove_suffix(1);
+    return std::string{line};
+}
+
+std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t value_start)
+{
+    std::string value;
+    bool escaped{};
+    for (std::size_t pos = value_start + 1; pos < line.length(); ++pos)
+    {
+        const char ch{line[pos]};
+        if (escaped)
+        {
+            if (ch == '"' || ch == '\\')
+            {
+                value.push_back(ch);
+            }
+            else
+            {
+                value.push_back('\\');
+                value.push_back(ch);
+            }
+            escaped = false;
+            continue;
+        }
+        if (ch == '\\')
+        {
+            escaped = true;
+            continue;
+        }
+        if (ch == '"')
+        {
+            return ParsedValue{std::move(value), pos + 1};
+        }
+        value.push_back(ch);
+    }
+    return std::nullopt;
+}
+
+class BodyParser
 {
 public:
-    ParameterBodyParser(std::string_view input, Options options) :
-        m_options(std::move(options)),
-        m_lexer(input, m_options)
+    BodyParser(std::string_view input, Dialect dialect, SourceLocation source_location) :
+        m_lines(preprocess_lines(input)),
+        m_dialect(dialect),
+        m_source_location(std::move(source_location))
     {
     }
 
-    ParameterParseResult parse()
+    ParameterEntry parse()
     {
-        ParameterParseResult result;
-        if (m_options.dialect == Dialect::BASIC)
+        ParameterEntry result;
+        for (const ProcessedLine &line : m_lines)
         {
-            parse_basic(result.body);
-        }
-        else
-        {
-            parse_extended(result.body);
+            parse_line(result.body, line);
         }
         result.diagnostics = std::move(m_diagnostics);
-        result.lexical_diagnostics = m_lexer.get_errors();
         return result;
     }
 
 private:
-    Token next_non_comment()
+    void parse_line(ParameterBody &body, const ProcessedLine &processed)
     {
-        Token token{m_lexer.get_token()};
-        while (token.type == TokenType::COMMENT)
+        const std::string_view line{processed.text};
+        const std::string_view stripped{trim(line)};
+        if (stripped.empty())
         {
-            token = m_lexer.get_token();
-        }
-        return token;
-    }
-
-    void error(ParseErrorCode code, const SourceLocation &location)
-    {
-        m_diagnostics.push_back(ParseDiagnostic{code, location});
-    }
-
-    void parse_basic(ParameterBody &body)
-    {
-        while (!m_stopped)
-        {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT || token.type == TokenType::COMPRESSED_PAYLOAD)
-            {
-                break;
-            }
-            if (token.type == TokenType::KEY)
-            {
-                if (std::optional<ParameterAssignment> assignment = parse_assignment(token))
-                {
-                    body.assignments.push_back(std::move(*assignment));
-                }
-                continue;
-            }
-            error(ParseErrorCode::EXPECTED_KEY, token.location);
-            recover_to_key_or_end();
-        }
-    }
-
-    void parse_extended(ParameterBody &body)
-    {
-        while (!m_stopped)
-        {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT || token.type == TokenType::COMPRESSED_PAYLOAD)
-            {
-                break;
-            }
-            if (token.type == TokenType::SECTION_LABEL)
-            {
-                body.sections.push_back(parse_section(token));
-                continue;
-            }
-            error(ParseErrorCode::EXPECTED_SECTION_LABEL, token.location);
-            recover_to_section_or_end();
-        }
-    }
-
-    ParameterSection parse_section(const Token &label)
-    {
-        ParameterSection section;
-        section.name = label.value;
-        section.source_range.begin = label.location;
-        section.source_range.end = m_lexer.source_location();
-
-        while (!m_stopped)
-        {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT)
-            {
-                section.source_range.end = token.location;
-                break;
-            }
-            if (token.type == TokenType::SECTION_LABEL)
-            {
-                section.source_range.end = token.location;
-                m_lexer.put_token(token);
-                break;
-            }
-            if (token.type == TokenType::KEY)
-            {
-                if (std::optional<ParameterAssignment> assignment = parse_assignment(token))
-                {
-                    section.source_range.end = assignment->source_range.end;
-                    section.assignments.push_back(std::move(*assignment));
-                }
-                continue;
-            }
-            error(ParseErrorCode::EXPECTED_KEY, token.location);
-            recover_to_key_section_or_end();
-        }
-
-        return section;
-    }
-
-    std::optional<ParameterAssignment> parse_assignment(const Token &key)
-    {
-        ParameterAssignment assignment;
-        assignment.key = key.value;
-        assignment.source_range.begin = key.location;
-
-        const Token assign{next_non_comment()};
-        if (assign.type != TokenType::ASSIGN)
-        {
-            error(ParseErrorCode::EXPECTED_ASSIGN, assign.location);
-            put_back_recovery_token(assign);
-            return std::nullopt;
-        }
-
-        const Token value{next_non_comment()};
-        if (!is_value_token(value.type))
-        {
-            error(ParseErrorCode::EXPECTED_VALUE, value.location);
-            put_back_recovery_token(value);
-            return std::nullopt;
-        }
-
-        assignment.value.token_type = value.type;
-        assignment.value.text = value.value;
-        assignment.value.source_range.begin = value.location;
-        assignment.value.source_range.end = m_lexer.source_location();
-        assignment.source_range.end = assignment.value.source_range.end;
-        return assignment;
-    }
-
-    void put_back_recovery_token(const Token &token)
-    {
-        if (token.type == TokenType::END_OF_INPUT)
-        {
-            m_stopped = true;
             return;
         }
-        if (token.type == TokenType::SECTION_LABEL || token.type == TokenType::KEY)
+
+        const std::size_t first_non_space{line.find_first_not_of(" \t")};
+        if (is_section_label(stripped))
         {
-            m_lexer.put_token(token);
+            if (m_dialect == Dialect::BASIC)
+            {
+                error(ParseErrorCode::EXPECTED_ASSIGNMENT, processed.line, first_non_space + 1);
+                return;
+            }
+            m_current_section = &body.sections.emplace_back();
+            m_current_section->name = section_name(stripped);
+            return;
+        }
+
+        if (m_dialect == Dialect::EXTENDED && m_current_section == nullptr)
+        {
+            error(ParseErrorCode::EXPECTED_SECTION_LABEL, processed.line, first_non_space + 1);
+            return;
+        }
+
+        std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
+        if (m_dialect == Dialect::BASIC)
+        {
+            body.assignments.insert(body.assignments.end(), std::make_move_iterator(assignments.begin()),
+                std::make_move_iterator(assignments.end()));
+        }
+        else if (m_current_section != nullptr)
+        {
+            m_current_section->assignments.insert(m_current_section->assignments.end(),
+                std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
         }
     }
 
-    void recover_to_key_or_end()
+    std::vector<Parameter> parse_assignments(std::string_view line, std::size_t line_number)
     {
-        while (!m_stopped)
+        std::vector<Parameter> result;
+        std::size_t pos{};
+        while (pos < line.length())
         {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT)
+            pos = skip_space(line, pos);
+            if (pos >= line.length())
             {
-                m_stopped = true;
-                return;
+                break;
             }
-            if (token.type == TokenType::KEY)
+
+            const std::size_t assignment_start{pos};
+            while (pos < line.length() && line[pos] != '=' && !is_space(line[pos]))
             {
-                m_lexer.put_token(token);
-                return;
+                ++pos;
             }
+            const std::size_t key_end{pos};
+            if (assignment_start == key_end)
+            {
+                error(ParseErrorCode::EXPECTED_ASSIGNMENT, line_number, assignment_start + 1);
+                break;
+            }
+
+            if (pos >= line.length() || line[pos] != '=')
+            {
+                error(ParseErrorCode::EXPECTED_ASSIGNMENT, line_number, assignment_start + 1);
+                break;
+            }
+            ++pos;
+            const std::size_t value_start{pos};
+            if (value_start >= line.length() || is_space(line[value_start]))
+            {
+                error(ParseErrorCode::EXPECTED_VALUE, line_number, value_start + 1);
+                break;
+            }
+
+            Parameter assignment;
+            assignment.key = std::string{line.substr(assignment_start, key_end - assignment_start)};
+
+            if (line[value_start] == '"')
+            {
+                std::optional<ParsedValue> value{parse_quoted_value(line, value_start)};
+                if (!value)
+                {
+                    error(ParseErrorCode::UNTERMINATED_QUOTED_STRING, line_number, value_start + 1);
+                    break;
+                }
+                assignment.value = std::move(value->text);
+                pos = value->end;
+            }
+            else
+            {
+                while (pos < line.length() && !is_space(line[pos]))
+                {
+                    ++pos;
+                }
+                assignment.value = std::string{line.substr(value_start, pos - value_start)};
+            }
+
+            result.push_back(std::move(assignment));
         }
+        return result;
     }
 
-    void recover_to_section_or_end()
+    void error(ParseErrorCode code, std::size_t line, std::size_t column)
     {
-        while (!m_stopped)
-        {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT)
-            {
-                m_stopped = true;
-                return;
-            }
-            if (token.type == TokenType::SECTION_LABEL)
-            {
-                m_lexer.put_token(token);
-                return;
-            }
-        }
+        m_diagnostics.push_back(ParseDiagnostic{code, location_at(m_source_location, line, column)});
     }
 
-    void recover_to_key_section_or_end()
-    {
-        while (!m_stopped)
-        {
-            const Token token{next_non_comment()};
-            if (token.type == TokenType::END_OF_INPUT)
-            {
-                m_stopped = true;
-                return;
-            }
-            if (token.type == TokenType::KEY || token.type == TokenType::SECTION_LABEL)
-            {
-                m_lexer.put_token(token);
-                return;
-            }
-        }
-    }
-
-    Options m_options;
-    Lexer m_lexer;
-    bool m_stopped{};
+    std::vector<ProcessedLine> m_lines;
+    Dialect m_dialect{};
+    SourceLocation m_source_location;
+    ParameterSection *m_current_section{};
     std::vector<ParseDiagnostic> m_diagnostics;
 };
 
 } // namespace
 
-LexerPtr lex(std::string_view input)
+ParameterEntry parse_parameter_entry(FileEntry file_entry, Dialect dialect)
 {
-    return std::make_shared<Lexer>(input);
-}
-
-std::vector<FileEntry> load_parameter_entries(std::istream &in, std::string filename)
-{
-    return load_file_entries(in, std::move(filename));
-}
-
-ParameterParseResult parse_parameter_body(std::string_view input, Options options)
-{
-    ParameterBodyParser parser{input, std::move(options)};
-    return parser.parse();
-}
-
-ParameterEntry parse_parameter_entry(FileEntry file_entry, Options options)
-{
-    options.source_location = file_entry.body_range.begin;
-    if (options.source_filename.empty())
-    {
-        options.source_filename = file_entry.body_range.begin.filename;
-    }
-
-    ParameterParseResult parsed{parse_parameter_body(file_entry.body, std::move(options))};
-    return ParameterEntry{std::move(file_entry), std::move(parsed.body), std::move(parsed.lexical_diagnostics),
-        std::move(parsed.diagnostics)};
-}
-
-ParameterFile parse_parameter_file(std::istream &in, Options options)
-{
-    ParameterFile result;
-    for (FileEntry file_entry : load_parameter_entries(in, options.source_filename))
-    {
-        ParameterEntry entry{parse_parameter_entry(std::move(file_entry), options)};
-        result.lexical_diagnostics.insert(
-            result.lexical_diagnostics.end(), entry.lexical_diagnostics.begin(), entry.lexical_diagnostics.end());
-        result.diagnostics.insert(result.diagnostics.end(), entry.diagnostics.begin(), entry.diagnostics.end());
-        result.entries.push_back(std::move(entry));
-    }
-    return result;
-}
-
-ParameterFile parse_parameter_file(std::istream &in, std::string filename)
-{
-    Options options;
-    options.source_filename = std::move(filename);
-    return parse_parameter_file(in, std::move(options));
+    return BodyParser{file_entry.body, dialect, file_entry.body_range.begin}.parse();
 }
 
 } // namespace formula::parameter
