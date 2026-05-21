@@ -149,6 +149,22 @@ TEST(TestFormulaEntry, fileTreeLoadsImplicitBaseImports)
     ASSERT_EQ(2U, result.files.size());
     EXPECT_EQ("main.ufm", result.files[0].filename);
     EXPECT_EQ("base.ufm", result.files[1].filename);
+    ASSERT_EQ(2U, result.file_index.size());
+    EXPECT_EQ("main.ufm", result.file_index[0].filename);
+    EXPECT_EQ(0U, result.file_index[0].file_index);
+    EXPECT_EQ("base.ufm", result.file_index[1].filename);
+    EXPECT_EQ(1U, result.file_index[1].file_index);
+    ASSERT_EQ(2U, result.class_index.size());
+    EXPECT_EQ("Derived", result.class_index[0].class_name);
+    EXPECT_EQ("main.ufm", result.class_index[0].filename);
+    EXPECT_EQ(0U, result.class_index[0].file_index);
+    EXPECT_EQ(0U, result.class_index[0].class_index);
+    EXPECT_EQ(0U, result.class_index[0].entry_index);
+    EXPECT_EQ("Base", result.class_index[1].class_name);
+    EXPECT_EQ("base.ufm", result.class_index[1].filename);
+    EXPECT_EQ(1U, result.class_index[1].file_index);
+    EXPECT_EQ(0U, result.class_index[1].class_index);
+    EXPECT_EQ(0U, result.class_index[1].entry_index);
     ASSERT_EQ(1U, result.files[1].classes.size());
     EXPECT_EQ("Base", result.files[1].classes[0].name);
 }

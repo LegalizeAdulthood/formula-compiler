@@ -240,6 +240,23 @@ static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode cod
         FormulaFileDiagnostic{code, std::string{filename}, std::move(location), std::move(detail), import_stack});
 }
 
+static void rebuild_indexes(FormulaFileSet &result)
+{
+    result.file_index.clear();
+    result.class_index.clear();
+    for (std::size_t file_index = 0; file_index < result.files.size(); ++file_index)
+    {
+        const FormulaFile &file = result.files[file_index];
+        result.file_index.push_back(FormulaFileReference{file.filename, file_index});
+        for (std::size_t class_index = 0; class_index < file.classes.size(); ++class_index)
+        {
+            const ClassHeader &klass = file.classes[class_index];
+            result.class_index.push_back(
+                FormulaClassReference{file.filename, klass.name, file_index, class_index, klass.entry_index});
+        }
+    }
+}
+
 static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEntry &entry, std::string_view filename,
     FormulaFileSet &result, const std::vector<std::string> &import_stack)
 {
@@ -362,6 +379,7 @@ FormulaFileSet load_formula_file_tree(std::string_view root_filename, const Form
     std::unordered_map<std::string, LoadState> states;
     std::vector<std::string> import_stack;
     load_formula_file_tree(root_filename, importer, result, states, import_stack);
+    rebuild_indexes(result);
     return result;
 }
 

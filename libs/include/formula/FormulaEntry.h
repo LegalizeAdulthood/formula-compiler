@@ -71,9 +71,26 @@ struct FormulaFileDiagnostic
     std::vector<std::string> import_stack;
 };
 
+struct FormulaFileReference
+{
+    std::string filename;
+    std::size_t file_index{};
+};
+
+struct FormulaClassReference
+{
+    std::string filename;
+    std::string class_name;
+    std::size_t file_index{};
+    std::size_t class_index{};
+    std::size_t entry_index{};
+};
+
 struct FormulaFileSet
 {
     std::vector<FormulaFile> files;
+    std::vector<FormulaFileReference> file_index;
+    std::vector<FormulaClassReference> class_index;
     std::vector<FormulaFileDiagnostic> diagnostics;
 };
 
