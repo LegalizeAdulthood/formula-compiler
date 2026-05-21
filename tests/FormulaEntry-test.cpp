@@ -85,6 +85,49 @@ public:
         entries[0].body);
 }
 
+TEST(TestFormulaEntry, fileIndexesClassHeaders)
+{
+    const char *const frm{R"entry(
+Mandelbrot {
+}
+class Base {
+}
+class Derived(Test.ufm:Base) {
+}
+)entry"};
+    std::istringstream str{frm};
+
+    auto file{load_formula_file(str, "main.ufm")};
+
+    EXPECT_EQ("main.ufm", file.filename);
+    ASSERT_EQ(3U, file.entries.size());
+    ASSERT_EQ(2U, file.classes.size());
+    EXPECT_EQ("Base", file.classes[0].name);
+    EXPECT_TRUE(file.classes[0].base_file.empty());
+    EXPECT_TRUE(file.classes[0].base_class.empty());
+    EXPECT_EQ(1U, file.classes[0].entry_index);
+    EXPECT_EQ("Derived", file.classes[1].name);
+    EXPECT_EQ("Test.ufm", file.classes[1].base_file);
+    EXPECT_EQ("Base", file.classes[1].base_class);
+    EXPECT_EQ(2U, file.classes[1].entry_index);
+}
+
+TEST(TestFormulaEntry, fileIndexesLocalBaseClass)
+{
+    const char *const frm{R"entry(
+class Derived(Base) {
+}
+)entry"};
+    std::istringstream str{frm};
+
+    auto file{load_formula_file(str)};
+
+    ASSERT_EQ(1U, file.classes.size());
+    EXPECT_EQ("Derived", file.classes[0].name);
+    EXPECT_TRUE(file.classes[0].base_file.empty());
+    EXPECT_EQ("Base", file.classes[0].base_class);
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

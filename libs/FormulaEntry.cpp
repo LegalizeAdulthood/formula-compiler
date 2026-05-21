@@ -5,6 +5,7 @@
 #include <formula/FormulaEntry.h>
 
 #include <cassert>
+#include <utility>
 
 namespace formula
 {
@@ -27,6 +28,33 @@ static void strip_trailing(std::string &text)
     {
         text.clear();
     }
+}
+
+static ClassHeader class_header(const FormulaEntry &entry, std::size_t index)
+{
+    ClassHeader result{entry.name, {}, {}, index};
+    if (!entry.is_class || entry.paren_value.empty())
+    {
+        return result;
+    }
+
+    std::string base{entry.paren_value};
+    strip_leading(base);
+    strip_trailing(base);
+
+    if (const auto colon = base.find_last_of(':'); colon != std::string::npos)
+    {
+        result.base_file = base.substr(0, colon);
+        result.base_class = base.substr(colon + 1);
+        strip_leading(result.base_file);
+        strip_trailing(result.base_file);
+        strip_leading(result.base_class);
+        strip_trailing(result.base_class);
+        return result;
+    }
+
+    result.base_class = std::move(base);
+    return result;
 }
 
 std::vector<FormulaEntry> load_formula_entries(std::istream &in)
@@ -145,6 +173,21 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
     }
 
     return formulas;
+}
+
+FormulaFile load_formula_file(std::istream &in, std::string filename)
+{
+    FormulaFile result;
+    result.filename = std::move(filename);
+    result.entries = load_formula_entries(in);
+    for (std::size_t index = 0; index < result.entries.size(); ++index)
+    {
+        if (result.entries[index].is_class)
+        {
+            result.classes.push_back(class_header(result.entries[index], index));
+        }
+    }
+    return result;
 }
 
 } // namespace formula
