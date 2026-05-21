@@ -184,6 +184,37 @@ TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)
     EXPECT_EQ("second.ulb", result.files[2].filename);
 }
 
+TEST(TestFormulaEntry, fileTreePreprocessesBeforeIndexing)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\n$ifdef nope\nimport \"skip.ulb\"\n$endif\nz=0:z=z+1,|z|<4\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(1U, result.files.size());
+    EXPECT_EQ("main.ufm", result.files[0].filename);
+}
+
+TEST(TestFormulaEntry, fileTreeReportsPreprocessErrors)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\n$ifdef nope\nz=0:z=z+1,|z|<4\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::PREPROCESS_ERROR, result.diagnostics[0].code);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    ASSERT_EQ(1U, result.diagnostics[0].import_stack.size());
+    EXPECT_EQ("main.ufm", result.diagnostics[0].import_stack[0]);
+    EXPECT_TRUE(result.files.empty());
+}
+
 TEST(TestFormulaEntry, fileTreeReportsMissingImport)
 {
     std::unordered_map<std::string, std::string> files{

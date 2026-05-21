@@ -42,6 +42,7 @@ enum class FormulaFileDiagnosticCode
 {
     MISSING_IMPORT,
     IMPORT_CYCLE,
+    PREPROCESS_ERROR,
     PARSE_ERROR,
 };
 

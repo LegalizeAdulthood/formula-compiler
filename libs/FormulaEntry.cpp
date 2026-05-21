@@ -5,6 +5,7 @@
 #include <formula/FormulaEntry.h>
 #include <formula/ParseOptions.h>
 #include <formula/Parser.h>
+#include <formula/Preprocessor.h>
 
 #include <cassert>
 #include <sstream>
@@ -258,6 +259,16 @@ static void load_formula_file_tree(std::string_view filename, const FormulaFileI
     catch (...)
     {
         add_diagnostic(result, FormulaFileDiagnosticCode::MISSING_IMPORT, filename, import_stack);
+        states[key] = LoadState::LOADED;
+        import_stack.pop_back();
+        return;
+    }
+
+    preprocessor::Preprocessor preprocessor{preprocessor::UltraFractalMacros::ULTRAFRACTAL6, key};
+    text = preprocessor.process(text);
+    if (!preprocessor.errors().empty())
+    {
+        add_diagnostic(result, FormulaFileDiagnosticCode::PREPROCESS_ERROR, filename, import_stack);
         states[key] = LoadState::LOADED;
         import_stack.pop_back();
         return;
