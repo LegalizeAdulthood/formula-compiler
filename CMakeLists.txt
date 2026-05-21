@@ -48,6 +48,9 @@ misc_group_sources("Docs" FILES
     "docs/gradient-grammar.txt"
     "docs/compiler-directives.md"
     "docs/extended-formulas.md"
-    "docs/extended-interpreter.md")
+    "docs/extended-interpreter.md"
+    "docs/extended-compiler.md"
+    "docs/extended-semantics.md"
+    "docs/parser-gaps.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
