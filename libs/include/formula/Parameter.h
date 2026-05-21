@@ -4,12 +4,10 @@
 //
 #pragma once
 
-#include <formula/Dialect.h>
 #include <formula/FileEntry.h>
 #include <formula/SourceLocation.h>
 
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace formula::parameter
@@ -44,18 +42,19 @@ struct ParameterSection
     std::vector<Parameter> assignments;
 };
 
-struct ParameterBody
+struct BasicParameterEntry
 {
     std::vector<Parameter> assignments;
-    std::vector<ParameterSection> sections;
-};
-
-struct ParameterEntry
-{
-    ParameterBody body;
     std::vector<ParseDiagnostic> diagnostics;
 };
 
-ParameterEntry parse_parameter_entry(FileEntry file_entry, Dialect dialect);
+struct ExtendedParameterEntry
+{
+    std::vector<ParameterSection> sections;
+    std::vector<ParseDiagnostic> diagnostics;
+};
+
+BasicParameterEntry parse_basic_parameters(FileEntry file_entry);
+ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry);
 
 } // namespace formula::parameter

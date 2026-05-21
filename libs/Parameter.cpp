@@ -262,26 +262,36 @@ std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t
 class BodyParser
 {
 public:
-    BodyParser(std::string_view input, Dialect dialect, SourceLocation source_location) :
+    BodyParser(std::string_view input, SourceLocation source_location) :
         m_lines(preprocess_lines(input)),
-        m_dialect(dialect),
         m_source_location(std::move(source_location))
     {
     }
 
-    ParameterEntry parse()
+    BasicParameterEntry parse_basic()
     {
-        ParameterEntry result;
+        BasicParameterEntry result;
         for (const ProcessedLine &line : m_lines)
         {
-            parse_line(result.body, line);
+            parse_basic_line(result, line);
+        }
+        result.diagnostics = std::move(m_diagnostics);
+        return result;
+    }
+
+    ExtendedParameterEntry parse_extended()
+    {
+        ExtendedParameterEntry result;
+        for (const ProcessedLine &line : m_lines)
+        {
+            parse_extended_line(result, line);
         }
         result.diagnostics = std::move(m_diagnostics);
         return result;
     }
 
 private:
-    void parse_line(ParameterBody &body, const ProcessedLine &processed)
+    void parse_basic_line(BasicParameterEntry &entry, const ProcessedLine &processed)
     {
         const std::string_view line{processed.text};
         const std::string_view stripped{trim(line)};
@@ -293,33 +303,41 @@ private:
         const std::size_t first_non_space{line.find_first_not_of(" \t")};
         if (is_section_label(stripped))
         {
-            if (m_dialect == Dialect::BASIC)
-            {
-                error(ParseErrorCode::EXPECTED_ASSIGNMENT, processed.line, first_non_space + 1);
-                return;
-            }
-            m_current_section = &body.sections.emplace_back();
+            error(ParseErrorCode::EXPECTED_ASSIGNMENT, processed.line, first_non_space + 1);
+            return;
+        }
+
+        std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
+        entry.assignments.insert(entry.assignments.end(), std::make_move_iterator(assignments.begin()),
+            std::make_move_iterator(assignments.end()));
+    }
+
+    void parse_extended_line(ExtendedParameterEntry &entry, const ProcessedLine &processed)
+    {
+        const std::string_view line{processed.text};
+        const std::string_view stripped{trim(line)};
+        if (stripped.empty())
+        {
+            return;
+        }
+
+        const std::size_t first_non_space{line.find_first_not_of(" \t")};
+        if (is_section_label(stripped))
+        {
+            m_current_section = &entry.sections.emplace_back();
             m_current_section->name = section_name(stripped);
             return;
         }
 
-        if (m_dialect == Dialect::EXTENDED && m_current_section == nullptr)
+        if (m_current_section == nullptr)
         {
             error(ParseErrorCode::EXPECTED_SECTION_LABEL, processed.line, first_non_space + 1);
             return;
         }
 
         std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
-        if (m_dialect == Dialect::BASIC)
-        {
-            body.assignments.insert(body.assignments.end(), std::make_move_iterator(assignments.begin()),
-                std::make_move_iterator(assignments.end()));
-        }
-        else if (m_current_section != nullptr)
-        {
-            m_current_section->assignments.insert(m_current_section->assignments.end(),
-                std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
-        }
+        m_current_section->assignments.insert(m_current_section->assignments.end(),
+            std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
     }
 
     std::vector<Parameter> parse_assignments(std::string_view line, std::size_t line_number)
@@ -393,7 +411,6 @@ private:
     }
 
     std::vector<ProcessedLine> m_lines;
-    Dialect m_dialect{};
     SourceLocation m_source_location;
     ParameterSection *m_current_section{};
     std::vector<ParseDiagnostic> m_diagnostics;
@@ -401,9 +418,14 @@ private:
 
 } // namespace
 
-ParameterEntry parse_parameter_entry(FileEntry file_entry, Dialect dialect)
+BasicParameterEntry parse_basic_parameters(FileEntry file_entry)
 {
-    return BodyParser{file_entry.body, dialect, file_entry.body_range.begin}.parse();
+    return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_basic();
+}
+
+ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry)
+{
+    return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_extended();
 }
 
 } // namespace formula::parameter

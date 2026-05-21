@@ -60,17 +60,16 @@ TEST(TestParameterParser, parsesBasicNameValuePairsFromFileEntry)
 {
     FileEntry entry{entry_with_body("title=\"Name\" magn=1.5 center=-0.5/0.25")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::BASIC)};
+    const BasicParameterEntry result{parse_basic_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(3U, result.body.assignments.size());
-    EXPECT_TRUE(result.body.sections.empty());
-    EXPECT_EQ("title", result.body.assignments[0].key);
-    EXPECT_EQ("Name", result.body.assignments[0].value);
-    EXPECT_EQ("magn", result.body.assignments[1].key);
-    EXPECT_EQ("1.5", result.body.assignments[1].value);
-    EXPECT_EQ("center", result.body.assignments[2].key);
-    EXPECT_EQ("-0.5/0.25", result.body.assignments[2].value);
+    ASSERT_EQ(3U, result.assignments.size());
+    EXPECT_EQ("title", result.assignments[0].key);
+    EXPECT_EQ("Name", result.assignments[0].value);
+    EXPECT_EQ("magn", result.assignments[1].key);
+    EXPECT_EQ("1.5", result.assignments[1].value);
+    EXPECT_EQ("center", result.assignments[2].key);
+    EXPECT_EQ("-0.5/0.25", result.assignments[2].value);
 }
 
 TEST(TestParameterParser, parsesExtendedSectionsFromFileEntry)
@@ -82,20 +81,19 @@ TEST(TestParameterParser, parsesExtendedSectionsFromFileEntry)
                                     "formula:\n"
                                     "filename=\"mmf.ufm\" entry=\"Mandelbrot\" p_power=2\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    EXPECT_TRUE(result.body.assignments.empty());
-    ASSERT_EQ(3U, result.body.sections.size());
-    EXPECT_EQ("fractal", result.body.sections[0].name);
-    ASSERT_EQ(1U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("title", result.body.sections[0].assignments[0].key);
-    EXPECT_EQ("Name", result.body.sections[0].assignments[0].value);
-    EXPECT_EQ("layer", result.body.sections[1].name);
-    EXPECT_EQ("formula", result.body.sections[2].name);
-    ASSERT_EQ(3U, result.body.sections[2].assignments.size());
-    EXPECT_EQ("p_power", result.body.sections[2].assignments[2].key);
-    EXPECT_EQ("2", result.body.sections[2].assignments[2].value);
+    ASSERT_EQ(3U, result.sections.size());
+    EXPECT_EQ("fractal", result.sections[0].name);
+    ASSERT_EQ(1U, result.sections[0].assignments.size());
+    EXPECT_EQ("title", result.sections[0].assignments[0].key);
+    EXPECT_EQ("Name", result.sections[0].assignments[0].value);
+    EXPECT_EQ("layer", result.sections[1].name);
+    EXPECT_EQ("formula", result.sections[2].name);
+    ASSERT_EQ(3U, result.sections[2].assignments.size());
+    EXPECT_EQ("p_power", result.sections[2].assignments[2].key);
+    EXPECT_EQ("2", result.sections[2].assignments[2].value);
 }
 
 TEST(TestParameterParser, preservesRepeatedAssignmentsInOrder)
@@ -104,19 +102,19 @@ TEST(TestParameterParser, preservesRepeatedAssignmentsInOrder)
                                     "index=0 color=4278190080\n"
                                     "index=1 color=4294967295\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(1U, result.body.sections.size());
-    ASSERT_EQ(4U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("index", result.body.sections[0].assignments[0].key);
-    EXPECT_EQ("0", result.body.sections[0].assignments[0].value);
-    EXPECT_EQ("color", result.body.sections[0].assignments[1].key);
-    EXPECT_EQ("4278190080", result.body.sections[0].assignments[1].value);
-    EXPECT_EQ("index", result.body.sections[0].assignments[2].key);
-    EXPECT_EQ("1", result.body.sections[0].assignments[2].value);
-    EXPECT_EQ("color", result.body.sections[0].assignments[3].key);
-    EXPECT_EQ("4294967295", result.body.sections[0].assignments[3].value);
+    ASSERT_EQ(1U, result.sections.size());
+    ASSERT_EQ(4U, result.sections[0].assignments.size());
+    EXPECT_EQ("index", result.sections[0].assignments[0].key);
+    EXPECT_EQ("0", result.sections[0].assignments[0].value);
+    EXPECT_EQ("color", result.sections[0].assignments[1].key);
+    EXPECT_EQ("4278190080", result.sections[0].assignments[1].value);
+    EXPECT_EQ("index", result.sections[0].assignments[2].key);
+    EXPECT_EQ("1", result.sections[0].assignments[2].value);
+    EXPECT_EQ("color", result.sections[0].assignments[3].key);
+    EXPECT_EQ("4294967295", result.sections[0].assignments[3].value);
 }
 
 TEST(TestParameterParser, stripsCommentsOutsideQuotedStrings)
@@ -125,13 +123,13 @@ TEST(TestParameterParser, stripsCommentsOutsideQuotedStrings)
                                     "title=\"Name;date\" ; comment\n"
                                     "magn=1.5 ; tail\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(1U, result.body.sections.size());
-    ASSERT_EQ(2U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("Name;date", result.body.sections[0].assignments[0].value);
-    EXPECT_EQ("1.5", result.body.sections[0].assignments[1].value);
+    ASSERT_EQ(1U, result.sections.size());
+    ASSERT_EQ(2U, result.sections[0].assignments.size());
+    EXPECT_EQ("Name;date", result.sections[0].assignments[0].value);
+    EXPECT_EQ("1.5", result.sections[0].assignments[1].value);
 }
 
 TEST(TestParameterParser, joinsLineContinuationsBeforeParsing)
@@ -142,13 +140,13 @@ TEST(TestParameterParser, joinsLineContinuationsBeforeParsing)
                                     "center=-1.234\\\n"
                                     "  567/0\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(1U, result.body.sections.size());
-    ASSERT_EQ(2U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("Alpha Beta", result.body.sections[0].assignments[0].value);
-    EXPECT_EQ("-1.234567/0", result.body.sections[0].assignments[1].value);
+    ASSERT_EQ(1U, result.sections.size());
+    ASSERT_EQ(2U, result.sections[0].assignments.size());
+    EXPECT_EQ("Alpha Beta", result.sections[0].assignments[0].value);
+    EXPECT_EQ("-1.234567/0", result.sections[0].assignments[1].value);
 }
 
 TEST(TestParameterParser, splitsAssignmentsOnWhitespaceOutsideQuotedStrings)
@@ -156,43 +154,43 @@ TEST(TestParameterParser, splitsAssignmentsOnWhitespaceOutsideQuotedStrings)
     FileEntry entry{entry_with_body("layer:\n"
                                     "caption=\"Layer 1\" visible=yes alpha=no\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(1U, result.body.sections.size());
-    ASSERT_EQ(3U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("caption", result.body.sections[0].assignments[0].key);
-    EXPECT_EQ("Layer 1", result.body.sections[0].assignments[0].value);
-    EXPECT_EQ("visible", result.body.sections[0].assignments[1].key);
-    EXPECT_EQ("yes", result.body.sections[0].assignments[1].value);
+    ASSERT_EQ(1U, result.sections.size());
+    ASSERT_EQ(3U, result.sections[0].assignments.size());
+    EXPECT_EQ("caption", result.sections[0].assignments[0].key);
+    EXPECT_EQ("Layer 1", result.sections[0].assignments[0].value);
+    EXPECT_EQ("visible", result.sections[0].assignments[1].key);
+    EXPECT_EQ("yes", result.sections[0].assignments[1].value);
 }
 
-TEST(TestParameterParser, extendedDialectRequiresSectionBeforeAssignments)
+TEST(TestParameterParser, extendedParametersRequireSectionBeforeAssignments)
 {
     FileEntry entry{entry_with_body("title=\"Name\"\n"
                                     "fractal:\n"
                                     "magn=1.5\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::EXPECTED_SECTION_LABEL, result.diagnostics[0].code);
-    ASSERT_EQ(1U, result.body.sections.size());
-    ASSERT_EQ(1U, result.body.sections[0].assignments.size());
-    EXPECT_EQ("magn", result.body.sections[0].assignments[0].key);
+    ASSERT_EQ(1U, result.sections.size());
+    ASSERT_EQ(1U, result.sections[0].assignments.size());
+    EXPECT_EQ("magn", result.sections[0].assignments[0].key);
 }
 
-TEST(TestParameterParser, basicDialectRejectsSectionLabels)
+TEST(TestParameterParser, basicParametersRejectSectionLabels)
 {
     FileEntry entry{entry_with_body("fractal:\n"
                                     "title=\"Name\"\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::BASIC)};
+    const BasicParameterEntry result{parse_basic_parameters(entry)};
 
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::EXPECTED_ASSIGNMENT, result.diagnostics[0].code);
-    ASSERT_EQ(1U, result.body.assignments.size());
-    EXPECT_EQ("title", result.body.assignments[0].key);
+    ASSERT_EQ(1U, result.assignments.size());
+    EXPECT_EQ("title", result.assignments[0].key);
 }
 
 TEST(TestParameterParser, reportsUnterminatedQuotedString)
@@ -200,7 +198,7 @@ TEST(TestParameterParser, reportsUnterminatedQuotedString)
     FileEntry entry{entry_with_body("fractal:\n"
                                     "title=\"no close\n")};
 
-    const ParameterEntry result{parse_parameter_entry(entry, Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::UNTERMINATED_QUOTED_STRING, result.diagnostics[0].code);
@@ -216,7 +214,7 @@ TEST(TestParameterParser, entrySourceLocationSeedsDiagnostics)
     std::vector<FileEntry> entries{load_file_entries(input, "example.upr")};
     ASSERT_EQ(1U, entries.size());
 
-    const ParameterEntry result{parse_parameter_entry(entries[0], Dialect::EXTENDED)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entries[0])};
 
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::EXPECTED_ASSIGNMENT, result.diagnostics[0].code);
