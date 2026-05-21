@@ -1,4 +1,6 @@
+#include <formula/Formula.h>
 #include <formula/FormulaEntry.h>
+#include <formula/ParseOptions.h>
 
 #include <gtest/gtest.h>
 
@@ -7,6 +9,7 @@
 #include <unordered_map>
 
 using namespace formula;
+using namespace formula::parser;
 using namespace testing;
 
 TEST(TestFormulaEntry, parenValue)
@@ -361,6 +364,41 @@ TEST(TestFormulaEntry, fileTreeReportsImportCycle)
     ASSERT_EQ(2U, result.diagnostics[0].import_stack.size());
     EXPECT_EQ("a.ufm", result.diagnostics[0].import_stack[0]);
     EXPECT_EQ("b.ufm", result.diagnostics[0].import_stack[1]);
+}
+
+TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+    Options options;
+    options.source_filename = "main.ufm";
+    options.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    LoadedFormula result{load_formula("import \"common.ulb\"\nz=0:z=z+1,|z|<4", options)};
+
+    ASSERT_TRUE(result.ast);
+    ASSERT_TRUE(result.files.diagnostics.empty());
+    ASSERT_EQ(2U, result.files.files.size());
+    EXPECT_EQ("main.ufm", result.files.files[0].filename);
+    EXPECT_EQ("common.ulb", result.files.files[1].filename);
+    ASSERT_EQ(1U, result.files.class_index.size());
+    EXPECT_EQ("Texture", result.files.class_index[0].class_name);
+    EXPECT_TRUE(result.files.retained_classes.empty());
+}
+
+TEST(TestFormulaEntry, loadFormulaWithoutImporterOnlyParsesMainAst)
+{
+    LoadedFormula result{load_formula("z=0:z=z+1,|z|<4", Options{})};
+
+    ASSERT_TRUE(result.ast);
+    EXPECT_TRUE(result.files.files.empty());
+    EXPECT_TRUE(result.files.class_index.empty());
+    EXPECT_TRUE(result.files.diagnostics.empty());
 }
 
 TEST(TestFormulaEntry, singleLine)

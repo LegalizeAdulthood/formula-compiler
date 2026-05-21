@@ -6,6 +6,7 @@
 
 #include <formula/Compiler.h>
 #include <formula/Interpreter.h>
+#include <formula/ParseOptions.h>
 #include <formula/Parser.h>
 
 #include <cassert>
@@ -352,6 +353,17 @@ FormulaPtr create_formula(std::string_view text, const parser::Options &options)
         return std::make_shared<ParsedFormula>(sections);
     }
     return {};
+}
+
+LoadedFormula load_formula(std::string_view text, const parser::Options &options)
+{
+    LoadedFormula result;
+    result.ast = parser::parse(text, options);
+    if (options.file_importer && !options.source_filename.empty())
+    {
+        result.files = load_formula_file_tree(options.source_filename, options.file_importer);
+    }
+    return result;
 }
 
 } // namespace formula

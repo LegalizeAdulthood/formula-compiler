@@ -5,6 +5,7 @@
 #pragma once
 
 #include <formula/Complex.h>
+#include <formula/FormulaEntry.h>
 
 #include <memory>
 #include <string_view>
@@ -60,6 +61,13 @@ public:
 
 using FormulaPtr = std::shared_ptr<Formula>;
 
+struct LoadedFormula
+{
+    ast::FormulaSectionsPtr ast;
+    FormulaFileSet files;
+};
+
 FormulaPtr create_formula(std::string_view text, const parser::Options &options);
+LoadedFormula load_formula(std::string_view text, const parser::Options &options);
 
 } // namespace formula
