@@ -61,6 +61,7 @@ enum class FormulaFileDiagnosticCode
     IMPORT_CYCLE,
     PREPROCESS_ERROR,
     PARSE_ERROR,
+    UNRESOLVED_CLASS,
 };
 
 struct FormulaFileDiagnostic

@@ -353,6 +353,18 @@ std::optional<FormulaClassReference> resolve_class_reference(
     return find_class_in_file(files, entry_references.file_index, reference.class_name);
 }
 
+void add_unresolved_diagnostic(
+    FormulaFileSet &files, const FormulaEntryReferences &entry_references, const FormulaReference &reference)
+{
+    SourceLocation location{reference.location};
+    if (location.filename.empty())
+    {
+        location.filename = entry_references.filename;
+    }
+    files.diagnostics.push_back(FormulaFileDiagnostic{FormulaFileDiagnosticCode::UNRESOLVED_CLASS,
+        entry_references.filename, std::move(location), reference.class_name, {}});
+}
+
 } // namespace
 
 std::vector<FormulaReference> collect_formula_references(const ast::FormulaSections &ast)
@@ -465,8 +477,18 @@ void resolve_formula_file_references(FormulaFileSet &files)
     }
     for (const FormulaEntryReferences &entry_references : files.entry_references)
     {
-        std::vector<FormulaResolvedReference> resolved{resolve_formula_entry_references(files, entry_references)};
-        files.resolved_references.insert(files.resolved_references.end(), resolved.begin(), resolved.end());
+        for (const FormulaReference &reference : entry_references.references)
+        {
+            if (std::optional<FormulaClassReference> klass =
+                    resolve_class_reference(files, entry_references, reference))
+            {
+                files.resolved_references.push_back(FormulaResolvedReference{entry_references, reference, *klass});
+            }
+            else
+            {
+                add_unresolved_diagnostic(files, entry_references, reference);
+            }
+        }
     }
 }
 

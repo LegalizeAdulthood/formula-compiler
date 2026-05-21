@@ -159,8 +159,12 @@ class Derived(Base) {
 TEST(TestFormulaEntry, fileTreeLoadsImplicitBaseImports)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Derived(base.ufm:Base) {\n}\n"},
-        {"base.ufm", "class Base {\n}\n"},
+        {"main.ufm",
+            "class Derived(base.ufm:Base) {\n"
+            "}\n"},
+        {"base.ufm",
+            "class Base {\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -193,8 +197,16 @@ TEST(TestFormulaEntry, fileTreeLoadsImplicitBaseImports)
 TEST(TestFormulaEntry, fileTreeLoadsExplicitImports)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -217,8 +229,16 @@ TEST(TestFormulaEntry, fileTreeLoadsExplicitImports)
 TEST(TestFormulaEntry, parsesLoadedClassOnDemand)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -237,8 +257,16 @@ TEST(TestFormulaEntry, parsesLoadedClassOnDemand)
 TEST(TestFormulaEntry, retainsLoadedClassOnDemand)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -259,7 +287,11 @@ TEST(TestFormulaEntry, retainsLoadedClassOnDemand)
 TEST(TestFormulaEntry, classParseErrorsKeepFilename)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Broken {\nif true\nint value\n}\n"},
+        {"main.ufm",
+            "class Broken {\n"
+            "if true\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -279,9 +311,22 @@ TEST(TestFormulaEntry, classParseErrorsKeepFilename)
 TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"first.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"first.ulb", "class First {\nimport \"second.ulb\"\npublic:\nint value\n}\n"},
-        {"second.ulb", "class Second {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"first.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"first.ulb",
+            "class First {\n"
+            "import \"second.ulb\"\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+        {"second.ulb",
+            "class Second {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -297,7 +342,13 @@ TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)
 TEST(TestFormulaEntry, fileTreePreprocessesBeforeIndexing)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\n$ifdef nope\nimport \"skip.ulb\"\n$endif\nz=0:z=z+1,|z|<4\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "$ifdef nope\n"
+            "import \"skip.ulb\"\n"
+            "$endif\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -311,7 +362,11 @@ TEST(TestFormulaEntry, fileTreePreprocessesBeforeIndexing)
 TEST(TestFormulaEntry, fileTreeReportsPreprocessErrors)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\n$ifdef nope\nz=0:z=z+1,|z|<4\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "$ifdef nope\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -331,8 +386,17 @@ TEST(TestFormulaEntry, fileTreeReportsPreprocessErrors)
 TEST(TestFormulaEntry, fileTreeReportsParseErrors)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"bad.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"bad.ulb", "class Bad {\nimport\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"bad.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"bad.ulb",
+            "class Bad {\n"
+            "import\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -352,7 +416,9 @@ TEST(TestFormulaEntry, fileTreeReportsParseErrors)
 TEST(TestFormulaEntry, fileTreeReportsMissingImport)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Derived(missing.ufm:Base) {\n}\n"},
+        {"main.ufm",
+            "class Derived(missing.ufm:Base) {\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -369,8 +435,12 @@ TEST(TestFormulaEntry, fileTreeReportsMissingImport)
 TEST(TestFormulaEntry, fileTreeReportsImportCycle)
 {
     std::unordered_map<std::string, std::string> files{
-        {"a.ufm", "class A(b.ufm:B) {\n}\n"},
-        {"b.ufm", "class B(a.ufm:A) {\n}\n"},
+        {"a.ufm",
+            "class A(b.ufm:B) {\n"
+            "}\n"},
+        {"b.ufm",
+            "class B(a.ufm:A) {\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -387,8 +457,16 @@ TEST(TestFormulaEntry, fileTreeReportsImportCycle)
 TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "z=0:z=z+1,|z|<4\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
     Options options;
     options.source_filename = "main.ufm";
@@ -397,7 +475,9 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
         return files.at(std::string{filename});
     };
 
-    LoadedFormula result{load_formula("import \"common.ulb\"\nz=0:z=z+1,|z|<4", options)};
+    LoadedFormula result{load_formula("import \"common.ulb\"\n"
+                                      "z=0:z=z+1,|z|<4",
+        options)};
 
     ASSERT_TRUE(result.ast);
     ASSERT_TRUE(result.files.diagnostics.empty());
@@ -499,8 +579,19 @@ TEST(TestFormulaEntry, referenceCollectorIgnoresBuiltinParamBlocks)
 TEST(TestFormulaEntry, entryReferenceCollectorParsesLoadedFormulaEntry)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex = new Texture()\nloop:\nz = pixel\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex = new Texture()\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -523,7 +614,11 @@ TEST(TestFormulaEntry, entryReferenceCollectorParsesLoadedFormulaEntry)
 TEST(TestFormulaEntry, entryReferenceCollectorIncludesClassBase)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Derived(Base) {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "class Derived(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -542,7 +637,11 @@ TEST(TestFormulaEntry, entryReferenceCollectorIncludesClassBase)
 TEST(TestFormulaEntry, entryReferenceCollectorReportsParseErrors)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Broken {\nif true\nint value\n}\n"},
+        {"main.ufm",
+            "class Broken {\n"
+            "if true\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -561,8 +660,19 @@ TEST(TestFormulaEntry, entryReferenceCollectorReportsParseErrors)
 TEST(TestFormulaEntry, fileReferenceCollectorStoresEntryReferences)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex = new Texture()\nloop:\nz = pixel\n}\n"},
-        {"common.ulb", "class Texture(Base) {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex = new Texture()\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -590,7 +700,17 @@ TEST(TestFormulaEntry, fileReferenceCollectorStoresEntryReferences)
 TEST(TestFormulaEntry, referenceResolverFindsLocalClasses)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Texture {\npublic:\nint value\n}\nFormula {\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
+        {"main.ufm",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "Formula {\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -611,8 +731,19 @@ TEST(TestFormulaEntry, referenceResolverFindsLocalClasses)
 TEST(TestFormulaEntry, referenceResolverFindsImportedClasses)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
-        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -632,9 +763,24 @@ TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
 {
     std::unordered_map<std::string, std::string> files{
         {"main.ufm",
-            "Formula {\nimport \"first.ulb\"\nimport \"second.ulb\"\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
-        {"first.ulb", "class Texture {\npublic:\nint value\n}\n"},
-        {"second.ulb", "class Texture {\npublic:\nint value\n}\n"},
+            "Formula {\n"
+            "import \"first.ulb\"\n"
+            "import \"second.ulb\"\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"first.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+        {"second.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -651,8 +797,20 @@ TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
 TEST(TestFormulaEntry, referenceResolverUsesImplicitImportBeforeCurrentFile)
 {
     std::unordered_map<std::string, std::string> files{
-        {"main.ufm", "class Base {\npublic:\nint local\n}\nclass Derived(base.ulb:Base) {\npublic:\nint value\n}\n"},
-        {"base.ulb", "class Base {\npublic:\nint imported\n}\n"},
+        {"main.ufm",
+            "class Base {\n"
+            "public:\n"
+            "int local\n"
+            "}\n"
+            "class Derived(base.ulb:Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+        {"base.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int imported\n"
+            "}\n"},
     };
 
     auto result{load_formula_file_tree(
@@ -665,6 +823,64 @@ TEST(TestFormulaEntry, referenceResolverUsesImplicitImportBeforeCurrentFile)
     ASSERT_EQ(1U, result.resolved_references.size());
     EXPECT_EQ("Base", result.resolved_references[0].reference.class_name);
     EXPECT_EQ("base.ulb", result.resolved_references[0].klass.filename);
+}
+
+TEST(TestFormulaEntry, referenceResolverReportsUnresolvedClasses)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    EXPECT_TRUE(result.resolved_references.empty());
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
+    EXPECT_EQ("texture", result.diagnostics[0].detail);
+}
+
+TEST(TestFormulaEntry, referenceResolverReportsOnlyUnresolvedClasses)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "Formula {\n"
+            "global:\n"
+            "Texture tex\n"
+            "Missing missing\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
+    EXPECT_EQ("missing", result.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, singleLine)
