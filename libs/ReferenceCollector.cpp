@@ -131,6 +131,7 @@ public:
 
     void visit(const ast::ParamBlockNode &node) override
     {
+        add_reference(FormulaReferenceKind::PARAM_BLOCK, node.type());
         visit_expr(node.block());
     }
 

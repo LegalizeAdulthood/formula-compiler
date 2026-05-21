@@ -100,6 +100,7 @@ enum class FormulaReferenceKind
     FUNCTION_RETURN,
     FUNCTION_ARGUMENT,
     NEW_OBJECT,
+    PARAM_BLOCK,
 };
 
 struct FormulaReference

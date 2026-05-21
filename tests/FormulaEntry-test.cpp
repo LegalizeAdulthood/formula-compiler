@@ -470,6 +470,32 @@ TEST(TestFormulaEntry, referenceCollectorFindsBaseClass)
     EXPECT_EQ("Texture", references[0].class_name);
 }
 
+TEST(TestFormulaEntry, referenceCollectorFindsClassParamBlocks)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("default:\n"
+                                               "Bailout param bailoutMethod\n"
+                                               "endparam\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::PARAM_BLOCK, references[0].kind);
+    EXPECT_EQ("bailout", references[0].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorIgnoresBuiltinParamBlocks)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("default:\n"
+                                               "float param bailout\n"
+                                               "endparam\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    EXPECT_TRUE(references.empty());
+}
+
 TEST(TestFormulaEntry, entryReferenceCollectorParsesLoadedFormulaEntry)
 {
     std::unordered_map<std::string, std::string> files{
