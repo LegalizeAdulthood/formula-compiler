@@ -3,11 +3,12 @@
 // Copyright 2025-2026 Richard Thomson
 //
 #include <formula/FormulaEntry.h>
+
+#include <formula/FileEntry.h>
 #include <formula/ParseOptions.h>
 #include <formula/Parser.h>
 #include <formula/Preprocessor.h>
 
-#include <cassert>
 #include <cctype>
 #include <sstream>
 #include <unordered_map>
@@ -114,56 +115,14 @@ static void append_entry_import(FormulaFile &file, std::size_t entry_index, Form
 std::vector<FormulaEntry> load_formula_entries(std::istream &in)
 {
     std::vector<FormulaEntry> formulas;
-    std::string line;
-    while (std::getline(in, line))
+    for (const FileEntry &file_entry : load_file_entries(in))
     {
-        const auto open_brace{line.find_last_of("{")};
-        if (open_brace == std::string::npos)
-        {
-            continue;
-        }
-        // was the opening brace commented out?
-        if (const auto semi{line.find_first_of(";")}; semi < open_brace)
-        {
-            continue;
-        }
-
-        std::string name{line};
-        name.erase(open_brace);
+        std::string name{file_entry.name};
         strip_leading(name);
         strip_trailing(name);
 
-        std::string bracket_value;
-        if (const auto close_bracket = name.find_last_of(']'); close_bracket != std::string::npos)
-        {
-            if (const auto open_bracket = name.find_last_of('[', close_bracket); open_bracket != std::string::npos)
-            {
-                bracket_value = name.substr(open_bracket + 1, close_bracket - open_bracket - 1);
-                name.erase(open_bracket, close_bracket - open_bracket + 1);
-                strip_trailing(name);
-            }
-            else
-            {
-                // TODO: throw exception?
-                assert(false);
-            }
-        }
-
-        std::string paren_value;
-        if (const auto close_paren = name.find_last_of(')'); close_paren != std::string::npos)
-        {
-            if (const auto open_paren = name.find_last_of('(', close_paren); open_paren != std::string::npos)
-            {
-                paren_value = name.substr(open_paren + 1, close_paren - open_paren - 1);
-                name.erase(open_paren, close_paren - open_paren + 1);
-                strip_trailing(name);
-            }
-            else
-            {
-                // TODO: throw exception?
-                assert(false);
-            }
-        }
+        const std::string &paren_value{file_entry.paren_value};
+        const std::string &bracket_value{file_entry.bracket_value};
         const FormulaEntryFlags flags{entry_flags_from_paren(paren_value)};
 
         bool is_class{};
@@ -177,54 +136,10 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in)
         // skip entries with no name or where the name is "comment".
         if (name.empty() || name == "comment")
         {
-            while (line.find("}") == std::string::npos)
-            {
-                if (!std::getline(in, line))
-                {
-                    break;
-                }
-            }
             continue;
         }
 
-        std::string body;
-        line.erase(0, open_brace + 1);
-
-        // Check if the closing brace is on the same line
-        if (const auto brace = line.find("}"); brace != std::string::npos)
-        {
-            // Single-line entry - don't append newline
-            line.erase(brace);
-            body.append(line);
-            formulas.push_back({name, paren_value, bracket_value, body, is_class, flags});
-            continue;
-        }
-
-        // Multi-line entry
-        const auto accum = [&body, &line]()
-        {
-            body.append(line);
-            body.append(1, '\n');
-        };
-        accum();
-        bool found_brace{};
-        while (std::getline(in, line))
-        {
-            const auto semi{line.find_first_of(";")};
-            if (const auto brace = line.find("}");
-                brace != std::string::npos && (semi == std::string::npos || semi > brace))
-            {
-                found_brace = true;
-                line.erase(brace);
-                accum();
-                break;
-            }
-            accum();
-        }
-        if (found_brace)
-        {
-            formulas.push_back({name, paren_value, bracket_value, body, is_class, flags});
-        }
+        formulas.push_back({name, paren_value, bracket_value, file_entry.body, is_class, flags});
     }
 
     return formulas;

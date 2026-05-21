@@ -5,7 +5,6 @@
 #include <formula/Parameter.h>
 
 #include <algorithm>
-#include <cctype>
 #include <utility>
 
 namespace formula::parameter
@@ -21,9 +20,6 @@ std::string to_string(TokenType type)
     {
         TOKEN_TYPE_CASE(NONE);
         TOKEN_TYPE_CASE(END_OF_INPUT);
-        TOKEN_TYPE_CASE(ENTRY_NAME);
-        TOKEN_TYPE_CASE(OPEN_BRACE);
-        TOKEN_TYPE_CASE(CLOSE_BRACE);
         TOKEN_TYPE_CASE(SECTION_LABEL);
         TOKEN_TYPE_CASE(KEY);
         TOKEN_TYPE_CASE(ASSIGN);
@@ -44,7 +40,6 @@ std::string to_string(LexerErrorCode code)
     switch (code)
     {
         LEXER_ERROR_CASE(NONE);
-        LEXER_ERROR_CASE(EXPECTED_OPEN_BRACE);
         LEXER_ERROR_CASE(UNTERMINATED_QUOTED_STRING);
     }
     return "LexerErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
@@ -82,26 +77,6 @@ Token Lexer::get_token()
     if (ch == ';')
     {
         return comment();
-    }
-    if (ch == '{')
-    {
-        const SourceLocation start{m_source_location};
-        advance();
-        m_inside_entry = true;
-        m_after_assign = false;
-        return {TokenType::OPEN_BRACE, start, 1};
-    }
-    if (ch == '}')
-    {
-        const SourceLocation start{m_source_location};
-        advance();
-        m_inside_entry = false;
-        m_after_assign = false;
-        return {TokenType::CLOSE_BRACE, start, 1};
-    }
-    if (!m_inside_entry)
-    {
-        return entry_name();
     }
     if (ch == ':' && peek_char() == ':')
     {
@@ -156,29 +131,6 @@ Token Lexer::comment()
     }
     return {TokenType::COMMENT, std::string{m_input.substr(value_start, m_position - value_start)}, start_loc,
         m_position - start};
-}
-
-Token Lexer::entry_name()
-{
-    const size_t start{m_position};
-    const SourceLocation start_loc{m_source_location};
-    while (!at_end() && current_char() != '{')
-    {
-        advance();
-    }
-
-    size_t end{m_position};
-    while (end > start && std::isspace(static_cast<unsigned char>(m_input[end - 1])) != 0)
-    {
-        --end;
-    }
-
-    if (at_end())
-    {
-        error(LexerErrorCode::EXPECTED_OPEN_BRACE, start_loc);
-    }
-
-    return {TokenType::ENTRY_NAME, std::string{m_input.substr(start, end - start)}, start_loc, end - start};
 }
 
 Token Lexer::atom()
@@ -384,6 +336,11 @@ void Lexer::advance()
 LexerPtr lex(std::string_view input)
 {
     return std::make_shared<Lexer>(input);
+}
+
+std::vector<FileEntry> load_parameter_entries(std::istream &in, std::string filename)
+{
+    return load_file_entries(in, std::move(filename));
 }
 
 } // namespace formula::parameter

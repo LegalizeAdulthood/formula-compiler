@@ -4,9 +4,11 @@
 //
 #pragma once
 
+#include <formula/FileEntry.h>
 #include <formula/SourceLocation.h>
 
 #include <deque>
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -19,7 +21,6 @@ namespace formula::parameter
 enum class LexerErrorCode
 {
     NONE = 0,
-    EXPECTED_OPEN_BRACE,
     UNTERMINATED_QUOTED_STRING,
 };
 
@@ -27,9 +28,6 @@ enum class TokenType
 {
     NONE = 0,
     END_OF_INPUT,
-    ENTRY_NAME,
-    OPEN_BRACE,
-    CLOSE_BRACE,
     SECTION_LABEL,
     KEY,
     ASSIGN,
@@ -111,7 +109,6 @@ private:
 
     void skip_whitespace();
     Token comment();
-    Token entry_name();
     Token atom();
     Token quoted_string();
     Token compressed_payload();
@@ -128,7 +125,6 @@ private:
     std::string_view m_input;
     size_t m_position{};
     SourceLocation m_source_location;
-    bool m_inside_entry{};
     bool m_after_assign{};
     std::deque<Token> m_peek_tokens;
     std::vector<LexicalDiagnostic> m_errors;
@@ -137,5 +133,6 @@ private:
 using LexerPtr = std::shared_ptr<Lexer>;
 
 LexerPtr lex(std::string_view input);
+std::vector<FileEntry> load_parameter_entries(std::istream &in, std::string filename = {});
 
 } // namespace formula::parameter

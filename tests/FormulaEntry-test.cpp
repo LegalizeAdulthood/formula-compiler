@@ -44,9 +44,7 @@ Mandelbrot(XAXIS) {
     EXPECT_EQ("Mandelbrot", entries[0].name);
     EXPECT_EQ("XAXIS", entries[0].paren_value);
     EXPECT_TRUE(entries[0].bracket_value.empty());
-    EXPECT_EQ("\n"
-              "\n",
-        entries[0].body);
+    EXPECT_EQ("\n", entries[0].body);
 }
 
 TEST(TestFormulaEntry, bracketValue)
@@ -63,9 +61,7 @@ Mandelbrot [float=y] {
     EXPECT_EQ("Mandelbrot", entries[0].name);
     EXPECT_TRUE(entries[0].paren_value.empty());
     EXPECT_EQ("float=y", entries[0].bracket_value);
-    EXPECT_EQ("\n"
-              "\n",
-        entries[0].body);
+    EXPECT_EQ("\n", entries[0].body);
 }
 
 TEST(TestFormulaEntry, parenBracketValue)
@@ -82,9 +78,7 @@ Mandelbrot(XAXIS) [float=y] {
     EXPECT_EQ("Mandelbrot", entries[0].name);
     EXPECT_EQ("XAXIS", entries[0].paren_value);
     EXPECT_EQ("float=y", entries[0].bracket_value);
-    EXPECT_EQ("\n"
-              "\n",
-        entries[0].body);
+    EXPECT_EQ("\n", entries[0].body);
 }
 
 TEST(TestFormulaEntry, coloringEntryFlags)
@@ -139,8 +133,7 @@ public:
     EXPECT_EQ("Test.ufm:Base", entries[0].paren_value);
     EXPECT_TRUE(entries[0].is_class);
     EXPECT_EQ("\n"
-              "public:\n"
-              "\n",
+              "public:\n",
         entries[0].body);
 }
 
@@ -1249,6 +1242,20 @@ TEST(TestFormulaEntry, singleLine)
     EXPECT_EQ("z=c:z=z*z+c,|z|>4", entries[0].body);
 }
 
+TEST(TestFormulaEntry, adjacentEntries)
+{
+    const char *const frm{R"entry(First{1}Second{2})entry"};
+    std::istringstream str{frm};
+
+    auto entries{load_formula_entries(str)};
+
+    ASSERT_EQ(2U, entries.size());
+    EXPECT_EQ("First", entries[0].name);
+    EXPECT_EQ("1", entries[0].body);
+    EXPECT_EQ("Second", entries[1].name);
+    EXPECT_EQ("2", entries[1].body);
+}
+
 TEST(TestFormulaEntry, bodyEndsWithCloseBrace)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{
@@ -1262,7 +1269,7 @@ z=c:z=z*z+c,|z|>4})entry"};
     EXPECT_EQ("XAXIS", entries[0].paren_value);
     EXPECT_EQ("float=y", entries[0].bracket_value);
     EXPECT_EQ("\n"
-              "z=c:z=z*z+c,|z|>4\n",
+              "z=c:z=z*z+c,|z|>4",
         entries[0].body);
 }
 
@@ -1279,7 +1286,7 @@ z=c:z=z*z+c,|z|>4})entry"};
     EXPECT_EQ("XAXIS", entries[0].paren_value);
     EXPECT_EQ("float=y", entries[0].bracket_value);
     EXPECT_EQ("  ; comment here\n"
-              "z=c:z=z*z+c,|z|>4\n",
+              "z=c:z=z*z+c,|z|>4",
         entries[0].body);
 }
 
