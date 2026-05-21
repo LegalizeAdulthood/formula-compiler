@@ -5,10 +5,18 @@
 #include <formula/FormulaEntry.h>
 
 #include <cassert>
+#include <sstream>
+#include <unordered_map>
 #include <utility>
 
 namespace formula
 {
+
+enum class LoadState
+{
+    LOADING,
+    LOADED,
+};
 
 static void strip_leading(std::string &text)
 {
@@ -187,6 +195,77 @@ FormulaFile load_formula_file(std::istream &in, std::string filename)
             result.classes.push_back(class_header(result.entries[index], index));
         }
     }
+    return result;
+}
+
+static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode code, std::string_view filename,
+    const std::vector<std::string> &import_stack)
+{
+    result.diagnostics.push_back(FormulaFileDiagnostic{code, std::string{filename}, import_stack});
+}
+
+static void load_formula_file_tree(std::string_view filename, const FormulaFileImporter &importer,
+    FormulaFileSet &result, std::unordered_map<std::string, LoadState> &states, std::vector<std::string> &import_stack)
+{
+    const std::string key{filename};
+    if (const auto state = states.find(key); state != states.end())
+    {
+        if (state->second == LoadState::LOADING)
+        {
+            add_diagnostic(result, FormulaFileDiagnosticCode::IMPORT_CYCLE, filename, import_stack);
+        }
+        return;
+    }
+
+    states.emplace(key, LoadState::LOADING);
+    import_stack.push_back(key);
+
+    std::string text;
+    try
+    {
+        text = importer(filename);
+    }
+    catch (...)
+    {
+        add_diagnostic(result, FormulaFileDiagnosticCode::MISSING_IMPORT, filename, import_stack);
+        states[key] = LoadState::LOADED;
+        import_stack.pop_back();
+        return;
+    }
+
+    std::istringstream in{text};
+    FormulaFile file{load_formula_file(in, key)};
+    std::vector<std::string> implicit_imports;
+    for (const ClassHeader &klass : file.classes)
+    {
+        if (!klass.base_file.empty())
+        {
+            implicit_imports.push_back(klass.base_file);
+        }
+    }
+    result.files.push_back(std::move(file));
+
+    for (const std::string &imported_filename : implicit_imports)
+    {
+        load_formula_file_tree(imported_filename, importer, result, states, import_stack);
+    }
+
+    states[key] = LoadState::LOADED;
+    import_stack.pop_back();
+}
+
+FormulaFileSet load_formula_file_tree(std::string_view root_filename, const FormulaFileImporter &importer)
+{
+    FormulaFileSet result;
+    if (!importer)
+    {
+        add_diagnostic(result, FormulaFileDiagnosticCode::MISSING_IMPORT, root_filename, {});
+        return result;
+    }
+
+    std::unordered_map<std::string, LoadState> states;
+    std::vector<std::string> import_stack;
+    load_formula_file_tree(root_filename, importer, result, states, import_stack);
     return result;
 }
 

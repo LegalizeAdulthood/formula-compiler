@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace formula
@@ -36,7 +38,29 @@ struct FormulaFile
     std::vector<ClassHeader> classes;
 };
 
+enum class FormulaFileDiagnosticCode
+{
+    MISSING_IMPORT,
+    IMPORT_CYCLE,
+};
+
+struct FormulaFileDiagnostic
+{
+    FormulaFileDiagnosticCode code{};
+    std::string filename;
+    std::vector<std::string> import_stack;
+};
+
+struct FormulaFileSet
+{
+    std::vector<FormulaFile> files;
+    std::vector<FormulaFileDiagnostic> diagnostics;
+};
+
+using FormulaFileImporter = std::function<std::string(std::string_view)>;
+
 std::vector<FormulaEntry> load_formula_entries(std::istream &in);
 FormulaFile load_formula_file(std::istream &in, std::string filename = {});
+FormulaFileSet load_formula_file_tree(std::string_view root_filename, const FormulaFileImporter &importer);
 
 } // namespace formula

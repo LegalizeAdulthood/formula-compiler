@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include <sstream>
+#include <stdexcept>
+#include <unordered_map>
 
 using namespace formula;
 using namespace testing;
@@ -126,6 +128,59 @@ class Derived(Base) {
     EXPECT_EQ("Derived", file.classes[0].name);
     EXPECT_TRUE(file.classes[0].base_file.empty());
     EXPECT_EQ("Base", file.classes[0].base_class);
+}
+
+TEST(TestFormulaEntry, fileTreeLoadsImplicitBaseImports)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Derived(base.ufm:Base) {\n}\n"},
+        {"base.ufm", "class Base {\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(2U, result.files.size());
+    EXPECT_EQ("main.ufm", result.files[0].filename);
+    EXPECT_EQ("base.ufm", result.files[1].filename);
+    ASSERT_EQ(1U, result.files[1].classes.size());
+    EXPECT_EQ("Base", result.files[1].classes[0].name);
+}
+
+TEST(TestFormulaEntry, fileTreeReportsMissingImport)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Derived(missing.ufm:Base) {\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::MISSING_IMPORT, result.diagnostics[0].code);
+    EXPECT_EQ("missing.ufm", result.diagnostics[0].filename);
+    ASSERT_EQ(2U, result.diagnostics[0].import_stack.size());
+    EXPECT_EQ("main.ufm", result.diagnostics[0].import_stack[0]);
+    EXPECT_EQ("missing.ufm", result.diagnostics[0].import_stack[1]);
+}
+
+TEST(TestFormulaEntry, fileTreeReportsImportCycle)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"a.ufm", "class A(b.ufm:B) {\n}\n"},
+        {"b.ufm", "class B(a.ufm:A) {\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "a.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::IMPORT_CYCLE, result.diagnostics[0].code);
+    EXPECT_EQ("a.ufm", result.diagnostics[0].filename);
+    ASSERT_EQ(2U, result.diagnostics[0].import_stack.size());
+    EXPECT_EQ("a.ufm", result.diagnostics[0].import_stack[0]);
+    EXPECT_EQ("b.ufm", result.diagnostics[0].import_stack[1]);
 }
 
 TEST(TestFormulaEntry, singleLine)
