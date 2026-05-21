@@ -364,6 +364,7 @@ LoadedFormula load_formula(std::string_view text, const parser::Options &options
     {
         result.files = load_formula_file_tree(options.source_filename, options.file_importer);
         resolve_formula_file_references(result.files);
+        retain_resolved_imported_classes(result.files);
     }
     return result;
 }

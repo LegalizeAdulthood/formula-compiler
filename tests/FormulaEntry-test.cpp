@@ -492,7 +492,10 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
     ASSERT_EQ(2U, result.files.entry_references.size());
     ASSERT_EQ(1U, result.files.resolved_references.size());
     EXPECT_EQ("Texture", result.files.resolved_references[0].klass.class_name);
-    EXPECT_TRUE(result.files.retained_classes.empty());
+    ASSERT_EQ(1U, result.files.retained_classes.size());
+    EXPECT_EQ("Texture", result.files.retained_classes[0].reference.class_name);
+    EXPECT_EQ("common.ulb", result.files.retained_classes[0].reference.filename);
+    EXPECT_TRUE(result.files.retained_classes[0].ast);
 }
 
 TEST(TestFormulaEntry, loadFormulaIncludesUnresolvedReferenceDiagnostics)
