@@ -517,11 +517,46 @@ void retain_resolved_imported_classes(FormulaFileSet &files)
     {
         resolve_formula_file_references(files);
     }
+    std::size_t retained_index{};
     for (const FormulaResolvedReference &reference : files.resolved_references)
     {
-        if (reference.klass.file_index != reference.entry.file_index)
+        if (reference.entry.file_index == 0 && reference.klass.file_index != reference.entry.file_index)
         {
             retain_formula_class(files, reference.klass);
+        }
+    }
+    while (retained_index < files.retained_classes.size())
+    {
+        const RetainedFormulaClass retained{files.retained_classes[retained_index++]};
+        FormulaEntryReferences entry_references;
+        entry_references.file_index = retained.reference.file_index;
+        entry_references.entry_index = retained.reference.entry_index;
+        entry_references.filename = retained.reference.filename;
+        if (const ClassHeader *header =
+                find_class_header(files.files[retained.reference.file_index], retained.reference.entry_index))
+        {
+            entry_references.references = collect_formula_references(*header, *retained.ast);
+        }
+        else
+        {
+            entry_references.references = collect_formula_references(*retained.ast);
+        }
+
+        for (const FormulaReference &reference : entry_references.references)
+        {
+            if (std::optional<FormulaClassReference> klass =
+                    resolve_class_reference(files, entry_references, reference))
+            {
+                files.resolved_references.push_back(FormulaResolvedReference{entry_references, reference, *klass});
+                if (klass->file_index != entry_references.file_index)
+                {
+                    retain_formula_class(files, *klass);
+                }
+            }
+            else
+            {
+                add_unresolved_diagnostic(files, entry_references, reference);
+            }
         }
     }
 }
