@@ -1108,12 +1108,7 @@ Expr FormulaParser::default_section()
             advance();
         }
 
-        // Check if we've reached the end or a new section
-        if (check({TokenType::END_OF_INPUT,                           //
-                TokenType::GLOBAL, TokenType::BUILTIN,                //
-                TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-                TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-                TokenType::DEFAULT, TokenType::SWITCH}))
+        if (check(TokenType::END_OF_INPUT) || is_section_token(m_curr.type))
         {
             break;
         }
@@ -1220,11 +1215,7 @@ bool FormulaParser::switch_section()
             advance();
         }
 
-        if (check({TokenType::END_OF_INPUT,                           //
-                TokenType::GLOBAL, TokenType::BUILTIN,                //
-                TokenType::INIT, TokenType::LOOP, TokenType::BAILOUT, //
-                TokenType::PERTURB_INIT, TokenType::PERTURB_LOOP,     //
-                TokenType::DEFAULT, TokenType::SWITCH}))
+        if (check(TokenType::END_OF_INPUT) || is_section_token(m_curr.type))
         {
             break;
         }

@@ -1101,6 +1101,48 @@ TEST(TestFormulaParse, defaultSettingsRespectEntryKind)
     EXPECT_EQ(ErrorCode::DEFAULT_SECTION_INVALID_KEY, class_formula_parser->get_errors().back().code);
 }
 
+TEST(TestFormulaParse, defaultAndSwitchStopOnExtendedSections)
+{
+    ParserPtr default_parser{create_parser("default:\n"
+                                           "title=\"Fractal\"\n"
+                                           "final:\n"
+                                           "1\n",
+        Options{})};
+
+    const ast::FormulaSectionsPtr default_result{default_parser->parse()};
+
+    ASSERT_FALSE(default_result);
+    ASSERT_FALSE(default_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, default_parser->get_errors().back().code);
+
+    ParserPtr switch_parser{create_parser("switch:\n"
+                                          "type=\"Julia\"\n"
+                                          "transform:\n"
+                                          "1\n",
+        Options{})};
+
+    const ast::FormulaSectionsPtr switch_result{switch_parser->parse()};
+
+    ASSERT_FALSE(switch_result);
+    ASSERT_FALSE(switch_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION, switch_parser->get_errors().back().code);
+
+    Options klass;
+    klass.entry_kind = EntryKind::CLASS;
+    ParserPtr class_parser{create_parser("default:\n"
+                                         "title=\"Texture\"\n"
+                                         "public:\n"
+                                         "func Texture()\n"
+                                         "endfunc\n",
+        klass)};
+
+    const ast::FormulaSectionsPtr class_result{class_parser->parse()};
+
+    ASSERT_FALSE(class_result);
+    ASSERT_FALSE(class_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_SECTION_ORDER, class_parser->get_errors().back().code);
+}
+
 static ParseParam s_single_sections[]{
     {"globalSection",
         "global:\n"

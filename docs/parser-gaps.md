@@ -2,9 +2,6 @@
 
 ## Section Handling
 
-- `default:` and `switch:` section stop lists are fractal-shaped. They
-  should use the full section-token set so misplaced later sections report
-  section errors instead of setting parse errors.
 - Coloring entry flags such as `(INSIDE)` and `(OUTSIDE)` are not captured.
   Transformation entry options in parentheses should be accepted or ignored
   consistently when entry headers are parsed.
@@ -26,3 +23,6 @@ Default heading blocks now parse metadata settings, including `caption`,
 Default settings now apply per-entry-kind rules. Fractal-only settings
 are rejected for coloring, transformation, and class entries; class
 defaults accept only class-valid metadata.
+
+Default and switch sections now stop on the full section-token set so
+misplaced extended sections report section errors.
