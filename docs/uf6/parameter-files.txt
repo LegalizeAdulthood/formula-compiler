@@ -1,0 +1,44 @@
+Parameter files
+
+Fractals can be saved as parameter sets as well as in fractal files.
+Parameter sets are much smaller than fractal files because they do not
+contain the calculated pixels. That means that the fractal has to be
+recalculated when a parameter set is opened. Parameter sets are ideal
+for sharing fractals with other users on the Internet.
+
+Parameter sets are stored in parameter files. A parameter file (*.upr)
+can contain any number of parameter sets. This makes it easy to store
+and organize collections of parameter sets. Parameter files are stored
+as plain text and can be opened in text editors such as Notepad or the
+built-in formula editor.
+
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       To save a parameter set, click Save Parameters on the File menu. The Save Parameters browser will open. You can save the parameter set in an existing parameter file or in a new file. Type the name of the file and the title of the parameter set and click Save.
+  []       To open a previously saved parameter set, click Browse on the File menu. This opens a modeless browser. Select the parameter file that contains the parameter set that you want to open, and then double-click the parameter set inside the file.
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+You use browsers to organize and manage your parameter sets and
+parameter files, as well as other files that contain multiple entries,
+such as formula files. See Browsers.
+
+Notes
+
+- By checking the Save Formulas checkbox when saving a parameter set,
+  the formulas used by the fractal are embedded in the parameter file.
+  When opening the parameter set, they will be installed if they are not
+  already present in the formulas folder. Check this option when you are
+  going to send the parameter file to another user (but not on the
+  forum).
+- Parameter sets larger than 2 KB are saved in a compressed format. To
+  save them without compression, open the Preferences dialog and uncheck
+  the Compress parameter sets larger than 2 KB option in the Fractal
+  tab. This is necessary if you want to edit the parameter files
+  manually.
+- Ultra Fractal can also import most Fractint parameter sets in PAR
+  files (*.par). They can be opened just like other parameter files.
+
+Next: Copying and pasting fractals
+
+See Also
+Quick Start Tutorial
+Fractal windows
