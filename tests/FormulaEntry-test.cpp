@@ -470,6 +470,68 @@ TEST(TestFormulaEntry, referenceCollectorFindsBaseClass)
     EXPECT_EQ("Texture", references[0].class_name);
 }
 
+TEST(TestFormulaEntry, entryReferenceCollectorParsesLoadedFormulaEntry)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex = new Texture()\nloop:\nz = pixel\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    FormulaEntryReferences references{collect_formula_entry_references(result, 0, 0)};
+
+    EXPECT_EQ("main.ufm", references.filename);
+    EXPECT_EQ(0U, references.file_index);
+    EXPECT_EQ(0U, references.entry_index);
+    ASSERT_EQ(2U, references.references.size());
+    EXPECT_EQ(FormulaReferenceKind::DECLARATION, references.references[0].kind);
+    EXPECT_EQ("texture", references.references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, references.references[1].kind);
+    EXPECT_EQ("texture", references.references[1].class_name);
+    EXPECT_TRUE(result.diagnostics.empty());
+}
+
+TEST(TestFormulaEntry, entryReferenceCollectorIncludesClassBase)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Derived(Base) {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    FormulaEntryReferences references{collect_formula_entry_references(result, 0, 0)};
+
+    EXPECT_EQ("main.ufm", references.filename);
+    ASSERT_EQ(1U, references.references.size());
+    EXPECT_EQ(FormulaReferenceKind::BASE_CLASS, references.references[0].kind);
+    EXPECT_EQ("Base", references.references[0].class_name);
+    EXPECT_TRUE(result.diagnostics.empty());
+}
+
+TEST(TestFormulaEntry, entryReferenceCollectorReportsParseErrors)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Broken {\nif true\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    FormulaEntryReferences references{collect_formula_entry_references(result, 0, 0)};
+
+    EXPECT_TRUE(references.references.empty());
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(FormulaFileDiagnosticCode::PARSE_ERROR, result.diagnostics[0].code);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

@@ -4,6 +4,8 @@
 //
 #include <formula/ReferenceCollector.h>
 
+#include <formula/ParseOptions.h>
+#include <formula/Parser.h>
 #include <formula/Visitor.h>
 
 #include <algorithm>
@@ -218,6 +220,32 @@ void collect_section_references(ReferenceCollector &collector, const ast::Formul
     }
 }
 
+void add_parse_errors(FormulaFileSet &files, std::string_view filename, const parser::ParserPtr &parser)
+{
+    for (const parser::Diagnostic &error : parser->get_errors())
+    {
+        SourceLocation location{error.position};
+        if (location.filename.empty())
+        {
+            location.filename = std::string{filename};
+        }
+        files.diagnostics.push_back(FormulaFileDiagnostic{FormulaFileDiagnosticCode::PARSE_ERROR, std::string{filename},
+            std::move(location), parser::to_string(error.code), {}});
+    }
+}
+
+const ClassHeader *find_class_header(const FormulaFile &file, std::size_t entry_index)
+{
+    for (const ClassHeader &klass : file.classes)
+    {
+        if (klass.entry_index == entry_index)
+        {
+            return &klass;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace
 
 std::vector<FormulaReference> collect_formula_references(const ast::FormulaSections &ast)
@@ -237,6 +265,59 @@ std::vector<FormulaReference> collect_formula_references(const ClassHeader &head
 
     std::vector<FormulaReference> ast_references{collect_formula_references(ast)};
     result.insert(result.end(), ast_references.begin(), ast_references.end());
+    return result;
+}
+
+FormulaEntryReferences collect_formula_entry_references(
+    FormulaFileSet &files, std::size_t file_index, std::size_t entry_index)
+{
+    FormulaEntryReferences result;
+    result.file_index = file_index;
+    result.entry_index = entry_index;
+    if (file_index >= files.files.size())
+    {
+        files.diagnostics.push_back(FormulaFileDiagnostic{FormulaFileDiagnosticCode::PARSE_ERROR, {}, {}, {}, {}});
+        return result;
+    }
+
+    const FormulaFile &file = files.files[file_index];
+    result.filename = file.filename;
+    if (entry_index >= file.entries.size())
+    {
+        files.diagnostics.push_back(
+            FormulaFileDiagnostic{FormulaFileDiagnosticCode::PARSE_ERROR, file.filename, {}, {}, {}});
+        return result;
+    }
+
+    const FormulaEntry &entry = file.entries[entry_index];
+    parser::Options options;
+    options.source_filename = file.filename;
+    options.entry_kind = entry.is_class ? parser::EntryKind::CLASS : parser::EntryKind::FRACTAL;
+
+    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    const ast::FormulaSectionsPtr ast{parser->parse()};
+    if (!parser->get_errors().empty())
+    {
+        add_parse_errors(files, file.filename, parser);
+        return result;
+    }
+    if (!ast)
+    {
+        files.diagnostics.push_back(
+            FormulaFileDiagnostic{FormulaFileDiagnosticCode::PARSE_ERROR, file.filename, {}, {}, {}});
+        return result;
+    }
+
+    if (entry.is_class)
+    {
+        if (const ClassHeader *header = find_class_header(file, entry_index))
+        {
+            result.references = collect_formula_references(*header, *ast);
+            return result;
+        }
+    }
+
+    result.references = collect_formula_references(*ast);
     return result;
 }
 
