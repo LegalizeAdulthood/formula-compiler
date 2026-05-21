@@ -27,9 +27,8 @@
   interpreter dispatch for coloring/transformation entries.
 - Add an import-loading pass before interpreter construction: call
   `Options::file_importer` for imported file text, preprocess and parse
-  imported entries, collect class declarations, and surface
-  imported-file syntax errors as load errors with the imported filename
-  in the source location.
+  imported entries enough to collect class declarations and import
+  metadata. Retain and diagnose referenced imported class ASTs only.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
@@ -92,11 +91,13 @@
     `interpret_value`; `transform` mutates `#pixel`/`#solid`.
 - Imports:
   - `import "file"` is not interpreted as a runtime statement.
-  - Imported files are parsed before consistency/type checks, so syntax
-    errors in an imported file fail formula/class loading.
+  - Imported files are indexed before consistency/type checks. Only
+    referenced imported class ASTs are retained and diagnosed.
   - Import order is preserved for later class lookup: last imported file
     wins; an ancestor file in `class X(File.ufm:Base)` is treated as an
     implicit import before explicit imports.
+  - Import edges, resolved class references, retained imported ASTs, and
+    diagnostics are exposed as load metadata.
 
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and
@@ -115,14 +116,15 @@
 - Tests for section dispatch: fractal, coloring `final`, transformation
   `transform`, and global read-only behavior.
 - Tests for import loading: chained imports, import order, missing file,
-  and syntax errors in imported files.
+  public import metadata, referenced AST retention, and syntax errors in
+  referenced imported classes.
 - Regression: existing basic interpreter tests still pass unchanged.
 
 ## Assumptions
 - Scope is procedural first, per user choice.
 - `import` is handled by a pre-interpreter load/parse pass; imported
-  class bodies are parsed and diagnosed, but object execution remains
-  out of scope.
+  class bodies are retained and diagnosed only when referenced, and
+  object execution remains out of scope.
 - Objects/classes remain unsupported in interpreter and throw clear
   runtime errors if evaluated.
 - Uninitialized array reads are deterministic zero/default in this
