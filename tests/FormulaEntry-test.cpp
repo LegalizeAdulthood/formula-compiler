@@ -1,6 +1,12 @@
+// SPDX-License-Identifier: GPL-3.0-only
+//
+// Copyright 2025-2026 Richard Thomson
+//
 #include <formula/Formula.h>
 #include <formula/FormulaEntry.h>
 #include <formula/ParseOptions.h>
+#include <formula/Parser.h>
+#include <formula/ReferenceCollector.h>
 
 #include <gtest/gtest.h>
 
@@ -11,6 +17,18 @@
 using namespace formula;
 using namespace formula::parser;
 using namespace testing;
+
+namespace
+{
+
+ast::FormulaSectionsPtr parse_extended(std::string_view text, EntryKind kind = EntryKind::FRACTAL)
+{
+    Options options;
+    options.entry_kind = kind;
+    return parse(text, options);
+}
+
+} // namespace
 
 TEST(TestFormulaEntry, parenValue)
 {
@@ -399,6 +417,57 @@ TEST(TestFormulaEntry, loadFormulaWithoutImporterOnlyParsesMainAst)
     EXPECT_TRUE(result.files.files.empty());
     EXPECT_TRUE(result.files.class_index.empty());
     EXPECT_TRUE(result.files.diagnostics.empty());
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsDeclarationAndNewTypes)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Texture tex = new Texture(1)\n"
+                                               "int count = 0\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(2U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::DECLARATION, references[0].kind);
+    EXPECT_EQ("texture", references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, references[1].kind);
+    EXPECT_EQ("texture", references[1].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsFunctionSignatureTypes)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("public:\n"
+                                               "Texture func make(Texture source, int count)\n"
+                                               "return source\n"
+                                               "endfunc\n",
+        EntryKind::CLASS)};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(2U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::FUNCTION_RETURN, references[0].kind);
+    EXPECT_EQ("texture", references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::FUNCTION_ARGUMENT, references[1].kind);
+    EXPECT_EQ("texture", references[1].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsBaseClass)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("public:\n"
+                                               "int value\n",
+        EntryKind::CLASS)};
+    ClassHeader header{"Derived", "base.ulb", "Texture", 0};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(header, *ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::BASE_CLASS, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
 }
 
 TEST(TestFormulaEntry, singleLine)

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
