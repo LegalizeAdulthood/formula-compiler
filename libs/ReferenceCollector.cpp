@@ -511,4 +511,19 @@ void resolve_formula_file_references(FormulaFileSet &files)
     }
 }
 
+void retain_resolved_imported_classes(FormulaFileSet &files)
+{
+    if (files.resolved_references.empty())
+    {
+        resolve_formula_file_references(files);
+    }
+    for (const FormulaResolvedReference &reference : files.resolved_references)
+    {
+        if (reference.klass.file_index != reference.entry.file_index)
+        {
+            retain_formula_class(files, reference.klass);
+        }
+    }
+}
+
 } // namespace formula

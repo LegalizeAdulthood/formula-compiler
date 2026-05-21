@@ -796,6 +796,66 @@ TEST(TestFormulaEntry, referenceResolverFindsImportedClasses)
     EXPECT_EQ("common.ulb", result.resolved_references[0].klass.filename);
 }
 
+TEST(TestFormulaEntry, retainResolvedImportedClassesRetainsDirectImports)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+
+    ASSERT_EQ(1U, result.retained_classes.size());
+    EXPECT_EQ("Texture", result.retained_classes[0].reference.class_name);
+    EXPECT_EQ("common.ulb", result.retained_classes[0].reference.filename);
+    ASSERT_TRUE(result.retained_classes[0].ast);
+    EXPECT_TRUE(result.retained_classes[0].ast->public_members);
+}
+
+TEST(TestFormulaEntry, retainResolvedImportedClassesIgnoresLocalClasses)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "Formula {\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+
+    EXPECT_TRUE(result.retained_classes.empty());
+}
+
 TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
 {
     std::unordered_map<std::string, std::string> files{
