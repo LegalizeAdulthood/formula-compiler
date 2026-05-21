@@ -920,6 +920,33 @@ TEST(TestFormulaEntry, referenceResolverReportsOnlyUnresolvedClasses)
     EXPECT_EQ("missing", result.diagnostics[0].detail);
 }
 
+TEST(TestFormulaEntry, referenceResolverIsIdempotent)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "global:\n"
+            "Texture first\n"
+            "Texture second\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    EXPECT_TRUE(result.resolved_references.empty());
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
+    EXPECT_EQ("texture", result.diagnostics[0].detail);
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

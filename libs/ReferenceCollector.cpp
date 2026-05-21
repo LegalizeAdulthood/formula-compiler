@@ -361,8 +361,26 @@ void add_unresolved_diagnostic(
     {
         location.filename = entry_references.filename;
     }
+    for (const FormulaFileDiagnostic &diagnostic : files.diagnostics)
+    {
+        if (diagnostic.code == FormulaFileDiagnosticCode::UNRESOLVED_CLASS &&
+            diagnostic.filename == entry_references.filename && diagnostic.location.filename == location.filename &&
+            diagnostic.location.line == location.line && diagnostic.location.column == location.column &&
+            diagnostic.detail == reference.class_name)
+        {
+            return;
+        }
+    }
     files.diagnostics.push_back(FormulaFileDiagnostic{FormulaFileDiagnosticCode::UNRESOLVED_CLASS,
         entry_references.filename, std::move(location), reference.class_name, {}});
+}
+
+void clear_unresolved_diagnostics(FormulaFileSet &files)
+{
+    files.diagnostics.erase(
+        std::remove_if(files.diagnostics.begin(), files.diagnostics.end(), [](const FormulaFileDiagnostic &diagnostic)
+            { return diagnostic.code == FormulaFileDiagnosticCode::UNRESOLVED_CLASS; }),
+        files.diagnostics.end());
 }
 
 } // namespace
@@ -471,6 +489,7 @@ std::vector<FormulaResolvedReference> resolve_formula_entry_references(
 void resolve_formula_file_references(FormulaFileSet &files)
 {
     files.resolved_references.clear();
+    clear_unresolved_diagnostics(files);
     if (files.entry_references.empty())
     {
         collect_formula_file_references(files);
