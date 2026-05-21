@@ -460,7 +460,10 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
         {"main.ufm",
             "Formula {\n"
             "import \"common.ulb\"\n"
-            "z=0:z=z+1,|z|<4\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z=z+1\n"
             "}\n"},
         {"common.ulb",
             "class Texture {\n"
@@ -486,7 +489,41 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
     EXPECT_EQ("common.ulb", result.files.files[1].filename);
     ASSERT_EQ(1U, result.files.class_index.size());
     EXPECT_EQ("Texture", result.files.class_index[0].class_name);
+    ASSERT_EQ(2U, result.files.entry_references.size());
+    ASSERT_EQ(1U, result.files.resolved_references.size());
+    EXPECT_EQ("Texture", result.files.resolved_references[0].klass.class_name);
     EXPECT_TRUE(result.files.retained_classes.empty());
+}
+
+TEST(TestFormulaEntry, loadFormulaIncludesUnresolvedReferenceDiagnostics)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "global:\n"
+            "Missing missing\n"
+            "loop:\n"
+            "z=z+1\n"
+            "}\n"},
+    };
+    Options options;
+    options.source_filename = "main.ufm";
+    options.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    LoadedFormula result{load_formula("global:\n"
+                                      "Missing missing\n"
+                                      "loop:\n"
+                                      "z=z+1",
+        options)};
+
+    ASSERT_TRUE(result.ast);
+    EXPECT_TRUE(result.files.resolved_references.empty());
+    ASSERT_EQ(1U, result.files.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.files.diagnostics[0].code);
+    EXPECT_EQ("missing", result.files.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, loadFormulaWithoutImporterOnlyParsesMainAst)

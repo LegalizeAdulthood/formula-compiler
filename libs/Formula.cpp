@@ -8,6 +8,7 @@
 #include <formula/Interpreter.h>
 #include <formula/ParseOptions.h>
 #include <formula/Parser.h>
+#include <formula/ReferenceCollector.h>
 
 #include <cassert>
 #include <cstdint>
@@ -362,6 +363,7 @@ LoadedFormula load_formula(std::string_view text, const parser::Options &options
     if (options.file_importer && !options.source_filename.empty())
     {
         result.files = load_formula_file_tree(options.source_filename, options.file_importer);
+        resolve_formula_file_references(result.files);
     }
     return result;
 }
