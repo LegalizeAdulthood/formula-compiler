@@ -218,17 +218,14 @@ Decode compressed bodies as follows:
    payload line length must be a multiple of 4.
 4. Decode with the normal base64 alphabet, but UF packs bits in little
    endian order within each 4-character group:
-
-```text
-q0 q1 q2 q3 = 6-bit alphabet indexes
-b0          = q0 | ((q1 & 0x03) << 6)
-b1          = ((q1 & 0x3c) >> 2) | ((q2 & 0x0f) << 4)
-b2          = ((q2 & 0x30) >> 4) | (q3 << 2)
-```
-
-`=` padding is allowed only in `q2` or `q3`; remove the matching number
-of trailing decoded bytes from that group.
-
+   ```text
+   q0 q1 q2 q3 = 6-bit alphabet indexes
+   b0          = q0 | ((q1 & 0x03) << 6)
+   b1          = ((q1 & 0x3c) >> 2) | ((q2 & 0x0f) << 4)
+   b2          = ((q2 & 0x30) >> 4) | (q3 << 2)
+   ```
+   `=` padding is allowed only in `q2` or `q3`; remove the matching number
+   of trailing decoded bytes from that group.
 5. Concatenate all decoded bytes.
 6. The first four bytes are a little-endian CRC32 of the remaining
    bytes. Reject the entry if it does not match.
