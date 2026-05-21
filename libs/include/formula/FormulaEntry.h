@@ -87,11 +87,18 @@ struct FormulaClassReference
     std::size_t entry_index{};
 };
 
+struct RetainedFormulaClass
+{
+    FormulaClassReference reference;
+    ast::FormulaSectionsPtr ast;
+};
+
 struct FormulaFileSet
 {
     std::vector<FormulaFile> files;
     std::vector<FormulaFileReference> file_index;
     std::vector<FormulaClassReference> class_index;
+    std::vector<RetainedFormulaClass> retained_classes;
     std::vector<FormulaFileDiagnostic> diagnostics;
 };
 
@@ -101,5 +108,6 @@ std::vector<FormulaEntry> load_formula_entries(std::istream &in);
 FormulaFile load_formula_file(std::istream &in, std::string filename = {});
 FormulaFileSet load_formula_file_tree(std::string_view root_filename, const FormulaFileImporter &importer);
 ast::FormulaSectionsPtr parse_formula_class(FormulaFileSet &files, const FormulaClassReference &klass);
+ast::FormulaSectionsPtr retain_formula_class(FormulaFileSet &files, const FormulaClassReference &klass);
 
 } // namespace formula

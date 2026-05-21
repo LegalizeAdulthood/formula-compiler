@@ -424,4 +424,29 @@ ast::FormulaSectionsPtr parse_formula_class(FormulaFileSet &files, const Formula
     return ast;
 }
 
+static bool same_class_reference(const FormulaClassReference &lhs, const FormulaClassReference &rhs)
+{
+    return lhs.file_index == rhs.file_index && lhs.class_index == rhs.class_index && lhs.entry_index == rhs.entry_index;
+}
+
+ast::FormulaSectionsPtr retain_formula_class(FormulaFileSet &files, const FormulaClassReference &klass)
+{
+    for (const RetainedFormulaClass &retained : files.retained_classes)
+    {
+        if (same_class_reference(retained.reference, klass))
+        {
+            return retained.ast;
+        }
+    }
+
+    ast::FormulaSectionsPtr ast{parse_formula_class(files, klass)};
+    if (!ast)
+    {
+        return nullptr;
+    }
+
+    files.retained_classes.push_back(RetainedFormulaClass{klass, ast});
+    return ast;
+}
+
 } // namespace formula

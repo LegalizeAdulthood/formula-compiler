@@ -210,6 +210,29 @@ TEST(TestFormulaEntry, parsesLoadedClassOnDemand)
     ASSERT_TRUE(klass);
     EXPECT_TRUE(klass->public_members);
     EXPECT_TRUE(result.diagnostics.empty());
+    EXPECT_TRUE(result.retained_classes.empty());
+}
+
+TEST(TestFormulaEntry, retainsLoadedClassOnDemand)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(1U, result.class_index.size());
+    ast::FormulaSectionsPtr first{retain_formula_class(result, result.class_index[0])};
+    ast::FormulaSectionsPtr second{retain_formula_class(result, result.class_index[0])};
+
+    ASSERT_TRUE(first);
+    EXPECT_EQ(first, second);
+    ASSERT_EQ(1U, result.retained_classes.size());
+    EXPECT_EQ("Texture", result.retained_classes[0].reference.class_name);
+    EXPECT_EQ(first, result.retained_classes[0].ast);
 }
 
 TEST(TestFormulaEntry, classParseErrorsKeepFilename)
