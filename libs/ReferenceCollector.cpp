@@ -90,6 +90,11 @@ public:
         visit_expr(node.block());
     }
 
+    void visit(const ast::HeadingBlockNode &node) override
+    {
+        visit_expr(node.block());
+    }
+
     void visit(const ast::FunctionDeclNode &node) override
     {
         add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.return_type());

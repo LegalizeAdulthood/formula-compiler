@@ -21,6 +21,7 @@ enum class NodeType
     FUNCTION_DECL,
     FUNCTION_BLOCK,
     FUNCTION_CALL,
+    HEADING_BLOCK,
     IDENTIFIER,
     IF_STATEMENT,
     INDEX,
@@ -55,6 +56,7 @@ public:
     void visit(const FunctionBlockNode &node) override  { m_type = NodeType::FUNCTION_BLOCK; }
     void visit(const FunctionDeclNode &node) override   { m_type = NodeType::FUNCTION_DECL; }
     void visit(const FunctionCallNode &node) override   { m_type = NodeType::FUNCTION_CALL; }
+    void visit(const HeadingBlockNode &node) override   { m_type = NodeType::HEADING_BLOCK; }
     void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }
     void visit(const IfStatementNode &node) override    { m_type = NodeType::IF_STATEMENT; }
     void visit(const IndexNode &node) override          { m_type = NodeType::INDEX; }

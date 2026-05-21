@@ -84,6 +84,7 @@ private:
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
     std::optional<Expr> function_block_default();
     Expr default_function_block();
+    Expr default_heading_block();
     Expr default_param_block();
     Expr default_setting();
     Expr default_section();
@@ -846,6 +847,83 @@ Expr FormulaParser::default_function_block()
     return std::make_shared<FunctionBlockNode>(type, name, body);
 }
 
+Expr FormulaParser::default_heading_block()
+{
+    if (!check(TokenType::HEADING))
+    {
+        return nullptr;
+    }
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return nullptr;
+    }
+    advance();
+
+    std::vector<Expr> settings;
+    skip_separators();
+    while (!check(TokenType::END_HEADING))
+    {
+        if (!check(TokenType::IDENTIFIER))
+        {
+            return nullptr;
+        }
+        const std::string setting{str()};
+        advance();
+
+        if (!check(TokenType::ASSIGN))
+        {
+            return nullptr;
+        }
+        advance();
+
+        std::optional<Expr> value;
+        if (setting == "caption" || setting == "text" || setting == "hint")
+        {
+            value = param_string(setting);
+        }
+        else if (setting == "enabled" || setting == "visible")
+        {
+            value = param_bool_expr(setting);
+        }
+        else if (setting == "expanded" || setting == "show" || setting == "extended")
+        {
+            value = param_bool(setting);
+        }
+        if (!value)
+        {
+            return nullptr;
+        }
+        settings.push_back(value.value());
+        skip_separators();
+    }
+
+    if (!check(TokenType::END_HEADING))
+    {
+        return nullptr;
+    }
+    advance();
+
+    if (!check({TokenType::TERMINATOR, TokenType::END_OF_INPUT}))
+    {
+        return nullptr;
+    }
+    advance();
+
+    Expr body;
+    if (settings.size() == 1)
+    {
+        body = settings.front();
+    }
+    else if (!settings.empty())
+    {
+        body = std::make_shared<StatementSeqNode>(settings);
+    }
+
+    return std::make_shared<HeadingBlockNode>(body);
+}
+
 Expr FormulaParser::default_param_block()
 {
     std::string type;
@@ -1012,6 +1090,11 @@ Expr FormulaParser::default_section()
 
 Expr FormulaParser::default_setting()
 {
+    if (check(TokenType::HEADING))
+    {
+        return default_heading_block();
+    }
+
     if (check(TokenType::PARAM) ||
         (check({TokenType::TYPE_IDENTIFIER, TokenType::IDENTIFIER}) && peek(TokenType::PARAM)))
     {

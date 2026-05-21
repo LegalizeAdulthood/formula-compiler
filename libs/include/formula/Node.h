@@ -637,6 +637,26 @@ private:
     Expr m_block;
 };
 
+class HeadingBlockNode : public Node
+{
+public:
+    explicit HeadingBlockNode(Expr block) :
+        m_block(std::move(block))
+    {
+    }
+    ~HeadingBlockNode() override = default;
+
+    void visit(Visitor &visitor) const override;
+
+    const Expr &block() const
+    {
+        return m_block;
+    }
+
+private:
+    Expr m_block;
+};
+
 enum class BuiltinType
 {
     MANDELBROT = 1,

@@ -15,6 +15,7 @@ class SettingNode;
 class FunctionDeclNode;
 class FunctionBlockNode;
 class FunctionCallNode;
+class HeadingBlockNode;
 class IdentifierNode;
 class IfStatementNode;
 class IndexNode;
@@ -43,6 +44,7 @@ public:
     virtual void visit(const FunctionBlockNode &node) = 0;
     virtual void visit(const FunctionDeclNode &node) = 0;
     virtual void visit(const FunctionCallNode &node) = 0;
+    virtual void visit(const HeadingBlockNode &node) = 0;
     virtual void visit(const IdentifierNode &node) = 0;
     virtual void visit(const IfStatementNode &node) = 0;
     virtual void visit(const IndexNode &node) = 0;
@@ -84,6 +86,9 @@ public:
     {
     }
     void visit(const FunctionCallNode &node) override
+    {
+    }
+    void visit(const HeadingBlockNode &node) override
     {
     }
     void visit(const IdentifierNode &node) override

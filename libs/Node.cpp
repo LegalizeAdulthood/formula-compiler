@@ -46,6 +46,11 @@ void FunctionBlockNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
+void HeadingBlockNode::visit(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
 void FunctionCallNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);

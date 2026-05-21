@@ -2,9 +2,6 @@
 
 ## Section Handling
 
-- `default:` headings are not parsed yet. UF supports
-  `heading`/`endheading` blocks with settings such as `caption`, `text`,
-  `visible`, `enabled`, and `expanded`.
 - Default settings are accepted from one shared table. The parser should
   apply per-entry-kind setting rules so fractal-only settings are rejected
   for coloring, transformation, and class entries.
@@ -24,3 +21,7 @@ Default parameter blocks now parse multiple inner settings, including
 
 Default function blocks now parse metadata settings, including `caption`,
 `default`, `hint`, `enabled`, and `visible`.
+
+Default heading blocks now parse metadata settings, including `caption`,
+`text`, `hint`, `enabled`, `visible`, `expanded`, and corpus legacy
+`show`/`extended` booleans.

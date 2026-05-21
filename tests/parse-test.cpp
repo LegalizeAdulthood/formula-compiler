@@ -1310,6 +1310,40 @@ static SimpleExpressionParam s_default_values[]{
         "}\n"
         "}\n"
         "}\n"},
+    {"emptyHeadingBlock",
+        "heading\n"
+        "endheading",
+        "heading_block {\n"
+        "}\n"},
+    {"multipleSettingsHeadingBlock",
+        "heading\n"
+        "caption=\"Options\"\n"
+        "text=\"Pick carefully.\"\n"
+        "hint=\"Shown in corpus.\"\n"
+        "enabled=show_options\n"
+        "visible=mode == 2\n"
+        "expanded=false\n"
+        "show=false\n"
+        "extended=false\n"
+        "endheading",
+        "heading_block {\n"
+        "statement_seq:8 {\n"
+        "setting:caption=\"Options\"\n"
+        "setting:text=\"Pick carefully.\"\n"
+        "setting:hint=\"Shown in corpus.\"\n"
+        "setting:enabled={\n"
+        "identifier:show_options\n"
+        "}\n"
+        "setting:visible={\n"
+        "binary_op:==\n"
+        "identifier:mode\n"
+        "literal:2\n"
+        "}\n"
+        "setting:expanded=false\n"
+        "setting:show=false\n"
+        "setting:extended=false\n"
+        "}\n"
+        "}\n"},
     {"defaultBoolParamBlock",
         "bool param foo\n"
         "default=true\n"

@@ -64,6 +64,16 @@ void NodeFormatter::visit(const ast::FunctionBlockNode &node)
     m_str << "}\n";
 }
 
+void NodeFormatter::visit(const ast::HeadingBlockNode &node)
+{
+    m_str << "heading_block {\n";
+    if (node.block())
+    {
+        node.block()->visit(*this);
+    }
+    m_str << "}\n";
+}
+
 void NodeFormatter::visit(const ast::ConstantRefNode &node)
 {
     m_str << "constant_ref:" << node.name() << '\n';
