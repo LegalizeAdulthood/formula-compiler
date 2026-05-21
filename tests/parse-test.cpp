@@ -866,6 +866,7 @@ TEST(TestFormulaParse, extendedClassObjectSyntax)
     options.entry_kind = EntryKind::CLASS;
     const ast::FormulaSectionsPtr result{parse("import \"common.ulb\"\n"
                                                "public:\n"
+                                               "import \"math.ulb\"\n"
                                                "func Texture()\n"
                                                "amount=0.1\n"
                                                "endfunc\n"
@@ -883,9 +884,17 @@ TEST(TestFormulaParse, extendedClassObjectSyntax)
         options)};
 
     ASSERT_TRUE(result);
+    ASSERT_EQ(2U, result->imports.size());
+    EXPECT_EQ("common.ulb", result->imports[0].filename);
+    EXPECT_EQ(1U, result->imports[0].location.line);
+    EXPECT_EQ(1U, result->imports[0].location.column);
+    EXPECT_FALSE(result->imports[0].implicit);
+    EXPECT_EQ("math.ulb", result->imports[1].filename);
+    EXPECT_EQ(3U, result->imports[1].location.line);
+    EXPECT_EQ(1U, result->imports[1].location.column);
+    EXPECT_FALSE(result->imports[1].implicit);
     ASSERT_TRUE(result->public_members);
-    EXPECT_EQ("statement_seq:3 { "
-              "import:\"common.ulb\" "
+    EXPECT_EQ("statement_seq:2 { "
               "function_decl:texture() { assignment:amount literal:0.1 } "
               "function_decl:int min(int a,int b) static { return: identifier:a } "
               "}",

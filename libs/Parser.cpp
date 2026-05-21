@@ -98,7 +98,8 @@ private:
     std::string type_name();
     std::vector<Expr> argument_list();
     Expr expression();
-    Expr import_statement();
+    bool consume_import_statement();
+    void consume_imports();
     Expr declaration_statement();
     Expr function_declaration(bool is_static = false);
     Expr return_statement();
@@ -1009,6 +1010,7 @@ std::optional<bool> FormulaParser::section_formula()
     {
         return {};
     }
+    consume_imports();
     std::optional<size_t> last_section_rank;
     while (is_section_token(m_curr.type))
     {
@@ -1298,6 +1300,8 @@ std::optional<bool> FormulaParser::section_formula()
                 return false;
             }
         }
+        skip_separators();
+        consume_imports();
     }
 
     // some unknown section name?
@@ -1737,20 +1741,31 @@ Expr FormulaParser::expression()
     return conjunctive();
 }
 
-Expr FormulaParser::import_statement()
+bool FormulaParser::consume_import_statement()
 {
-    if (!match_context("import"))
+    if (!check_context("import"))
     {
-        return nullptr;
+        return false;
     }
+    const SourceLocation location{m_curr.location};
+    advance();
     if (!check(TokenType::QUOTED_STRING))
     {
         error(ErrorCode::EXPECTED_STRING);
-        return nullptr;
+        return true;
     }
-    Expr result = std::make_shared<ImportNode>(str());
+    m_ast->imports.push_back(ImportDirective{str(), location, false});
     advance();
-    return result;
+    return true;
+}
+
+void FormulaParser::consume_imports()
+{
+    while (is_extended() && check_context("import"))
+    {
+        consume_import_statement();
+        skip_separators();
+    }
 }
 
 Expr FormulaParser::declaration_statement()
@@ -1942,6 +1957,7 @@ Expr FormulaParser::repeat_statement()
 Expr FormulaParser::sequence()
 {
     skip_separators();
+    consume_imports();
 
     if (is_block_end())
     {
@@ -1963,6 +1979,7 @@ Expr FormulaParser::sequence()
     while (check({TokenType::COMMA, TokenType::TERMINATOR}))
     {
         skip_separators();
+        consume_imports();
 
         // Check if we've reached end of input
         if (is_block_end())
@@ -2007,10 +2024,6 @@ bool FormulaParser::is_assignable() const
 
 Expr FormulaParser::statement()
 {
-    if (is_extended() && check_context("import"))
-    {
-        return import_statement();
-    }
     if (is_extended() && check_context("static"))
     {
         advance();
@@ -2156,6 +2169,11 @@ Expr FormulaParser::block()
 
     while (!is_block_end())
     {
+        consume_imports();
+        if (is_block_end())
+        {
+            break;
+        }
         Expr stmt = statement();
         if (!stmt)
         {

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <formula/Complex.h>
+#include <formula/SourceLocation.h>
 
 #include <cassert>
 #include <memory>
@@ -566,6 +567,13 @@ struct FunctionArgument
     std::string name;
 };
 
+struct ImportDirective
+{
+    std::string filename;
+    SourceLocation location;
+    bool implicit{};
+};
+
 class FunctionDeclNode : public Node
 {
 public:
@@ -772,6 +780,7 @@ struct FormulaSections
     Expr public_members;
     Expr protected_members;
     Expr private_members;
+    std::vector<ImportDirective> imports;
 };
 
 using FormulaSectionsPtr = std::shared_ptr<FormulaSections>;
