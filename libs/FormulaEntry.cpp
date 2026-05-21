@@ -257,6 +257,16 @@ static void rebuild_indexes(FormulaFileSet &result)
     }
 }
 
+static void add_parser_errors(FormulaFileSet &result, std::string_view filename, const parser::ParserPtr &parser,
+    const std::vector<std::string> &import_stack)
+{
+    for (const parser::Diagnostic &error : parser->get_errors())
+    {
+        add_diagnostic(result, FormulaFileDiagnosticCode::PARSE_ERROR, filename, error.position,
+            parser::to_string(error.code), import_stack);
+    }
+}
+
 static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEntry &entry, std::string_view filename,
     FormulaFileSet &result, const std::vector<std::string> &import_stack)
 {
@@ -274,11 +284,7 @@ static std::vector<FormulaImportDirective> collect_entry_imports(const FormulaEn
     const ast::FormulaSectionsPtr ast{parser->parse()};
     if (!parser->get_errors().empty())
     {
-        for (const parser::Diagnostic &error : parser->get_errors())
-        {
-            add_diagnostic(result, FormulaFileDiagnosticCode::PARSE_ERROR, filename, error.position,
-                parser::to_string(error.code), import_stack);
-        }
+        add_parser_errors(result, filename, parser, import_stack);
         return imports;
     }
     if (!ast)
@@ -381,6 +387,41 @@ FormulaFileSet load_formula_file_tree(std::string_view root_filename, const Form
     load_formula_file_tree(root_filename, importer, result, states, import_stack);
     rebuild_indexes(result);
     return result;
+}
+
+ast::FormulaSectionsPtr parse_formula_class(FormulaFileSet &files, const FormulaClassReference &klass)
+{
+    if (klass.file_index >= files.files.size())
+    {
+        add_diagnostic(files, FormulaFileDiagnosticCode::PARSE_ERROR, klass.filename, {});
+        return nullptr;
+    }
+
+    const FormulaFile &file = files.files[klass.file_index];
+    if (klass.entry_index >= file.entries.size())
+    {
+        add_diagnostic(files, FormulaFileDiagnosticCode::PARSE_ERROR, file.filename, {});
+        return nullptr;
+    }
+
+    const FormulaEntry &entry = file.entries[klass.entry_index];
+    parser::Options options;
+    options.source_filename = file.filename;
+    options.entry_kind = parser::EntryKind::CLASS;
+
+    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    ast::FormulaSectionsPtr ast{parser->parse()};
+    if (!parser->get_errors().empty())
+    {
+        add_parser_errors(files, file.filename, parser, {});
+        return nullptr;
+    }
+    if (!ast)
+    {
+        add_diagnostic(files, FormulaFileDiagnosticCode::PARSE_ERROR, file.filename, {});
+        return nullptr;
+    }
+    return ast;
 }
 
 } // namespace formula

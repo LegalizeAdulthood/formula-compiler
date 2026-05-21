@@ -193,6 +193,45 @@ TEST(TestFormulaEntry, fileTreeLoadsExplicitImports)
     EXPECT_EQ("main.ufm", result.files[0].entry_imports[0].imports[0].location.filename);
 }
 
+TEST(TestFormulaEntry, parsesLoadedClassOnDemand)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(1U, result.class_index.size());
+    ast::FormulaSectionsPtr klass{parse_formula_class(result, result.class_index[0])};
+
+    ASSERT_TRUE(klass);
+    EXPECT_TRUE(klass->public_members);
+    EXPECT_TRUE(result.diagnostics.empty());
+}
+
+TEST(TestFormulaEntry, classParseErrorsKeepFilename)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Broken {\nif true\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(1U, result.class_index.size());
+    ast::FormulaSectionsPtr klass{parse_formula_class(result, result.class_index[0])};
+
+    EXPECT_FALSE(klass);
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(FormulaFileDiagnosticCode::PARSE_ERROR, result.diagnostics[0].code);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
+}
+
 TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)
 {
     std::unordered_map<std::string, std::string> files{

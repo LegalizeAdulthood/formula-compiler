@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <formula/Node.h>
 #include <formula/SourceLocation.h>
 
 #include <cstddef>
@@ -99,5 +100,6 @@ using FormulaFileImporter = std::function<std::string(std::string_view)>;
 std::vector<FormulaEntry> load_formula_entries(std::istream &in);
 FormulaFile load_formula_file(std::istream &in, std::string filename = {});
 FormulaFileSet load_formula_file_tree(std::string_view root_filename, const FormulaFileImporter &importer);
+ast::FormulaSectionsPtr parse_formula_class(FormulaFileSet &files, const FormulaClassReference &klass);
 
 } // namespace formula
