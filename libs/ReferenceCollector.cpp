@@ -532,11 +532,40 @@ void resolve_formula_file_references(FormulaFileSet &files)
     }
 }
 
+void resolve_root_formula_file_references(FormulaFileSet &files)
+{
+    files.resolved_references.clear();
+    clear_unresolved_diagnostics(files);
+    if (files.entry_references.empty())
+    {
+        collect_formula_file_references(files);
+    }
+    for (const FormulaEntryReferences &entry_references : files.entry_references)
+    {
+        if (entry_references.file_index != 0)
+        {
+            continue;
+        }
+        for (const FormulaReference &reference : entry_references.references)
+        {
+            if (std::optional<FormulaClassReference> klass =
+                    resolve_class_reference(files, entry_references, reference))
+            {
+                files.resolved_references.push_back(FormulaResolvedReference{entry_references, reference, *klass});
+            }
+            else
+            {
+                add_unresolved_diagnostic(files, entry_references, reference);
+            }
+        }
+    }
+}
+
 void retain_resolved_imported_classes(FormulaFileSet &files)
 {
     if (files.resolved_references.empty())
     {
-        resolve_formula_file_references(files);
+        resolve_root_formula_file_references(files);
     }
     std::size_t retained_index{};
     for (const FormulaResolvedReference &reference : files.resolved_references)

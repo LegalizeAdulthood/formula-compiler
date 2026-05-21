@@ -529,6 +529,37 @@ TEST(TestFormulaEntry, loadFormulaIncludesUnresolvedReferenceDiagnostics)
     EXPECT_EQ("missing", result.files.diagnostics[0].detail);
 }
 
+TEST(TestFormulaEntry, loadFormulaIgnoresUnreferencedImportDiagnostics)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"unused.ulb\"\n"
+            "loop:\n"
+            "z=z+1\n"
+            "}\n"},
+        {"unused.ulb",
+            "class Unused {\n"
+            "public:\n"
+            "Missing missing\n"
+            "}\n"},
+    };
+    Options options;
+    options.source_filename = "main.ufm";
+    options.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    LoadedFormula result{load_formula("import \"unused.ulb\"\n"
+                                      "z=0:z=z+1,|z|<4",
+        options)};
+
+    ASSERT_TRUE(result.ast);
+    EXPECT_TRUE(result.files.diagnostics.empty());
+    EXPECT_TRUE(result.files.retained_classes.empty());
+}
+
 TEST(TestFormulaEntry, loadFormulaWithoutImporterOnlyParsesMainAst)
 {
     LoadedFormula result{load_formula("z=0:z=z+1,|z|<4", Options{})};

@@ -20,6 +20,7 @@ void collect_formula_file_references(FormulaFileSet &files);
 std::vector<FormulaResolvedReference> resolve_formula_entry_references(
     const FormulaFileSet &files, const FormulaEntryReferences &entry_references);
 void resolve_formula_file_references(FormulaFileSet &files);
+void resolve_root_formula_file_references(FormulaFileSet &files);
 void retain_resolved_imported_classes(FormulaFileSet &files);
 
 } // namespace formula
