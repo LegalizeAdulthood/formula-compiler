@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <formula/Dialect.h>
 #include <formula/FileEntry.h>
 #include <formula/SourceLocation.h>
 
@@ -71,7 +72,75 @@ struct Token
 
 struct Options
 {
+    Dialect dialect{Dialect::EXTENDED};
     std::string source_filename;
+    SourceLocation source_location;
+};
+
+enum class ParseErrorCode
+{
+    NONE = 0,
+    EXPECTED_SECTION_LABEL,
+    EXPECTED_KEY,
+    EXPECTED_ASSIGN,
+    EXPECTED_VALUE,
+};
+
+std::string to_string(ParseErrorCode code);
+
+struct ParseDiagnostic
+{
+    ParseErrorCode code{};
+    SourceLocation location;
+};
+
+struct ParameterValue
+{
+    TokenType token_type{};
+    std::string text;
+    SourceRange source_range;
+};
+
+struct ParameterAssignment
+{
+    std::string key;
+    ParameterValue value;
+    SourceRange source_range;
+};
+
+struct ParameterSection
+{
+    std::string name;
+    std::vector<ParameterAssignment> assignments;
+    SourceRange source_range;
+};
+
+struct ParameterBody
+{
+    std::vector<ParameterAssignment> assignments;
+    std::vector<ParameterSection> sections;
+};
+
+struct ParameterParseResult
+{
+    ParameterBody body;
+    std::vector<LexicalDiagnostic> lexical_diagnostics;
+    std::vector<ParseDiagnostic> diagnostics;
+};
+
+struct ParameterEntry
+{
+    FileEntry file_entry;
+    ParameterBody body;
+    std::vector<LexicalDiagnostic> lexical_diagnostics;
+    std::vector<ParseDiagnostic> diagnostics;
+};
+
+struct ParameterFile
+{
+    std::vector<ParameterEntry> entries;
+    std::vector<LexicalDiagnostic> lexical_diagnostics;
+    std::vector<ParseDiagnostic> diagnostics;
 };
 
 class Lexer
@@ -122,7 +191,7 @@ private:
     void advance();
 
     Options m_options;
-    std::string_view m_input;
+    std::string m_input;
     size_t m_position{};
     SourceLocation m_source_location;
     bool m_after_assign{};
@@ -134,5 +203,9 @@ using LexerPtr = std::shared_ptr<Lexer>;
 
 LexerPtr lex(std::string_view input);
 std::vector<FileEntry> load_parameter_entries(std::istream &in, std::string filename = {});
+ParameterParseResult parse_parameter_body(std::string_view input, Options options = {});
+ParameterEntry parse_parameter_entry(FileEntry file_entry, Options options = {});
+ParameterFile parse_parameter_file(std::istream &in, Options options = {});
+ParameterFile parse_parameter_file(std::istream &in, std::string filename);
 
 } // namespace formula::parameter
