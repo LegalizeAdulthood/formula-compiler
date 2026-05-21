@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Parser.h>
 
@@ -82,6 +82,8 @@ private:
     std::optional<Expr> param_enum();
     std::optional<Expr> param_bool(const std::string &name);
     std::optional<Expr> param_number(const std::string &type, const std::string &name);
+    std::optional<Expr> function_block_default();
+    Expr default_function_block();
     Expr default_param_block();
     Expr default_setting();
     Expr default_section();
@@ -735,6 +737,115 @@ std::optional<Expr> FormulaParser::param_number(const std::string &type, const s
     return {};
 }
 
+std::optional<Expr> FormulaParser::function_block_default()
+{
+    Expr expr = expression();
+    if (!expr)
+    {
+        return {};
+    }
+    if (dynamic_cast<const FunctionCallNode *>(expr.get()) == nullptr)
+    {
+        return {};
+    }
+    return std::make_shared<SettingNode>("default", expr);
+}
+
+Expr FormulaParser::default_function_block()
+{
+    std::string type;
+    if (!check(TokenType::FUNC))
+    {
+        if (!check({TokenType::TYPE_IDENTIFIER, TokenType::IDENTIFIER}))
+        {
+            return nullptr;
+        }
+        type = str();
+        advance();
+    }
+
+    if (!check(TokenType::FUNC))
+    {
+        return nullptr;
+    }
+    advance();
+
+    if (!check({TokenType::IDENTIFIER, TokenType::FN1, TokenType::FN2, TokenType::FN3, TokenType::FN4}))
+    {
+        return nullptr;
+    }
+    const std::string name{str()};
+    advance();
+
+    if (!check(TokenType::TERMINATOR))
+    {
+        return nullptr;
+    }
+    advance();
+
+    std::vector<Expr> settings;
+    skip_separators();
+    while (!check(TokenType::END_FUNC))
+    {
+        if (!check({TokenType::IDENTIFIER, TokenType::DEFAULT}))
+        {
+            return nullptr;
+        }
+        const std::string setting{str()};
+        advance();
+
+        if (!check(TokenType::ASSIGN))
+        {
+            return nullptr;
+        }
+        advance();
+
+        std::optional<Expr> value;
+        if (setting == "caption" || setting == "hint")
+        {
+            value = param_string(setting);
+        }
+        else if (setting == "default")
+        {
+            value = function_block_default();
+        }
+        else if (setting == "enabled" || setting == "visible")
+        {
+            value = param_bool_expr(setting);
+        }
+        if (!value)
+        {
+            return nullptr;
+        }
+        settings.push_back(value.value());
+        skip_separators();
+    }
+
+    if (!check(TokenType::END_FUNC))
+    {
+        return nullptr;
+    }
+    advance();
+
+    if (!check({TokenType::TERMINATOR, TokenType::END_OF_INPUT}))
+    {
+        return nullptr;
+    }
+    advance();
+
+    Expr body;
+    if (settings.size() == 1)
+    {
+        body = settings.front();
+    }
+    else if (!settings.empty())
+    {
+        body = std::make_shared<StatementSeqNode>(settings);
+    }
+
+    return std::make_shared<FunctionBlockNode>(type, name, body);
+}
+
 Expr FormulaParser::default_param_block()
 {
     std::string type;
@@ -901,10 +1012,15 @@ Expr FormulaParser::default_section()
 
 Expr FormulaParser::default_setting()
 {
-    if (check({TokenType::TYPE_IDENTIFIER, TokenType::PARAM}) ||
-        (check(TokenType::IDENTIFIER) && peek(TokenType::PARAM)))
+    if (check(TokenType::PARAM) ||
+        (check({TokenType::TYPE_IDENTIFIER, TokenType::IDENTIFIER}) && peek(TokenType::PARAM)))
     {
         return default_param_block();
+    }
+
+    if (check(TokenType::FUNC) || (check({TokenType::TYPE_IDENTIFIER, TokenType::IDENTIFIER}) && peek(TokenType::FUNC)))
+    {
+        return default_function_block();
     }
 
     const bool is_center{check(TokenType::CENTER)};

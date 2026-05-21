@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -603,6 +603,38 @@ private:
     Expr m_body;
     bool m_is_const{};
     bool m_is_static{};
+};
+
+class FunctionBlockNode : public Node
+{
+public:
+    FunctionBlockNode(std::string type, std::string name, Expr block) :
+        m_type(std::move(type)),
+        m_name(std::move(name)),
+        m_block(std::move(block))
+    {
+    }
+    ~FunctionBlockNode() override = default;
+
+    void visit(Visitor &visitor) const override;
+
+    const std::string &type() const
+    {
+        return m_type;
+    }
+    const std::string &name() const
+    {
+        return m_name;
+    }
+    const Expr &block() const
+    {
+        return m_block;
+    }
+
+private:
+    std::string m_type;
+    std::string m_name;
+    Expr m_block;
 };
 
 enum class BuiltinType

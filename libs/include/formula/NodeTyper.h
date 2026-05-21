@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -19,6 +19,7 @@ enum class NodeType
     CONSTANT_REF,
     DECLARATION,
     FUNCTION_DECL,
+    FUNCTION_BLOCK,
     FUNCTION_CALL,
     IDENTIFIER,
     IF_STATEMENT,
@@ -51,6 +52,7 @@ public:
     void visit(const BinaryOpNode &node) override       { m_type = NodeType::BINARY_OP; }
     void visit(const ConstantRefNode &node) override    { m_type = NodeType::CONSTANT_REF; }
     void visit(const DeclarationNode &node) override    { m_type = NodeType::DECLARATION; }
+    void visit(const FunctionBlockNode &node) override  { m_type = NodeType::FUNCTION_BLOCK; }
     void visit(const FunctionDeclNode &node) override   { m_type = NodeType::FUNCTION_DECL; }
     void visit(const FunctionCallNode &node) override   { m_type = NodeType::FUNCTION_CALL; }
     void visit(const IdentifierNode &node) override     { m_type = NodeType::IDENTIFIER; }

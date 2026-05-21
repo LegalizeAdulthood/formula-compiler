@@ -84,6 +84,12 @@ public:
         }
     }
 
+    void visit(const ast::FunctionBlockNode &node) override
+    {
+        add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.type());
+        visit_expr(node.block());
+    }
+
     void visit(const ast::FunctionDeclNode &node) override
     {
         add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.return_type());

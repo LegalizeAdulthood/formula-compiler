@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -13,6 +13,7 @@ class ConstantRefNode;
 class DeclarationNode;
 class SettingNode;
 class FunctionDeclNode;
+class FunctionBlockNode;
 class FunctionCallNode;
 class IdentifierNode;
 class IfStatementNode;
@@ -39,6 +40,7 @@ public:
     virtual void visit(const BinaryOpNode &node) = 0;
     virtual void visit(const ConstantRefNode &node) = 0;
     virtual void visit(const DeclarationNode &node) = 0;
+    virtual void visit(const FunctionBlockNode &node) = 0;
     virtual void visit(const FunctionDeclNode &node) = 0;
     virtual void visit(const FunctionCallNode &node) = 0;
     virtual void visit(const IdentifierNode &node) = 0;
@@ -73,6 +75,9 @@ public:
     {
     }
     void visit(const DeclarationNode &node) override
+    {
+    }
+    void visit(const FunctionBlockNode &node) override
     {
     }
     void visit(const FunctionDeclNode &node) override

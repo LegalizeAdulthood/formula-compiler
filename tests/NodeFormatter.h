@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -35,6 +35,7 @@ public:
     void visit(const ast::BinaryOpNode &node) override;
     void visit(const ast::ConstantRefNode &node) override;
     void visit(const ast::DeclarationNode &node) override;
+    void visit(const ast::FunctionBlockNode &node) override;
     void visit(const ast::FunctionDeclNode &node) override;
     void visit(const ast::FunctionCallNode &node) override;
     void visit(const ast::IdentifierNode &node) override;

@@ -2,9 +2,6 @@
 
 ## Section Handling
 
-- `default:` function blocks are not represented as default metadata yet.
-  UF allows user-function `func` blocks with settings inside the default
-  section.
 - `default:` headings are not parsed yet. UF supports
   `heading`/`endheading` blocks with settings such as `caption`, `text`,
   `visible`, `enabled`, and `expanded`.
@@ -24,3 +21,6 @@ Switch sections now parse multiple settings, including `type`,
 Default parameter blocks now parse multiple inner settings, including
 `caption`, `default`, `hint`, `min`, `max`, `enum`, `enabled`, `visible`,
 `expanded`, `exponential`, and `selectable`.
+
+Default function blocks now parse metadata settings, including `caption`,
+`default`, `hint`, `enabled`, and `visible`.

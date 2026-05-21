@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Parser.h>
 
@@ -1236,6 +1236,79 @@ static SimpleExpressionParam s_default_values[]{
         "param foo\n"
         "endparam",
         "param_block:foo {\n"
+        "}\n"},
+    {"emptyFunctionBlock",
+        "complex func pre_func\n"
+        "endfunc",
+        "function_block:complex,pre_func {\n"
+        "}\n"},
+    {"typelessFunctionBlock",
+        "func fn1\n"
+        "default=cos()\n"
+        "endfunc",
+        "function_block:fn1 {\n"
+        "setting:default={\n"
+        "function_call:cos(\n"
+        ")\n"
+        "}\n"
+        "}\n"},
+    {"functionBlockFn2",
+        "func fn2\n"
+        "default=atanh ()\n"
+        "endfunc",
+        "function_block:fn2 {\n"
+        "setting:default={\n"
+        "function_call:atanh(\n"
+        ")\n"
+        "}\n"
+        "}\n"},
+    {"functionBlockFn3",
+        "func fn3\n"
+        "endfunc",
+        "function_block:fn3 {\n"
+        "}\n"},
+    {"functionBlockFn4",
+        "func fn4\n"
+        "endfunc",
+        "function_block:fn4 {\n"
+        "}\n"},
+    {"multipleSettingsFunctionBlock",
+        "complex func pre_func\n"
+        "caption=\"Pre Function\"\n"
+        "default=ident()\n"
+        "enabled=blur\n"
+        "endfunc",
+        "function_block:complex,pre_func {\n"
+        "statement_seq:3 {\n"
+        "setting:caption=\"Pre Function\"\n"
+        "setting:default={\n"
+        "function_call:ident(\n"
+        ")\n"
+        "}\n"
+        "setting:enabled={\n"
+        "identifier:blur\n"
+        "}\n"
+        "}\n"
+        "}\n"},
+    {"colorFunctionBlock",
+        "color func f_mergemode\n"
+        "caption=\"Merge Mode\"\n"
+        "default=mergenormal()\n"
+        "hint=\"Sets the merge mode.\"\n"
+        "visible=show_merge\n"
+        "endfunc",
+        "function_block:color,f_mergemode {\n"
+        "statement_seq:4 {\n"
+        "setting:caption=\"Merge Mode\"\n"
+        "setting:default={\n"
+        "function_call:mergenormal(\n"
+        ")\n"
+        "}\n"
+        "setting:hint=\"Sets the merge mode.\"\n"
+        "setting:visible={\n"
+        "identifier:show_merge\n"
+        "}\n"
+        "}\n"
         "}\n"},
     {"defaultBoolParamBlock",
         "bool param foo\n"

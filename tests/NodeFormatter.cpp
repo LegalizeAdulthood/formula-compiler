@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include "NodeFormatter.h"
 
@@ -43,6 +43,25 @@ void NodeFormatter::visit(const ast::FunctionCallNode &node)
         arg->visit(*this);
     }
     m_str << ")\n";
+}
+
+void NodeFormatter::visit(const ast::FunctionBlockNode &node)
+{
+    m_str << "function_block:";
+    if (node.type().empty())
+    {
+        m_str << node.name();
+    }
+    else
+    {
+        m_str << node.type() << ',' << node.name();
+    }
+    m_str << " {\n";
+    if (node.block())
+    {
+        node.block()->visit(*this);
+    }
+    m_str << "}\n";
 }
 
 void NodeFormatter::visit(const ast::ConstantRefNode &node)
