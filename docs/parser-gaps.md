@@ -2,10 +2,6 @@
 
 ## Section Handling
 
-- `default:` parameter blocks parse only one inner setting. UF allows
-  multiple settings, such as `caption`, `default`, `hint`, `min`, `max`,
-  `enum`, `enabled`, `visible`, `expanded`, `exponential`, and
-  `selectable`.
 - `default:` function blocks are not represented as default metadata yet.
   UF allows user-function `func` blocks with settings inside the default
   section.
@@ -24,3 +20,7 @@
 
 Switch sections now parse multiple settings, including `type`,
 `destination = #pixel`, and `destination = source_parameter`.
+
+Default parameter blocks now parse multiple inner settings, including
+`caption`, `default`, `hint`, `min`, `max`, `enum`, `enabled`, `visible`,
+`expanded`, `exponential`, and `selectable`.

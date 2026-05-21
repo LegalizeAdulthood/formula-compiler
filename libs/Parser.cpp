@@ -767,9 +767,14 @@ Expr FormulaParser::default_param_block()
     }
     advance();
 
-    Expr body;
-    if (check({TokenType::IDENTIFIER, TokenType::DEFAULT}))
+    std::vector<Expr> settings;
+    skip_separators();
+    while (!check(TokenType::END_PARAM))
     {
+        if (!check({TokenType::IDENTIFIER, TokenType::DEFAULT}))
+        {
+            return nullptr;
+        }
         const std::string setting{str()};
         advance();
 
@@ -808,11 +813,9 @@ Expr FormulaParser::default_param_block()
         {
             return nullptr;
         }
-        body = value.value();
-        advance();
+        settings.push_back(value.value());
+        skip_separators();
     }
-
-    skip_separators();
 
     if (!check(TokenType::END_PARAM))
     {
@@ -825,6 +828,16 @@ Expr FormulaParser::default_param_block()
         return nullptr;
     }
     advance();
+
+    Expr body;
+    if (settings.size() == 1)
+    {
+        body = settings.front();
+    }
+    else if (!settings.empty())
+    {
+        body = std::make_shared<StatementSeqNode>(settings);
+    }
 
     return std::make_shared<ParamBlockNode>(type, name, body);
 }

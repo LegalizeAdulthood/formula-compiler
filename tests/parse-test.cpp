@@ -1215,6 +1215,23 @@ static SimpleExpressionParam s_default_values[]{
         "param_block:bool,foo {\n"
         "setting:caption=\"My parameter\"\n"
         "}\n"},
+    {"multipleSettingsParamBlock",
+        "float param foo\n"
+        "caption=\"Foo\"\n"
+        "default=4.5\n"
+        "min=0\n"
+        "max=10\n"
+        "expanded=true\n"
+        "endparam",
+        "param_block:float,foo {\n"
+        "statement_seq:5 {\n"
+        "setting:caption=\"Foo\"\n"
+        "setting:default=4.5\n"
+        "setting:min=0\n"
+        "setting:max=10\n"
+        "setting:expanded=true\n"
+        "}\n"
+        "}\n"},
     {"typelessParamBlock",
         "param foo\n"
         "endparam",
