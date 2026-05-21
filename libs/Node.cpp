@@ -51,11 +51,6 @@ void IdentifierNode::visit(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-void ImportNode::visit(Visitor &visitor) const
-{
-    visitor.visit(*this);
-}
-
 void IfStatementNode::visit(Visitor &visitor) const
 {
     visitor.visit(*this);

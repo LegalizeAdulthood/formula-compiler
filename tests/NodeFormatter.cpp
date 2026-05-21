@@ -128,11 +128,6 @@ void NodeFormatter::visit(const ast::IdentifierNode &node)
     m_str << "identifier:" << node.name() << '\n';
 }
 
-void NodeFormatter::visit(const ast::ImportNode &node)
-{
-    m_str << "import:\"" << node.filename() << "\"\n";
-}
-
 void NodeFormatter::visit(const ast::IfStatementNode &node)
 {
     m_str << "if_statement:(\n";

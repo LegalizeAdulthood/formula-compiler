@@ -33,7 +33,6 @@ public:
     void visit(const BinaryOpNode &node) override;
     void visit(const FunctionCallNode &node) override;
     void visit(const IdentifierNode &node) override;
-    void visit(const ImportNode &node) override;
     void visit(const IfStatementNode &node) override;
     void visit(const LiteralNode &node) override;
     void visit(const StatementSeqNode &node) override;
@@ -208,11 +207,6 @@ void Simplifier::visit(const IdentifierNode &node)
 
     // keep existing
     m_result.push_back(std::make_shared<IdentifierNode>(node.name()));
-}
-
-void Simplifier::visit(const ImportNode &node)
-{
-    m_result.push_back(std::make_shared<ImportNode>(node.filename()));
 }
 
 void Simplifier::visit(const IfStatementNode &node)

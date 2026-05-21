@@ -99,26 +99,6 @@ private:
     std::string m_name;
 };
 
-class ImportNode : public Node
-{
-public:
-    explicit ImportNode(std::string filename) :
-        m_filename(std::move(filename))
-    {
-    }
-    ~ImportNode() override = default;
-
-    void visit(Visitor &visitor) const override;
-
-    const std::string &filename() const
-    {
-        return m_filename;
-    }
-
-private:
-    std::string m_filename;
-};
-
 class FunctionCallNode : public Node
 {
 public:
