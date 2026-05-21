@@ -39,10 +39,57 @@ enum class SettingType
     INTEGER_EXPRESSION
 };
 
+enum class EntrySet : unsigned;
+
+constexpr unsigned operator+(EntrySet value)
+{
+    return static_cast<unsigned>(value);
+}
+
+constexpr EntrySet operator|(EntrySet lhs, EntrySet rhs)
+{
+    return static_cast<EntrySet>(+lhs | +rhs);
+}
+
+constexpr EntrySet operator&(EntrySet lhs, EntrySet rhs)
+{
+    return static_cast<EntrySet>(+lhs & +rhs);
+}
+
+enum class EntrySet : unsigned int
+{
+    NONE = 0,
+    // clang-format off
+    FRACTAL        = 1U << static_cast<unsigned int>(EntryKind::FRACTAL),
+    COLORING       = 1U << static_cast<unsigned int>(EntryKind::COLORING),
+    TRANSFORMATION = 1U << static_cast<unsigned int>(EntryKind::TRANSFORMATION),
+    CLASS          = 1U << static_cast<unsigned int>(EntryKind::CLASS),
+    // clang-format on
+    FORMULA = FRACTAL | COLORING | TRANSFORMATION,
+    ALL = FORMULA | CLASS,
+};
+
+constexpr EntrySet entry_set_for(EntryKind entry_kind)
+{
+    switch (entry_kind)
+    {
+    case EntryKind::FRACTAL:
+        return EntrySet::FRACTAL;
+    case EntryKind::COLORING:
+        return EntrySet::COLORING;
+    case EntryKind::TRANSFORMATION:
+        return EntrySet::TRANSFORMATION;
+    case EntryKind::CLASS:
+        return EntrySet::CLASS;
+    }
+    return EntrySet::NONE;
+}
+
 struct SettingMetadata
 {
     std::string_view name;
     SettingType type;
+    EntrySet entries;
 };
 
 class FormulaParser : public Parser
@@ -242,22 +289,27 @@ constexpr std::array<TokenType, 14> EXTENDED_SECTIONS{
 };
 
 constexpr std::array<SettingMetadata, 15> DEFAULT_SETTINGS{
-    SettingMetadata{"angle", SettingType::FLOATING_POINT}, //
-    {"center", SettingType::COMPLEX},                      //
-    {"helpfile", SettingType::STRING},                     //
-    {"helptopic", SettingType::STRING},                    //
-    {"magn", SettingType::FLOATING_POINT},                 //
-    {"maxiter", SettingType::INTEGER},                     //
-    {"method", SettingType::ENUMERATION},                  //
-    {"periodicity", SettingType::INTEGER},                 //
-    {"perturb", SettingType::BOOLEAN_EXPRESSION},          //
-    {"precision", SettingType::INTEGER_EXPRESSION},        //
-    {"rating", SettingType::ENUMERATION},                  //
-    {"render", SettingType::BOOLEAN},                      //
-    {"skew", SettingType::FLOATING_POINT},                 //
-    {"stretch", SettingType::FLOATING_POINT},              //
-    {"title", SettingType::STRING},                        //
+    SettingMetadata{"angle", SettingType::FLOATING_POINT, EntrySet::FRACTAL}, //
+    {"center", SettingType::COMPLEX, EntrySet::FRACTAL},                      //
+    {"helpfile", SettingType::STRING, EntrySet::FORMULA},                     //
+    {"helptopic", SettingType::STRING, EntrySet::FORMULA},                    //
+    {"magn", SettingType::FLOATING_POINT, EntrySet::FRACTAL},                 //
+    {"maxiter", SettingType::INTEGER, EntrySet::FRACTAL},                     //
+    {"method", SettingType::ENUMERATION, EntrySet::FRACTAL},                  //
+    {"periodicity", SettingType::INTEGER, EntrySet::FRACTAL},                 //
+    {"perturb", SettingType::BOOLEAN_EXPRESSION, EntrySet::FRACTAL},          //
+    {"precision", SettingType::INTEGER_EXPRESSION, EntrySet::FORMULA},        //
+    {"rating", SettingType::ENUMERATION, EntrySet::ALL},                      //
+    {"render", SettingType::BOOLEAN, EntrySet::FORMULA},                      //
+    {"skew", SettingType::FLOATING_POINT, EntrySet::FRACTAL},                 //
+    {"stretch", SettingType::FLOATING_POINT, EntrySet::FRACTAL},              //
+    {"title", SettingType::STRING, EntrySet::ALL},                            //
 };
+
+constexpr bool setting_allowed_for_entry(const SettingMetadata &setting, EntryKind entry_kind)
+{
+    return (setting.entries & entry_set_for(entry_kind)) != EntrySet::NONE;
+}
 
 lexer::Options lexer_options_for_parser(const Options &options)
 {
@@ -1125,6 +1177,11 @@ Expr FormulaParser::default_setting()
     auto it = std::find_if(
         DEFAULT_SETTINGS.begin(), DEFAULT_SETTINGS.end(), [&name](const SettingMetadata &m) { return m.name == name; });
     if (it == DEFAULT_SETTINGS.end())
+    {
+        error(ErrorCode::DEFAULT_SECTION_INVALID_KEY);
+        return nullptr;
+    }
+    if (!setting_allowed_for_entry(*it, m_options.entry_kind))
     {
         error(ErrorCode::DEFAULT_SECTION_INVALID_KEY);
         return nullptr;

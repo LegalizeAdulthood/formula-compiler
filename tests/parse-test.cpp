@@ -1023,6 +1023,84 @@ TEST(TestFormulaParse, fractalRejectsOtherKindSections)
     EXPECT_EQ(ErrorCode::INVALID_SECTION, transform_parser->get_errors().back().code);
 }
 
+TEST(TestFormulaParse, defaultSettingsRespectEntryKind)
+{
+    Options coloring;
+    coloring.entry_kind = EntryKind::COLORING;
+    const ast::FormulaSectionsPtr color_allowed{parse("default:\n"
+                                                      "helpfile=\"Help.html\"\n"
+                                                      "helptopic=\"topic\"\n"
+                                                      "precision=0\n"
+                                                      "render=false\n"
+                                                      "rating=recommended\n"
+                                                      "title=\"Color\"\n",
+        coloring)};
+
+    ASSERT_TRUE(color_allowed);
+    EXPECT_TRUE(color_allowed->defaults);
+
+    ParserPtr color_parser{create_parser("default:\n"
+                                         "angle=0\n",
+        coloring)};
+
+    const ast::FormulaSectionsPtr color_result{color_parser->parse()};
+
+    ASSERT_FALSE(color_result);
+    ASSERT_FALSE(color_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::DEFAULT_SECTION_INVALID_KEY, color_parser->get_errors().back().code);
+
+    Options transform;
+    transform.entry_kind = EntryKind::TRANSFORMATION;
+    const ast::FormulaSectionsPtr transform_allowed{parse("default:\n"
+                                                          "render=false\n"
+                                                          "rating=average\n"
+                                                          "title=\"Transform\"\n",
+        transform)};
+
+    ASSERT_TRUE(transform_allowed);
+    EXPECT_TRUE(transform_allowed->defaults);
+
+    ParserPtr transform_parser{create_parser("default:\n"
+                                             "maxiter=100\n",
+        transform)};
+
+    const ast::FormulaSectionsPtr transform_result{transform_parser->parse()};
+
+    ASSERT_FALSE(transform_result);
+    ASSERT_FALSE(transform_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::DEFAULT_SECTION_INVALID_KEY, transform_parser->get_errors().back().code);
+
+    Options klass;
+    klass.entry_kind = EntryKind::CLASS;
+    const ast::FormulaSectionsPtr class_allowed{parse("default:\n"
+                                                      "rating=notRecommended\n"
+                                                      "title=\"Texture\"\n",
+        klass)};
+
+    ASSERT_TRUE(class_allowed);
+    EXPECT_TRUE(class_allowed->defaults);
+
+    ParserPtr class_fractal_parser{create_parser("default:\n"
+                                                 "magn=1\n",
+        klass)};
+
+    const ast::FormulaSectionsPtr class_fractal_result{class_fractal_parser->parse()};
+
+    ASSERT_FALSE(class_fractal_result);
+    ASSERT_FALSE(class_fractal_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::DEFAULT_SECTION_INVALID_KEY, class_fractal_parser->get_errors().back().code);
+
+    ParserPtr class_formula_parser{create_parser("default:\n"
+                                                 "helpfile=\"Help.html\"\n",
+        klass)};
+
+    const ast::FormulaSectionsPtr class_formula_result{class_formula_parser->parse()};
+
+    ASSERT_FALSE(class_formula_result);
+    ASSERT_FALSE(class_formula_parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::DEFAULT_SECTION_INVALID_KEY, class_formula_parser->get_errors().back().code);
+}
+
 static ParseParam s_single_sections[]{
     {"globalSection",
         "global:\n"

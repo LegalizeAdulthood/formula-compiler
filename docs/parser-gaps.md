@@ -2,9 +2,6 @@
 
 ## Section Handling
 
-- Default settings are accepted from one shared table. The parser should
-  apply per-entry-kind setting rules so fractal-only settings are rejected
-  for coloring, transformation, and class entries.
 - `default:` and `switch:` section stop lists are fractal-shaped. They
   should use the full section-token set so misplaced later sections report
   section errors instead of setting parse errors.
@@ -25,3 +22,7 @@ Default function blocks now parse metadata settings, including `caption`,
 Default heading blocks now parse metadata settings, including `caption`,
 `text`, `hint`, `enabled`, `visible`, `expanded`, and corpus legacy
 `show`/`extended` booleans.
+
+Default settings now apply per-entry-kind rules. Fractal-only settings
+are rejected for coloring, transformation, and class entries; class
+defaults accept only class-valid metadata.
