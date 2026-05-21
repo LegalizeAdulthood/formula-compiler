@@ -503,7 +503,45 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
     ASSERT_EQ(1U, result.files.retained_classes.size());
     EXPECT_EQ("Texture", result.files.retained_classes[0].reference.class_name);
     EXPECT_EQ("common.ulb", result.files.retained_classes[0].reference.filename);
-    EXPECT_TRUE(result.files.retained_classes[0].ast);
+    ASSERT_TRUE(result.files.retained_classes[0].ast);
+    EXPECT_FALSE(result.ast->public_members);
+    EXPECT_TRUE(result.files.retained_classes[0].ast->public_members);
+}
+
+TEST(TestFormulaEntry, loadFormulaKeepsImportedAstsOutOfMainAst)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z=z+1\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    Options options;
+    options.source_filename = "main.ufm";
+    options.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    LoadedFormula result{load_formula("import \"common.ulb\"\n"
+                                      "z=0:z=z+1,|z|<4",
+        options)};
+
+    ASSERT_TRUE(result.ast);
+    ASSERT_EQ(1U, result.files.retained_classes.size());
+    ASSERT_TRUE(result.files.retained_classes[0].ast);
+    EXPECT_NE(result.ast, result.files.retained_classes[0].ast);
+    EXPECT_FALSE(result.ast->public_members);
+    EXPECT_TRUE(result.files.retained_classes[0].ast->public_members);
 }
 
 TEST(TestFormulaEntry, loadFormulaIncludesUnresolvedReferenceDiagnostics)
