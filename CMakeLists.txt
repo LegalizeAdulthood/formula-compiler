@@ -50,7 +50,6 @@ misc_group_sources("Docs" FILES
     "docs/extended-formulas.md"
     "docs/extended-interpreter.md"
     "docs/extended-compiler.md"
-    "docs/extended-semantics.md"
-    "docs/parser-gaps.md")
+    "docs/extended-semantics.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
