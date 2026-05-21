@@ -3,6 +3,8 @@
 // Copyright 2025 Richard Thomson
 //
 #include <formula/FormulaEntry.h>
+#include <formula/ParseOptions.h>
+#include <formula/Parser.h>
 
 #include <cassert>
 #include <sstream>
@@ -204,6 +206,34 @@ static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode cod
     result.diagnostics.push_back(FormulaFileDiagnostic{code, std::string{filename}, import_stack});
 }
 
+static std::vector<std::string> entry_imports(const FormulaEntry &entry, std::string_view filename,
+    FormulaFileSet &result, const std::vector<std::string> &import_stack)
+{
+    std::vector<std::string> imports;
+    if (entry.body.find("import") == std::string::npos)
+    {
+        return imports;
+    }
+
+    parser::Options options;
+    options.source_filename = std::string{filename};
+    options.entry_kind = entry.is_class ? parser::EntryKind::CLASS : parser::EntryKind::FRACTAL;
+
+    const parser::ParserPtr parser{parser::create_parser(entry.body, options)};
+    const ast::FormulaSectionsPtr ast{parser->parse()};
+    if (!ast)
+    {
+        add_diagnostic(result, FormulaFileDiagnosticCode::PARSE_ERROR, filename, import_stack);
+        return imports;
+    }
+
+    for (const ast::ImportDirective &import : ast->imports)
+    {
+        imports.push_back(import.filename);
+    }
+    return imports;
+}
+
 static void load_formula_file_tree(std::string_view filename, const FormulaFileImporter &importer,
     FormulaFileSet &result, std::unordered_map<std::string, LoadState> &states, std::vector<std::string> &import_stack)
 {
@@ -235,17 +265,22 @@ static void load_formula_file_tree(std::string_view filename, const FormulaFileI
 
     std::istringstream in{text};
     FormulaFile file{load_formula_file(in, key)};
-    std::vector<std::string> implicit_imports;
+    std::vector<std::string> imports;
     for (const ClassHeader &klass : file.classes)
     {
         if (!klass.base_file.empty())
         {
-            implicit_imports.push_back(klass.base_file);
+            imports.push_back(klass.base_file);
         }
+    }
+    for (const FormulaEntry &entry : file.entries)
+    {
+        std::vector<std::string> explicit_imports{entry_imports(entry, key, result, import_stack)};
+        imports.insert(imports.end(), explicit_imports.begin(), explicit_imports.end());
     }
     result.files.push_back(std::move(file));
 
-    for (const std::string &imported_filename : implicit_imports)
+    for (const std::string &imported_filename : imports)
     {
         load_formula_file_tree(imported_filename, importer, result, states, import_stack);
     }

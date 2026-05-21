@@ -42,6 +42,7 @@ enum class FormulaFileDiagnosticCode
 {
     MISSING_IMPORT,
     IMPORT_CYCLE,
+    PARSE_ERROR,
 };
 
 struct FormulaFileDiagnostic

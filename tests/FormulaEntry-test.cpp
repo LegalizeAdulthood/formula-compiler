@@ -148,6 +148,42 @@ TEST(TestFormulaEntry, fileTreeLoadsImplicitBaseImports)
     EXPECT_EQ("Base", result.files[1].classes[0].name);
 }
 
+TEST(TestFormulaEntry, fileTreeLoadsExplicitImports)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(2U, result.files.size());
+    EXPECT_EQ("main.ufm", result.files[0].filename);
+    EXPECT_EQ("common.ulb", result.files[1].filename);
+    ASSERT_EQ(1U, result.files[1].classes.size());
+    EXPECT_EQ("Texture", result.files[1].classes[0].name);
+}
+
+TEST(TestFormulaEntry, fileTreeLoadsChainedExplicitImports)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"first.ulb\"\nz=0:z=z+1,|z|<4\n}\n"},
+        {"first.ulb", "class First {\nimport \"second.ulb\"\npublic:\nint value\n}\n"},
+        {"second.ulb", "class Second {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(3U, result.files.size());
+    EXPECT_EQ("main.ufm", result.files[0].filename);
+    EXPECT_EQ("first.ulb", result.files[1].filename);
+    EXPECT_EQ("second.ulb", result.files[2].filename);
+}
+
 TEST(TestFormulaEntry, fileTreeReportsMissingImport)
 {
     std::unordered_map<std::string, std::string> files{
