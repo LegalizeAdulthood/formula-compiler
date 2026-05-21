@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -79,6 +80,17 @@ struct FormulaFileReference
     std::size_t file_index{};
 };
 
+struct FormulaImportReference
+{
+    std::string filename;
+    std::size_t file_index{};
+    std::size_t entry_index{};
+    std::string imported_filename;
+    std::optional<std::size_t> imported_file_index;
+    SourceLocation location;
+    bool implicit{};
+};
+
 struct FormulaClassReference
 {
     std::string filename;
@@ -130,6 +142,7 @@ struct FormulaFileSet
 {
     std::vector<FormulaFile> files;
     std::vector<FormulaFileReference> file_index;
+    std::vector<FormulaImportReference> import_graph;
     std::vector<FormulaClassReference> class_index;
     std::vector<RetainedFormulaClass> retained_classes;
     std::vector<FormulaEntryReferences> entry_references;

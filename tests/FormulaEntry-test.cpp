@@ -487,6 +487,14 @@ TEST(TestFormulaEntry, loadFormulaIncludesFileMetadata)
     ASSERT_EQ(2U, result.files.files.size());
     EXPECT_EQ("main.ufm", result.files.files[0].filename);
     EXPECT_EQ("common.ulb", result.files.files[1].filename);
+    ASSERT_EQ(1U, result.files.import_graph.size());
+    EXPECT_EQ("main.ufm", result.files.import_graph[0].filename);
+    EXPECT_EQ(0U, result.files.import_graph[0].file_index);
+    EXPECT_EQ(0U, result.files.import_graph[0].entry_index);
+    EXPECT_EQ("common.ulb", result.files.import_graph[0].imported_filename);
+    ASSERT_TRUE(result.files.import_graph[0].imported_file_index);
+    EXPECT_EQ(1U, *result.files.import_graph[0].imported_file_index);
+    EXPECT_FALSE(result.files.import_graph[0].implicit);
     ASSERT_EQ(1U, result.files.class_index.size());
     EXPECT_EQ("Texture", result.files.class_index[0].class_name);
     ASSERT_EQ(2U, result.files.entry_references.size());

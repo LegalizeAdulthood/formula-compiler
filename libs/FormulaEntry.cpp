@@ -243,6 +243,7 @@ static void add_diagnostic(FormulaFileSet &result, FormulaFileDiagnosticCode cod
 static void rebuild_indexes(FormulaFileSet &result)
 {
     result.file_index.clear();
+    result.import_graph.clear();
     result.class_index.clear();
     for (std::size_t file_index = 0; file_index < result.files.size(); ++file_index)
     {
@@ -253,6 +254,27 @@ static void rebuild_indexes(FormulaFileSet &result)
             const ClassHeader &klass = file.classes[class_index];
             result.class_index.push_back(
                 FormulaClassReference{file.filename, klass.name, file_index, class_index, klass.entry_index});
+        }
+    }
+    for (std::size_t file_index = 0; file_index < result.files.size(); ++file_index)
+    {
+        const FormulaFile &file = result.files[file_index];
+        for (const FormulaEntryImports &entry_imports : file.entry_imports)
+        {
+            for (const FormulaImportDirective &import : entry_imports.imports)
+            {
+                std::optional<std::size_t> imported_file_index;
+                for (const FormulaFileReference &reference : result.file_index)
+                {
+                    if (reference.filename == import.filename)
+                    {
+                        imported_file_index = reference.file_index;
+                        break;
+                    }
+                }
+                result.import_graph.push_back(FormulaImportReference{file.filename, file_index,
+                    entry_imports.entry_index, import.filename, imported_file_index, import.location, import.implicit});
+            }
         }
     }
 }
