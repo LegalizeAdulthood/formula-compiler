@@ -932,6 +932,45 @@ TEST(TestFormulaEntry, retainResolvedImportedClassesRetainsNestedImports)
     EXPECT_EQ("Filter", result.retained_classes[1].reference.class_name);
 }
 
+TEST(TestFormulaEntry, retainResolvedImportedClassesIsRepeatable)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "import \"filters.ulb\"\n"
+            "public:\n"
+            "Filter filter\n"
+            "}\n"},
+        {"filters.ulb",
+            "class Filter {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+    const std::size_t retained_count{result.retained_classes.size()};
+    const std::size_t resolved_count{result.resolved_references.size()};
+    retain_resolved_imported_classes(result);
+
+    EXPECT_EQ(retained_count, result.retained_classes.size());
+    EXPECT_EQ(resolved_count, result.resolved_references.size());
+}
+
 TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
 {
     std::unordered_map<std::string, std::string> files{

@@ -383,6 +383,27 @@ void clear_unresolved_diagnostics(FormulaFileSet &files)
         files.diagnostics.end());
 }
 
+bool same_resolved_reference(const FormulaResolvedReference &lhs, const FormulaResolvedReference &rhs)
+{
+    return lhs.entry.file_index == rhs.entry.file_index && lhs.entry.entry_index == rhs.entry.entry_index &&
+        lhs.reference.kind == rhs.reference.kind && lhs.reference.class_name == rhs.reference.class_name &&
+        lhs.reference.location.line == rhs.reference.location.line &&
+        lhs.reference.location.column == rhs.reference.location.column &&
+        lhs.klass.file_index == rhs.klass.file_index && lhs.klass.entry_index == rhs.klass.entry_index;
+}
+
+void add_resolved_reference(FormulaFileSet &files, FormulaResolvedReference reference)
+{
+    for (const FormulaResolvedReference &existing : files.resolved_references)
+    {
+        if (same_resolved_reference(existing, reference))
+        {
+            return;
+        }
+    }
+    files.resolved_references.push_back(std::move(reference));
+}
+
 } // namespace
 
 std::vector<FormulaReference> collect_formula_references(const ast::FormulaSections &ast)
@@ -547,7 +568,7 @@ void retain_resolved_imported_classes(FormulaFileSet &files)
             if (std::optional<FormulaClassReference> klass =
                     resolve_class_reference(files, entry_references, reference))
             {
-                files.resolved_references.push_back(FormulaResolvedReference{entry_references, reference, *klass});
+                add_resolved_reference(files, FormulaResolvedReference{entry_references, reference, *klass});
                 if (klass->file_index != entry_references.file_index)
                 {
                     retain_formula_class(files, *klass);
