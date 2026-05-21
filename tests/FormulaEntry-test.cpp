@@ -587,6 +587,86 @@ TEST(TestFormulaEntry, fileReferenceCollectorStoresEntryReferences)
     EXPECT_TRUE(result.diagnostics.empty());
 }
 
+TEST(TestFormulaEntry, referenceResolverFindsLocalClasses)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Texture {\npublic:\nint value\n}\nFormula {\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("main.ufm", result.resolved_references[0].entry.filename);
+    EXPECT_EQ(1U, result.resolved_references[0].entry.entry_index);
+    EXPECT_EQ("texture", result.resolved_references[0].reference.class_name);
+    EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
+    EXPECT_EQ(0U, result.resolved_references[0].klass.file_index);
+}
+
+TEST(TestFormulaEntry, referenceResolverFindsImportedClasses)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\nimport \"common.ulb\"\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
+        {"common.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("texture", result.resolved_references[0].reference.class_name);
+    EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
+    EXPECT_EQ("common.ulb", result.resolved_references[0].klass.filename);
+}
+
+TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\nimport \"first.ulb\"\nimport \"second.ulb\"\nglobal:\nTexture tex\nloop:\nz = pixel\n}\n"},
+        {"first.ulb", "class Texture {\npublic:\nint value\n}\n"},
+        {"second.ulb", "class Texture {\npublic:\nint value\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("second.ulb", result.resolved_references[0].klass.filename);
+}
+
+TEST(TestFormulaEntry, referenceResolverUsesImplicitImportBeforeCurrentFile)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "class Base {\npublic:\nint local\n}\nclass Derived(base.ulb:Base) {\npublic:\nint value\n}\n"},
+        {"base.ulb", "class Base {\npublic:\nint imported\n}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("Base", result.resolved_references[0].reference.class_name);
+    EXPECT_EQ("base.ulb", result.resolved_references[0].klass.filename);
+}
+
 TEST(TestFormulaEntry, singleLine)
 {
     const char *const frm{R"entry(Mandelbrot(XAXIS)[float=y]{z=c:z=z*z+c,|z|>4})entry"};

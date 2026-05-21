@@ -17,5 +17,8 @@ std::vector<FormulaReference> collect_formula_references(const ClassHeader &head
 FormulaEntryReferences collect_formula_entry_references(
     FormulaFileSet &files, std::size_t file_index, std::size_t entry_index);
 void collect_formula_file_references(FormulaFileSet &files);
+std::vector<FormulaResolvedReference> resolve_formula_entry_references(
+    const FormulaFileSet &files, const FormulaEntryReferences &entry_references);
+void resolve_formula_file_references(FormulaFileSet &files);
 
 } // namespace formula

@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <optional>
 #include <string_view>
 
 namespace formula
@@ -247,6 +248,111 @@ const ClassHeader *find_class_header(const FormulaFile &file, std::size_t entry_
     return nullptr;
 }
 
+bool same_identifier(std::string_view lhs, std::string_view rhs)
+{
+    if (lhs.size() != rhs.size())
+    {
+        return false;
+    }
+    for (std::size_t index = 0; index < lhs.size(); ++index)
+    {
+        const char left = static_cast<char>(std::tolower(static_cast<unsigned char>(lhs[index])));
+        const char right = static_cast<char>(std::tolower(static_cast<unsigned char>(rhs[index])));
+        if (left != right)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::optional<std::size_t> find_file_index(const FormulaFileSet &files, std::string_view filename)
+{
+    for (const FormulaFileReference &file : files.file_index)
+    {
+        if (file.filename == filename)
+        {
+            return file.file_index;
+        }
+    }
+    return {};
+}
+
+std::optional<FormulaClassReference> find_class_in_file(
+    const FormulaFileSet &files, std::size_t file_index, std::string_view class_name)
+{
+    for (const FormulaClassReference &klass : files.class_index)
+    {
+        if (klass.file_index == file_index && same_identifier(klass.class_name, class_name))
+        {
+            return klass;
+        }
+    }
+    return {};
+}
+
+const FormulaEntryImports *find_entry_imports(const FormulaFile &file, std::size_t entry_index)
+{
+    for (const FormulaEntryImports &entry_imports : file.entry_imports)
+    {
+        if (entry_imports.entry_index == entry_index)
+        {
+            return &entry_imports;
+        }
+    }
+    return nullptr;
+}
+
+std::optional<FormulaClassReference> resolve_imported_class(
+    const FormulaFileSet &files, const FormulaImportDirective &import, std::string_view class_name)
+{
+    const std::optional<std::size_t> imported_file_index = find_file_index(files, import.filename);
+    if (!imported_file_index)
+    {
+        return {};
+    }
+    return find_class_in_file(files, *imported_file_index, class_name);
+}
+
+std::optional<FormulaClassReference> resolve_class_reference(
+    const FormulaFileSet &files, const FormulaEntryReferences &entry_references, const FormulaReference &reference)
+{
+    if (entry_references.file_index >= files.files.size())
+    {
+        return {};
+    }
+
+    const FormulaFile &file = files.files[entry_references.file_index];
+    if (const FormulaEntryImports *entry_imports = find_entry_imports(file, entry_references.entry_index))
+    {
+        for (auto it = entry_imports->imports.rbegin(); it != entry_imports->imports.rend(); ++it)
+        {
+            if (!it->implicit)
+            {
+                if (std::optional<FormulaClassReference> klass =
+                        resolve_imported_class(files, *it, reference.class_name))
+                {
+                    return klass;
+                }
+            }
+        }
+
+        for (auto it = entry_imports->imports.rbegin(); it != entry_imports->imports.rend(); ++it)
+        {
+            if (it->implicit)
+            {
+                if (std::optional<FormulaClassReference> klass =
+                        resolve_imported_class(files, *it, reference.class_name))
+                {
+                    return klass;
+                }
+            }
+        }
+    }
+
+    return find_class_in_file(files, entry_references.file_index, reference.class_name);
+}
+
 } // namespace
 
 std::vector<FormulaReference> collect_formula_references(const ast::FormulaSections &ast)
@@ -333,6 +439,34 @@ void collect_formula_file_references(FormulaFileSet &files)
         {
             files.entry_references.push_back(collect_formula_entry_references(files, file_index, entry_index));
         }
+    }
+}
+
+std::vector<FormulaResolvedReference> resolve_formula_entry_references(
+    const FormulaFileSet &files, const FormulaEntryReferences &entry_references)
+{
+    std::vector<FormulaResolvedReference> result;
+    for (const FormulaReference &reference : entry_references.references)
+    {
+        if (std::optional<FormulaClassReference> klass = resolve_class_reference(files, entry_references, reference))
+        {
+            result.push_back(FormulaResolvedReference{entry_references, reference, *klass});
+        }
+    }
+    return result;
+}
+
+void resolve_formula_file_references(FormulaFileSet &files)
+{
+    files.resolved_references.clear();
+    if (files.entry_references.empty())
+    {
+        collect_formula_file_references(files);
+    }
+    for (const FormulaEntryReferences &entry_references : files.entry_references)
+    {
+        std::vector<FormulaResolvedReference> resolved{resolve_formula_entry_references(files, entry_references)};
+        files.resolved_references.insert(files.resolved_references.end(), resolved.begin(), resolved.end());
     }
 }
 

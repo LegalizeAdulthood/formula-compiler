@@ -118,6 +118,13 @@ struct FormulaEntryReferences
     std::vector<FormulaReference> references;
 };
 
+struct FormulaResolvedReference
+{
+    FormulaEntryReferences entry;
+    FormulaReference reference;
+    FormulaClassReference klass;
+};
+
 struct FormulaFileSet
 {
     std::vector<FormulaFile> files;
@@ -125,6 +132,7 @@ struct FormulaFileSet
     std::vector<FormulaClassReference> class_index;
     std::vector<RetainedFormulaClass> retained_classes;
     std::vector<FormulaEntryReferences> entry_references;
+    std::vector<FormulaResolvedReference> resolved_references;
     std::vector<FormulaFileDiagnostic> diagnostics;
 };
 
