@@ -106,6 +106,12 @@ need to know or care: if the body is compressed, the parser decompresses
 it first, then invokes the extended body parser on the decompressed
 payload.
 
+Compression is also exposed through two free functions for tests,
+tooling, and corpus fixture generation:
+
+- `compress_parameter_set(std::string_view body)`
+- `decompress_parameter_set(std::string_view body)`
+
 Section names and their terminating colon always appear on a line by
 themselves.
 
@@ -292,7 +298,9 @@ semantic layers on top of the ordered string representation.
 5. Add extended body parsing: require section-label lines, then ordered
    string name/value assignments inside each section.
 6. Add compressed extended-body decoding: UF base64, CRC32 validation,
-   zlib inflate, then parse the inflated body text.
+   zlib inflate, then parse the inflated body text. Use zlib from the
+   vcpkg manifest. Also expose round-trip helper functions for
+   compression and decompression.
 7. Add client-side helpers for interpreting string values as bools,
    numbers, complex pairs, colors, and repeated gradient stops.
 8. Add client-side reference extraction for formula/coloring/transform

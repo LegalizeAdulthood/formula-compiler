@@ -96,6 +96,56 @@ TEST(TestParameterParser, parsesExtendedSectionsFromFileEntry)
     EXPECT_EQ("2", result.sections[2].assignments[2].value);
 }
 
+TEST(TestParameterParser, compressesAndDecompressesParameterSetBodies)
+{
+    const std::string body{
+        "fractal:\r\n"
+        "title=\"Compressed\" magn=2\r\n"
+        "layer:\r\n"
+        "caption=\"Layer\"\r\n"
+        "comments=\"This body is long enough to wrap the compressed payload over multiple lines.\"\r\n"};
+
+    const std::string compressed{compress_parameter_set(body)};
+    const std::string decompressed{decompress_parameter_set(compressed)};
+
+    EXPECT_EQ(0U, compressed.rfind("::", 0));
+    EXPECT_NE(std::string::npos, compressed.find("\n  "));
+    EXPECT_EQ(body, decompressed);
+}
+
+TEST(TestParameterParser, parsesCompressedExtendedParameterBodies)
+{
+    const std::string body{"fractal:\n"
+                           "title=\"Compressed\" magn=2\n"
+                           "layer:\n"
+                           "caption=\"Layer\"\n"};
+    FileEntry entry{entry_with_body(compress_parameter_set(body))};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(2U, result.sections.size());
+    EXPECT_EQ("fractal", result.sections[0].name);
+    ASSERT_EQ(2U, result.sections[0].assignments.size());
+    EXPECT_EQ("title", result.sections[0].assignments[0].key);
+    EXPECT_EQ("Compressed", result.sections[0].assignments[0].value);
+    EXPECT_EQ("magn", result.sections[0].assignments[1].key);
+    EXPECT_EQ("2", result.sections[0].assignments[1].value);
+    EXPECT_EQ("layer", result.sections[1].name);
+    ASSERT_EQ(1U, result.sections[1].assignments.size());
+    EXPECT_EQ("Layer", result.sections[1].assignments[0].value);
+}
+
+TEST(TestParameterParser, reportsInvalidCompressedExtendedParameterBodies)
+{
+    FileEntry entry{entry_with_body("::AAAA\n")};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(ParseErrorCode::INVALID_COMPRESSED_PARAMETER_SET, result.diagnostics[0].code);
+}
+
 TEST(TestParameterParser, preservesRepeatedAssignmentsInOrder)
 {
     FileEntry entry{entry_with_body("gradient:\n"

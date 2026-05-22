@@ -4,8 +4,15 @@
 //
 #include <formula/Parameter.h>
 
+#include <zlib.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <exception>
 #include <iterator>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -25,6 +32,7 @@ std::string to_string(ParseErrorCode code)
         PARSE_ERROR_CASE(EXPECTED_ASSIGNMENT);
         PARSE_ERROR_CASE(EXPECTED_VALUE);
         PARSE_ERROR_CASE(UNTERMINATED_QUOTED_STRING);
+        PARSE_ERROR_CASE(INVALID_COMPRESSED_PARAMETER_SET);
     }
     return "ParseErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
 }
@@ -83,6 +91,11 @@ bool ends_with_continuation(std::string_view text)
     return !text.empty() && text.back() == '\\';
 }
 
+bool starts_with(std::string_view text, std::string_view prefix)
+{
+    return text.size() >= prefix.size() && text.substr(0, prefix.size()) == prefix;
+}
+
 CommentStrippedLine strip_comment(std::string_view line, bool in_quote)
 {
     std::string result;
@@ -114,6 +127,217 @@ CommentStrippedLine strip_comment(std::string_view line, bool in_quote)
         result.push_back(ch);
     }
     return {std::move(result), in_quote};
+}
+
+std::vector<std::string> split_physical_lines(std::string_view input);
+
+std::string encode_uf_base64(std::string_view bytes)
+{
+    // UF parameter compression uses the normal base64 alphabet, but
+    // little-endian bit packing inside each 4-character group.
+    static constexpr std::string_view alphabet{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+
+    std::string result;
+    result.reserve(((bytes.size() + 2) / 3) * 4);
+    for (std::size_t pos = 0; pos < bytes.size(); pos += 3)
+    {
+        const std::size_t count{std::min<std::size_t>(3, bytes.size() - pos)};
+        const auto b0 = static_cast<unsigned char>(bytes[pos]);
+        const auto b1 = count > 1 ? static_cast<unsigned char>(bytes[pos + 1]) : 0;
+        const auto b2 = count > 2 ? static_cast<unsigned char>(bytes[pos + 2]) : 0;
+
+        const unsigned q0{b0 & 0x3fU};
+        const unsigned q1{((b0 >> 6U) | ((b1 & 0x0fU) << 2U)) & 0x3fU};
+        const unsigned q2{((b1 >> 4U) | ((b2 & 0x03U) << 4U)) & 0x3fU};
+        const unsigned q3{(b2 >> 2U) & 0x3fU};
+
+        result.push_back(alphabet[q0]);
+        result.push_back(alphabet[q1]);
+        result.push_back(count > 1 ? alphabet[q2] : '=');
+        result.push_back(count > 2 ? alphabet[q3] : '=');
+    }
+    return result;
+}
+
+int decode_uf_base64_char(char ch)
+{
+    if (ch >= 'A' && ch <= 'Z')
+    {
+        return ch - 'A';
+    }
+    if (ch >= 'a' && ch <= 'z')
+    {
+        return ch - 'a' + 26;
+    }
+    if (ch >= '0' && ch <= '9')
+    {
+        return ch - '0' + 52;
+    }
+    if (ch == '+')
+    {
+        return 62;
+    }
+    if (ch == '/')
+    {
+        return 63;
+    }
+    return -1;
+}
+
+std::string decode_uf_base64(std::string_view text)
+{
+    // This intentionally does not use a standard base64 decoder; UF
+    // reverses the bit packing order within each encoded group.
+    if (text.size() % 4 != 0)
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+
+    std::string result;
+    result.reserve((text.size() / 4) * 3);
+    for (std::size_t pos = 0; pos < text.size(); pos += 4)
+    {
+        const bool pad2{text[pos + 2] == '='};
+        const bool pad3{text[pos + 3] == '='};
+        if (text[pos] == '=' || text[pos + 1] == '=' || (pad2 && !pad3))
+        {
+            throw std::runtime_error{"invalid compressed parameter set"};
+        }
+
+        const int q0{decode_uf_base64_char(text[pos])};
+        const int q1{decode_uf_base64_char(text[pos + 1])};
+        const int q2{pad2 ? 0 : decode_uf_base64_char(text[pos + 2])};
+        const int q3{pad3 ? 0 : decode_uf_base64_char(text[pos + 3])};
+        if (q0 < 0 || q1 < 0 || q2 < 0 || q3 < 0)
+        {
+            throw std::runtime_error{"invalid compressed parameter set"};
+        }
+
+        result.push_back(static_cast<char>(q0 | ((q1 & 0x03) << 6)));
+        if (!pad2)
+        {
+            result.push_back(static_cast<char>(((q1 & 0x3c) >> 2) | ((q2 & 0x0f) << 4)));
+        }
+        if (!pad3)
+        {
+            result.push_back(static_cast<char>(((q2 & 0x30) >> 4) | (q3 << 2)));
+        }
+    }
+    return result;
+}
+
+std::string wrap_payload(std::string_view text)
+{
+    std::string result{"::"};
+    for (std::size_t pos = 0; pos < text.size(); pos += 76)
+    {
+        if (pos != 0)
+        {
+            result.push_back('\n');
+            result.append("  ");
+        }
+        result.append(text.substr(pos, std::min<std::size_t>(76, text.size() - pos)));
+    }
+    result.push_back('\n');
+    return result;
+}
+
+std::string compressed_payload(std::string_view body)
+{
+    std::string payload;
+    const std::vector<std::string> lines{split_physical_lines(body)};
+    bool found_marker{};
+    for (std::string_view line : lines)
+    {
+        const CommentStrippedLine stripped{strip_comment(line, false)};
+        std::string_view text{trim(stripped.text)};
+        if (!found_marker)
+        {
+            if (text.empty())
+            {
+                continue;
+            }
+            if (!starts_with(text, "::"))
+            {
+                throw std::runtime_error{"invalid compressed parameter set"};
+            }
+            text.remove_prefix(2);
+            found_marker = true;
+        }
+        if (text.empty())
+        {
+            continue;
+        }
+        if (text.size() % 4 != 0)
+        {
+            throw std::runtime_error{"invalid compressed parameter set"};
+        }
+        payload.append(text);
+    }
+    if (!found_marker || payload.empty())
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+    return payload;
+}
+
+bool is_compressed_parameter_set(std::string_view body)
+{
+    const std::vector<std::string> lines{split_physical_lines(body)};
+    for (std::string_view line : lines)
+    {
+        const CommentStrippedLine stripped{strip_comment(line, false)};
+        const std::string_view text{trim(stripped.text)};
+        if (text.empty())
+        {
+            continue;
+        }
+        return starts_with(text, "::");
+    }
+    return false;
+}
+
+std::string zlib_deflate(std::string_view body)
+{
+    uLongf output_size{compressBound(static_cast<uLong>(body.size()))};
+    std::string output(output_size, '\0');
+    const int status{compress2(reinterpret_cast<Bytef *>(output.data()), &output_size,
+        reinterpret_cast<const Bytef *>(body.data()), static_cast<uLong>(body.size()), Z_BEST_COMPRESSION)};
+    if (status != Z_OK)
+    {
+        throw std::runtime_error{"parameter compression failed"};
+    }
+    output.resize(output_size);
+    return output;
+}
+
+std::string zlib_inflate(std::string_view body)
+{
+    z_stream stream{};
+    stream.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(body.data()));
+    stream.avail_in = static_cast<uInt>(body.size());
+    if (inflateInit(&stream) != Z_OK)
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+
+    std::string output;
+    std::array<char, 4096> buffer{};
+    int status{Z_OK};
+    while (status == Z_OK)
+    {
+        stream.next_out = reinterpret_cast<Bytef *>(buffer.data());
+        stream.avail_out = static_cast<uInt>(buffer.size());
+        status = inflate(&stream, Z_NO_FLUSH);
+        output.append(buffer.data(), buffer.size() - stream.avail_out);
+    }
+
+    inflateEnd(&stream);
+    if (status != Z_STREAM_END)
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+    return output;
 }
 
 std::vector<std::string> split_physical_lines(std::string_view input)
@@ -418,6 +642,45 @@ private:
 
 } // namespace
 
+std::string compress_parameter_set(std::string_view body)
+{
+    const std::string compressed{zlib_deflate(body)};
+    const uLong crc{crc32(0, reinterpret_cast<const Bytef *>(compressed.data()), static_cast<uInt>(compressed.size()))};
+
+    std::string payload;
+    payload.reserve(compressed.size() + 4);
+    payload.push_back(static_cast<char>(crc & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 8U) & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 16U) & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 24U) & 0xffU));
+    payload.append(compressed);
+    return wrap_payload(encode_uf_base64(payload));
+}
+
+std::string decompress_parameter_set(std::string_view body)
+{
+    const std::string encoded{compressed_payload(body)};
+    const std::string decoded{decode_uf_base64(encoded)};
+    if (decoded.size() < 4)
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+
+    const auto expected_crc = static_cast<uLong>(static_cast<unsigned char>(decoded[0])) |
+        (static_cast<uLong>(static_cast<unsigned char>(decoded[1])) << 8U) |
+        (static_cast<uLong>(static_cast<unsigned char>(decoded[2])) << 16U) |
+        (static_cast<uLong>(static_cast<unsigned char>(decoded[3])) << 24U);
+    const std::string_view compressed{decoded.data() + 4, decoded.size() - 4};
+    const uLong actual_crc{
+        crc32(0, reinterpret_cast<const Bytef *>(compressed.data()), static_cast<uInt>(compressed.size()))};
+    if (actual_crc != expected_crc)
+    {
+        throw std::runtime_error{"invalid compressed parameter set"};
+    }
+
+    return zlib_inflate(compressed);
+}
+
 BasicParameterEntry parse_basic_parameters(FileEntry file_entry)
 {
     return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_basic();
@@ -425,6 +688,20 @@ BasicParameterEntry parse_basic_parameters(FileEntry file_entry)
 
 ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry)
 {
+    if (is_compressed_parameter_set(file_entry.body))
+    {
+        try
+        {
+            file_entry.body = decompress_parameter_set(file_entry.body);
+        }
+        catch (const std::exception &)
+        {
+            ExtendedParameterEntry result;
+            result.diagnostics.push_back(
+                ParseDiagnostic{ParseErrorCode::INVALID_COMPRESSED_PARAMETER_SET, file_entry.body_range.begin});
+            return result;
+        }
+    }
     return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_extended();
 }
 

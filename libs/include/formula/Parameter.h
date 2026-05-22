@@ -20,6 +20,7 @@ enum class ParseErrorCode
     EXPECTED_ASSIGNMENT,
     EXPECTED_VALUE,
     UNTERMINATED_QUOTED_STRING,
+    INVALID_COMPRESSED_PARAMETER_SET,
 };
 
 std::string to_string(ParseErrorCode code);
@@ -56,5 +57,7 @@ struct ExtendedParameterEntry
 
 BasicParameterEntry parse_basic_parameters(FileEntry file_entry);
 ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry);
+std::string compress_parameter_set(std::string_view body);
+std::string decompress_parameter_set(std::string_view body);
 
 } // namespace formula::parameter

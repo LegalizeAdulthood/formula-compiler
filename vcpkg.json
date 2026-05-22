@@ -5,6 +5,7 @@
   "version-semver": "1.0.0",
   "dependencies": [
     "asmjit",
-    "gtest"
+    "gtest",
+    "zlib"
   ]
 }
