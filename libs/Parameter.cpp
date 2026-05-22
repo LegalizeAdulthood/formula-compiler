@@ -506,6 +506,31 @@ std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t
     return std::nullopt;
 }
 
+ParameterReference collect_parameter_reference(
+    const ParameterSection &section, ParameterReferenceKind kind, std::size_t layer_index, std::size_t transform_index)
+{
+    ParameterReference reference;
+    reference.site.kind = kind;
+    reference.site.layer_index = layer_index;
+    reference.site.transform_index = transform_index;
+    for (const Parameter &assignment : section.assignments)
+    {
+        if (assignment.key == "filename")
+        {
+            reference.filename = assignment.value;
+        }
+        else if (assignment.key == "entry")
+        {
+            reference.entry = assignment.value;
+        }
+        else
+        {
+            reference.parameters.push_back(assignment);
+        }
+    }
+    return reference;
+}
+
 class BodyParser
 {
 public:
@@ -918,6 +943,27 @@ ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry)
         }
     }
     return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_extended();
+}
+
+std::vector<ParameterReference> collect_parameter_references(const ExtendedParameterEntry &parameters)
+{
+    std::vector<ParameterReference> result;
+    for (std::size_t layer_index{}; layer_index < parameters.layers.size(); ++layer_index)
+    {
+        const ParameterLayer &layer{parameters.layers[layer_index]};
+        result.push_back(
+            collect_parameter_reference(layer.formula, ParameterReferenceKind::FRACTAL_FORMULA, layer_index, 0));
+        result.push_back(
+            collect_parameter_reference(layer.inside, ParameterReferenceKind::INSIDE_COLORING, layer_index, 0));
+        result.push_back(
+            collect_parameter_reference(layer.outside, ParameterReferenceKind::OUTSIDE_COLORING, layer_index, 0));
+        for (std::size_t transform_index{}; transform_index < layer.transforms.size(); ++transform_index)
+        {
+            result.push_back(collect_parameter_reference(
+                layer.transforms[transform_index], ParameterReferenceKind::TRANSFORM, layer_index, transform_index));
+        }
+    }
+    return result;
 }
 
 } // namespace formula::parameter

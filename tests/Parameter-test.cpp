@@ -458,6 +458,94 @@ TEST(TestParameterParser, extendedParametersAllowTransformsAndOpacity)
     EXPECT_EQ("opacity", result.layers[0].opacity->name);
 }
 
+TEST(TestParameterParser, collectsParameterReferencesWithAssociatedParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "transform:\n"
+                                    "filename=\"one.uxf\" entry=\"Transform One\" p_amount=0.25\n"
+                                    "transform:\n"
+                                    "filename=\"two.uxf\" entry=\"Transform Two\" f_fn1=sin\n"
+                                    "formula:\n"
+                                    "filename=\"mmf.ufm\" entry=\"Mandelbrot\" p_power=2\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\" p_bailout=yes\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\" f_fn1=ident\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const std::vector<ParameterReference> references{collect_parameter_references(parameters)};
+
+    ASSERT_EQ(5U, references.size());
+    EXPECT_EQ(ParameterReferenceKind::FRACTAL_FORMULA, references[0].site.kind);
+    EXPECT_EQ(0U, references[0].site.layer_index);
+    EXPECT_EQ("mmf.ufm", references[0].filename);
+    EXPECT_EQ("Mandelbrot", references[0].entry);
+    ASSERT_EQ(1U, references[0].parameters.size());
+    EXPECT_EQ("p_power", references[0].parameters[0].key);
+    EXPECT_EQ("2", references[0].parameters[0].value);
+
+    EXPECT_EQ(ParameterReferenceKind::INSIDE_COLORING, references[1].site.kind);
+    EXPECT_EQ("dmj.ucl", references[1].filename);
+    EXPECT_EQ("Smooth", references[1].entry);
+    ASSERT_EQ(1U, references[1].parameters.size());
+    EXPECT_EQ("p_bailout", references[1].parameters[0].key);
+
+    EXPECT_EQ(ParameterReferenceKind::OUTSIDE_COLORING, references[2].site.kind);
+    EXPECT_EQ("dmj.ucl", references[2].filename);
+    EXPECT_EQ("Escape", references[2].entry);
+    ASSERT_EQ(1U, references[2].parameters.size());
+    EXPECT_EQ("f_fn1", references[2].parameters[0].key);
+
+    EXPECT_EQ(ParameterReferenceKind::TRANSFORM, references[3].site.kind);
+    EXPECT_EQ(0U, references[3].site.transform_index);
+    EXPECT_EQ("one.uxf", references[3].filename);
+    EXPECT_EQ("Transform One", references[3].entry);
+    ASSERT_EQ(1U, references[3].parameters.size());
+    EXPECT_EQ("p_amount", references[3].parameters[0].key);
+
+    EXPECT_EQ(ParameterReferenceKind::TRANSFORM, references[4].site.kind);
+    EXPECT_EQ(1U, references[4].site.transform_index);
+    EXPECT_EQ("two.uxf", references[4].filename);
+    EXPECT_EQ("Transform Two", references[4].entry);
+}
+
+TEST(TestParameterParser, collectsReferencesForEachLayer)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"one.ufm\" entry=\"A\"\n"
+                                    "inside:\n"
+                                    "outside:\n"
+                                    "gradient:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"two.ufm\" entry=\"B\"\n"
+                                    "inside:\n"
+                                    "outside:\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const std::vector<ParameterReference> references{collect_parameter_references(parameters)};
+
+    ASSERT_EQ(6U, references.size());
+    EXPECT_EQ(0U, references[0].site.layer_index);
+    EXPECT_EQ("one.ufm", references[0].filename);
+    EXPECT_EQ(0U, references[1].site.layer_index);
+    EXPECT_EQ(0U, references[2].site.layer_index);
+    EXPECT_EQ(1U, references[3].site.layer_index);
+    EXPECT_EQ("two.ufm", references[3].filename);
+    EXPECT_EQ(1U, references[4].site.layer_index);
+    EXPECT_EQ(1U, references[5].site.layer_index);
+}
+
 TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)
 {
     FileEntry entry{entry_with_body("fractal:\n"

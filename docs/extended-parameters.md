@@ -450,22 +450,14 @@ section) and retry paring the FileEntry as a basic parameter set.
 
 ## Implementation Slices
 
-1. Implement `collect_parameter_references`:
-   - collect one formula reference from each layer's `formula` section
-   - collect one inside-coloring reference from each `inside` section
-   - collect one outside-coloring reference from each `outside` section
-   - collect one transform reference from each `transform` section
-   - record layer and transform indexes
-   - keep associated parameters from the same section, excluding
-     `filename` and `entry`
-2. Implement `resolve_parameter_references`:
+1. Implement `resolve_parameter_references`:
     - call `ParameterEntryResolver(filename, entry)` for each collected
       reference
     - report missing `filename`, missing `entry`, and unresolved entries
     - parse returned `FileEntry.body` with the matching formula entry
       kind
     - attach parsed ASTs to resolved references
-3. Add semantic checks against formula AST metadata:
+2. Add semantic checks against formula AST metadata:
     - validate `p_` and `f_` assignments
     - validate parameter forwards and plug-in sub-parameters
     - report unknown parameters, missing required parameters, and type
