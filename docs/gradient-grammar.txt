@@ -15,8 +15,10 @@ entry_name    := identifier
 section       := section_header token*
 section_header := identifier ':'        -- identifier immediately followed by colon, no space
 
--- Every entry contains exactly two sections: gradient: and opacity:.
+-- Every .ugr entry contains exactly two sections: gradient: and opacity:.
 -- The parser accepts them in either order.
+-- Extended parameter sets can use alpha: as an opacity-shaped synonym for
+-- opacity:, with alpha= values in place of opacity= values.
 
 token         := key_value
 key_value     := key '=' value
@@ -39,9 +41,11 @@ quoted_string := '"' [^"]* '"'
 --
 --   gradient:   color control points (maps index values to BGR colors)
 --   opacity:    opacity control points (maps index values to opacity)
+--   alpha:      synonym for opacity in extended parameter sets
 --
--- Both sections are required.  UltraFractal writes gradient: first, but the
--- parser should accept either order.
+-- In .ugr files, gradient: and opacity: are required.  UltraFractal writes
+-- gradient: first, but the parser should accept either order.  In extended
+-- parameter sets, alpha: may appear after gradient: instead of opacity:.
 
 
 -- ============================================================
@@ -75,11 +79,12 @@ quoted_string := '"' [^"]* '"'
 --
 --   gradient: section  =>  index=N color=M   (N is position, M is packed BGR)
 --   opacity:  section  =>  index=N opacity=M (N is position, M is 0..255)
+--   alpha:    section  =>  index=N alpha=M   (N is position, M is 0..255)
 --
 -- The pairs are NOT syntactically grouped; they are simply adjacent
 -- key=value tokens.  The semantic rule is:
 --   "each index= token introduces a new control point; the immediately
---    following color= (or opacity=) token gives its value."
+--    following color=, opacity=, or alpha= token gives its value."
 --
 -- index range:  nominally 0..399 (400-unit gradient).
 --               Negative values (e.g. index=-1, index=-66) are valid and
@@ -107,7 +112,7 @@ quoted_string := '"' [^"]* '"'
 
 
 -- ============================================================
--- Opacity encoding  (opacity: section)
+-- Opacity encoding  (opacity: or alpha: section)
 -- ============================================================
 --
 --   opacity=255   completely opaque  (default)

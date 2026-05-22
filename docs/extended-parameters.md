@@ -151,15 +151,89 @@ Observed parameter sections:
 
 Unknown section names should be preserved, not dropped.
 
-`fractal` describes the whole parameter set. `layer` starts a new layer.
-Following `mapping`, `transform`, `formula`, `inside`, `outside`,
-`gradient`, `opacity`, and `alpha` sections belong to the current layer
-until the next `layer` section or the end of the body.
+The UF6 text files describe parameter files loosely: a `.upr` file is
+a plain-text collection of parameter sets, each parameter set describes
+a fractal without storing calculated pixels, large parameter sets can be
+compressed, and formula bodies may be embedded as separate entries when
+formulas are saved with the parameter set. The docs do not give a
+formal section grammar for extended parameter-set bodies.
 
-`transform` can repeat within a layer. `gradient`, `opacity`, and
-`alpha` use repeated `index` keys followed by repeated color/opacity
-keys, so assignment order is semantic. The parser preserves order; the
-client decides what the keys mean.
+The best available section grammar comes from the `../uf-formulas`
+corpus. Across 39 `.upr` files, there are 1571 parameter-like entries
+and 2659 layer groups. All real parameter-set entries observed start
+with `fractal:`; one prose entry starts with `notes:` and should be
+classified as non-parameter content by the client.
+
+Use this inferred structure for semantic interpretation:
+
+```text
+parameter_set ::= fractal layer+
+layer         ::= layer mapping transform* formula inside outside
+                  gradient opacity_or_alpha?
+opacity_or_alpha ::= opacity | alpha
+```
+
+`fractal` describes the whole parameter set and appears once, first.
+Each `layer` starts a new layer. Within a layer, `mapping`, zero or more
+`transform` sections, `formula`, `inside`, `outside`, `gradient`, and an
+optional `opacity` or `alpha` section belong to that layer until the
+next `layer` section or the end of the body.
+
+The observed order is strict:
+
+```text
+fractal:
+layer:
+mapping:
+transform:     ; zero or more
+formula:
+inside:
+outside:
+gradient:
+opacity:       ; optional
+alpha:         ; optional, seen instead of opacity
+```
+
+For real parameter sets, treat these sections as required:
+
+- `fractal`: exactly once, first
+- `layer`: one or more
+- `mapping`: required per layer
+- `formula`: required per layer
+- `inside`: required per layer
+- `outside`: required per layer
+- `gradient`: required per layer
+
+Treat these sections as optional:
+
+- `transform`: zero or more per layer, after `mapping` and before
+  `formula`
+- `opacity`: after `gradient`
+- `alpha`: after `gradient`, using the same shape as `opacity` but with
+  `alpha` assignments
+
+Do not require `opacity`. Many corpus entries end each layer at
+`gradient`. `gradient`, `opacity`, and `alpha` use repeated `index` keys
+followed by repeated color/opacity/alpha keys, so assignment order is
+semantic. The parser preserves order; the client decides what the keys
+mean.
+
+The best inference from the corpus is that `alpha` is an opacity
+section under a different name. It appears after `gradient`, has the
+same section-level keys as `opacity`, and pairs each `index` assignment
+with an `alpha` value assignment instead of `opacity`:
+
+```text
+opacity:
+  index=N opacity=A
+
+alpha:
+  index=N alpha=A
+```
+
+Semantic code should parse `alpha` into the same typed data as
+`opacity`, while preserving the original section name for inspection and
+round-tripping.
 
 ## Values
 Observed scalar forms:
