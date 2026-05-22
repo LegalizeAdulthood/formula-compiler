@@ -296,6 +296,38 @@ The parameter parser must not locate these files or interpret these
 references. The client reads the string assignments and resolves files
 if needed.
 
+Reference resolution uses a narrow caller-provided entry resolver:
+
+```cpp
+using ParameterEntryResolver =
+    std::function<std::optional<FileEntry>(
+        std::string_view filename,
+        std::string_view entry)>;
+```
+
+The resolver takes exactly the `filename` and `entry` strings found in
+the parameter section and returns the matching formula/coloring/
+transform `FileEntry`, if any. It does not need to return a whole
+formula file; callers can satisfy the request from a file cache, a
+prebuilt index, embedded entries, or a filesystem scan.
+
+Resolution preserves the section context and associated parameters:
+
+```text
+ParameterReference
+  kind: formula | inside | outside | transform
+  layer_index
+  transform_index
+  filename
+  entry
+  parameters: [Assignment]
+```
+
+`parameters` are the assignments in the same section other than the
+`filename` and `entry` selectors. They include saved `p_` and `f_`
+values and any unknown values that semantic validation should inspect or
+preserve.
+
 ## Comment Entries
 An entry named `comment` can contain raw prose until the closing `}`.
 These bodies do not follow the parameter grammar. The client recognizes
@@ -389,10 +421,11 @@ sections are reported as diagnostics and omitted from the AST.
 6. Client builds typed layer objects from the parsed sections.
 7. For each `formula`, `inside`, `outside`, and `transform` section,
    collect `(filename, entry, kind)` references.
-8. Ask a caller-provided resolver for the referenced formula files.
-   This follows the same rule as formula imports: the client locates
-   files; the parser only consumes supplied text.
-9. Parse referenced entries with the extended formula parser and its
+8. Ask a caller-provided resolver for each referenced `(filename,
+   entry)` pair. This follows the same rule as formula imports: the
+   caller locates entries; the parameter resolver only consumes supplied
+   `FileEntry` bodies.
+9. Parse resolved entries with the extended formula parser and its
    import support, preserving imported filenames in source locations.
 10. Validate `p_` and `f_` assignments against the referenced formula
    entry's parameter declarations, function parameters, plug-in defaults,
@@ -427,7 +460,27 @@ sections are reported as diagnostics and omitted from the AST.
    numbers, complex pairs, colors, and repeated gradient stops.
 8. Add client-side reference extraction for formula/coloring/transform
    sections.
-9. Add a resolver API and semantic checks against formula AST metadata.
+9. Add `ParameterReference` and `ParameterReferenceSet` API types.
+10. Implement `collect_parameter_references`:
+    - collect one formula reference from each layer's `formula` section
+    - collect one inside-coloring reference from each `inside` section
+    - collect one outside-coloring reference from each `outside` section
+    - collect one transform reference from each `transform` section
+    - record layer and transform indexes
+    - keep associated parameters from the same section, excluding
+      `filename` and `entry`
+11. Implement `resolve_parameter_references`:
+    - call `ParameterEntryResolver(filename, entry)` for each collected
+      reference
+    - report missing `filename`, missing `entry`, and unresolved entries
+    - parse returned `FileEntry.body` with the matching formula entry
+      kind
+    - attach parsed ASTs to resolved references
+12. Add semantic checks against formula AST metadata:
+    - validate `p_` and `f_` assignments
+    - validate parameter forwards and plug-in sub-parameters
+    - report unknown parameters, missing required parameters, and type
+      mismatches
 
 ## Tests
 - Unit parse basic name/value parameter bodies.
