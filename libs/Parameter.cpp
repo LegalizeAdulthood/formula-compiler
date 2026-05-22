@@ -6,11 +6,14 @@
 
 #include <formula/ParseOptions.h>
 #include <formula/Parser.h>
+#include <formula/Visitor.h>
 
 #include <zlib.h>
 
 #include <algorithm>
 #include <array>
+#include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <exception>
 #include <iterator>
@@ -65,6 +68,19 @@ struct ParsedValue
     std::size_t end{};
 };
 
+struct ParameterDefinition
+{
+    std::string type;
+    std::string name;
+    bool has_default{};
+};
+
+struct ParameterDefinitions
+{
+    std::vector<ParameterDefinition> params;
+    std::vector<std::string> functions;
+};
+
 enum class LayerParseState
 {
     EXPECT_LAYER,
@@ -113,6 +129,24 @@ bool ends_with_continuation(std::string_view text)
 bool starts_with(std::string_view text, std::string_view prefix)
 {
     return text.size() >= prefix.size() && text.substr(0, prefix.size()) == prefix;
+}
+
+bool equals_ignore_case(std::string_view lhs, std::string_view rhs)
+{
+    if (lhs.size() != rhs.size())
+    {
+        return false;
+    }
+    for (std::size_t pos{}; pos < lhs.size(); ++pos)
+    {
+        const char left{static_cast<char>(std::tolower(static_cast<unsigned char>(lhs[pos])))};
+        const char right{static_cast<char>(std::tolower(static_cast<unsigned char>(rhs[pos])))};
+        if (left != right)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 CommentStrippedLine strip_comment(std::string_view line, bool in_quote)
@@ -509,6 +543,75 @@ std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t
     return std::nullopt;
 }
 
+class DefinitionCollector : public ast::NullVisitor
+{
+public:
+    explicit DefinitionCollector(ParameterDefinitions &definitions) :
+        m_definitions(definitions)
+    {
+    }
+
+    void visit(const ast::FunctionBlockNode &node) override
+    {
+        m_definitions.functions.push_back(node.name());
+    }
+
+    void visit(const ast::ParamBlockNode &node) override
+    {
+        ParameterDefinition definition;
+        definition.type = node.type();
+        definition.name = node.name();
+        definition.has_default = has_default(node.block());
+        m_definitions.params.push_back(std::move(definition));
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            visit_expr(statement);
+        }
+    }
+
+private:
+    bool has_default(const ast::Expr &expr)
+    {
+        m_found_default = false;
+        visit_expr(expr);
+        return m_found_default;
+    }
+
+    void visit_expr(const ast::Expr &expr)
+    {
+        if (expr)
+        {
+            expr->visit(*this);
+        }
+    }
+
+    void visit(const ast::SettingNode &node) override
+    {
+        if (node.key() == "default")
+        {
+            m_found_default = true;
+        }
+    }
+
+    ParameterDefinitions &m_definitions;
+    bool m_found_default{};
+};
+
+ParameterDefinitions collect_definitions(const ast::FormulaSections &ast)
+{
+    ParameterDefinitions result;
+    if (ast.defaults)
+    {
+        DefinitionCollector collector{result};
+        ast.defaults->visit(collector);
+    }
+    return result;
+}
+
 ParameterReference collect_parameter_reference(
     const ParameterSection &section, ParameterReferenceKind kind, std::size_t layer_index, std::size_t transform_index)
 {
@@ -562,6 +665,135 @@ void add_reference_diagnostic(ParameterReferenceSet &result, const ParameterRefe
         detail += reference.entry;
     }
     result.diagnostics.push_back(ParameterReferenceDiagnostic{code, std::move(location), std::move(detail)});
+}
+
+const ParameterDefinition *find_parameter_definition(
+    const ParameterDefinitions &definitions, std::string_view saved_name)
+{
+    for (const ParameterDefinition &definition : definitions.params)
+    {
+        if (saved_name == "p_" + definition.name)
+        {
+            return &definition;
+        }
+    }
+    return nullptr;
+}
+
+bool has_function_definition(const ParameterDefinitions &definitions, std::string_view saved_name)
+{
+    for (const std::string &name : definitions.functions)
+    {
+        if (saved_name == "f_" + name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parses_integer(std::string_view value)
+{
+    int result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    return parsed.ec == std::errc{} && parsed.ptr == last;
+}
+
+bool parses_number(std::string_view value)
+{
+    try
+    {
+        std::size_t parsed{};
+        (void) std::stod(std::string{value}, &parsed);
+        return parsed == value.size();
+    }
+    catch (const std::exception &)
+    {
+        return false;
+    }
+}
+
+bool parses_bool(std::string_view value)
+{
+    return equals_ignore_case(value, "yes") || equals_ignore_case(value, "no") || equals_ignore_case(value, "on") ||
+        equals_ignore_case(value, "off") || equals_ignore_case(value, "true") || equals_ignore_case(value, "false");
+}
+
+bool parses_complex(std::string_view value)
+{
+    const std::size_t separator{value.find('/')};
+    return separator != std::string_view::npos && parses_number(value.substr(0, separator)) &&
+        parses_number(value.substr(separator + 1));
+}
+
+bool parameter_value_matches_type(std::string_view type, std::string_view value)
+{
+    if (type == "bool")
+    {
+        return parses_bool(value);
+    }
+    if (type == "int")
+    {
+        return parses_integer(value);
+    }
+    if (type == "float")
+    {
+        return parses_number(value);
+    }
+    if (type == "complex")
+    {
+        return parses_complex(value);
+    }
+    if (type == "color")
+    {
+        return parses_integer(value);
+    }
+    return true;
+}
+
+void validate_reference_parameters(ParameterReferenceSet &result, const ParameterResolvedReference &resolved)
+{
+    const ParameterDefinitions definitions{collect_definitions(*resolved.ast)};
+    for (const Parameter &parameter : resolved.reference.parameters)
+    {
+        if (starts_with(parameter.key, "p_"))
+        {
+            const ParameterDefinition *definition{find_parameter_definition(definitions, parameter.key)};
+            if (definition == nullptr)
+            {
+                add_reference_diagnostic(
+                    result, resolved.reference, ParameterReferenceErrorCode::UNKNOWN_PARAMETER, {}, parameter.key);
+            }
+            else if (!parameter_value_matches_type(definition->type, parameter.value))
+            {
+                add_reference_diagnostic(
+                    result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
+            }
+        }
+        else if (starts_with(parameter.key, "f_") && !has_function_definition(definitions, parameter.key))
+        {
+            add_reference_diagnostic(
+                result, resolved.reference, ParameterReferenceErrorCode::UNKNOWN_PARAMETER, {}, parameter.key);
+        }
+    }
+
+    for (const ParameterDefinition &definition : definitions.params)
+    {
+        if (definition.has_default)
+        {
+            continue;
+        }
+        const std::string saved_name{"p_" + definition.name};
+        const auto found = std::find_if(resolved.reference.parameters.begin(), resolved.reference.parameters.end(),
+            [&saved_name](const Parameter &parameter) { return parameter.key == saved_name; });
+        if (found == resolved.reference.parameters.end())
+        {
+            add_reference_diagnostic(
+                result, resolved.reference, ParameterReferenceErrorCode::MISSING_REQUIRED_PARAMETER, {}, saved_name);
+        }
+    }
 }
 
 class BodyParser
@@ -1036,6 +1268,7 @@ ParameterReferenceSet resolve_parameter_references(
         }
 
         parser::Options options;
+        options.dialect = Dialect::EXTENDED;
         options.entry_kind = entry_kind_for(reference.site.kind);
         options.source_filename =
             file_entry->body_range.begin.filename.empty() ? reference.filename : file_entry->body_range.begin.filename;
@@ -1058,6 +1291,7 @@ ParameterReferenceSet resolve_parameter_references(
         }
 
         result.resolved.push_back(ParameterResolvedReference{reference, std::move(*file_entry), std::move(ast)});
+        validate_reference_parameters(result, result.resolved.back());
     }
     return result;
 }

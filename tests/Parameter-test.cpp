@@ -658,6 +658,87 @@ TEST(TestParameterParser, resolveParameterReferencesReportsFormulaParseErrors)
     EXPECT_EQ(2U, result.resolved.size());
 }
 
+TEST(TestParameterParser, resolveParameterReferencesValidatesSavedParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_power=3.5 f_fn1=cos\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "float param power\n"
+                    "default=2.0\n"
+                    "endparam\n"
+                    "func fn1\n"
+                    "default=cos()\n"
+                    "endfunc\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    EXPECT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(3U, result.resolved.size());
+}
+
+TEST(TestParameterParser, resolveParameterReferencesReportsParameterSemanticErrors)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_enabled=maybe p_extra=1 f_bad=sin\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "float param power\n"
+                    "endparam\n"
+                    "bool param enabled\n"
+                    "default=true\n"
+                    "endparam\n"
+                    "func fn1\n"
+                    "default=cos()\n"
+                    "endfunc\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    ASSERT_EQ(4U, result.diagnostics.size());
+    EXPECT_EQ(ParameterReferenceErrorCode::TYPE_MISMATCH, result.diagnostics[0].code);
+    EXPECT_EQ("p_enabled", result.diagnostics[0].detail);
+    EXPECT_EQ(ParameterReferenceErrorCode::UNKNOWN_PARAMETER, result.diagnostics[1].code);
+    EXPECT_EQ("p_extra", result.diagnostics[1].detail);
+    EXPECT_EQ(ParameterReferenceErrorCode::UNKNOWN_PARAMETER, result.diagnostics[2].code);
+    EXPECT_EQ("f_bad", result.diagnostics[2].detail);
+    EXPECT_EQ(ParameterReferenceErrorCode::MISSING_REQUIRED_PARAMETER, result.diagnostics[3].code);
+    EXPECT_EQ("p_power", result.diagnostics[3].detail);
+}
+
 TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)
 {
     FileEntry entry{entry_with_body("fractal:\n"

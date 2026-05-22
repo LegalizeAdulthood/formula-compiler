@@ -450,11 +450,18 @@ section) and retry paring the FileEntry as a basic parameter set.
 
 ## Implementation Slices
 
-1. Add semantic checks against formula AST metadata:
-    - validate `p_` and `f_` assignments
-    - validate parameter forwards and plug-in sub-parameters
-    - report unknown parameters, missing required parameters, and type
-      mismatches
+1. Add parameter-forward support:
+    - collect forward declarations from resolved formula defaults
+    - map old saved `p_` names to current parameter names
+    - report conflicting or unresolved forwards
+2. Add plug-in sub-parameter validation:
+    - resolve class and plug-in parameter defaults
+    - validate nested `p_` assignments against the selected plug-in type
+    - report unknown plug-in parameters and type mismatches
+3. Add richer typed conversion:
+    - validate enum values against `enum` lists
+    - validate color and complex spelling beyond the common saved forms
+    - retain original strings for round-tripping
 
 ## Tests
 - Unit parse basic name/value parameter bodies.
@@ -484,5 +491,7 @@ section) and retry paring the FileEntry as a basic parameter set.
 - Reject extended assignment lines before any section label.
 - Parse `transform` sections and `numtransforms`/`transforms` counts.
 - Validate `p_` and `f_` keys against fixture formula entries.
+- Report unknown saved parameters, missing required parameters, and type
+  mismatches.
 - Validate parameter forwards and plug-in sub-parameters.
 - Corpus test every `*.upr` in `../uf-formulas` parses and classifies.
