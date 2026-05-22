@@ -9,10 +9,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 using namespace formula::parameter;
@@ -40,6 +42,15 @@ FileEntry entry_with_body(std::string_view body)
     entry.name = "Entry";
     entry.body = std::string{body};
     entry.body_range.begin = SourceLocation{1, 1, "example.upr"};
+    return entry;
+}
+
+FileEntry formula_entry_with_body(std::string_view filename, std::string_view name, std::string_view body)
+{
+    FileEntry entry;
+    entry.name = std::string{name};
+    entry.body = std::string{body};
+    entry.body_range.begin = SourceLocation{1, 1, std::string{filename}};
     return entry;
 }
 
@@ -544,6 +555,107 @@ TEST(TestParameterParser, collectsReferencesForEachLayer)
     EXPECT_EQ("two.ufm", references[3].filename);
     EXPECT_EQ(1U, references[4].site.layer_index);
     EXPECT_EQ(1U, references[5].site.layer_index);
+}
+
+TEST(TestParameterParser, resolvesParameterReferences)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "transform:\n"
+                                    "filename=\"wobble.uxf\" entry=\"Wobble\"\n"
+                                    "formula:\n"
+                                    "filename=\"mmf.ufm\" entry=\"Mandelbrot\"\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "mmf.ufm" && entry_name == "Mandelbrot")
+            {
+                return formula_entry_with_body(filename, entry_name, "z=0:z=z+1,|z|<4");
+            }
+            if (filename == "dmj.ucl" && (entry_name == "Smooth" || entry_name == "Escape"))
+            {
+                return formula_entry_with_body(filename, entry_name, "0");
+            }
+            if (filename == "wobble.uxf" && entry_name == "Wobble")
+            {
+                return formula_entry_with_body(filename, entry_name, "pixel");
+            }
+            return std::nullopt;
+        })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(4U, result.references.size());
+    ASSERT_EQ(4U, result.resolved.size());
+    EXPECT_TRUE(result.resolved[0].ast->iterate);
+    EXPECT_TRUE(result.resolved[1].ast->final);
+    EXPECT_TRUE(result.resolved[2].ast->final);
+    EXPECT_TRUE(result.resolved[3].ast->transform);
+    EXPECT_EQ("wobble.uxf", result.resolved[3].reference.filename);
+}
+
+TEST(TestParameterParser, resolveParameterReferencesReportsMissingSelectorsAndUnresolvedEntries)
+{
+    ExtendedParameterEntry parameters;
+    ParameterLayer layer;
+    layer.formula.assignments.push_back(Parameter{"entry", "Mandelbrot"});
+    layer.inside.assignments.push_back(Parameter{"filename", "dmj.ucl"});
+    layer.outside.assignments.push_back(Parameter{"filename", "missing.ucl"});
+    layer.outside.assignments.push_back(Parameter{"entry", "Escape"});
+    parameters.layers.push_back(std::move(layer));
+
+    const ParameterReferenceSet result{resolve_parameter_references(
+        parameters, [](std::string_view, std::string_view) -> std::optional<FileEntry> { return std::nullopt; })};
+
+    ASSERT_EQ(3U, result.references.size());
+    ASSERT_EQ(3U, result.diagnostics.size());
+    EXPECT_EQ(ParameterReferenceErrorCode::MISSING_FILENAME, result.diagnostics[0].code);
+    EXPECT_EQ(ParameterReferenceErrorCode::MISSING_ENTRY, result.diagnostics[1].code);
+    EXPECT_EQ(ParameterReferenceErrorCode::UNRESOLVED_ENTRY, result.diagnostics[2].code);
+    EXPECT_TRUE(result.resolved.empty());
+}
+
+TEST(TestParameterParser, resolveParameterReferencesReportsFormulaParseErrors)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"bad.ufm\" entry=\"Broken\"\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "bad.ufm" && entry_name == "Broken")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "title=\"Broken\"\n"
+                    "final:\n"
+                    "1\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(ParameterReferenceErrorCode::PARSE_ERROR, result.diagnostics[0].code);
+    EXPECT_EQ("bad.ufm", result.diagnostics[0].location.filename);
+    EXPECT_EQ(2U, result.resolved.size());
 }
 
 TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)

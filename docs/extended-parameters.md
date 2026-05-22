@@ -450,14 +450,7 @@ section) and retry paring the FileEntry as a basic parameter set.
 
 ## Implementation Slices
 
-1. Implement `resolve_parameter_references`:
-    - call `ParameterEntryResolver(filename, entry)` for each collected
-      reference
-    - report missing `filename`, missing `entry`, and unresolved entries
-    - parse returned `FileEntry.body` with the matching formula entry
-      kind
-    - attach parsed ASTs to resolved references
-2. Add semantic checks against formula AST metadata:
+1. Add semantic checks against formula AST metadata:
     - validate `p_` and `f_` assignments
     - validate parameter forwards and plug-in sub-parameters
     - report unknown parameters, missing required parameters, and type

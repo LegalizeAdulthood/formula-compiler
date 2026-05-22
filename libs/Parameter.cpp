@@ -4,6 +4,9 @@
 //
 #include <formula/Parameter.h>
 
+#include <formula/ParseOptions.h>
+#include <formula/Parser.h>
+
 #include <zlib.h>
 
 #include <algorithm>
@@ -531,6 +534,36 @@ ParameterReference collect_parameter_reference(
     return reference;
 }
 
+parser::EntryKind entry_kind_for(ParameterReferenceKind kind)
+{
+    switch (kind)
+    {
+    case ParameterReferenceKind::FRACTAL_FORMULA:
+        return parser::EntryKind::FRACTAL;
+    case ParameterReferenceKind::INSIDE_COLORING:
+    case ParameterReferenceKind::OUTSIDE_COLORING:
+        return parser::EntryKind::COLORING;
+    case ParameterReferenceKind::TRANSFORM:
+        return parser::EntryKind::TRANSFORMATION;
+    }
+    return parser::EntryKind::FRACTAL;
+}
+
+void add_reference_diagnostic(ParameterReferenceSet &result, const ParameterReference &reference,
+    ParameterReferenceErrorCode code, SourceLocation location = {}, std::string detail = {})
+{
+    if (detail.empty())
+    {
+        detail = reference.filename;
+        if (!detail.empty() && !reference.entry.empty())
+        {
+            detail += ':';
+        }
+        detail += reference.entry;
+    }
+    result.diagnostics.push_back(ParameterReferenceDiagnostic{code, std::move(location), std::move(detail)});
+}
+
 class BodyParser
 {
 public:
@@ -962,6 +995,69 @@ std::vector<ParameterReference> collect_parameter_references(const ExtendedParam
             result.push_back(collect_parameter_reference(
                 layer.transforms[transform_index], ParameterReferenceKind::TRANSFORM, layer_index, transform_index));
         }
+    }
+    return result;
+}
+
+ParameterReferenceSet resolve_parameter_references(
+    const ExtendedParameterEntry &parameters, const ParameterEntryResolver &resolver)
+{
+    ParameterReferenceSet result;
+    result.references = collect_parameter_references(parameters);
+    for (const ParameterReference &reference : result.references)
+    {
+        bool missing_selector{};
+        if (reference.filename.empty())
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::MISSING_FILENAME);
+            missing_selector = true;
+        }
+        if (reference.entry.empty())
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::MISSING_ENTRY);
+            missing_selector = true;
+        }
+        if (missing_selector)
+        {
+            continue;
+        }
+
+        if (!resolver)
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::UNRESOLVED_ENTRY);
+            continue;
+        }
+
+        std::optional<FileEntry> file_entry{resolver(reference.filename, reference.entry)};
+        if (!file_entry)
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::UNRESOLVED_ENTRY);
+            continue;
+        }
+
+        parser::Options options;
+        options.entry_kind = entry_kind_for(reference.site.kind);
+        options.source_filename =
+            file_entry->body_range.begin.filename.empty() ? reference.filename : file_entry->body_range.begin.filename;
+
+        const parser::ParserPtr parser{parser::create_parser(file_entry->body, options)};
+        ast::FormulaSectionsPtr ast{parser->parse()};
+        if (!parser->get_errors().empty())
+        {
+            for (const parser::Diagnostic &error : parser->get_errors())
+            {
+                add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::PARSE_ERROR, error.position,
+                    parser::to_string(error.code));
+            }
+            continue;
+        }
+        if (!ast)
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::PARSE_ERROR);
+            continue;
+        }
+
+        result.resolved.push_back(ParameterResolvedReference{reference, std::move(*file_entry), std::move(ast)});
     }
     return result;
 }
