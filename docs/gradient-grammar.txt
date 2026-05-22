@@ -1,16 +1,25 @@
 -- UltraFractal Gradient File (.ugr) Grammar
 --
--- A .ugr file is a plain text file containing any number of named gradient
--- entries.  Line breaks are insignificant whitespace everywhere except inside
--- quoted strings.  Comments (`;` to end-of-line) are treated as whitespace
--- by the tokenizer: they may appear anywhere in the file (between entries,
--- between sections, between tokens, or on a line by themselves) and are
--- consumed before the token stream is produced.  Comments do not appear in
--- the token stream and are not represented in the data model.
+-- A .ugr file is a plain text file containing any number of named FileEntry
+-- values.  The generic FileEntry scanner parses entry names and braces.  The
+-- gradient parser consumes one FileEntry body and returns one GradientEntry.
+-- A full .ugr file is therefore parsed by scanning all FileEntry values and
+-- parsing each body independently.
+--
+-- Line breaks are insignificant whitespace, but raw line breaks are not
+-- documented as valid inside quoted strings.  UF docs show long string values
+-- split with the normal backslash line-continuation rule; apply that
+-- continuation before tokenizing quoted strings.  Comments (`;` to
+-- end-of-line) are treated as whitespace by the tokenizer: they may appear
+-- anywhere in the file (between entries, between sections, between tokens, or
+-- on a line by themselves) and are consumed before the token stream is
+-- produced.  Comments do not appear in the token stream and are not
+-- represented in the data model.
 
 file          := entry*
 entry         := entry_name '{' section section '}'
-entry_name    := identifier
+entry_name    := FileEntry header text
+entry_body    := section section
 
 section       := section_header token*
 section_header := identifier ':'        -- identifier immediately followed by colon, no space
@@ -26,7 +35,7 @@ key           := identifier
 value         := quoted_string | integer | bool
 bool          := 'yes' | 'no'
 integer       := '-'? [0-9]+
-quoted_string := '"' [^"]* '"'
+quoted_string := '"' [^"\r\n]* '"'
 
 -- Comments (`;` to end-of-line) are tokenizer-level whitespace and may appear
 -- anywhere in the file.  They are not part of the grammar proper.

@@ -7,6 +7,7 @@
 #include <cctype>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace gradient
@@ -377,52 +378,43 @@ OpacitySection parse_opacity_section(Lexer &tokens, std::string_view value_key_n
 
 } // namespace
 
-GradientFile parse_gradient(std::string_view text)
+GradientEntry parse_gradient(const formula::FileEntry &file_entry)
 {
-    Lexer tokens{text};
-    GradientFile file;
+    Lexer tokens{file_entry.body};
+    GradientEntry entry;
+    entry.name = file_entry.name;
+    bool has_gradient{};
+    bool has_opacity{};
 
     while (tokens.peek().type != TokenType::END_OF_FILE)
     {
-        GradientEntry entry;
-        entry.name = expect_next(tokens, TokenType::IDENTIFIER, "entry name").value;
-        expect_next(tokens, TokenType::LEFT_BRACE, "{");
-
-        bool has_gradient{};
-        bool has_opacity{};
-        while (tokens.peek().type != TokenType::RIGHT_BRACE)
+        Token header = expect_next(tokens, TokenType::COLON, "section header");
+        if (header.value == "gradient")
         {
-            Token header = expect_next(tokens, TokenType::COLON, "section header");
-            if (header.value == "gradient")
-            {
-                entry.gradient = parse_gradient_section(tokens);
-                has_gradient = true;
-            }
-            else if (header.value == "opacity")
-            {
-                entry.opacity = parse_opacity_section(tokens, "opacity");
-                has_opacity = true;
-            }
-            else if (header.value == "alpha")
-            {
-                entry.opacity = parse_opacity_section(tokens, "alpha");
-                has_opacity = true;
-            }
-            else
-            {
-                throw std::runtime_error("unexpected section: " + header.value);
-            }
+            entry.gradient = parse_gradient_section(tokens);
+            has_gradient = true;
         }
-
-        expect_next(tokens, TokenType::RIGHT_BRACE, "}");
-        if (!has_gradient || !has_opacity)
+        else if (header.value == "opacity")
         {
-            throw std::runtime_error("entry requires gradient and opacity sections");
+            entry.opacity = parse_opacity_section(tokens, "opacity");
+            has_opacity = true;
         }
-        file.entries.push_back(std::move(entry));
+        else if (header.value == "alpha")
+        {
+            entry.opacity = parse_opacity_section(tokens, "alpha");
+            has_opacity = true;
+        }
+        else
+        {
+            throw std::runtime_error("unexpected section: " + header.value);
+        }
     }
 
-    return file;
+    if (!has_gradient || !has_opacity)
+    {
+        throw std::runtime_error("entry requires gradient and opacity sections");
+    }
+    return entry;
 }
 
 } // namespace gradient

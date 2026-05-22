@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <string_view>
 
 using namespace gradient;
 
@@ -23,6 +24,13 @@ std::string read_test_data(const std::filesystem::path &filename)
     std::ostringstream text;
     text << input.rdbuf();
     return text.str();
+}
+
+GradientEntry parse_one_gradient(std::string_view text)
+{
+    std::istringstream input{std::string{text}};
+    std::vector<formula::FileEntry> entries = formula::load_file_entries(input);
+    return parse_gradient(entries.at(0));
 }
 
 testing::AssertionResult has_control_point(
@@ -77,10 +85,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const GradientSection &section = file.entries[0].gradient;
+    const GradientSection &section = entry.gradient;
     EXPECT_EQ("Vivid", section.title);
     EXPECT_FALSE(section.smooth);
     EXPECT_EQ(-12, section.rotation);
@@ -99,10 +106,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    EXPECT_EQ("Vivid; not a comment", file.entries[0].gradient.title);
+    EXPECT_EQ("Vivid; not a comment", entry.gradient.title);
 }
 
 TEST(TestGradientParser, parsesGradientControlPoints)
@@ -118,10 +124,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const std::vector<ColorControlPoint> &points = file.entries[0].gradient.points;
+    const std::vector<ColorControlPoint> &points = entry.gradient.points;
     ASSERT_EQ(3U, points.size());
     EXPECT_TRUE(has_control_point(points[0], -1, 0x82, 0x6A, 0xFF));
     EXPECT_TRUE(has_control_point(points[1], 42, 0, 0, 0));
@@ -139,10 +144,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const GradientSection &section = file.entries[0].gradient;
+    const GradientSection &section = entry.gradient;
     ASSERT_EQ(2U, section.points.size());
     EXPECT_TRUE(has_control_point(section.points[0], 0, 0, 0, 0));
     EXPECT_TRUE(has_control_point(section.points[1], 100, 0xFF, 0xFF, 0xFF));
@@ -159,7 +163,7 @@ opacity:
 }
 )ugr"};
 
-    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
+    EXPECT_THROW(parse_one_gradient(ugr), std::runtime_error);
 }
 
 TEST(TestGradientParser, parsesOpacitySection)
@@ -177,10 +181,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const OpacitySection &section = file.entries[0].opacity;
+    const OpacitySection &section = entry.opacity;
     EXPECT_FALSE(section.smooth);
     EXPECT_EQ(7, section.rotation);
     EXPECT_TRUE(section.linked);
@@ -200,10 +203,9 @@ opacity:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const OpacitySection &section = file.entries[0].opacity;
+    const OpacitySection &section = entry.opacity;
     ASSERT_EQ(2U, section.points.size());
     EXPECT_TRUE(has_control_point(section.points[0], 0, 0));
     EXPECT_TRUE(has_control_point(section.points[1], 399, 255));
@@ -220,7 +222,7 @@ opacity:
 }
 )ugr"};
 
-    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
+    EXPECT_THROW(parse_one_gradient(ugr), std::runtime_error);
 }
 
 TEST(TestGradientParser, acceptsAlphaAsOpacitySection)
@@ -235,10 +237,9 @@ alpha:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    const OpacitySection &section = file.entries[0].opacity;
+    const OpacitySection &section = entry.opacity;
     EXPECT_FALSE(section.smooth);
     ASSERT_EQ(2U, section.points.size());
     EXPECT_TRUE(has_control_point(section.points[0], 0, 0));
@@ -256,7 +257,7 @@ alpha:
 }
 )ugr"};
 
-    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
+    EXPECT_THROW(parse_one_gradient(ugr), std::runtime_error);
 }
 
 TEST(TestGradientParser, acceptsOpacityBeforeGradient)
@@ -271,12 +272,11 @@ gradient:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    GradientEntry entry = parse_one_gradient(ugr);
 
-    ASSERT_EQ(1U, file.entries.size());
-    EXPECT_EQ("Late", file.entries[0].gradient.title);
-    ASSERT_EQ(1U, file.entries[0].opacity.points.size());
-    EXPECT_EQ(255, file.entries[0].opacity.points[0].opacity);
+    EXPECT_EQ("Late", entry.gradient.title);
+    ASSERT_EQ(1U, entry.opacity.points.size());
+    EXPECT_EQ(255, entry.opacity.points[0].opacity);
 }
 
 TEST(TestGradientParser, parsesMultipleEntries)
@@ -299,28 +299,40 @@ gradient:
 }
 )ugr"};
 
-    GradientFile file = parse_gradient(ugr);
+    std::istringstream input{ugr};
+    std::vector<formula::FileEntry> file_entries = formula::load_file_entries(input);
+    std::vector<GradientEntry> entries;
+    for (const formula::FileEntry &file_entry : file_entries)
+    {
+        entries.push_back(parse_gradient(file_entry));
+    }
 
-    ASSERT_EQ(2U, file.entries.size());
-    EXPECT_EQ("First", file.entries[0].name);
-    EXPECT_EQ("One", file.entries[0].gradient.title);
-    ASSERT_EQ(1U, file.entries[0].opacity.points.size());
-    EXPECT_EQ(255, file.entries[0].opacity.points[0].opacity);
-    EXPECT_EQ("Second", file.entries[1].name);
-    EXPECT_EQ("Two", file.entries[1].gradient.title);
-    ASSERT_EQ(1U, file.entries[1].gradient.points.size());
-    EXPECT_EQ(100, file.entries[1].gradient.points[0].index);
-    ASSERT_EQ(1U, file.entries[1].opacity.points.size());
-    EXPECT_EQ(128, file.entries[1].opacity.points[0].opacity);
+    ASSERT_EQ(2U, entries.size());
+    EXPECT_EQ("First", entries[0].name);
+    EXPECT_EQ("One", entries[0].gradient.title);
+    ASSERT_EQ(1U, entries[0].opacity.points.size());
+    EXPECT_EQ(255, entries[0].opacity.points[0].opacity);
+    EXPECT_EQ("Second", entries[1].name);
+    EXPECT_EQ("Two", entries[1].gradient.title);
+    ASSERT_EQ(1U, entries[1].gradient.points.size());
+    EXPECT_EQ(100, entries[1].gradient.points[0].index);
+    ASSERT_EQ(1U, entries[1].opacity.points.size());
+    EXPECT_EQ(128, entries[1].opacity.points[0].opacity);
 }
 
 TEST(TestGradientParser, parsesRainbowGradientFile)
 {
-    GradientFile file = parse_gradient(read_test_data("rainbow.ugr"));
+    std::istringstream input{read_test_data("rainbow.ugr")};
+    std::vector<formula::FileEntry> file_entries = formula::load_file_entries(input);
+    std::vector<GradientEntry> entries;
+    for (const formula::FileEntry &file_entry : file_entries)
+    {
+        entries.push_back(parse_gradient(file_entry));
+    }
 
-    ASSERT_EQ(25U, file.entries.size());
+    ASSERT_EQ(25U, entries.size());
 
-    const GradientEntry &first = file.entries[0];
+    const GradientEntry &first = entries[0];
     EXPECT_EQ("Rainbow-6BrightBars", first.name);
     EXPECT_EQ("Rainbow - 6 bright bars", first.gradient.title);
     EXPECT_TRUE(first.gradient.smooth);
@@ -335,13 +347,13 @@ TEST(TestGradientParser, parsesRainbowGradientFile)
     EXPECT_TRUE(has_control_point(first.opacity.points[0], 0, 255));
     EXPECT_TRUE(has_control_point(first.opacity.points[2], 266, 255));
 
-    const GradientEntry &columns = file.entries[3];
+    const GradientEntry &columns = entries[3];
     EXPECT_EQ("Rainbow-8Columns", columns.name);
     EXPECT_EQ("Rainbow - 8 columns", columns.gradient.title);
     ASSERT_EQ(25U, columns.gradient.points.size());
     EXPECT_TRUE(has_control_point(columns.gradient.points.back(), -1, 0x8C, 0x00, 0x48));
 
-    const GradientEntry &tropical = file.entries[20];
+    const GradientEntry &tropical = entries[20];
     EXPECT_EQ("Rainbow-Tropical30", tropical.name);
     EXPECT_EQ("Rainbow - tropical 30", tropical.gradient.title);
     EXPECT_TRUE(tropical.gradient.linked);
@@ -349,7 +361,7 @@ TEST(TestGradientParser, parsesRainbowGradientFile)
     ASSERT_EQ(30U, tropical.gradient.points.size());
     ASSERT_EQ(30U, tropical.opacity.points.size());
 
-    const GradientEntry &last = file.entries.back();
+    const GradientEntry &last = entries.back();
     EXPECT_EQ("OrangeAndGreenSolid5Desaturated", last.name);
     EXPECT_EQ("Orange and Green solid 5 desaturated", last.gradient.title);
     ASSERT_EQ(20U, last.gradient.points.size());

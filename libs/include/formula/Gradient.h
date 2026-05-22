@@ -4,9 +4,10 @@
 //
 #pragma once
 
+#include <formula/FileEntry.h>
+
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace gradient
@@ -55,11 +56,6 @@ struct GradientEntry
     OpacitySection opacity;
 };
 
-struct GradientFile
-{
-    std::vector<GradientEntry> entries;
-};
-
-GradientFile parse_gradient(std::string_view text);
+GradientEntry parse_gradient(const formula::FileEntry &file_entry);
 
 } // namespace gradient
