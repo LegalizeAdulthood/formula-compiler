@@ -7,6 +7,7 @@
 #include <formula/FileEntry.h>
 #include <formula/SourceLocation.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,10 +54,22 @@ struct BasicParameterEntry
     std::vector<ParseDiagnostic> diagnostics;
 };
 
+struct ParameterLayer
+{
+    ParameterSection layer;
+    ParameterSection mapping;
+    std::vector<ParameterSection> transforms;
+    ParameterSection formula;
+    ParameterSection inside;
+    ParameterSection outside;
+    ParameterSection gradient;
+    std::optional<ParameterSection> opacity;
+};
+
 struct ExtendedParameterEntry
 {
     ParameterSection fractal;
-    std::vector<ParameterSection> layers;
+    std::vector<ParameterLayer> layers;
     std::vector<ParseDiagnostic> diagnostics;
 };
 

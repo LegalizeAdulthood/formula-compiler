@@ -92,12 +92,12 @@ TEST(TestParameterParser, parsesExtendedSectionsFromFileEntry)
     ASSERT_EQ(1U, result.fractal.assignments.size());
     EXPECT_EQ("title", result.fractal.assignments[0].key);
     EXPECT_EQ("Name", result.fractal.assignments[0].value);
-    ASSERT_EQ(6U, result.layers.size());
-    EXPECT_EQ("layer", result.layers[0].name);
-    EXPECT_EQ("formula", result.layers[2].name);
-    ASSERT_EQ(3U, result.layers[2].assignments.size());
-    EXPECT_EQ("p_power", result.layers[2].assignments[2].key);
-    EXPECT_EQ("2", result.layers[2].assignments[2].value);
+    ASSERT_EQ(1U, result.layers.size());
+    EXPECT_EQ("layer", result.layers[0].layer.name);
+    EXPECT_EQ("formula", result.layers[0].formula.name);
+    ASSERT_EQ(3U, result.layers[0].formula.assignments.size());
+    EXPECT_EQ("p_power", result.layers[0].formula.assignments[2].key);
+    EXPECT_EQ("2", result.layers[0].formula.assignments[2].value);
 }
 
 TEST(TestParameterParser, compressesAndDecompressesParameterSetBodies)
@@ -139,10 +139,10 @@ TEST(TestParameterParser, parsesCompressedExtendedParameterBodies)
     EXPECT_EQ("Compressed", result.fractal.assignments[0].value);
     EXPECT_EQ("magn", result.fractal.assignments[1].key);
     EXPECT_EQ("2", result.fractal.assignments[1].value);
-    ASSERT_EQ(6U, result.layers.size());
-    EXPECT_EQ("layer", result.layers[0].name);
-    ASSERT_EQ(1U, result.layers[0].assignments.size());
-    EXPECT_EQ("Layer", result.layers[0].assignments[0].value);
+    ASSERT_EQ(1U, result.layers.size());
+    EXPECT_EQ("layer", result.layers[0].layer.name);
+    ASSERT_EQ(1U, result.layers[0].layer.assignments.size());
+    EXPECT_EQ("Layer", result.layers[0].layer.assignments[0].value);
 }
 
 TEST(TestParameterParser, reportsInvalidCompressedExtendedParameterBodies)
@@ -171,16 +171,16 @@ TEST(TestParameterParser, preservesRepeatedAssignmentsInOrder)
     const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(6U, result.layers.size());
-    ASSERT_EQ(4U, result.layers[5].assignments.size());
-    EXPECT_EQ("index", result.layers[5].assignments[0].key);
-    EXPECT_EQ("0", result.layers[5].assignments[0].value);
-    EXPECT_EQ("color", result.layers[5].assignments[1].key);
-    EXPECT_EQ("4278190080", result.layers[5].assignments[1].value);
-    EXPECT_EQ("index", result.layers[5].assignments[2].key);
-    EXPECT_EQ("1", result.layers[5].assignments[2].value);
-    EXPECT_EQ("color", result.layers[5].assignments[3].key);
-    EXPECT_EQ("4294967295", result.layers[5].assignments[3].value);
+    ASSERT_EQ(1U, result.layers.size());
+    ASSERT_EQ(4U, result.layers[0].gradient.assignments.size());
+    EXPECT_EQ("index", result.layers[0].gradient.assignments[0].key);
+    EXPECT_EQ("0", result.layers[0].gradient.assignments[0].value);
+    EXPECT_EQ("color", result.layers[0].gradient.assignments[1].key);
+    EXPECT_EQ("4278190080", result.layers[0].gradient.assignments[1].value);
+    EXPECT_EQ("index", result.layers[0].gradient.assignments[2].key);
+    EXPECT_EQ("1", result.layers[0].gradient.assignments[2].value);
+    EXPECT_EQ("color", result.layers[0].gradient.assignments[3].key);
+    EXPECT_EQ("4294967295", result.layers[0].gradient.assignments[3].value);
 }
 
 TEST(TestParameterParser, stripsCommentsOutsideQuotedStrings)
@@ -240,12 +240,12 @@ TEST(TestParameterParser, splitsAssignmentsOnWhitespaceOutsideQuotedStrings)
     const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(6U, result.layers.size());
-    ASSERT_EQ(3U, result.layers[0].assignments.size());
-    EXPECT_EQ("caption", result.layers[0].assignments[0].key);
-    EXPECT_EQ("Layer 1", result.layers[0].assignments[0].value);
-    EXPECT_EQ("visible", result.layers[0].assignments[1].key);
-    EXPECT_EQ("yes", result.layers[0].assignments[1].value);
+    ASSERT_EQ(1U, result.layers.size());
+    ASSERT_EQ(3U, result.layers[0].layer.assignments.size());
+    EXPECT_EQ("caption", result.layers[0].layer.assignments[0].key);
+    EXPECT_EQ("Layer 1", result.layers[0].layer.assignments[0].value);
+    EXPECT_EQ("visible", result.layers[0].layer.assignments[1].key);
+    EXPECT_EQ("yes", result.layers[0].layer.assignments[1].value);
 }
 
 TEST(TestParameterParser, extendedParametersRequireSectionBeforeAssignments)
@@ -278,8 +278,7 @@ TEST(TestParameterParser, extendedParametersRequireFractalFirst)
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::EXPECTED_FRACTAL_SECTION, result.diagnostics[0].code);
     EXPECT_TRUE(result.fractal.name.empty());
-    ASSERT_EQ(1U, result.layers.size());
-    EXPECT_EQ("layer", result.layers[0].name);
+    EXPECT_TRUE(result.layers.empty());
 }
 
 TEST(TestParameterParser, extendedParametersRequireLayerAfterFractal)
@@ -329,10 +328,12 @@ TEST(TestParameterParser, extendedParametersAllowTransformsAndOpacity)
     const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(9U, result.layers.size());
-    EXPECT_EQ("transform", result.layers[2].name);
-    EXPECT_EQ("transform", result.layers[3].name);
-    EXPECT_EQ("opacity", result.layers[8].name);
+    ASSERT_EQ(1U, result.layers.size());
+    ASSERT_EQ(2U, result.layers[0].transforms.size());
+    EXPECT_EQ("transform", result.layers[0].transforms[0].name);
+    EXPECT_EQ("transform", result.layers[0].transforms[1].name);
+    ASSERT_TRUE(result.layers[0].opacity.has_value());
+    EXPECT_EQ("opacity", result.layers[0].opacity->name);
 }
 
 TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)
@@ -350,8 +351,9 @@ TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)
     const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
     ASSERT_TRUE(result.diagnostics.empty());
-    ASSERT_EQ(7U, result.layers.size());
-    EXPECT_EQ("alpha", result.layers[6].name);
+    ASSERT_EQ(1U, result.layers.size());
+    ASSERT_TRUE(result.layers[0].opacity.has_value());
+    EXPECT_EQ("alpha", result.layers[0].opacity->name);
 }
 
 TEST(TestParameterParser, extendedParametersRejectSectionsAfterOpacity)
@@ -372,7 +374,7 @@ TEST(TestParameterParser, extendedParametersRejectSectionsAfterOpacity)
     EXPECT_EQ(ParseErrorCode::EXPECTED_LAYER_SECTION, result.diagnostics[0].code);
 }
 
-TEST(TestParameterParser, extendedParametersPreserveUnexpectedSections)
+TEST(TestParameterParser, extendedParametersDropUnexpectedSections)
 {
     FileEntry entry{entry_with_body("fractal:\n"
                                     "layer:\n"
@@ -388,9 +390,8 @@ TEST(TestParameterParser, extendedParametersPreserveUnexpectedSections)
 
     ASSERT_FALSE(result.diagnostics.empty());
     EXPECT_EQ(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, result.diagnostics[0].code);
-    ASSERT_EQ(7U, result.layers.size());
-    EXPECT_EQ("notes", result.layers[6].name);
-    ASSERT_EQ(1U, result.layers[6].assignments.size());
+    ASSERT_EQ(1U, result.layers.size());
+    EXPECT_EQ("gradient", result.layers[0].gradient.name);
 }
 
 TEST(TestParameterParser, basicParametersRejectSectionLabels)

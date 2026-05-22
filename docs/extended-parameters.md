@@ -170,9 +170,8 @@ Observed parameter sections:
 - `opacity`
 - `alpha`
 
-Unknown section names should be preserved, not dropped. The parser
-diagnoses them but keeps the section and its assignments in `layers` for
-inspection.
+Unknown and out-of-order section names are errors. The parser diagnoses
+them and drops the section and its assignments.
 
 The UF6 text files describe parameter files loosely: a `.upr` file is
 a plain-text collection of parameter sets, each parameter set describes
@@ -344,7 +343,17 @@ BasicParameterBody
 
 ExtendedParameterBody
   fractal: Section
-  layers: [Section]
+  layers: [Layer]
+
+Layer
+  layer: Section
+  mapping: Section
+  transforms: [Section]
+  formula: Section
+  inside: Section
+  outside: Section
+  gradient: Section
+  opacity: Section?
 
 Section
   name
@@ -356,10 +365,11 @@ Assignment
   source_range
 ```
 
-Use ordered vectors for assignments and layer sections. `fractal` is a
-single explicit section because every real extended parameter set is
-constrained to start with it. Build convenience lookup helpers and
-semantic layers on top of the ordered string representation.
+Use ordered vectors for assignments and repeated transform sections.
+`fractal` is a single explicit section because every real extended
+parameter set is constrained to start with it. Each item in `layers` is
+a complete parsed layer group; incomplete, unknown, and out-of-order
+sections are reported as diagnostics and omitted from the AST.
 
 ## Semantic Resolution Plan
 1. Client scans the file into `FileEntry` structures.
@@ -369,8 +379,8 @@ semantic layers on top of the ordered string representation.
 4. Client chooses basic or extended body parsing for each remaining
    parameter-set entry.
 5. Parser returns ordered string assignments, or an explicit `fractal`
-   section plus ordered layer sections.
-6. Client builds typed layer objects while preserving all raw sections.
+   section plus complete layer groups.
+6. Client builds typed layer objects from the parsed sections.
 7. For each `formula`, `inside`, `outside`, and `transform` section,
    collect `(filename, entry, kind)` references.
 8. Ask a caller-provided resolver for the referenced formula files.
@@ -398,7 +408,7 @@ semantic layers on top of the ordered string representation.
 5. Add extended body parsing: require `fractal:` first, then one or more
    complete ordered layer groups containing ordered string name/value
    assignments. Diagnose incomplete or out-of-order groups while
-   preserving the raw sections.
+   dropping invalid sections from the returned AST.
 6. Add compressed extended-body decoding: UF base64, CRC32 validation,
    zlib inflate, then parse the inflated body text. Use zlib from the
    vcpkg manifest. Also expose round-trip helper functions for
@@ -418,7 +428,7 @@ semantic layers on top of the ordered string representation.
 - Accept zero or more `transform` sections after `mapping`.
 - Accept either `opacity` or `alpha` after `gradient`, then require a new
   `layer` or end of body.
-- Preserve unknown sections with diagnostics.
+- Drop unknown and out-of-order sections with diagnostics.
 - Verify clients can skip `comment` `FileEntry` bodies.
 - Verify clients can route compressed inline formula/coloring/class
   entries by `FileEntry.name` without invoking the parameter parser.
