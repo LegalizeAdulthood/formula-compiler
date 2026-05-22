@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-only
+//
+// Copyright 2026 Richard Thomson
+//
 #include <formula/Preprocessor.h>
 
 #include <gtest/gtest.h>
