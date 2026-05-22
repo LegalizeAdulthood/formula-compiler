@@ -8,3 +8,4 @@
   e.g. prefer ASCII punctuation
 - Validate changes with the command `cmake --workflow rt-default` in the
   source directory; use workflow default if rt-default is not defined.
+- Generate commit messages in a code block, line width 75.
