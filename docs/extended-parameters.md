@@ -117,25 +117,33 @@ Section names and their terminating colon always appear on a line by
 themselves.
 
 ```text
-extended_body   ::= fractal_section layer_section+
-fractal_section ::= "fractal:" line_end section_line*
-layer_section   ::= layer_label section_line*
-layer_label     ::= "layer:" | "mapping:" | "transform:" | "formula:"
-                  | "inside:" | "outside:" | "gradient:" | "opacity:"
-                  | "alpha:"
-section_line    ::= assignment_list | blank
-assignment_list ::= assignment (space assignment)*
-assignment      ::= key "=" value
-key             ::= text_until_equals
-value           ::= quoted_value | atom_value
-quoted_value    ::= '"' quoted_char* '"'
-quoted_char     ::= any_character_except_quote_or_raw_line_end
-atom_value      ::= non_space_without_delimiters
+extended_body    ::= fractal_section layer_group+
+fractal_section  ::= "fractal:" line_end section_line*
+layer_group      ::= layer_section mapping_section transform_section*
+                     formula_section inside_section outside_section
+                     gradient_section opacity_or_alpha_section?
+layer_section    ::= "layer:" line_end section_line*
+mapping_section  ::= "mapping:" line_end section_line*
+transform_section ::= "transform:" line_end section_line*
+formula_section  ::= "formula:" line_end section_line*
+inside_section   ::= "inside:" line_end section_line*
+outside_section  ::= "outside:" line_end section_line*
+gradient_section ::= "gradient:" line_end section_line*
+opacity_or_alpha_section ::= ("opacity:" | "alpha:") line_end
+                             section_line*
+section_line     ::= assignment_list | blank
+assignment_list  ::= assignment (space assignment)*
+assignment       ::= key "=" value
+key              ::= text_until_equals
+value            ::= quoted_value | atom_value
+quoted_value     ::= '"' quoted_char* '"'
+quoted_char      ::= any_character_except_quote_or_raw_line_end
+atom_value       ::= non_space_without_delimiters
 ```
 
 The extended dialect requires a `fractal:` section first, followed by one
-or more layer sections. A section ends at the next section label or the
-end of the body.
+or more complete layer groups. A section ends at the next section label
+or the end of the body.
 
 All values are string values. Exact value semantics are not documented
 well enough for the parser to impose types. The client interprets
@@ -162,7 +170,9 @@ Observed parameter sections:
 - `opacity`
 - `alpha`
 
-Unknown section names should be preserved, not dropped.
+Unknown section names should be preserved, not dropped. The parser
+diagnoses them but keeps the section and its assignments in `layers` for
+inspection.
 
 The UF6 text files describe parameter files loosely: a `.upr` file is
 a plain-text collection of parameter sets, each parameter set describes
@@ -386,8 +396,9 @@ semantic layers on top of the ordered string representation.
 4. Add basic body parsing: ordered string name/value assignments with
    no sections.
 5. Add extended body parsing: require `fractal:` first, then one or more
-   ordered layer sections containing ordered string name/value
-   assignments.
+   complete ordered layer groups containing ordered string name/value
+   assignments. Diagnose incomplete or out-of-order groups while
+   preserving the raw sections.
 6. Add compressed extended-body decoding: UF base64, CRC32 validation,
    zlib inflate, then parse the inflated body text. Use zlib from the
    vcpkg manifest. Also expose round-trip helper functions for
@@ -403,6 +414,11 @@ semantic layers on top of the ordered string representation.
 - Unit parse extended one-layer and multi-layer parameter bodies.
 - Reject extended bodies without a leading `fractal:` section.
 - Reject extended bodies with `fractal:` but no following layer section.
+- Reject incomplete or out-of-order layer groups.
+- Accept zero or more `transform` sections after `mapping`.
+- Accept either `opacity` or `alpha` after `gradient`, then require a new
+  `layer` or end of body.
+- Preserve unknown sections with diagnostics.
 - Verify clients can skip `comment` `FileEntry` bodies.
 - Verify clients can route compressed inline formula/coloring/class
   entries by `FileEntry.name` without invoking the parameter parser.

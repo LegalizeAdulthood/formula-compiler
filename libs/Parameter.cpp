@@ -35,6 +35,8 @@ std::string to_string(ParseErrorCode code)
         PARSE_ERROR_CASE(INVALID_COMPRESSED_PARAMETER_SET);
         PARSE_ERROR_CASE(EXPECTED_FRACTAL_SECTION);
         PARSE_ERROR_CASE(EXPECTED_LAYER_SECTION);
+        PARSE_ERROR_CASE(EXPECTED_PARAMETER_SECTION);
+        PARSE_ERROR_CASE(UNEXPECTED_PARAMETER_SECTION);
     }
     return "ParseErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
 }
@@ -58,6 +60,18 @@ struct ParsedValue
 {
     std::string text;
     std::size_t end{};
+};
+
+enum class LayerParseState
+{
+    EXPECT_LAYER,
+    EXPECT_MAPPING,
+    EXPECT_FORMULA,
+    EXPECT_INSIDE,
+    EXPECT_OUTSIDE,
+    EXPECT_GRADIENT,
+    EXPECT_OPACITY_OR_LAYER,
+    EXPECT_LAYER_AFTER_OPACITY,
 };
 
 bool is_space(char ch)
@@ -450,6 +464,17 @@ std::string section_name(std::string_view line)
     return std::string{line};
 }
 
+bool is_known_layer_section(std::string_view name)
+{
+    return name == "layer" || name == "mapping" || name == "transform" || name == "formula" || name == "inside" ||
+        name == "outside" || name == "gradient" || name == "opacity" || name == "alpha";
+}
+
+bool is_complete_layer_state(LayerParseState state)
+{
+    return state == LayerParseState::EXPECT_OPACITY_OR_LAYER || state == LayerParseState::EXPECT_LAYER_AFTER_OPACITY;
+}
+
 std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t value_start)
 {
     std::string value;
@@ -512,9 +537,17 @@ public:
         {
             parse_extended_line(result, line);
         }
-        if (m_seen_fractal && !m_seen_layer)
+        if (!m_seen_fractal)
+        {
+            error(ParseErrorCode::EXPECTED_FRACTAL_SECTION, 1, 1);
+        }
+        else if (!m_seen_layer)
         {
             error(ParseErrorCode::EXPECTED_LAYER_SECTION, 1, 1);
+        }
+        else if (!is_complete_layer_state(m_layer_state))
+        {
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, 1, 1);
         }
         result.diagnostics = std::move(m_diagnostics);
         return result;
@@ -584,23 +617,108 @@ private:
             entry.fractal.name = std::move(name);
             m_current_section = &entry.fractal;
             m_seen_fractal = true;
+            m_layer_state = LayerParseState::EXPECT_LAYER;
             return;
         }
 
         if (name == "fractal")
         {
-            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+            error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, line_number, column);
+            m_current_section = &entry.layers.emplace_back();
+            m_current_section->name = std::move(name);
+            return;
+        }
+        if (!is_known_layer_section(name))
+        {
+            error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, line_number, column);
+            m_current_section = &entry.layers.emplace_back();
+            m_current_section->name = std::move(name);
+            return;
         }
         if (name == "layer")
         {
+            if (m_seen_layer && !is_complete_layer_state(m_layer_state))
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            }
             m_seen_layer = true;
+            m_layer_state = LayerParseState::EXPECT_MAPPING;
         }
-        else if (!m_seen_layer)
+        else
         {
-            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+            if (!m_seen_layer)
+            {
+                error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+            }
+            validate_layer_section(name, line_number, column);
         }
         m_current_section = &entry.layers.emplace_back();
         m_current_section->name = std::move(name);
+    }
+
+    void validate_layer_section(std::string_view name, std::size_t line_number, std::size_t column)
+    {
+        switch (m_layer_state)
+        {
+        case LayerParseState::EXPECT_LAYER:
+            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+            return;
+        case LayerParseState::EXPECT_MAPPING:
+            if (name != "mapping")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_FORMULA;
+            return;
+        case LayerParseState::EXPECT_FORMULA:
+            if (name == "transform")
+            {
+                return;
+            }
+            if (name != "formula")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_INSIDE;
+            return;
+        case LayerParseState::EXPECT_INSIDE:
+            if (name != "inside")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_OUTSIDE;
+            return;
+        case LayerParseState::EXPECT_OUTSIDE:
+            if (name != "outside")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_GRADIENT;
+            return;
+        case LayerParseState::EXPECT_GRADIENT:
+            if (name != "gradient")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_OPACITY_OR_LAYER;
+            return;
+        case LayerParseState::EXPECT_OPACITY_OR_LAYER:
+            if (name != "opacity" && name != "alpha")
+            {
+                error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+                return;
+            }
+            m_layer_state = LayerParseState::EXPECT_LAYER_AFTER_OPACITY;
+            return;
+        case LayerParseState::EXPECT_LAYER_AFTER_OPACITY:
+            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+            return;
+        }
     }
 
     std::vector<Parameter> parse_assignments(std::string_view line, std::size_t line_number)
@@ -678,6 +796,7 @@ private:
     ParameterSection *m_current_section{};
     bool m_seen_fractal{};
     bool m_seen_layer{};
+    LayerParseState m_layer_state{LayerParseState::EXPECT_LAYER};
     std::vector<ParseDiagnostic> m_diagnostics;
 };
 
