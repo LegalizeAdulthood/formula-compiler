@@ -70,7 +70,8 @@ Body parsing is line-oriented string processing:
 3. Apply line continuation. A line ending in `\` is joined with the next
    physical line; the `\`, newline, and leading whitespace on the next
    physical line are removed. Repeat until no processed line ends with a
-   continuation.
+   continuation. UF docs show long string values split this way; raw
+   newlines inside quoted values are not documented as valid.
 4. In the extended dialect, a line containing only `name:` starts a
    section.
 5. Otherwise, a non-blank line is a whitespace-separated list of
@@ -124,6 +125,7 @@ assignment    ::= key "=" value
 key           ::= text_until_equals
 value         ::= quoted_value | atom_value
 quoted_value  ::= '"' quoted_char* '"'
+quoted_char   ::= any_character_except_quote_or_raw_line_end
 atom_value    ::= non_space_without_delimiters
 ```
 
@@ -134,6 +136,12 @@ All values are string values. Exact value semantics are not documented
 well enough for the parser to impose types. The client interprets
 strings by context, for example treating `title` as a string and parsing
 `width` as a number.
+
+String values can span physical lines only through the normal UF
+backslash line-continuation rule. The continuation pass runs before
+quoted-value tokenization, so a continued string becomes one logical
+line. A raw line ending inside quotes should be rejected rather than
+treated as part of the string.
 
 ## Sections
 Observed parameter sections:
@@ -396,6 +404,8 @@ semantic layers on top of the ordered string representation.
 - Strip comments outside quoted strings, preserving semicolons inside
   quoted strings.
 - Join continued physical lines repeatedly before parsing assignments.
+- Reject raw newlines inside quoted values; accept quoted values split
+  with backslash continuation.
 - Split assignment lists on whitespace except inside quoted strings.
 - Reject extended assignment lines before any section label.
 - Parse `transform` sections and `numtransforms`/`transforms` counts.

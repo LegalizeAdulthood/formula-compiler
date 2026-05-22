@@ -14,7 +14,9 @@
   literals.
 - Extend lexer with UF operators/tokens: `[ ]`, `.`, `%`, `!`, `&`,
   `public`, `protected`, `private`, `class`, and `final`; typed, color,
-  bool, and string literal support is already implied by docs.
+  bool, and string literal support is already implied by docs. Long
+  strings use the normal backslash line-continuation rule; raw newlines
+  inside quoted strings are not documented as valid.
 - Replace single-arg call shape with argument-list calls. Existing unary
   built-ins become one-arg calls.
 - Add `EntryKind` to parse options: `FRACTAL`, `COLORING`,
@@ -43,6 +45,9 @@
 ## Implementation Order
 1. Lexer + expression grammar.
    - Add missing tokens.
+   - Apply UF line continuation before lexing quoted strings. A `\` at
+     physical end of line joins the next line; raw line endings inside
+     quotes remain invalid.
    - Parse operator precedence exactly from UF docs: `new`,
      member/index/call, unary `!`/`-`, power, `* / %`, `+ -`,
      comparisons, `&&`, `||`, assignment.
