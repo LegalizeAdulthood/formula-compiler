@@ -436,47 +436,36 @@ sections are reported as diagnostics and omitted from the AST.
 12. Keep unknown assignments as raw data so older or newer UF files can
    still be inspected and round-tripped.
 
+## Client Responsibilities
+
+The client is responsible for scanning `.upr` files into `FileEntry`
+structures.  The client will skip entries named `comment`, route inline
+formula/coloring/transform/class entries by `FileEntry.name`, and choose
+basic or extended parameter parsing for each remaining parameter-set entry.
+Typically basic parameter sets are in `.par` files and extended parameter
+sets are in `.upr` files.  In the wild, it has been seen that basic
+parameter sets are included in `.upr` files.  The client can handle this by
+detecting that extended parameter set parsing failed (missing 'fractal:'
+section) and retry paring the FileEntry as a basic parameter set.
+
 ## Implementation Slices
-1. Client classification layer, outside the parameter parser: scan
-   `.upr` files into `FileEntry` structures, skip entries named
-   `comment`, route inline formula/coloring/transform/class entries by
-   `FileEntry.name`, and choose basic or extended parameter parsing for
-   each remaining parameter-set entry.
-2. Add body line preprocessing: strip comments outside quoted strings
-   and repeatedly join continued physical lines.
-3. Add `name=value` splitting for a processed line, honoring quoted
-   strings so whitespace inside quotes is not a pair boundary.
-4. Add basic body parsing: ordered string name/value assignments with
-   no sections.
-5. Add extended body parsing: require `fractal:` first, then one or more
-   complete ordered layer groups containing ordered string name/value
-   assignments. Diagnose incomplete or out-of-order groups while
-   dropping invalid sections from the returned AST.
-6. Add compressed extended-body decoding: UF base64, CRC32 validation,
-   zlib inflate, then parse the inflated body text. Use zlib from the
-   vcpkg manifest. Also expose round-trip helper functions for
-   compression and decompression.
-7. Add client-side helpers for interpreting string values as bools,
-   numbers, complex pairs, colors, and repeated gradient stops.
-8. Add client-side reference extraction for formula/coloring/transform
-   sections.
-9. Add `ParameterReference` and `ParameterReferenceSet` API types.
-10. Implement `collect_parameter_references`:
-    - collect one formula reference from each layer's `formula` section
-    - collect one inside-coloring reference from each `inside` section
-    - collect one outside-coloring reference from each `outside` section
-    - collect one transform reference from each `transform` section
-    - record layer and transform indexes
-    - keep associated parameters from the same section, excluding
-      `filename` and `entry`
-11. Implement `resolve_parameter_references`:
+
+1. Implement `collect_parameter_references`:
+   - collect one formula reference from each layer's `formula` section
+   - collect one inside-coloring reference from each `inside` section
+   - collect one outside-coloring reference from each `outside` section
+   - collect one transform reference from each `transform` section
+   - record layer and transform indexes
+   - keep associated parameters from the same section, excluding
+     `filename` and `entry`
+2. Implement `resolve_parameter_references`:
     - call `ParameterEntryResolver(filename, entry)` for each collected
       reference
     - report missing `filename`, missing `entry`, and unresolved entries
     - parse returned `FileEntry.body` with the matching formula entry
       kind
     - attach parsed ASTs to resolved references
-12. Add semantic checks against formula AST metadata:
+3. Add semantic checks against formula AST metadata:
     - validate `p_` and `f_` assignments
     - validate parameter forwards and plug-in sub-parameters
     - report unknown parameters, missing required parameters, and type
