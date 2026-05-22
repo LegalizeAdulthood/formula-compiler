@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-only
+//
+// Copyright 2026 Richard Thomson
+//
 #include <formula/Gradient.h>
 
 #include <test_data.h>
@@ -124,6 +128,40 @@ opacity:
     EXPECT_TRUE(has_control_point(points[2], 42, 0xFF, 0xFF, 0xFF));
 }
 
+TEST(TestGradientParser, parsesGradientNumNodes)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  numnodes=2 index=0 color=0 index=100 color=16777215
+opacity:
+  index=0 opacity=255
+}
+)ugr"};
+
+    GradientFile file = parse_gradient(ugr);
+
+    ASSERT_EQ(1U, file.entries.size());
+    const GradientSection &section = file.entries[0].gradient;
+    ASSERT_EQ(2U, section.points.size());
+    EXPECT_TRUE(has_control_point(section.points[0], 0, 0, 0, 0));
+    EXPECT_TRUE(has_control_point(section.points[1], 100, 0xFF, 0xFF, 0xFF));
+}
+
+TEST(TestGradientParser, rejectsGradientNumNodesMismatch)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  numnodes=2 index=0 color=0
+opacity:
+  index=0 opacity=255
+}
+)ugr"};
+
+    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
+}
+
 TEST(TestGradientParser, parsesOpacitySection)
 {
     const char *const ugr{R"ugr(
@@ -149,6 +187,40 @@ opacity:
     ASSERT_EQ(2U, section.points.size());
     EXPECT_TRUE(has_control_point(section.points[0], -66, 0));
     EXPECT_TRUE(has_control_point(section.points[1], 399, 255));
+}
+
+TEST(TestGradientParser, parsesOpacityNumNodes)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  index=0 color=0
+opacity:
+  numnodes=2 index=0 opacity=0 index=399 opacity=255
+}
+)ugr"};
+
+    GradientFile file = parse_gradient(ugr);
+
+    ASSERT_EQ(1U, file.entries.size());
+    const OpacitySection &section = file.entries[0].opacity;
+    ASSERT_EQ(2U, section.points.size());
+    EXPECT_TRUE(has_control_point(section.points[0], 0, 0));
+    EXPECT_TRUE(has_control_point(section.points[1], 399, 255));
+}
+
+TEST(TestGradientParser, rejectsOpacityNumNodesMismatch)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  index=0 color=0
+opacity:
+  numnodes=2 index=0 opacity=255
+}
+)ugr"};
+
+    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
 }
 
 TEST(TestGradientParser, acceptsOpacityBeforeGradient)

@@ -51,7 +51,7 @@ private:
     std::size_t m_pos{0};
 };
 
-Lexer::Lexer(std::string_view text):
+Lexer::Lexer(std::string_view text) :
     m_text(text)
 {
 }
@@ -244,7 +244,25 @@ bool is_section_end(const Token &token)
         token.type == TokenType::END_OF_FILE;
 }
 
-void parse_gradient_key_value(Lexer &tokens, GradientSection &section)
+void expect_num_nodes(int expected_num_nodes, std::size_t point_count)
+{
+    if (expected_num_nodes >= 0 && point_count != static_cast<std::size_t>(expected_num_nodes))
+    {
+        throw std::runtime_error("numnodes does not match control point count");
+    }
+}
+
+int parse_num_nodes(const Token &token)
+{
+    const int num_nodes = parse_int(token);
+    if (num_nodes < 0)
+    {
+        throw std::runtime_error("numnodes must be nonnegative");
+    }
+    return num_nodes;
+}
+
+void parse_gradient_key_value(Lexer &tokens, GradientSection &section, int &expected_num_nodes)
 {
     const Token key = parse_key(tokens);
     if (key.value == "title")
@@ -254,6 +272,15 @@ void parse_gradient_key_value(Lexer &tokens, GradientSection &section)
     else if (key.value == "smooth")
     {
         section.smooth = parse_bool(tokens.next());
+    }
+    else if (key.value == "numnodes")
+    {
+        expected_num_nodes = parse_num_nodes(tokens.next());
+        if (!section.points.empty())
+        {
+            throw std::runtime_error("numnodes must precede control points");
+        }
+        section.points.reserve(static_cast<std::size_t>(expected_num_nodes));
     }
     else if (key.value == "rotation")
     {
@@ -281,12 +308,21 @@ void parse_gradient_key_value(Lexer &tokens, GradientSection &section)
     }
 }
 
-void parse_opacity_key_value(Lexer &tokens, OpacitySection &section)
+void parse_opacity_key_value(Lexer &tokens, OpacitySection &section, int &expected_num_nodes)
 {
     const Token key = parse_key(tokens);
     if (key.value == "smooth")
     {
         section.smooth = parse_bool(tokens.next());
+    }
+    else if (key.value == "numnodes")
+    {
+        expected_num_nodes = parse_num_nodes(tokens.next());
+        if (!section.points.empty())
+        {
+            throw std::runtime_error("numnodes must precede control points");
+        }
+        section.points.reserve(static_cast<std::size_t>(expected_num_nodes));
     }
     else if (key.value == "rotation")
     {
@@ -317,20 +353,24 @@ void parse_opacity_key_value(Lexer &tokens, OpacitySection &section)
 GradientSection parse_gradient_section(Lexer &tokens)
 {
     GradientSection section;
+    int expected_num_nodes{-1};
     while (!is_section_end(tokens.peek()))
     {
-        parse_gradient_key_value(tokens, section);
+        parse_gradient_key_value(tokens, section, expected_num_nodes);
     }
+    expect_num_nodes(expected_num_nodes, section.points.size());
     return section;
 }
 
 OpacitySection parse_opacity_section(Lexer &tokens)
 {
     OpacitySection section;
+    int expected_num_nodes{-1};
     while (!is_section_end(tokens.peek()))
     {
-        parse_opacity_key_value(tokens, section);
+        parse_opacity_key_value(tokens, section, expected_num_nodes);
     }
+    expect_num_nodes(expected_num_nodes, section.points.size());
     return section;
 }
 
