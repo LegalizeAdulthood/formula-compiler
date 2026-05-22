@@ -33,6 +33,8 @@ std::string to_string(ParseErrorCode code)
         PARSE_ERROR_CASE(EXPECTED_VALUE);
         PARSE_ERROR_CASE(UNTERMINATED_QUOTED_STRING);
         PARSE_ERROR_CASE(INVALID_COMPRESSED_PARAMETER_SET);
+        PARSE_ERROR_CASE(EXPECTED_FRACTAL_SECTION);
+        PARSE_ERROR_CASE(EXPECTED_LAYER_SECTION);
     }
     return "ParseErrorCode(" + std::to_string(static_cast<int>(code)) + ")";
 }
@@ -510,6 +512,10 @@ public:
         {
             parse_extended_line(result, line);
         }
+        if (m_seen_fractal && !m_seen_layer)
+        {
+            error(ParseErrorCode::EXPECTED_LAYER_SECTION, 1, 1);
+        }
         result.diagnostics = std::move(m_diagnostics);
         return result;
     }
@@ -548,8 +554,7 @@ private:
         const std::size_t first_non_space{line.find_first_not_of(" \t")};
         if (is_section_label(stripped))
         {
-            m_current_section = &entry.sections.emplace_back();
-            m_current_section->name = section_name(stripped);
+            start_extended_section(entry, section_name(stripped), processed.line, first_non_space + 1);
             return;
         }
 
@@ -562,6 +567,40 @@ private:
         std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
         m_current_section->assignments.insert(m_current_section->assignments.end(),
             std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
+    }
+
+    void start_extended_section(
+        ExtendedParameterEntry &entry, std::string name, std::size_t line_number, std::size_t column)
+    {
+        if (!m_seen_fractal)
+        {
+            if (name != "fractal")
+            {
+                error(ParseErrorCode::EXPECTED_FRACTAL_SECTION, line_number, column);
+                m_current_section = &entry.layers.emplace_back();
+                m_current_section->name = std::move(name);
+                return;
+            }
+            entry.fractal.name = std::move(name);
+            m_current_section = &entry.fractal;
+            m_seen_fractal = true;
+            return;
+        }
+
+        if (name == "fractal")
+        {
+            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        }
+        if (name == "layer")
+        {
+            m_seen_layer = true;
+        }
+        else if (!m_seen_layer)
+        {
+            error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        }
+        m_current_section = &entry.layers.emplace_back();
+        m_current_section->name = std::move(name);
     }
 
     std::vector<Parameter> parse_assignments(std::string_view line, std::size_t line_number)
@@ -637,6 +676,8 @@ private:
     std::vector<ProcessedLine> m_lines;
     SourceLocation m_source_location;
     ParameterSection *m_current_section{};
+    bool m_seen_fractal{};
+    bool m_seen_layer{};
     std::vector<ParseDiagnostic> m_diagnostics;
 };
 

@@ -21,6 +21,8 @@ enum class ParseErrorCode
     EXPECTED_VALUE,
     UNTERMINATED_QUOTED_STRING,
     INVALID_COMPRESSED_PARAMETER_SET,
+    EXPECTED_FRACTAL_SECTION,
+    EXPECTED_LAYER_SECTION,
 };
 
 std::string to_string(ParseErrorCode code);
@@ -51,7 +53,8 @@ struct BasicParameterEntry
 
 struct ExtendedParameterEntry
 {
-    std::vector<ParameterSection> sections;
+    ParameterSection fractal;
+    std::vector<ParameterSection> layers;
     std::vector<ParseDiagnostic> diagnostics;
 };
 

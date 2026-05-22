@@ -117,20 +117,25 @@ Section names and their terminating colon always appear on a line by
 themselves.
 
 ```text
-extended_body ::= line*
-line          ::= section_label | assignment_list | blank
-section_label ::= section_name ":" line_end
+extended_body   ::= fractal_section layer_section+
+fractal_section ::= "fractal:" line_end section_line*
+layer_section   ::= layer_label section_line*
+layer_label     ::= "layer:" | "mapping:" | "transform:" | "formula:"
+                  | "inside:" | "outside:" | "gradient:" | "opacity:"
+                  | "alpha:"
+section_line    ::= assignment_list | blank
 assignment_list ::= assignment (space assignment)*
-assignment    ::= key "=" value
-key           ::= text_until_equals
-value         ::= quoted_value | atom_value
-quoted_value  ::= '"' quoted_char* '"'
-quoted_char   ::= any_character_except_quote_or_raw_line_end
-atom_value    ::= non_space_without_delimiters
+assignment      ::= key "=" value
+key             ::= text_until_equals
+value           ::= quoted_value | atom_value
+quoted_value    ::= '"' quoted_char* '"'
+quoted_char     ::= any_character_except_quote_or_raw_line_end
+atom_value      ::= non_space_without_delimiters
 ```
 
-The extended dialect requires a named section before any `name=value`
-pair. A section ends at the next section label or the end of the body.
+The extended dialect requires a `fractal:` section first, followed by one
+or more layer sections. A section ends at the next section label or the
+end of the body.
 
 All values are string values. Exact value semantics are not documented
 well enough for the parser to impose types. The client interprets
@@ -328,7 +333,8 @@ BasicParameterBody
   assignments: [Assignment]
 
 ExtendedParameterBody
-  sections: [Section]
+  fractal: Section
+  layers: [Section]
 
 Section
   name
@@ -340,7 +346,9 @@ Assignment
   source_range
 ```
 
-Use ordered vectors everywhere. Build convenience lookup helpers and
+Use ordered vectors for assignments and layer sections. `fractal` is a
+single explicit section because every real extended parameter set is
+constrained to start with it. Build convenience lookup helpers and
 semantic layers on top of the ordered string representation.
 
 ## Semantic Resolution Plan
@@ -350,8 +358,8 @@ semantic layers on top of the ordered string representation.
    `FileEntry.name` metadata.
 4. Client chooses basic or extended body parsing for each remaining
    parameter-set entry.
-5. Parser returns ordered string assignments, or ordered sections of
-   string assignments.
+5. Parser returns ordered string assignments, or an explicit `fractal`
+   section plus ordered layer sections.
 6. Client builds typed layer objects while preserving all raw sections.
 7. For each `formula`, `inside`, `outside`, and `transform` section,
    collect `(filename, entry, kind)` references.
@@ -377,8 +385,9 @@ semantic layers on top of the ordered string representation.
    strings so whitespace inside quotes is not a pair boundary.
 4. Add basic body parsing: ordered string name/value assignments with
    no sections.
-5. Add extended body parsing: require section-label lines, then ordered
-   string name/value assignments inside each section.
+5. Add extended body parsing: require `fractal:` first, then one or more
+   ordered layer sections containing ordered string name/value
+   assignments.
 6. Add compressed extended-body decoding: UF base64, CRC32 validation,
    zlib inflate, then parse the inflated body text. Use zlib from the
    vcpkg manifest. Also expose round-trip helper functions for
@@ -392,6 +401,8 @@ semantic layers on top of the ordered string representation.
 ## Tests
 - Unit parse basic name/value parameter bodies.
 - Unit parse extended one-layer and multi-layer parameter bodies.
+- Reject extended bodies without a leading `fractal:` section.
+- Reject extended bodies with `fractal:` but no following layer section.
 - Verify clients can skip `comment` `FileEntry` bodies.
 - Verify clients can route compressed inline formula/coloring/class
   entries by `FileEntry.name` without invoking the parameter parser.
