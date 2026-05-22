@@ -14,10 +14,10 @@
   route inline entries, such as `*.ufm:*`, `*.ucl:*`, `*.uxf:*`, and
   `*.ulb:class:*`, away from the parameter parser.
 - The client knows whether each parameter body is basic or extended and
-  passes that dialect to the body parser.
+  calls `parse_basic_parameters` or `parse_extended_parameters`.
 - Parameter parsing is string-preserving. It keeps assignment order,
-  repeated keys, raw value text, and source locations. Value semantics
-  belong to the client.
+  repeated keys, and raw value text. Source locations are used only for
+  diagnostics. Value semantics belong to the client.
 
 ## UF6 Semantics
 - UF6 docs describe parameter files as collections of parameter sets
@@ -53,6 +53,10 @@ structures, skips entries named `comment`, routes inline
 formula/coloring/transform/class entries by `FileEntry.name`, and passes
 only parameter-set bodies to the parameter parser.
 
+That classification layer is client responsibility, not parameter parser
+responsibility. The parser entry points accept a `FileEntry` only after
+the caller has decided that the entry body is a parameter body.
+
 `entry_name` is intentionally permissive. Observed names include
 digits, spaces, unicode bytes, `.`, `:`, `,`, `[`, `]`, `(`, `)`, `&`,
 `+`, `/`, and `-`. Do not require formula identifier syntax here.
@@ -60,7 +64,9 @@ Comments are whitespace for parsing purposes and can appear anywhere
 whitespace can appear, not only between entries.
 
 ## Body Dialects
-The client selects the body dialect. The parser never guesses.
+The client selects the body dialect by calling
+`parse_basic_parameters` or `parse_extended_parameters`. The parser
+never guesses.
 
 Body parsing is line-oriented string processing:
 
@@ -363,7 +369,6 @@ Section
 Assignment
   key
   value: string
-  source_range
 ```
 
 Use ordered vectors for assignments and repeated transform sections.
@@ -399,7 +404,11 @@ sections are reported as diagnostics and omitted from the AST.
    still be inspected and round-tripped.
 
 ## Implementation Slices
-1. Reuse `FileEntry` scanning at the client boundary.
+1. Client classification layer, outside the parameter parser: scan
+   `.upr` files into `FileEntry` structures, skip entries named
+   `comment`, route inline formula/coloring/transform/class entries by
+   `FileEntry.name`, and choose basic or extended parameter parsing for
+   each remaining parameter-set entry.
 2. Add body line preprocessing: strip comments outside quoted strings
    and repeatedly join continued physical lines.
 3. Add `name=value` splitting for a processed line, honoring quoted
