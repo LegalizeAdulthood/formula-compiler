@@ -284,10 +284,6 @@ std::string compressed_payload(std::string_view body)
         {
             continue;
         }
-        if (text.size() % 4 != 0)
-        {
-            throw std::runtime_error{"invalid compressed parameter set"};
-        }
         payload.append(text);
     }
     if (!found_marker || payload.empty())

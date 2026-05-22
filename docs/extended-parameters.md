@@ -316,8 +316,9 @@ Decode compressed bodies as follows:
 1. Skip comments and blank lines before `::`, treating comments as
    whitespace.
 2. The first data line must start with `::`; remove that prefix.
-3. Trim each payload line, skipping comments and blank lines. Each
-   payload line length must be a multiple of 4.
+3. Trim each payload line, skipping comments and blank lines. Payload
+   line length is not semantic; concatenate the trimmed payload lines
+   before decoding.
 4. Decode with the normal base64 alphabet, but UF packs bits in little
    endian order within each 4-character group:
    ```text
@@ -434,7 +435,7 @@ sections are reported as diagnostics and omitted from the AST.
   entries by `FileEntry.name` without invoking the parameter parser.
 - Decode compressed parameter-set bodies that begin with `fractal:`.
 - Decode compressed bodies with known payloads.
-- Reject compressed bodies with bad line length, base64, CRC, or zlib.
+- Reject compressed bodies with bad base64, CRC, or zlib.
 - Parse `}NextEntry {` at the `FileEntry` layer without losing either
   entry.
 - Preserve repeated gradient, opacity, and alpha assignments in order.

@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -39,6 +41,65 @@ FileEntry entry_with_body(std::string_view body)
     entry.body = std::string{body};
     entry.body_range.begin = SourceLocation{1, 1, "example.upr"};
     return entry;
+}
+
+std::uint32_t crc32(std::string_view bytes)
+{
+    std::uint32_t crc{0xffffffffU};
+    for (unsigned char byte : bytes)
+    {
+        crc ^= byte;
+        for (int bit = 0; bit < 8; ++bit)
+        {
+            crc = (crc >> 1U) ^ (crc & 1U ? 0xedb88320U : 0U);
+        }
+    }
+    return crc ^ 0xffffffffU;
+}
+
+std::string encode_uf_base64(std::string_view bytes)
+{
+    static constexpr std::string_view alphabet{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+    std::string result;
+    result.reserve(((bytes.size() + 2) / 3) * 4);
+    for (std::size_t pos = 0; pos < bytes.size(); pos += 3)
+    {
+        const std::size_t count{std::min<std::size_t>(3, bytes.size() - pos)};
+        const auto b0 = static_cast<unsigned char>(bytes[pos]);
+        const auto b1 = count > 1 ? static_cast<unsigned char>(bytes[pos + 1]) : 0;
+        const auto b2 = count > 2 ? static_cast<unsigned char>(bytes[pos + 2]) : 0;
+
+        result.push_back(alphabet[b0 & 0x3fU]);
+        result.push_back(alphabet[((b0 >> 6U) | ((b1 & 0x0fU) << 2U)) & 0x3fU]);
+        result.push_back(count > 1 ? alphabet[((b1 >> 4U) | ((b2 & 0x03U) << 4U)) & 0x3fU] : '=');
+        result.push_back(count > 2 ? alphabet[(b2 >> 2U) & 0x3fU] : '=');
+    }
+    return result;
+}
+
+std::string compressed_body_for_zlib_stream(std::string_view stream)
+{
+    const std::uint32_t crc{crc32(stream)};
+    std::string payload;
+    payload.push_back(static_cast<char>(crc & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 8U) & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 16U) & 0xffU));
+    payload.push_back(static_cast<char>((crc >> 24U) & 0xffU));
+    payload.append(stream);
+    return "::" + encode_uf_base64(payload) + "\n";
+}
+
+std::string corrupt_first_payload_character(std::string compressed)
+{
+    for (char &ch : compressed)
+    {
+        if (ch != ':' && ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n')
+        {
+            ch = ch == 'A' ? 'B' : 'A';
+            break;
+        }
+    }
+    return compressed;
 }
 
 } // namespace
@@ -117,6 +178,30 @@ TEST(TestParameterParser, compressesAndDecompressesParameterSetBodies)
     EXPECT_EQ(body, decompressed);
 }
 
+TEST(TestParameterParser, compressedPayloadLineLengthIsNotSemantic)
+{
+    const std::string body{"fractal:\n"
+                           "layer:\n"
+                           "mapping:\n"
+                           "formula:\n"
+                           "inside:\n"
+                           "outside:\n"
+                           "gradient:\n"};
+    const std::string compressed{compress_parameter_set(body)};
+    std::string payload;
+    for (char ch : compressed.substr(2))
+    {
+        if (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n')
+        {
+            payload.push_back(ch);
+        }
+    }
+    const std::string rewrapped{
+        "::" + payload.substr(0, 5) + "\n  " + payload.substr(5, 7) + "\n" + payload.substr(12) + "\n"};
+
+    EXPECT_EQ(body, decompress_parameter_set(rewrapped));
+}
+
 TEST(TestParameterParser, parsesCompressedExtendedParameterBodies)
 {
     const std::string body{"fractal:\n"
@@ -148,6 +233,43 @@ TEST(TestParameterParser, parsesCompressedExtendedParameterBodies)
 TEST(TestParameterParser, reportsInvalidCompressedExtendedParameterBodies)
 {
     FileEntry entry{entry_with_body("::AAAA\n")};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(ParseErrorCode::INVALID_COMPRESSED_PARAMETER_SET, result.diagnostics[0].code);
+}
+
+TEST(TestParameterParser, reportsCompressedBodiesWithBadBase64)
+{
+    FileEntry entry{entry_with_body("::!!!!\n")};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(ParseErrorCode::INVALID_COMPRESSED_PARAMETER_SET, result.diagnostics[0].code);
+}
+
+TEST(TestParameterParser, reportsCompressedBodiesWithBadCrc)
+{
+    const std::string body{"fractal:\n"
+                           "layer:\n"
+                           "mapping:\n"
+                           "formula:\n"
+                           "inside:\n"
+                           "outside:\n"
+                           "gradient:\n"};
+    FileEntry entry{entry_with_body(corrupt_first_payload_character(compress_parameter_set(body)))};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_FALSE(result.diagnostics.empty());
+    EXPECT_EQ(ParseErrorCode::INVALID_COMPRESSED_PARAMETER_SET, result.diagnostics[0].code);
+}
+
+TEST(TestParameterParser, reportsCompressedBodiesWithBadZlib)
+{
+    FileEntry entry{entry_with_body(compressed_body_for_zlib_stream("not zlib"))};
 
     const ExtendedParameterEntry result{parse_extended_parameters(entry)};
 
