@@ -223,6 +223,42 @@ opacity:
     EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
 }
 
+TEST(TestGradientParser, acceptsAlphaAsOpacitySection)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  index=0 color=0
+alpha:
+  smooth=no
+  numnodes=2 index=0 alpha=0 index=399 alpha=255
+}
+)ugr"};
+
+    GradientFile file = parse_gradient(ugr);
+
+    ASSERT_EQ(1U, file.entries.size());
+    const OpacitySection &section = file.entries[0].opacity;
+    EXPECT_FALSE(section.smooth);
+    ASSERT_EQ(2U, section.points.size());
+    EXPECT_TRUE(has_control_point(section.points[0], 0, 0));
+    EXPECT_TRUE(has_control_point(section.points[1], 399, 255));
+}
+
+TEST(TestGradientParser, rejectsOpacityKeyInAlphaSection)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  index=0 color=0
+alpha:
+  index=0 opacity=255
+}
+)ugr"};
+
+    EXPECT_THROW(parse_gradient(ugr), std::runtime_error);
+}
+
 TEST(TestGradientParser, acceptsOpacityBeforeGradient)
 {
     const char *const ugr{R"ugr(

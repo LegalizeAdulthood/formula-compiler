@@ -308,7 +308,8 @@ void parse_gradient_key_value(Lexer &tokens, GradientSection &section, int &expe
     }
 }
 
-void parse_opacity_key_value(Lexer &tokens, OpacitySection &section, int &expected_num_nodes)
+void parse_opacity_key_value(
+    Lexer &tokens, OpacitySection &section, int &expected_num_nodes, std::string_view value_key_name)
 {
     const Token key = parse_key(tokens);
     if (key.value == "smooth")
@@ -337,9 +338,9 @@ void parse_opacity_key_value(Lexer &tokens, OpacitySection &section, int &expect
         OpacityControlPoint point;
         point.index = parse_int(tokens.next());
         Token value_key = parse_key(tokens);
-        if (value_key.value != "opacity")
+        if (value_key.value != value_key_name)
         {
-            throw std::runtime_error("expected opacity");
+            throw std::runtime_error("expected " + std::string{value_key_name});
         }
         point.opacity = static_cast<std::uint8_t>(parse_int(tokens.next()));
         section.points.push_back(point);
@@ -362,13 +363,13 @@ GradientSection parse_gradient_section(Lexer &tokens)
     return section;
 }
 
-OpacitySection parse_opacity_section(Lexer &tokens)
+OpacitySection parse_opacity_section(Lexer &tokens, std::string_view value_key_name)
 {
     OpacitySection section;
     int expected_num_nodes{-1};
     while (!is_section_end(tokens.peek()))
     {
-        parse_opacity_key_value(tokens, section, expected_num_nodes);
+        parse_opacity_key_value(tokens, section, expected_num_nodes, value_key_name);
     }
     expect_num_nodes(expected_num_nodes, section.points.size());
     return section;
@@ -399,7 +400,12 @@ GradientFile parse_gradient(std::string_view text)
             }
             else if (header.value == "opacity")
             {
-                entry.opacity = parse_opacity_section(tokens);
+                entry.opacity = parse_opacity_section(tokens, "opacity");
+                has_opacity = true;
+            }
+            else if (header.value == "alpha")
+            {
+                entry.opacity = parse_opacity_section(tokens, "alpha");
                 has_opacity = true;
             }
             else
