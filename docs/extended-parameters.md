@@ -466,7 +466,6 @@ section) and retry paring the FileEntry as a basic parameter set.
     - validate nested `p_` assignments against the selected plug-in class
     - report unknown nested plug-in parameters and type mismatches
 2. Add richer typed conversion:
-    - validate enum values against `enum` lists
     - validate color and complex spelling beyond the common saved forms
     - retain original strings for round-tripping
 

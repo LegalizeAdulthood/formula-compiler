@@ -72,6 +72,7 @@ struct ParameterDefinition
 {
     std::string type;
     std::string name;
+    std::vector<std::string> enum_values;
     bool has_default{};
 };
 
@@ -568,7 +569,7 @@ public:
         ParameterDefinition definition;
         definition.type = node.type();
         definition.name = node.name();
-        definition.has_default = has_default(node.block());
+        collect_param_settings(definition, node.block());
         m_definitions.params.push_back(std::move(definition));
     }
 
@@ -581,11 +582,13 @@ public:
     }
 
 private:
-    bool has_default(const ast::Expr &expr)
+    void collect_param_settings(ParameterDefinition &definition, const ast::Expr &expr)
     {
         m_found_default = false;
+        m_current_definition = &definition;
         visit_expr(expr);
-        return m_found_default;
+        m_current_definition = nullptr;
+        definition.has_default = m_found_default;
     }
 
     void visit_expr(const ast::Expr &expr)
@@ -602,6 +605,13 @@ private:
         {
             m_found_default = true;
         }
+        else if (node.key() == "enum" && m_current_definition != nullptr)
+        {
+            if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+            {
+                m_current_definition->enum_values = *values;
+            }
+        }
         else if (node.key() == "param_forward")
         {
             const auto *values = std::get_if<std::vector<std::string>>(&node.value());
@@ -616,6 +626,7 @@ private:
     }
 
     ParameterDefinitions &m_definitions;
+    ParameterDefinition *m_current_definition{};
     bool m_found_default{};
 };
 
@@ -749,13 +760,22 @@ bool has_function_definition(const ParameterDefinitions &definitions, std::strin
     return false;
 }
 
-bool parses_integer(std::string_view value)
+std::optional<int> parse_integer_value(std::string_view value)
 {
     int result{};
     const char *first{value.data()};
     const char *last{value.data() + value.size()};
     const std::from_chars_result parsed{std::from_chars(first, last, result)};
-    return parsed.ec == std::errc{} && parsed.ptr == last;
+    if (parsed.ec != std::errc{} || parsed.ptr != last)
+    {
+        return {};
+    }
+    return result;
+}
+
+bool parses_integer(std::string_view value)
+{
+    return parse_integer_value(value).has_value();
 }
 
 bool parses_number(std::string_view value)
@@ -785,8 +805,27 @@ bool parses_complex(std::string_view value)
         parses_number(value.substr(separator + 1));
 }
 
-bool parameter_value_matches_type(std::string_view type, std::string_view value)
+bool parameter_value_matches_enum(const ParameterDefinition &definition, std::string_view value)
 {
+    if (definition.enum_values.empty())
+    {
+        return false;
+    }
+    if (std::find(definition.enum_values.begin(), definition.enum_values.end(), value) != definition.enum_values.end())
+    {
+        return true;
+    }
+    const std::optional<int> index{parse_integer_value(value)};
+    return index.has_value() && *index >= 0 && static_cast<std::size_t>(*index) < definition.enum_values.size();
+}
+
+bool parameter_value_matches_type(const ParameterDefinition &definition, std::string_view value)
+{
+    if (!definition.enum_values.empty())
+    {
+        return parameter_value_matches_enum(definition, value);
+    }
+    const std::string_view type{definition.type};
     if (type == "bool")
     {
         return parses_bool(value);
@@ -924,7 +963,7 @@ void validate_reference_parameters(ParameterReferenceSet &result, const Paramete
                     continue;
                 }
             }
-            if (!parameter_value_matches_type(definition->type, parameter.value))
+            if (!parameter_value_matches_type(*definition, parameter.value))
             {
                 add_reference_diagnostic(
                     result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);

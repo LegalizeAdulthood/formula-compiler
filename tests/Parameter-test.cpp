@@ -694,6 +694,81 @@ TEST(TestParameterParser, resolveParameterReferencesValidatesSavedParameters)
     ASSERT_EQ(3U, result.resolved.size());
 }
 
+TEST(TestParameterParser, resolveParameterReferencesAcceptsEnumSavedParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_mode=Golden p_index=1\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "int param mode\n"
+                    "enum=\"Golden\" \"Silver\"\n"
+                    "endparam\n"
+                    "int param index\n"
+                    "enum=\"First\" \"Second\"\n"
+                    "endparam\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    EXPECT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(3U, result.resolved.size());
+}
+
+TEST(TestParameterParser, resolveParameterReferencesRejectsInvalidEnumSavedParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_mode=Bronze p_index=2\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "int param mode\n"
+                    "enum=\"Golden\" \"Silver\"\n"
+                    "endparam\n"
+                    "int param index\n"
+                    "enum=\"First\" \"Second\"\n"
+                    "endparam\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    ASSERT_EQ(2U, result.diagnostics.size());
+    EXPECT_EQ(ParameterReferenceErrorCode::TYPE_MISMATCH, result.diagnostics[0].code);
+    EXPECT_EQ("p_mode", result.diagnostics[0].detail);
+    EXPECT_EQ(ParameterReferenceErrorCode::TYPE_MISMATCH, result.diagnostics[1].code);
+    EXPECT_EQ("p_index", result.diagnostics[1].detail);
+}
+
 TEST(TestParameterParser, resolveParameterReferencesReportsParameterSemanticErrors)
 {
     FileEntry entry{entry_with_body("fractal:\n"
