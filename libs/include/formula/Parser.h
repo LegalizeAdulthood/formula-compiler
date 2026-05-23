@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -50,6 +50,7 @@ enum class ErrorCode
     DEFAULT_SECTION_INVALID_KEY,
     DEFAULT_SECTION_INVALID_METHOD,
     SWITCH_SECTION_INVALID_KEY,
+    UNKNOWN_PREDEFINED_SYMBOL,
 };
 
 std::string to_string(ErrorCode code);

@@ -25,6 +25,8 @@ Implemented coverage includes:
 - Import metadata, source filenames, import graph loading, class indexing,
   reference collection, reference resolution, and lazy retention of referenced
   imported class ASTs.
+- Parser validation of documented predefined-symbol names. Unknown `#` names
+  are parse errors.
 
 ## Parser Boundary
 
@@ -87,20 +89,21 @@ analysis.
 
 ## Remaining Parser Work
 
-1. Add a parser-visible predefined-symbol name table from the documented set
-   above. Reject unknown `#` names during parse while preserving source spelling
-   for accepted names.
-2. Add a semantic predefined-symbol descriptor table using the same documented
-   set. Store canonical name, type, mutability, constant-expression
-   availability, allowed formula kinds, and allowed sections.
-3. Validate assignments to predefined symbols. Reject writes to read-only
+No remaining extended formula parser implementation slices are planned in this
+file.
+
+Remaining predefined-symbol work is semantic:
+
+1. Add a semantic predefined-symbol descriptor table using the documented set.
+   Store canonical name, type, mutability, constant-expression availability,
+   allowed formula kinds, and allowed sections.
+2. Validate assignments to predefined symbols. Reject writes to read-only
    symbols and allow writes only to documented writable symbols in allowed
    formula kinds and sections.
-4. Validate use in constant-expression contexts, including array declarations
+3. Validate use in constant-expression contexts, including array declarations
    and default settings, using the documented constant behavior.
-5. Add tests for every documented predefined symbol and at least one unknown
-   symbol parse error. Tests should cover source spelling preservation and any
-   documented writable symbols.
+4. Add semantic tests for every documented predefined symbol. Tests should cover
+   source spelling preservation and any documented writable symbols.
 
 Future parser work should be added here only when it is truly syntactic. If the
 work needs symbol tables, type information, imported class metadata, formula

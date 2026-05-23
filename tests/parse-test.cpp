@@ -884,16 +884,27 @@ TEST(TestFormulaParse, diagnosticsRetainSourceFilename)
 TEST(TestFormulaParse, extendedExpressionForms)
 {
     const ast::FormulaSectionsPtr result{
-        parse("foo(1, 2, @p, #c) + !bar.baz[3] % new thing(4) + Derived(base)", Options{})};
+        parse("foo(1, 2, @p, #pixel) + !bar.baz[3] % new thing(4) + Derived(base)", Options{})};
 
     ASSERT_TRUE(result);
     ASSERT_TRUE(result->bailout);
     EXPECT_EQ("binary_op:+ "
               "binary_op:+ "
-              "function_call:foo( literal:1 literal:2 parameter_ref:p constant_ref:c ) "
+              "function_call:foo( literal:1 literal:2 parameter_ref:p constant_ref:pixel ) "
               "binary_op:% unary_op:! index:[ member:baz { identifier:bar } literal:3 ] new:thing( literal:4 ) "
               "function_call:Derived( identifier:base )",
         trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, unknownPredefinedSymbolIsParseError)
+{
+    ParserPtr parser{create_parser("#foo", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    EXPECT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::UNKNOWN_PREDEFINED_SYMBOL, parser->get_errors().back().code);
 }
 
 TEST(TestFormulaParse, extendedDeclarationsAndLoops)

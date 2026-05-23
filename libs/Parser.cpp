@@ -46,6 +46,38 @@ bool equals_ignore_case(std::string_view lhs, std::string_view rhs)
     return true;
 }
 
+bool is_predefined_symbol(std::string_view name)
+{
+    static constexpr std::array<std::string_view, 25> symbols{
+        "angle",
+        "calculationPurpose",
+        "center",
+        "color",
+        "dpixel",
+        "dz",
+        "e",
+        "height",
+        "index",
+        "magn",
+        "maxiter",
+        "numiter",
+        "pi",
+        "pixel",
+        "random",
+        "randomrange",
+        "screenmax",
+        "screenpixel",
+        "skew",
+        "stretch",
+        "whitesq",
+        "width",
+        "x",
+        "y",
+        "z",
+    };
+    return std::find(symbols.begin(), symbols.end(), name) != symbols.end();
+}
+
 enum class SettingType
 {
     BOOLEAN,
@@ -1304,6 +1336,11 @@ bool FormulaParser::switch_section()
             else if (!check({TokenType::IDENTIFIER, TokenType::CONSTANT_IDENTIFIER}))
             {
                 error(ErrorCode::EXPECTED_IDENTIFIER);
+                return false;
+            }
+            else if (check(TokenType::CONSTANT_IDENTIFIER) && !is_predefined_symbol(str()))
+            {
+                error(ErrorCode::UNKNOWN_PREDEFINED_SYMBOL);
                 return false;
             }
             else
@@ -3094,6 +3131,11 @@ Expr FormulaParser::primary()
 
     if (is_extended() && check(TokenType::CONSTANT_IDENTIFIER))
     {
+        if (!is_predefined_symbol(str()))
+        {
+            error(ErrorCode::UNKNOWN_PREDEFINED_SYMBOL);
+            return nullptr;
+        }
         Expr result = std::make_shared<ConstantRefNode>(str());
         advance();
         return result;
@@ -3237,6 +3279,7 @@ std::string to_string(ErrorCode code)
         ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_KEY);
         ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
         ERROR_CODE_CASE(SWITCH_SECTION_INVALID_KEY);
+        ERROR_CODE_CASE(UNKNOWN_PREDEFINED_SYMBOL);
     }
 
     return std::to_string(static_cast<int>(code));
