@@ -191,6 +191,7 @@ private:
     Expr unary();
     Expr power();
     Expr postfix();
+    bool validate_basic_function_call(std::vector<Expr> &args) const;
     Expr builtin_var();
     Expr builtin_fn();
     std::optional<std::vector<Expr>> function_call();
@@ -2765,6 +2766,11 @@ Expr FormulaParser::postfix()
     {
         if (check(TokenType::OPEN_PAREN))
         {
+            if (!is_extended() && dynamic_cast<const IdentifierNode *>(left.get()))
+            {
+                error(ErrorCode::UNKNOWN_BASIC_FUNCTION);
+                return nullptr;
+            }
             const auto error_count = m_errors.size();
             std::vector<Expr> args = argument_list();
             if (m_errors.size() != error_count)
@@ -2824,6 +2830,46 @@ Expr FormulaParser::postfix()
     return left;
 }
 
+std::optional<double> numeric_literal_value(const Expr &expr)
+{
+    const auto *literal = dynamic_cast<const LiteralNode *>(expr.get());
+    if (literal == nullptr)
+    {
+        return {};
+    }
+    const LiteralNode::ValueType value{literal->value()};
+    if (std::holds_alternative<int>(value))
+    {
+        return static_cast<double>(std::get<int>(value));
+    }
+    if (std::holds_alternative<double>(value))
+    {
+        return std::get<double>(value);
+    }
+    return {};
+}
+
+bool FormulaParser::validate_basic_function_call(std::vector<Expr> &args) const
+{
+    if (args.size() == 1)
+    {
+        return true;
+    }
+    if (args.size() == 2)
+    {
+        const std::optional<double> re{numeric_literal_value(args[0])};
+        const std::optional<double> im{numeric_literal_value(args[1])};
+        if (re && im)
+        {
+            args.clear();
+            args.push_back(std::make_shared<LiteralNode>(Complex{*re, *im}));
+            return true;
+        }
+    }
+    error(ErrorCode::INVALID_BASIC_FUNCTION_ARITY);
+    return false;
+}
+
 Expr FormulaParser::builtin_var()
 {
     if (is_builtin_var())
@@ -2867,6 +2913,11 @@ std::optional<Expr> FormulaParser::builtin_function()
         }
         if (args.has_value())
         {
+            if (!is_extended() && !validate_basic_function_call(args.value()))
+            {
+                end_tracking();
+                return Expr{};
+            }
             end_tracking();
             return std::make_shared<FunctionCallNode>(name, args.value());
         }
@@ -3202,6 +3253,8 @@ std::string to_string(ErrorCode code)
         ERROR_CODE_CASE(EXPECTED_TERMINATOR);
         ERROR_CODE_CASE(EXPECTED_STATEMENT);
         ERROR_CODE_CASE(UNEXPECTED_ASSIGNMENT);
+        ERROR_CODE_CASE(UNKNOWN_BASIC_FUNCTION);
+        ERROR_CODE_CASE(INVALID_BASIC_FUNCTION_ARITY);
         ERROR_CODE_CASE(BUILTIN_VARIABLE_ASSIGNMENT);
         ERROR_CODE_CASE(BUILTIN_FUNCTION_ASSIGNMENT);
         ERROR_CODE_CASE(INVALID_SECTION);

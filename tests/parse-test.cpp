@@ -79,6 +79,13 @@ class Functions : public TestWithParam<std::string>
 {
 };
 
+Options basic_options()
+{
+    Options options;
+    options.dialect = Dialect::BASIC;
+    return options;
+}
+
 struct ParseFailureParam
 {
     std::string_view name;
@@ -519,6 +526,7 @@ static std::vector<std::string> s_functions{
     "fn4", "srand", "asin", "acos", "asinh",    //
     "acosh", "atan", "atanh", "sqrt", "cabs",   //
     "floor", "ceil", "trunc", "round", "ident", //
+    "zero", "one",                               //
 };
 
 TEST_P(Functions, notAssignable)
@@ -544,6 +552,86 @@ TEST_P(Functions, functionOne)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
+
+TEST(TestFormulaParse, basicUnknownFunctionCallRejected)
+{
+    const ParserPtr parser{create_parser("foo(1)", basic_options())};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::UNKNOWN_BASIC_FUNCTION, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, basicFunctionCallRequiresArgument)
+{
+    const ParserPtr parser{create_parser("sin()", basic_options())};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, basicFunctionCallMatchesBuiltinCaseInsensitively)
+{
+    const ast::FormulaSectionsPtr result{parse("Sin(1)", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:sin( literal:1 )", trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, basicFunctionCallRejectsGenericMultiArgumentCall)
+{
+    const ParserPtr parser{create_parser("sin(a, b)", basic_options())};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, basicFunctionCallRejectsTooManyArguments)
+{
+    const ParserPtr parser{create_parser("sin(1, 2, 3)", basic_options())};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, basicFunctionCallAcceptsNumericPairAsComplexLiteral)
+{
+    const ast::FormulaSectionsPtr result{parse("sin(1, 2)", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:sin( literal:(1,2) )", trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, basicFunctionCallAcceptsDecimalPairAsComplexLiteral)
+{
+    const ast::FormulaSectionsPtr result{parse("round(2.5, 3.4)", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:round( literal:(2.5,3.4) )", trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, extendedFunctionCallStillAllowsMultipleArguments)
+{
+    const ast::FormulaSectionsPtr result{parse("foo(1, 2)", Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:foo( literal:1 literal:2 )", trim_ws(to_string(result->bailout)));
+}
 
 TEST_P(ReservedWords, notAssignable)
 {
