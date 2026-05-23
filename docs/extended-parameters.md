@@ -465,8 +465,7 @@ section) and retry paring the FileEntry as a basic parameter set.
     - resolve class and plug-in parameter defaults
     - validate nested `p_` assignments against the selected plug-in class
     - report unknown nested plug-in parameters and type mismatches
-2. Add richer typed conversion:
-    - retain original strings for round-tripping
+2. No remaining parameter-set parser slices are planned in this file.
 
 ## Tests
 - Unit parse basic name/value parameter bodies.

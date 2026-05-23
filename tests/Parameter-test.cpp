@@ -172,6 +172,33 @@ TEST(TestParameterParser, parsesExtendedSectionsFromFileEntry)
     EXPECT_EQ("2", result.layers[0].formula.assignments[2].value);
 }
 
+TEST(TestParameterParser, preservesRawScalarValueSpelling)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "boolValue=yes enumValue=Normal floatValue=1E-16 "
+                                    "complexValue=-0.5/0.25 colorValue=4280734340\n"
+                                    "layer:\n"
+                                    "caption=\"Layer\"\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"mmf.ufm\" entry=\"Mandelbrot\" p_power=2/0\n"
+                                    "inside:\n"
+                                    "outside:\n"
+                                    "gradient:\n")};
+
+    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(5U, result.fractal.assignments.size());
+    EXPECT_EQ("yes", result.fractal.assignments[0].value);
+    EXPECT_EQ("Normal", result.fractal.assignments[1].value);
+    EXPECT_EQ("1E-16", result.fractal.assignments[2].value);
+    EXPECT_EQ("-0.5/0.25", result.fractal.assignments[3].value);
+    EXPECT_EQ("4280734340", result.fractal.assignments[4].value);
+    ASSERT_EQ(3U, result.layers[0].formula.assignments.size());
+    EXPECT_EQ("2/0", result.layers[0].formula.assignments[2].value);
+}
+
 TEST(TestParameterParser, compressesAndDecompressesParameterSetBodies)
 {
     const std::string body{
