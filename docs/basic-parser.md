@@ -10,6 +10,12 @@ needed for BASIC formulas.
 The parser should reject BASIC inputs that would otherwise fail later in the
 interpreter or compiler. Unknown variables remain valid and evaluate as zero.
 
+Extended formulas add syntax and entity references on top of BASIC semantics.
+They do not weaken BASIC rules. Any constraint described here for BASIC
+expressions, builtin functions, builtin variables, assignment, precedence, or
+runtime operator behavior should also hold for extended formulas unless a later
+Ultra Fractal feature explicitly extends that specific construct.
+
 The BASIC language semantics are described in `basic-formula.txt`. The
 functions listed there are the complete BASIC builtin function set. Each listed
 builtin function takes exactly one argument, even where the text does not show
@@ -78,6 +84,12 @@ BASIC has one parser contract. It should reject:
 
 Parser options that allow builtin assignment should be removed or constrained
 outside BASIC once this plan is implemented.
+
+The same static restrictions should be enforced in extended formulas for
+shared BASIC constructs. Extended-only constructs can add valid forms, such as
+user-defined function calls or class member calls, but they should not make
+read-only builtin assignment, builtin arity errors, malformed assignment, or
+other BASIC syntax violations valid.
 
 ## Current Parser Gaps
 
@@ -161,7 +173,7 @@ as short-circuit operators for BASIC formulas.
 
 ### Function Calls
 
-In BASIC dialect, distinguish builtin function calls from generic calls:
+For BASIC constructs, distinguish builtin function calls from generic calls:
 
 - Accept `sin(expr)` and other known builtins.
 - Accept `sin(3, 4)` as one complex literal argument, equivalent to
@@ -183,13 +195,19 @@ Add parser error codes for:
 Continue to use existing delimiter errors for malformed call syntax, such as a
 missing close parenthesis.
 
+In extended formulas, generic calls can be valid user-defined function,
+constructor, or method calls. Builtin calls should still follow the BASIC
+builtin rules above.
+
 ### Builtin Assignment
 
 Make the BASIC verification policy explicit:
 
-- BASIC should reject assignment to builtin variables and builtin function
-  names, using case-insensitive matching.
-- Existing warning behavior should be removed from the BASIC path.
+- Shared BASIC semantics should reject assignment to builtin variables and
+  builtin function names, using case-insensitive matching.
+- Existing warning behavior should be removed or constrained so both BASIC and
+  extended formulas reject invalid builtin assignment in shared expression
+  contexts.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
 
@@ -243,12 +261,15 @@ for review and wait for approval.
      literal argument.
    - Match builtin function names case-insensitively.
    - Preserve extended multi-argument calls.
+   - Follow up by applying builtin arity validation to extended builtin calls
+     without rejecting extended user-defined calls.
 
 3. Add BASIC builtin-assignment tests.
    - Verify builtin variable assignment is rejected.
    - Verify builtin function assignment is rejected.
    - Verify read-only builtin matching is case-insensitive.
-   - Remove warning-mode expectations from BASIC tests.
+   - Verify the same shared builtin-assignment rules in extended formulas.
+   - Remove warning-mode expectations from parser tests.
 
 4. Review default parser options.
    - Remove or narrow options that allow builtin assignment in BASIC.
@@ -282,11 +303,13 @@ Suggested implementation order:
 3. Implement BASIC function call validation.
 4. Add failing parser tests for read-only builtin assignment.
 5. Implement BASIC builtin assignment validation.
-6. Add case-insensitive matching tests.
-7. Normalize BASIC validation lookups while preserving source spelling.
-8. Add runtime tests for non-short-circuit logical evaluation.
-9. Fix interpreter and compiler logical evaluation.
-10. Add precedence and modulus regression tests.
+6. Backfill shared builtin assignment validation onto extended formulas.
+7. Backfill shared builtin arity validation onto extended builtin calls.
+8. Add case-insensitive matching tests.
+9. Normalize BASIC validation lookups while preserving source spelling.
+10. Add runtime tests for non-short-circuit logical evaluation.
+11. Fix interpreter and compiler logical evaluation.
+12. Add precedence and modulus regression tests.
 
 ## Tests
 
@@ -308,6 +331,9 @@ Add parser tests for:
 - `sin=1` fails in BASIC.
 - `Sin=1` fails in BASIC.
 - Extended call syntax remains valid in extended dialect where appropriate.
+- Extended builtin calls follow the same builtin arity and numeric-pair rules.
+- Extended formulas reject assignment to read-only builtin variables and
+  builtin function names.
 - `q=3+(w=6)` fails in BASIC.
 - `z=q=6` parses in BASIC.
 - `1&&side_effect` evaluates both operands in BASIC once side-effect tests are
