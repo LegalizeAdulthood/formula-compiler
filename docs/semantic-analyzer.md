@@ -627,6 +627,69 @@ Add tests for:
 - Invalid nested plug-in parameter assignments.
 - Incomplete retained import graphs.
 
+## Test Slices
+
+Keep tests aligned with the implementation milestones:
+
+1. Analyzer shell.
+   - Empty formula diagnostics.
+   - Empty parameter-set diagnostics.
+   - Parsed inputs unchanged after analysis.
+
+2. Builtin registry.
+   - Scalar type lookup.
+   - Builtin constants by entry kind.
+   - Builtin function lookup.
+   - `Image` lookup without an imported file.
+
+3. Formula symbols.
+   - Duplicate local names.
+   - Duplicate function names or signatures.
+   - Duplicate class members.
+   - Unknown type names.
+   - Source spelling preserved in diagnostics.
+
+4. Formula expressions.
+   - Unknown variable, constant, parameter, function, class, and member.
+   - Bad call arity.
+   - Bad argument conversion.
+   - Bad assignment target.
+   - Bad array index type.
+   - Bad member receiver type.
+
+5. Formula statements and sections.
+   - Bad return value.
+   - Missing return where required.
+   - Non-bool loop or branch condition.
+   - Bad switch case value.
+   - Invalid section result.
+   - Invalid constant write.
+
+6. Classes and builtin objects.
+   - Unknown base class.
+   - Inheritance cycle.
+   - Constructor arity mismatch.
+   - Visibility violation.
+   - Unknown `Image` method or field.
+   - Valid documented `Image` method or field.
+
+7. Parameter-set bindings.
+   - Formula kind mismatch.
+   - Missing referenced entry.
+   - Incomplete retained import graph.
+   - Unknown saved parameter.
+   - Saved value type mismatch.
+   - Invalid enum value.
+   - Invalid function parameter target.
+   - Invalid plug-in class target.
+   - Invalid nested plug-in assignment.
+
+8. Downstream integration.
+   - Interpreter rejects semantic errors before execution.
+   - Compiler rejects semantic errors before code generation.
+   - Interpreter still reports runtime-only failures.
+   - Compiler still reports unsupported lowering failures.
+
 ## Documentation
 
 This document defines the semantic-analysis boundary for both formulas and
