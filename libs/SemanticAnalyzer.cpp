@@ -131,6 +131,21 @@ public:
 
     std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
     {
+        predeclare_functions(formula.per_image);
+        predeclare_functions(formula.builtin);
+        predeclare_functions(formula.initialize);
+        predeclare_functions(formula.iterate);
+        predeclare_functions(formula.bailout);
+        predeclare_functions(formula.perturb_initialize);
+        predeclare_functions(formula.perturb_iterate);
+        predeclare_functions(formula.defaults);
+        predeclare_functions(formula.type_switch);
+        predeclare_functions(formula.final);
+        predeclare_functions(formula.transform);
+        predeclare_functions(formula.public_members);
+        predeclare_functions(formula.protected_members);
+        predeclare_functions(formula.private_members);
+
         collect(formula.per_image);
         collect(formula.builtin);
         collect(formula.initialize);
@@ -177,7 +192,10 @@ public:
         {
             validate_type(node.return_type());
         }
-        declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+        if (m_predeclared_functions.find(&node) == m_predeclared_functions.end())
+        {
+            declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+        }
         begin_scope();
         for (const ast::FunctionArgument &arg : node.args())
         {
@@ -190,9 +208,26 @@ public:
 
     void visit(const ast::FunctionCallNode &node) override
     {
+        if (!is_declared(node.name()) && !m_builtins.find_function(node.name()))
+        {
+            report_unknown_symbol(node.name());
+        }
         for (const ast::Expr &arg : node.args())
         {
             collect(arg);
+        }
+    }
+
+    void visit(const ast::ConstantRefNode &node) override
+    {
+        report_unknown_symbol(node.name());
+    }
+
+    void visit(const ast::IdentifierNode &node) override
+    {
+        if (!is_declared(node.name()) && !is_builtin_variable(node.name()))
+        {
+            report_unknown_symbol(node.name());
         }
     }
 
@@ -224,6 +259,11 @@ public:
         {
             collect(arg);
         }
+    }
+
+    void visit(const ast::ParameterRefNode &node) override
+    {
+        report_unknown_symbol(node.name());
     }
 
     void visit(const ast::RepeatUntilNode &node) override
@@ -282,6 +322,22 @@ private:
         end_scope();
     }
 
+    void predeclare_functions(const ast::Expr &expr)
+    {
+        if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
+        {
+            declare(function->name(), SemanticSymbolKind::USER_FUNCTION);
+            m_predeclared_functions.insert(function);
+        }
+        else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+        {
+            for (const ast::Expr &statement : sequence->statements())
+            {
+                predeclare_functions(statement);
+            }
+        }
+    }
+
     void declare(const std::string &name, SemanticSymbolKind)
     {
         if (m_scopes.empty())
@@ -308,8 +364,62 @@ private:
         }
     }
 
+    bool is_declared(const std::string &name) const
+    {
+        for (auto scope = m_scopes.rbegin(); scope != m_scopes.rend(); ++scope)
+        {
+            if (scope->find(name) != scope->end())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool is_builtin_variable(const std::string &name) const
+    {
+        static constexpr std::array<std::string_view, 19> variables{
+            "z",
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "pixel",
+            "lastsqr",
+            "rand",
+            "pi",
+            "e",
+            "maxit",
+            "scrnmax",
+            "scrnpix",
+            "whitesq",
+            "ismand",
+            "center",
+            "magxmag",
+            "rotskew",
+        };
+        for (std::string_view variable : variables)
+        {
+            if (name == variable)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void report_unknown_symbol(const std::string &name)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::UNKNOWN_SYMBOL;
+        diagnostic.message = "unknown symbol: " + name;
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
+    std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
     std::vector<SemanticDiagnostic> m_diagnostics;
 };
 

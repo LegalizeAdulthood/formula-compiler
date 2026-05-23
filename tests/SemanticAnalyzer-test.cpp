@@ -212,4 +212,80 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsBuiltinImageType)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownVariable)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value\nvalue=missing", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_SYMBOL, diagnostics.front().code);
+    EXPECT_EQ("unknown symbol: missing", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsDeclaredVariableAndBuiltinVariable)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value\nvalue=z", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownFunction)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("missing()", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_SYMBOL, diagnostics.front().code);
+    EXPECT_EQ("unknown symbol: missing", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsForwardUserFunctionCall)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("helper()\n"
+                                            "func helper()\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownParameterAndConstantRefs)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("@param + #constant", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(2U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_SYMBOL, diagnostics[0].code);
+    EXPECT_EQ("unknown symbol: param", diagnostics[0].message);
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_SYMBOL, diagnostics[1].code);
+    EXPECT_EQ("unknown symbol: constant", diagnostics[1].message);
+}
+
 } // namespace formula::test
