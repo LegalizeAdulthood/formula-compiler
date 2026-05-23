@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Formula.h>
 
@@ -276,6 +276,12 @@ TEST(TestCompiledFormulaRun, assignmentStatementsBailout)
     EXPECT_EQ(4.0, z.re);
     EXPECT_EQ(0.0, z.im);
 }
+
+// Non-short-circuit compiled logical evaluation is covered by implementation
+// and expression result tests only. Parsed formulas cannot express a logical
+// RHS side effect because assignment is statement syntax, not expression syntax.
+// Extended user functions can cover this once they can mutate globals in the
+// compiler.
 
 TEST(TestCompiledFormulaRun, formulaInitialize)
 {

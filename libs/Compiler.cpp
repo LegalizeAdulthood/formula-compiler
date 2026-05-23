@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Compiler.h>
 
@@ -483,39 +483,9 @@ void Compiler::visit(const UnaryOpNode &node)
 void Compiler::visit(const BinaryOpNode &node)
 {
     node.left()->visit(*this);
-    asmjit::Label skip_right = comp.newLabel();
     asmjit::x86::Xmm right{comp.newXmm()};
     const std::string &op{node.op()};
-    if (op == "&&")
-    {
-        asmjit::x86::Xmm zero{comp.newXmm()};
-        ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
-        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        asmjit::Label eval_right = comp.newLabel();
-        ASMJIT_STORE(comp.jne(eval_right)); // result.re != 0.0, evaluate right
-        // Left is false (re == 0.0), short-circuit: result is 0.0, skip everything
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // result = {0.0, 0.0}
-        ASMJIT_STORE(comp.jmp(skip_right));
-        ASMJIT_STORE(comp.bind(eval_right));
-        // Left is true, continue to evaluate right (result unchanged)
-    }
-    else if (op == "||")
-    {
-        asmjit::x86::Xmm zero{comp.newXmm()};
-        ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
-        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        asmjit::Label eval_right = comp.newLabel();
-        ASMJIT_STORE(comp.je(eval_right)); // result.re == 0.0, evaluate right
-        // Left is true (re != 0.0), short-circuit: result is 1.0, skip everything
-        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // Zero result first
-        ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
-        ASMJIT_STORE(comp.jmp(skip_right));
-        ASMJIT_STORE(comp.bind(eval_right));
-        // Left is false, continue to evaluate right (result unchanged)
-    }
     compile_operand(*node.right(), right);
-    comp.bind(skip_right);
     if (op == "+")
     {
         comp.addpd(m_result.back(), right); // result += right
@@ -676,20 +646,20 @@ void Compiler::visit(const BinaryOpNode &node)
     if (op == "&&")
     {
         asmjit::Label success = comp.newLabel();
+        asmjit::Label fail = comp.newLabel();
         asmjit::Label end = comp.newLabel();
         asmjit::x86::Xmm zero{comp.newXmm()};
         ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
         ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        ASMJIT_STORE(comp.je(end));                        // result.re == 0.0, already false
+        ASMJIT_STORE(comp.je(fail));                       // result.re == 0.0, false
         ASMJIT_STORE(comp.ucomisd(right, zero));           // right.re <=> 0.0?
         ASMJIT_STORE(comp.jne(success));                   // right.re != 0.0, both true
-        // Right is false, set result to 0.0
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.bind(fail));
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // false
         ASMJIT_STORE(comp.jmp(end));
         ASMJIT_STORE(comp.bind(success));
-        // Both true, set result to 1.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // Zero imaginary part
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
         ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
         ASMJIT_STORE(comp.bind(end));
         return;
@@ -697,21 +667,21 @@ void Compiler::visit(const BinaryOpNode &node)
     if (op == "||")
     {
         asmjit::Label success = comp.newLabel();
+        asmjit::Label fail = comp.newLabel();
         asmjit::Label end = comp.newLabel();
         asmjit::x86::Xmm zero{comp.newXmm()};
 
         ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
         ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        ASMJIT_STORE(comp.jne(end));                       // result.re != 0.0, already true
+        ASMJIT_STORE(comp.jne(success));                   // result.re != 0.0, true
         ASMJIT_STORE(comp.ucomisd(right, zero));           // right.re <=> 0.0?
         ASMJIT_STORE(comp.jne(success));                   // right.re != 0.0, right is true
-        // Both false, set result to 0.0
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.bind(fail));
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // false
         ASMJIT_STORE(comp.jmp(end));
         ASMJIT_STORE(comp.bind(success));
-        // Right is true, set result to 1.0
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // Zero imaginary part
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
         ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
         ASMJIT_STORE(comp.bind(end));
         return;

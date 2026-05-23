@@ -132,6 +132,9 @@ TEST(TestFormulaInterpreter, logicalAndEvaluatesRightOperandWhenLeftIsFalse)
 {
     ast::Dictionary symbols;
 
+    // Direct AST only: assignment is statement syntax, so parsed formulas cannot
+    // express a logical RHS side effect. Extended user functions can cover this
+    // once they can mutate globals in the interpreter.
     const Complex result{
         ast::interpret(ast::binary(ast::number(0.0), "&&", ast::assignment("side", ast::number(1.0))), symbols)};
 
@@ -145,6 +148,9 @@ TEST(TestFormulaInterpreter, logicalOrEvaluatesRightOperandWhenLeftIsTrue)
 {
     ast::Dictionary symbols;
 
+    // Direct AST only: assignment is statement syntax, so parsed formulas cannot
+    // express a logical RHS side effect. Extended user functions can cover this
+    // once they can mutate globals in the interpreter.
     const Complex result{
         ast::interpret(ast::binary(ast::number(1.0), "||", ast::assignment("side", ast::number(2.0))), symbols)};
 
