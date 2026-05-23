@@ -829,6 +829,8 @@ struct FormulaSections
     Expr protected_members;
     Expr private_members;
     std::vector<ImportDirective> imports;
+    bool has_bailout_section{};
+    bool has_final_section{};
 };
 
 using FormulaSectionsPtr = std::shared_ptr<FormulaSections>;

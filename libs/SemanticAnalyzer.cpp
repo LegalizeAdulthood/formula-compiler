@@ -200,12 +200,29 @@ public:
         collect(formula.builtin);
         collect(formula.initialize);
         collect(formula.iterate);
-        collect(formula.bailout);
+        if (formula.has_bailout_section)
+        {
+            validate_section_result("bailout", formula.bailout,
+                {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX});
+        }
+        else
+        {
+            collect(formula.bailout);
+        }
         collect(formula.perturb_initialize);
         collect(formula.perturb_iterate);
         collect(formula.defaults);
         collect(formula.type_switch);
-        collect(formula.final);
+        if (formula.has_final_section)
+        {
+            validate_section_result("final", formula.final,
+                {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX,
+                    SemanticTypeKind::COLOR});
+        }
+        else
+        {
+            collect(formula.final);
+        }
         collect(formula.transform);
         collect(formula.public_members);
         collect(formula.protected_members);
@@ -667,6 +684,26 @@ private:
         m_diagnostics.push_back(std::move(diagnostic));
     }
 
+    void validate_section_result(
+        std::string_view name, const ast::Expr &expr, std::initializer_list<SemanticTypeKind> allowed_types)
+    {
+        if (!expr)
+        {
+            return;
+        }
+        const SemanticTypeKind type{expression_type(expr)};
+        if (type == SemanticTypeKind::ERROR ||
+            std::find(allowed_types.begin(), allowed_types.end(), type) != allowed_types.end())
+        {
+            return;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION_RESULT;
+        diagnostic.section_name = std::string{name};
+        diagnostic.message = "invalid section result: " + std::string{name} + " got " + type_name(type);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+
     std::size_t validate_builtin_call_arguments(
         const ast::FunctionCallNode &node, const SemanticFunctionDescriptor &function)
     {
@@ -756,6 +793,14 @@ private:
             }
             return symbol_type(identifier->name());
         }
+        if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
+        {
+            return binary_expression_type(*binary);
+        }
+        if (const auto *unary = dynamic_cast<const ast::UnaryOpNode *>(expr.get()))
+        {
+            return unary_expression_type(*unary);
+        }
         if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
         {
             visit(*call);
@@ -798,8 +843,96 @@ private:
             }
             return is_class(new_object->type()) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
         }
+        if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(expr.get()))
+        {
+            return member_expression_type(*member);
+        }
+        if (const auto *assignment = dynamic_cast<const ast::AssignmentNode *>(expr.get()))
+        {
+            visit(*assignment);
+            return SemanticTypeKind::VOID;
+        }
+        if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+        {
+            return sequence_expression_type(*sequence);
+        }
         collect(expr);
         return SemanticTypeKind::ERROR;
+    }
+
+    SemanticTypeKind binary_expression_type(const ast::BinaryOpNode &node)
+    {
+        const SemanticTypeKind left{expression_type(node.left())};
+        const SemanticTypeKind right{expression_type(node.right())};
+        if (left == SemanticTypeKind::ERROR || right == SemanticTypeKind::ERROR)
+        {
+            return SemanticTypeKind::ERROR;
+        }
+        if (node.op() == "&&" || node.op() == "||")
+        {
+            return SemanticTypeKind::BOOL;
+        }
+        if (node.op() == "<" || node.op() == "<=" || node.op() == ">" || node.op() == ">=" || node.op() == "==" ||
+            node.op() == "!=")
+        {
+            return SemanticTypeKind::BOOL;
+        }
+        return numeric_result_type(left, right);
+    }
+
+    SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node)
+    {
+        const SemanticTypeKind operand{expression_type(node.operand())};
+        if (operand == SemanticTypeKind::ERROR)
+        {
+            return SemanticTypeKind::ERROR;
+        }
+        return node.op() == '!' ? SemanticTypeKind::BOOL : operand;
+    }
+
+    SemanticTypeKind member_expression_type(const ast::MemberAccessNode &node)
+    {
+        validate_member_access(node);
+        const std::string receiver_type{expression_type_name(node.target())};
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+        {
+            if (const SemanticType *member = find_member(*klass, node.member()))
+            {
+                return member->kind;
+            }
+        }
+        return SemanticTypeKind::ERROR;
+    }
+
+    SemanticTypeKind sequence_expression_type(const ast::StatementSeqNode &node)
+    {
+        SemanticTypeKind result{SemanticTypeKind::VOID};
+        for (const ast::Expr &statement : node.statements())
+        {
+            result = expression_type(statement);
+        }
+        return result;
+    }
+
+    SemanticTypeKind numeric_result_type(SemanticTypeKind left, SemanticTypeKind right) const
+    {
+        const int left_rank{conversion_rank(left)};
+        const int right_rank{conversion_rank(right)};
+        if (left_rank < 0 || right_rank < 0)
+        {
+            return SemanticTypeKind::ERROR;
+        }
+        switch (std::max(left_rank, right_rank))
+        {
+        case 0:
+            return SemanticTypeKind::BOOL;
+        case 1:
+            return SemanticTypeKind::INT;
+        case 2:
+            return SemanticTypeKind::FLOAT;
+        default:
+            return SemanticTypeKind::COMPLEX;
+        }
     }
 
     std::string expression_type_name(const ast::Expr &expr)

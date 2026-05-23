@@ -704,4 +704,80 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownImageMember)
     EXPECT_EQ("invalid member access: Image.missing", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsNumericBailoutSectionResult)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "z = 0\n"
+                                            "bailout:\n"
+                                            "1 < 2",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidBailoutSectionResult)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "z = 0\n"
+                                            "bailout:\n"
+                                            "\"text\"",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_SECTION_RESULT, diagnostics.front().code);
+    EXPECT_EQ("bailout", diagnostics.front().section_name);
+    EXPECT_EQ("invalid section result: bailout got string", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsColorFinalSectionResult)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::COLORING;
+    const LoadedFormula loaded{load_formula("global:\n"
+                                            "color shade\n"
+                                            "final:\n"
+                                            "shade",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::COLORING;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidFinalSectionResult)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::COLORING;
+    const LoadedFormula loaded{load_formula("final:\n"
+                                            "\"text\"",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::COLORING;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_SECTION_RESULT, diagnostics.front().code);
+    EXPECT_EQ("final", diagnostics.front().section_name);
+    EXPECT_EQ("invalid section result: final got string", diagnostics.front().message);
+}
+
 } // namespace formula::test

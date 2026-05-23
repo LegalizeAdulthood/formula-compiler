@@ -1532,6 +1532,7 @@ std::optional<bool> FormulaParser::section_formula()
                     return false;
                 }
                 m_ast->bailout = result;
+                m_ast->has_bailout_section = true;
                 break;
 
             case TokenType::PERTURB_INIT:
@@ -1593,6 +1594,7 @@ std::optional<bool> FormulaParser::section_formula()
                     return false;
                 }
                 m_ast->final = result;
+                m_ast->has_final_section = true;
                 break;
 
             case TokenType::TRANSFORM:
