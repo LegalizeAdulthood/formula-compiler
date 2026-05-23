@@ -13,7 +13,8 @@ interpreter or compiler. Unknown variables remain valid and evaluate as zero.
 The BASIC language semantics are described in `basic-formula.txt`. The
 functions listed there are the complete BASIC builtin function set. Each listed
 builtin function takes exactly one argument, even where the text does not show
-an explicit argument.
+an explicit argument. A call written as `f(x, y)` with numeric literal parts is
+the BASIC spelling of a one-argument call with the complex literal `(x, y)`.
 
 ## BASIC Builtins
 
@@ -61,7 +62,9 @@ The parser should treat these names as the complete BASIC builtin function set:
 - `ident`, `zero`, `one`
 
 Each builtin function must parse with exactly one argument. This includes
-`zero` and `one`.
+`zero` and `one`. A numeric pair written directly inside the call parentheses,
+such as `sin(3, 4)`, is one complex literal argument and should parse as
+`sin((3, 4))`.
 
 ## Parse Mode
 
@@ -87,8 +90,11 @@ runtime behavior:
   `basic-formula.txt` should be one-argument calls.
 - Zero-argument calls such as `sin()` can parse, but later code assumes at
   least one argument.
-- Multi-argument calls such as `sin(1, 2)` can parse even though BASIC has no
-  multi-argument function calls.
+- Generic multi-argument calls such as `sin(a, b)` can parse even though BASIC
+  has no multi-argument function calls.
+- Numeric pair calls such as `sin(1, 2)` should be parsed as one complex
+  literal argument, matching legacy parser behavior and the `round(2.5, 3.4)`
+  example in `basic-formula.txt`.
 - Assignment to read-only builtin variables is allowed by default with
   warnings. BASIC should reject read-only builtin names.
 
@@ -120,6 +126,8 @@ After parsing succeeds in BASIC dialect:
 
 - All function calls target known BASIC builtins.
 - Every function call has exactly one argument.
+- Numeric pair calls such as `f(3, 4)` are represented as one complex literal
+  argument, equivalent to `f((3, 4))`.
 - Variable names, function names, and keywords were matched
   case-insensitively.
 - No extended-only nodes are present.
@@ -156,10 +164,13 @@ as short-circuit operators for BASIC formulas.
 In BASIC dialect, distinguish builtin function calls from generic calls:
 
 - Accept `sin(expr)` and other known builtins.
+- Accept `sin(3, 4)` as one complex literal argument, equivalent to
+  `sin((3, 4))`.
 - Accept case variants of known builtins, such as `Sin(expr)`.
 - Reject `foo(expr)` as an unknown function call.
 - Reject `sin()`.
-- Reject `sin(a, b)`.
+- Reject `sin(a, b)`. Only numeric literal pairs get the legacy complex-literal
+  treatment.
 - Reject bare calls to documented constant-like functions such as `zero()` and
   `one()` without an argument. They are still BASIC builtin functions and take
   one argument by parser contract.
@@ -219,13 +230,17 @@ for review and wait for approval.
    - Unknown variables still parse and evaluate as zero.
    - Unknown function calls fail during parse.
    - Builtin calls require exactly one argument.
-   - Multi-argument and zero-argument builtin calls fail during parse.
+   - Numeric pair calls such as `sin(1, 2)` parse as one complex literal
+     argument.
+   - Generic multi-argument and zero-argument builtin calls fail during parse.
    - Read-only builtin variable assignment reports a specific parser error.
    - Builtin function assignment reports a specific parser error.
 
 2. Add BASIC-only function-call validation.
    - Reject postfix calls where the callee is not a known BASIC builtin.
    - Reject known builtin calls with argument count other than one.
+   - Treat numeric literal pairs inside call parentheses as one complex
+     literal argument.
    - Match builtin function names case-insensitively.
    - Preserve extended multi-argument calls.
 
@@ -281,8 +296,10 @@ Add parser tests for:
 - `foo(1)` fails in BASIC.
 - `sin(1)` parses in BASIC.
 - `Sin(1)` parses in BASIC.
+- `sin(1, 2)` parses in BASIC as `sin((1, 2))`.
+- `round(2.5, 3.4)` parses in BASIC as `round((2.5, 3.4))`.
 - `sin()` fails in BASIC.
-- `sin(1, 2)` fails in BASIC.
+- `sin(a, b)` fails in BASIC.
 - `(sin)(1)` fails in BASIC if representable.
 - `z=1` parses in BASIC.
 - `Z=1` parses in BASIC.
