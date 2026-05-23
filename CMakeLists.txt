@@ -46,11 +46,13 @@ misc_group_sources("GitHub" FILES
     "ReadMe.md")
 misc_group_sources("Docs" FILES
     "docs/gradient-grammar.txt"
+    "docs/basic-parser.md"
     "docs/compiler-directives.md"
     "docs/extended-compiler.md"
     "docs/extended-formulas.md"
     "docs/extended-interpreter.md"
     "docs/extended-parameters.md"
-    "docs/extended-semantics.md")
+    "docs/extended-semantics.md"
+    "docs/semantic-analyzer.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
