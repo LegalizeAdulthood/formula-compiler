@@ -12,6 +12,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 using namespace formula::semantic;
 
 namespace formula::test
@@ -633,6 +635,63 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
     EXPECT_EQ("getWidth", image->methods[5].name);
     EXPECT_EQ("resize", image->methods[6].name);
     EXPECT_EQ("setPixel", image->methods[7].name);
+}
+
+TEST(TestSemanticAnalyzer, defaultRegistryFindsPredefinedSymbols)
+{
+    const BuiltinRegistry &registry{default_builtin_registry()};
+    static constexpr std::array<std::string_view, 25> names{
+        "angle",
+        "calculationPurpose",
+        "center",
+        "color",
+        "dpixel",
+        "dz",
+        "e",
+        "height",
+        "index",
+        "magn",
+        "maxiter",
+        "numiter",
+        "pi",
+        "pixel",
+        "random",
+        "randomrange",
+        "screenmax",
+        "screenpixel",
+        "skew",
+        "stretch",
+        "whitesq",
+        "width",
+        "x",
+        "y",
+        "z",
+    };
+
+    for (std::string_view name : names)
+    {
+        EXPECT_TRUE(registry.find_predefined_symbol(name)) << name;
+    }
+    ASSERT_TRUE(registry.find_predefined_symbol("pixel"));
+    EXPECT_EQ(SemanticTypeKind::COMPLEX, registry.find_predefined_symbol("pixel")->type.kind);
+    ASSERT_TRUE(registry.find_predefined_symbol("width"));
+    EXPECT_EQ(SemanticTypeKind::INT, registry.find_predefined_symbol("width")->type.kind);
+    EXPECT_FALSE(registry.find_predefined_symbol("foo"));
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsPredefinedSymbolRef)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("complex value\n"
+                                            "value=#pixel",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
 }
 
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)

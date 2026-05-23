@@ -87,6 +87,23 @@ SemanticFunctionDescriptor semantic_function(
     return function;
 }
 
+SemanticPredefinedSymbolDescriptor predefined_symbol(std::string name, const SemanticType &type, bool writable,
+    bool constant_expression, std::initializer_list<parser::EntryKind> entry_kinds,
+    std::initializer_list<const char *> sections)
+{
+    SemanticPredefinedSymbolDescriptor symbol;
+    symbol.name = std::move(name);
+    symbol.type = type;
+    symbol.writable = writable;
+    symbol.constant_expression = constant_expression;
+    symbol.entry_kinds.assign(entry_kinds.begin(), entry_kinds.end());
+    for (std::string_view section : sections)
+    {
+        symbol.sections.emplace_back(section);
+    }
+    return symbol;
+}
+
 BuiltinRegistry make_default_builtin_registry()
 {
     BuiltinRegistry registry;
@@ -121,10 +138,67 @@ BuiltinRegistry make_default_builtin_registry()
     const SemanticType *void_type{registry.find_type("void")};
     const SemanticType *bool_type{registry.find_type("bool")};
     const SemanticType *int_type{registry.find_type("int")};
+    const SemanticType *float_type{registry.find_type("float")};
     const SemanticType *color_type{registry.find_type("color")};
     const SemanticType *image_type{registry.find_type("Image")};
-    if (void_type && bool_type && int_type && complex_type && color_type && image_type)
+    if (void_type && bool_type && int_type && float_type && complex_type && color_type && image_type)
     {
+        const auto formula_entries = {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING,
+            parser::EntryKind::TRANSFORMATION, parser::EntryKind::CLASS};
+        const auto fractal_entries = {parser::EntryKind::FRACTAL};
+        const auto coloring_entries = {parser::EntryKind::COLORING};
+        const auto formula_sections = {"global", "init", "loop", "final", "transform", "default"};
+        registry.predefined_symbols.push_back(
+            predefined_symbol("angle", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("calculationPurpose", *int_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("center", *complex_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("color", *color_type, true, false, coloring_entries, {"loop", "final"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("dpixel", *complex_type, false, false, fractal_entries, {"perturbinit", "perturbloop"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("dz", *complex_type, true, false, fractal_entries, {"perturbinit", "perturbloop"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("e", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("height", *int_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("index", *float_type, true, false, coloring_entries, {"loop", "final"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("magn", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("maxiter", *int_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("numiter", *int_type, true, false, coloring_entries, {"loop", "final"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("pi", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("pixel", *complex_type, true, false, formula_entries, {"init", "loop", "transform"}));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("random", *complex_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("randomrange", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("screenmax", *complex_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("screenpixel", *complex_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("skew", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("stretch", *float_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("whitesq", *bool_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("width", *int_type, false, true, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("x", *int_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("y", *int_type, false, false, formula_entries, formula_sections));
+        registry.predefined_symbols.push_back(
+            predefined_symbol("z", *complex_type, true, false, formula_entries, {"init", "loop", "final"}));
+
         SemanticClassDescriptor image;
         image.name = "Image";
         image.type = *image_type;
@@ -176,6 +250,18 @@ const SemanticClassDescriptor *BuiltinRegistry::find_class(std::string_view name
         if (klass.name == name)
         {
             return &klass;
+        }
+    }
+    return nullptr;
+}
+
+const SemanticPredefinedSymbolDescriptor *BuiltinRegistry::find_predefined_symbol(std::string_view name) const
+{
+    for (const SemanticPredefinedSymbolDescriptor &symbol : predefined_symbols)
+    {
+        if (symbol.name == name)
+        {
+            return &symbol;
         }
     }
     return nullptr;
@@ -932,7 +1018,10 @@ public:
 
     void visit(const ast::ConstantRefNode &node) override
     {
-        report_unknown_symbol(node.name());
+        if (!m_builtins.find_predefined_symbol(node.name()))
+        {
+            report_unknown_symbol(node.name());
+        }
     }
 
     void visit(const ast::IdentifierNode &node) override
@@ -1389,6 +1478,15 @@ private:
                 return SemanticTypeKind::ERROR;
             }
             return symbol_type(identifier->name());
+        }
+        if (const auto *constant = dynamic_cast<const ast::ConstantRefNode *>(expr.get()))
+        {
+            if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(constant->name()))
+            {
+                return symbol->type.kind;
+            }
+            report_unknown_symbol(constant->name());
+            return SemanticTypeKind::ERROR;
         }
         if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
         {

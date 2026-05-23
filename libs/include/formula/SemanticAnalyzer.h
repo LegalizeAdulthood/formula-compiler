@@ -116,15 +116,27 @@ struct SemanticClassDescriptor
     std::vector<SemanticFunctionDescriptor> methods;
 };
 
+struct SemanticPredefinedSymbolDescriptor
+{
+    std::string name;
+    SemanticType type;
+    bool writable{};
+    bool constant_expression{};
+    std::vector<parser::EntryKind> entry_kinds;
+    std::vector<std::string> sections;
+};
+
 struct BuiltinRegistry
 {
     std::vector<SemanticType> types;
     std::vector<SemanticFunctionDescriptor> functions;
     std::vector<SemanticClassDescriptor> classes;
+    std::vector<SemanticPredefinedSymbolDescriptor> predefined_symbols;
 
     const SemanticType *find_type(std::string_view name) const;
     const SemanticFunctionDescriptor *find_function(std::string_view name) const;
     const SemanticClassDescriptor *find_class(std::string_view name) const;
+    const SemanticPredefinedSymbolDescriptor *find_predefined_symbol(std::string_view name) const;
 };
 
 const BuiltinRegistry &default_builtin_registry();
