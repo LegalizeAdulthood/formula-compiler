@@ -431,6 +431,18 @@ bool has_function_binding(const ParameterMetadata &metadata, std::string_view sa
     return false;
 }
 
+bool has_builtin_function(const BuiltinRegistry &builtins, std::string_view name)
+{
+    for (const SemanticFunctionDescriptor &function : builtins.functions)
+    {
+        if (same_identifier(function.name, name))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool has_parameter_name(const ParameterMetadata &metadata, std::string_view name)
 {
     for (const ParameterMetadata::Param &param : metadata.params)
@@ -691,8 +703,8 @@ void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
     }
 }
 
-void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, const ParameterSetSemanticContext &context,
-    const parameter::ParameterResolvedReference &resolved)
+void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, const BuiltinRegistry &builtins,
+    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved)
 {
     if (!resolved.ast)
     {
@@ -732,6 +744,10 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
         else if (starts_with(parameter.key, "f_") && !has_function_binding(metadata, parameter.key))
         {
             report_invalid_parameter_binding(diagnostics, resolved, parameter);
+        }
+        else if (starts_with(parameter.key, "f_") && !has_builtin_function(builtins, parameter.value))
+        {
+            report_invalid_parameter_binding(diagnostics, resolved, parameter, "invalid function target");
         }
     }
     for (const ParameterMetadata::Param &param : metadata.params)
@@ -1793,7 +1809,7 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
         if (resolved.ast)
         {
             check_retained_references(diagnostics, builtins, context, resolved.reference.entry, *resolved.ast);
-            check_parameter_bindings(diagnostics, context, resolved);
+            check_parameter_bindings(diagnostics, builtins, context, resolved);
         }
     }
     for (const RetainedFormulaClass *klass : context.retained_classes)

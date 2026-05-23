@@ -281,6 +281,32 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsSavedParameterAndFunction)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsInvalidSavedFunctionTarget)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "complex func fn1\n"
+                                            "endfunc\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"f_fn1", "missing"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("invalid parameter binding: f_fn1 invalid function target", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsSavedParameterTypeMismatch)
 {
     parser::Options options;
