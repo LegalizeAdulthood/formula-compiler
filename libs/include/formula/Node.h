@@ -112,10 +112,25 @@ public:
         m_args(std::move(args))
     {
     }
+    FunctionCallNode(Expr target, std::string name, std::vector<Expr> args) :
+        m_target(std::move(target)),
+        m_name(std::move(name)),
+        m_args(std::move(args))
+    {
+    }
     ~FunctionCallNode() override = default;
 
     void visit(Visitor &visitor) const override;
 
+    bool has_target() const
+    {
+        return static_cast<bool>(m_target);
+    }
+    const Expr &target() const
+    {
+        assert(m_target);
+        return m_target;
+    }
     const std::string &name() const
     {
         return m_name;
@@ -131,6 +146,7 @@ public:
     }
 
 private:
+    Expr m_target;
     std::string m_name;
     std::vector<Expr> m_args;
 };

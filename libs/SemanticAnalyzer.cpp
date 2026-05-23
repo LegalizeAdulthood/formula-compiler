@@ -288,7 +288,11 @@ public:
     void visit(const ast::FunctionCallNode &node) override
     {
         std::size_t checked_args{};
-        if (is_array_builtin(node.name()))
+        if (node.has_target())
+        {
+            checked_args = validate_member_call(node);
+        }
+        else if (is_array_builtin(node.name()))
         {
             checked_args = validate_array_builtin_call(node);
         }
@@ -558,6 +562,43 @@ private:
         return nullptr;
     }
 
+    std::size_t validate_member_call(const ast::FunctionCallNode &node)
+    {
+        const std::string receiver_type{expression_type_name(node.target())};
+        if (receiver_type.empty())
+        {
+            return 0U;
+        }
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+        {
+            const SemanticFunctionDescriptor *method{find_method(*klass, node.name())};
+            if (!method)
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+                diagnostic.message = "invalid member access: " + receiver_type + "." + node.name();
+                m_diagnostics.push_back(std::move(diagnostic));
+                return 0U;
+            }
+            validate_call_arity(node.name(), node.args().size(), method->argument_types.size());
+            return validate_builtin_call_arguments(node, *method);
+        }
+        collect(node.target());
+        return 0U;
+    }
+
+    const SemanticFunctionDescriptor *find_method(const SemanticClassDescriptor &klass, const std::string &name) const
+    {
+        for (const SemanticFunctionDescriptor &method : klass.methods)
+        {
+            if (method.name == name)
+            {
+                return &method;
+            }
+        }
+        return nullptr;
+    }
+
     void validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected)
     {
         if (actual != expected)
@@ -718,6 +759,18 @@ private:
         if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
         {
             visit(*call);
+            if (call->has_target())
+            {
+                const std::string receiver_type{expression_type_name(call->target())};
+                if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+                {
+                    if (const SemanticFunctionDescriptor *method = find_method(*klass, call->name()))
+                    {
+                        return method->return_type.kind;
+                    }
+                }
+                return SemanticTypeKind::ERROR;
+            }
             if (call->name() == "length")
             {
                 return SemanticTypeKind::INT;

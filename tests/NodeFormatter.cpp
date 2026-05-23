@@ -38,6 +38,11 @@ void NodeFormatter::visit(const ast::BinaryOpNode &node)
 void NodeFormatter::visit(const ast::FunctionCallNode &node)
 {
     m_str << "function_call:" << node.name() << "(\n";
+    if (node.has_target())
+    {
+        m_str << "target:\n";
+        node.target()->visit(*this);
+    }
     for (const ast::Expr &arg : node.args())
     {
         arg->visit(*this);

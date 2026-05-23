@@ -958,6 +958,21 @@ TEST(TestFormulaParse, extendedDynamicArrays)
         trim_ws(to_string(result->per_image)));
 }
 
+TEST(TestFormulaParse, extendedMethodCallPreservesTarget)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "Image source\n"
+                                               "source.getPixel(1, 2)\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:2 { "
+              "declaration:Image,source "
+              "function_call:getPixel( target: identifier:source literal:1 literal:2 ) }",
+        trim_ws(to_string(result->per_image)));
+}
+
 TEST(TestFormulaParse, extendedReturnWithoutExpression)
 {
     const ast::FormulaSectionsPtr result{parse("global:\n"

@@ -2750,7 +2750,7 @@ Expr FormulaParser::postfix()
             }
             if (const auto *member = dynamic_cast<const MemberAccessNode *>(left.get()); member)
             {
-                left = std::make_shared<FunctionCallNode>(member->member(), std::move(args));
+                left = std::make_shared<FunctionCallNode>(member->target(), member->member(), std::move(args));
                 continue;
             }
             error(ErrorCode::EXPECTED_IDENTIFIER);

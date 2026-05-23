@@ -78,6 +78,10 @@ public:
 
     void visit(const ast::FunctionCallNode &node) override
     {
+        if (node.has_target())
+        {
+            visit_expr(node.target());
+        }
         for (const ast::Expr &arg : node.args())
         {
             visit_expr(arg);
