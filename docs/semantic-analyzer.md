@@ -38,6 +38,30 @@ The interpreter and compiler own execution. They should consume only data that
 has passed semantic analysis. They may still reject unsupported runtime or
 codegen features, but they should not duplicate semantic validation.
 
+## Error Ownership
+
+Avoid reporting the same problem from multiple stages. Each stage should own a
+small class of diagnostics:
+
+- Parser: malformed text, invalid token sequences, invalid section order,
+  invalid section cardinality, and impossible AST shapes.
+- Resolver: missing files, missing entries, unresolved imports, and reference
+  graphs that cannot be loaded.
+- Semantic analyzer: invalid meaning after parse and resolution, including
+  names, types, calls, members, formula kinds, parameter bindings, and builtin
+  use.
+- Interpreter: runtime failures that require execution state.
+- Compiler: unsupported lowering or code generation failures after semantic
+  analysis succeeds.
+
+When a later stage receives earlier diagnostics, it should stop or forward
+them instead of trying to reinterpret the same input. For example, a missing
+formula entry belongs to the resolver, while a coloring formula used as a
+fractal formula belongs to semantic analysis.
+
+If a diagnostic could belong to two stages, choose the earliest stage that has
+all information needed to report it accurately.
+
 ## Proposed Entry Points
 
 Use two global functions:
