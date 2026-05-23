@@ -119,6 +119,26 @@ After parsing succeeds in BASIC dialect:
 - Unknown identifiers are variables initialized to zero by runtime behavior.
 - Interpreter and compiler do not need to report static BASIC errors.
 
+## BASIC Expression Rules
+
+The parser should enforce the expression rules from `basic-formula.txt`:
+
+- Assignment is a statement operator only.
+- Assignment is not valid inside an expression.
+- Chained assignment statements such as `z=q=6` are valid.
+- Function calls bind tighter than unary operators.
+- Unary negation and power bind tighter than multiplication and division.
+- Multiplication and division bind tighter than addition and subtraction.
+- Addition and subtraction bind tighter than assignment statements.
+- Assignment statements bind tighter than comparisons.
+- Comparisons bind tighter than logical operators.
+- Parentheses override precedence.
+- Modulus bars form a parenthetic modulus-squared expression.
+- Nested modulus expressions require inner parentheses.
+
+Logical operators evaluate both operands. They should not be parsed or lowered
+as short-circuit operators for BASIC formulas.
+
 ## Parser Changes
 
 ### Function Calls
