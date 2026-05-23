@@ -204,6 +204,49 @@ The formula analyzer should validate:
 
 This pass should not execute defaults, functions, or formula sections.
 
+## Formula Analysis Order
+
+Analyze one formula in deterministic phases:
+
+1. Build the builtin environment.
+2. Add retained imported class descriptors.
+3. Add current formula or class declarations.
+4. Collect default metadata from the `default` section.
+5. Collect user function signatures before checking bodies.
+6. Collect class members before checking methods.
+7. Check default metadata values and parameter settings.
+8. Check function and method bodies.
+9. Check section bodies.
+10. Check section-specific result rules.
+
+Each phase should keep going after errors where possible. Later phases should
+see error symbols and error types for invalid earlier declarations so one bad
+declaration does not hide unrelated diagnostics.
+
+For BASIC formulas, most phases are trivial. BASIC still benefits from the same
+pipeline because constants, builtin functions, assignment targets, and section
+result checks can share implementation with extended formulas.
+
+## Formula Result Contract
+
+The first formula analyzer should return diagnostics only. Later interpreter or
+compiler work may require an analyzed result:
+
+```cpp
+struct FormulaSemanticModel
+{
+    std::vector<SemanticDiagnostic> diagnostics;
+    // entry symbols
+    // class descriptors
+    // default parameter descriptors
+    // expression types
+    // resolved calls and members
+};
+```
+
+Do not add this model until a downstream caller needs one. When it is added,
+keep it separate from the parsed AST.
+
 ## Parameter Set Context
 
 `ParameterSetSemanticContext` should provide data needed to validate a resolved
