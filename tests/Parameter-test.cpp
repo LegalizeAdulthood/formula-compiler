@@ -769,6 +769,38 @@ TEST(TestParameterParser, resolveParameterReferencesRejectsInvalidEnumSavedParam
     EXPECT_EQ("p_index", result.diagnostics[1].detail);
 }
 
+TEST(TestParameterParser, resolveParameterReferencesAcceptsUnsignedColorParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_tint=4280734340\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "color param tint\n"
+                    "endparam\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    EXPECT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(3U, result.resolved.size());
+}
+
 TEST(TestParameterParser, resolveParameterReferencesReportsParameterSemanticErrors)
 {
     FileEntry entry{entry_with_body("fractal:\n"

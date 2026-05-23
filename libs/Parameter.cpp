@@ -778,6 +778,15 @@ bool parses_integer(std::string_view value)
     return parse_integer_value(value).has_value();
 }
 
+bool parses_uint32(std::string_view value)
+{
+    std::uint32_t result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    return parsed.ec == std::errc{} && parsed.ptr == last;
+}
+
 bool parses_number(std::string_view value)
 {
     try
@@ -844,7 +853,7 @@ bool parameter_value_matches_type(const ParameterDefinition &definition, std::st
     }
     if (type == "color")
     {
-        return parses_integer(value);
+        return parses_uint32(value);
     }
     return true;
 }
