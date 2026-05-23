@@ -4,8 +4,11 @@
 //
 #include <formula/SemanticAnalyzer.h>
 
+#include <formula/Visitor.h>
+
 #include <array>
 #include <string_view>
+#include <unordered_set>
 
 namespace formula::semantic
 {
@@ -118,9 +121,177 @@ const BuiltinRegistry &default_builtin_registry()
     return registry;
 }
 
-std::vector<SemanticDiagnostic> analyze_formula(const ast::FormulaSections &, const FormulaSemanticContext &)
+class FormulaSymbolCollector : public ast::NullVisitor
 {
-    return {};
+public:
+    std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
+    {
+        collect(formula.per_image);
+        collect(formula.builtin);
+        collect(formula.initialize);
+        collect(formula.iterate);
+        collect(formula.bailout);
+        collect(formula.perturb_initialize);
+        collect(formula.perturb_iterate);
+        collect(formula.defaults);
+        collect(formula.type_switch);
+        collect(formula.final);
+        collect(formula.transform);
+        collect(formula.public_members);
+        collect(formula.protected_members);
+        collect(formula.private_members);
+        return m_diagnostics;
+    }
+
+    void visit(const ast::AssignmentNode &node) override
+    {
+        collect(node.target());
+        collect(node.expression());
+    }
+
+    void visit(const ast::BinaryOpNode &node) override
+    {
+        collect(node.left());
+        collect(node.right());
+    }
+
+    void visit(const ast::DeclarationNode &node) override
+    {
+        declare(node.name(), SemanticSymbolKind::LOCAL);
+        for (const ast::Expr &dimension : node.dimensions())
+        {
+            collect(dimension);
+        }
+        collect(node.initializer());
+    }
+
+    void visit(const ast::FunctionDeclNode &node) override
+    {
+        declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+        begin_scope();
+        for (const ast::FunctionArgument &arg : node.args())
+        {
+            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER);
+        }
+        collect(node.body());
+        end_scope();
+    }
+
+    void visit(const ast::FunctionCallNode &node) override
+    {
+        for (const ast::Expr &arg : node.args())
+        {
+            collect(arg);
+        }
+    }
+
+    void visit(const ast::IfStatementNode &node) override
+    {
+        collect(node.condition());
+        collect_block(node.has_then_block() ? node.then_block() : ast::Expr{});
+        collect_block(node.has_else_block() ? node.else_block() : ast::Expr{});
+    }
+
+    void visit(const ast::IndexNode &node) override
+    {
+        collect(node.target());
+        for (const ast::Expr &index : node.indices())
+        {
+            collect(index);
+        }
+    }
+
+    void visit(const ast::MemberAccessNode &node) override
+    {
+        collect(node.target());
+    }
+
+    void visit(const ast::NewNode &node) override
+    {
+        for (const ast::Expr &arg : node.args())
+        {
+            collect(arg);
+        }
+    }
+
+    void visit(const ast::RepeatUntilNode &node) override
+    {
+        collect_block(node.body());
+        collect(node.condition());
+    }
+
+    void visit(const ast::ReturnNode &node) override
+    {
+        collect(node.expression());
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            collect(statement);
+        }
+    }
+
+    void visit(const ast::UnaryOpNode &node) override
+    {
+        collect(node.operand());
+    }
+
+    void visit(const ast::WhileNode &node) override
+    {
+        collect(node.condition());
+        collect_block(node.body());
+    }
+
+private:
+    void begin_scope()
+    {
+        m_scopes.emplace_back();
+    }
+
+    void end_scope()
+    {
+        m_scopes.pop_back();
+    }
+
+    void collect(const ast::Expr &expr)
+    {
+        if (expr)
+        {
+            expr->visit(*this);
+        }
+    }
+
+    void collect_block(const ast::Expr &expr)
+    {
+        begin_scope();
+        collect(expr);
+        end_scope();
+    }
+
+    void declare(const std::string &name, SemanticSymbolKind)
+    {
+        if (m_scopes.empty())
+        {
+            begin_scope();
+        }
+        if (!m_scopes.back().insert(name).second)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::DUPLICATE_SYMBOL;
+            diagnostic.message = "duplicate symbol: " + name;
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    std::vector<std::unordered_set<std::string>> m_scopes{{}};
+    std::vector<SemanticDiagnostic> m_diagnostics;
+};
+
+std::vector<SemanticDiagnostic> analyze_formula(const ast::FormulaSections &formula, const FormulaSemanticContext &)
+{
+    return FormulaSymbolCollector{}.collect(formula);
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,

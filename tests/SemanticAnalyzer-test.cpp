@@ -116,4 +116,55 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
     EXPECT_TRUE(registry.find_type("Image"));
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value\nint value", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::DUPLICATE_SYMBOL, diagnostics.front().code);
+    EXPECT_EQ("duplicate symbol: value", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateFunctions)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper()\n"
+                                            "endfunc\n"
+                                            "func helper()\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::DUPLICATE_SYMBOL, diagnostics.front().code);
+    EXPECT_EQ("duplicate symbol: helper", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateFunctionArguments)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(int value, int value)\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::DUPLICATE_SYMBOL, diagnostics.front().code);
+    EXPECT_EQ("duplicate symbol: value", diagnostics.front().message);
+}
+
 } // namespace formula::test
