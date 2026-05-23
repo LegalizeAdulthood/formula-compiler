@@ -164,6 +164,37 @@ const BuiltinRegistry &default_builtin_registry()
     return registry;
 }
 
+parser::EntryKind expected_entry_kind(parameter::ParameterReferenceKind kind)
+{
+    switch (kind)
+    {
+    case parameter::ParameterReferenceKind::FRACTAL_FORMULA:
+        return parser::EntryKind::FRACTAL;
+    case parameter::ParameterReferenceKind::INSIDE_COLORING:
+    case parameter::ParameterReferenceKind::OUTSIDE_COLORING:
+        return parser::EntryKind::COLORING;
+    case parameter::ParameterReferenceKind::TRANSFORM:
+        return parser::EntryKind::TRANSFORMATION;
+    }
+    return parser::EntryKind::FRACTAL;
+}
+
+std::string entry_kind_name(parser::EntryKind kind)
+{
+    switch (kind)
+    {
+    case parser::EntryKind::FRACTAL:
+        return "fractal";
+    case parser::EntryKind::COLORING:
+        return "coloring";
+    case parser::EntryKind::TRANSFORMATION:
+        return "transformation";
+    case parser::EntryKind::CLASS:
+        return "class";
+    }
+    return "fractal";
+}
+
 class FormulaSymbolCollector : public ast::NullVisitor
 {
 public:
@@ -1192,9 +1223,24 @@ std::vector<SemanticDiagnostic> analyze_formula(
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,
-    const parameter::ParameterReferenceSet &, const ParameterSetSemanticContext &)
+    const parameter::ParameterReferenceSet &references, const ParameterSetSemanticContext &)
 {
-    return {};
+    std::vector<SemanticDiagnostic> diagnostics;
+    for (const parameter::ParameterResolvedReference &resolved : references.resolved)
+    {
+        const parser::EntryKind expected{expected_entry_kind(resolved.reference.site.kind)};
+        if (resolved.entry_kind != expected)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_FORMULA_KIND;
+            diagnostic.entry_name = resolved.reference.entry;
+            diagnostic.message = "invalid formula kind: " + resolved.reference.filename + "#" +
+                resolved.reference.entry + " is " + entry_kind_name(resolved.entry_kind) + ", expected " +
+                entry_kind_name(expected);
+            diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+    return diagnostics;
 }
 
 } // namespace formula::semantic

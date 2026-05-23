@@ -6,6 +6,7 @@
 
 #include <formula/FileEntry.h>
 #include <formula/Node.h>
+#include <formula/ParseOptions.h>
 #include <formula/SourceLocation.h>
 
 #include <cstddef>
@@ -118,6 +119,7 @@ struct ParameterResolvedReference
     ParameterReference reference;
     FileEntry file_entry;
     ast::FormulaSectionsPtr ast;
+    parser::EntryKind entry_kind{parser::EntryKind::FRACTAL};
 };
 
 struct ParameterReferenceDiagnostic

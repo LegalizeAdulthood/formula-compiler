@@ -1632,7 +1632,8 @@ ParameterReferenceSet resolve_parameter_references(
             continue;
         }
 
-        result.resolved.push_back(ParameterResolvedReference{reference, std::move(*file_entry), std::move(ast)});
+        result.resolved.push_back(
+            ParameterResolvedReference{reference, std::move(*file_entry), std::move(ast), options.entry_kind});
         validate_reference_parameters(result, result.resolved.back(), resolver);
     }
     return result;

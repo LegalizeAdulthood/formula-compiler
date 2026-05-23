@@ -79,12 +79,75 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsResolvedReferences)
     reference.filename = "Example.ufm";
     reference.entry = "Mandelbrot";
     references.references.push_back(reference);
-    references.resolved.push_back({reference, {}, std::make_shared<ast::FormulaSections>()});
+    references.resolved.push_back(
+        {reference, {}, std::make_shared<ast::FormulaSections>(), parser::EntryKind::FRACTAL});
     const ParameterSetSemanticContext context;
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
 
     EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsFractalKindMismatch)
+{
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Smooth";
+    references.resolved.push_back(
+        {reference, {}, std::make_shared<ast::FormulaSections>(), parser::EntryKind::COLORING});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_FORMULA_KIND, diagnostics.front().code);
+    EXPECT_EQ("Smooth", diagnostics.front().entry_name);
+    EXPECT_EQ("invalid formula kind: Example.ufm#Smooth is coloring, expected fractal", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsColoringKindMismatch)
+{
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::INSIDE_COLORING;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back(
+        {reference, {}, std::make_shared<ast::FormulaSections>(), parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_FORMULA_KIND, diagnostics.front().code);
+    EXPECT_EQ("Mandelbrot", diagnostics.front().entry_name);
+    EXPECT_EQ(
+        "invalid formula kind: Example.ufm#Mandelbrot is fractal, expected coloring", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsTransformKindMismatch)
+{
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::TRANSFORM;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back(
+        {reference, {}, std::make_shared<ast::FormulaSections>(), parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_FORMULA_KIND, diagnostics.front().code);
+    EXPECT_EQ("Mandelbrot", diagnostics.front().entry_name);
+    EXPECT_EQ("invalid formula kind: Example.ufm#Mandelbrot is fractal, expected transformation",
+        diagnostics.front().message);
 }
 
 TEST(TestSemanticAnalyzer, defaultRegistryFindsScalarTypes)
