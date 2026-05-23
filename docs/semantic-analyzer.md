@@ -12,6 +12,32 @@ parameter sets remain immutable syntax artifacts. If later compiler or
 interpreter stages need resolved bindings or inferred types, add a separate
 semantic model built alongside the parsed data.
 
+## Pipeline Boundary
+
+Keep the pipeline split into four explicit stages:
+
+```text
+parse -> resolve references -> analyze semantics -> interpret or compile
+```
+
+The parser owns syntax and structural constraints. It reports malformed
+formula text, malformed parameter-set text, invalid section order, invalid
+section cardinality, and malformed expressions or statements.
+
+The resolver owns file and entry lookup. It finds formulas, coloring entries,
+transforms, classes, and retained imported classes that are referenced by a
+formula or parameter set. It reports missing files and missing entries where a
+reference cannot be resolved.
+
+The semantic analyzer owns meaning. It validates whether parsed and resolved
+data can be used together: names, types, calls, member access, class use,
+parameter bindings, formula kind compatibility, builtin use, and complete
+reference graphs.
+
+The interpreter and compiler own execution. They should consume only data that
+has passed semantic analysis. They may still reject unsupported runtime or
+codegen features, but they should not duplicate semantic validation.
+
 ## Proposed Entry Points
 
 Use two global functions:
@@ -30,6 +56,21 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(
 Both functions return diagnostics only. A future overload may return a
 `SemanticModel` when downstream stages need resolved symbols, member bindings,
 or expression types.
+
+## Analyzer Inputs
+
+The formula analyzer input is one parsed formula plus a context containing
+entry kind, retained imports, builtins, and host rules.
+
+The parameter-set analyzer input is one parsed extended parameter set plus its
+resolved reference set. The parameter set itself is not enough, because saved
+values are meaningful only when checked against the defaults and types of the
+referenced formulas and classes.
+
+Parameter-set semantic analysis is needed for more than reference existence.
+It also checks whether saved values bind to real parameters, whether those
+values have compatible types, whether formula kinds are used in valid layer
+positions, and whether nested plug-in assignments match the selected class.
 
 ## Diagnostics
 
