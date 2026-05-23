@@ -76,7 +76,7 @@ BASIC has one parser contract. It should reject:
 Parser options that allow builtin assignment should be removed or constrained
 outside BASIC once this plan is implemented.
 
-## Current Gaps
+## Current Parser Gaps
 
 The current parser still allows a few BASIC constructs that require later
 runtime behavior:
@@ -91,6 +91,12 @@ runtime behavior:
   multi-argument function calls.
 - Assignment to read-only builtin variables is allowed by default with
   warnings. BASIC should reject read-only builtin names.
+
+## Runtime Semantics Gaps
+
+These are not semantic-analysis requirements, but they must be fixed so parsed
+BASIC formulas execute according to `basic-formula.txt`:
+
 - Logical `&&` and `||` currently short-circuit in the interpreter even though
   BASIC semantics require both operands to be evaluated.
 - Power associativity should be checked against the intended BASIC semantics
