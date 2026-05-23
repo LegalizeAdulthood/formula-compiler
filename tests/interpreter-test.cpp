@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Formula.h>
 
+#include <formula/Interpreter.h>
 #include <formula/ParseOptions.h>
 
 #include "ExpressionParam.h"
 #include "function-call.h"
+#include "node-builders.h"
 
 #include <gtest/gtest.h>
 
@@ -124,6 +126,32 @@ TEST(TestFormulaInterpreter, chainedAssignment)
     const Complex z2 = formula->get_value("z2");
     EXPECT_EQ((formula::Complex{3.0, 0.0}), z1);
     EXPECT_EQ((formula::Complex{3.0, 0.0}), z2);
+}
+
+TEST(TestFormulaInterpreter, logicalAndEvaluatesRightOperandWhenLeftIsFalse)
+{
+    ast::Dictionary symbols;
+
+    const Complex result{
+        ast::interpret(ast::binary(ast::number(0.0), "&&", ast::assignment("side", ast::number(1.0))), symbols)};
+
+    EXPECT_EQ(0.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    ASSERT_NE(symbols.end(), symbols.find("side"));
+    EXPECT_EQ((Complex{1.0, 0.0}), symbols["side"]);
+}
+
+TEST(TestFormulaInterpreter, logicalOrEvaluatesRightOperandWhenLeftIsTrue)
+{
+    ast::Dictionary symbols;
+
+    const Complex result{
+        ast::interpret(ast::binary(ast::number(1.0), "||", ast::assignment("side", ast::number(2.0))), symbols)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+    ASSERT_NE(symbols.end(), symbols.find("side"));
+    EXPECT_EQ((Complex{2.0, 0.0}), symbols["side"]);
 }
 
 TEST(TestFormulaInterpreter, conjugate)

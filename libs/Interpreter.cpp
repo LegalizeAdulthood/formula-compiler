@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Interpreter.h>
 
@@ -97,27 +97,18 @@ void Interpreter::visit(const BinaryOpNode &node)
     {
         return Complex{condition ? 1.0 : 0.0, 0.0};
     };
-    if (op == "&&") // short-circuit AND - only check real part
+    if (op == "&&")
     {
-        if (result().re == 0.0)
-        {
-            back() = {0.0, 0.0};
-            return;
-        }
+        const bool left{result().re != 0.0};
         node.right()->visit(*this);
-        back() = bool_result(result().re != 0.0);
+        back() = bool_result(left && result().re != 0.0);
         return;
     }
-    if (op == "||") // short-circuit OR - only check real part
+    if (op == "||")
     {
-        if (result().re != 0.0)
-        {
-            back() = {1.0, 0.0};
-            return;
-        }
-        back() = {};
+        const bool left{result().re != 0.0};
         node.right()->visit(*this);
-        back() = bool_result(result().re != 0.0);
+        back() = bool_result(left || result().re != 0.0);
         return;
     }
 

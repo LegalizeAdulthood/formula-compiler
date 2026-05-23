@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -22,6 +22,11 @@ inline std::shared_ptr<LiteralNode> number(double value)
 inline std::shared_ptr<IdentifierNode> identifier(const std::string &name)
 {
     return std::make_shared<IdentifierNode>(name);
+}
+
+inline std::shared_ptr<AssignmentNode> assignment(const std::string &name, const Expr &expr)
+{
+    return std::make_shared<AssignmentNode>(name, expr);
 }
 
 inline std::shared_ptr<FunctionCallNode> function_call(const std::string &name, const Expr &arg)
