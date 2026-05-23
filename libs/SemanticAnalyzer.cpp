@@ -151,7 +151,7 @@ BuiltinRegistry make_default_builtin_registry()
         registry.predefined_symbols.push_back(
             predefined_symbol("angle", *float_type, false, true, formula_entries, formula_sections));
         registry.predefined_symbols.push_back(
-            predefined_symbol("calculationPurpose", *int_type, false, false, formula_entries, formula_sections));
+            predefined_symbol("calculationPurpose", *int_type, false, true, formula_entries, formula_sections));
         registry.predefined_symbols.push_back(
             predefined_symbol("center", *complex_type, false, true, formula_entries, formula_sections));
         registry.predefined_symbols.push_back(

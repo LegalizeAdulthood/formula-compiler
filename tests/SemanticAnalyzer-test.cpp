@@ -676,6 +676,8 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsPredefinedSymbols)
     EXPECT_EQ(SemanticTypeKind::COMPLEX, registry.find_predefined_symbol("pixel")->type.kind);
     ASSERT_TRUE(registry.find_predefined_symbol("width"));
     EXPECT_EQ(SemanticTypeKind::INT, registry.find_predefined_symbol("width")->type.kind);
+    ASSERT_TRUE(registry.find_predefined_symbol("calculationPurpose"));
+    EXPECT_TRUE(registry.find_predefined_symbol("calculationPurpose")->constant_expression);
     EXPECT_FALSE(registry.find_predefined_symbol("foo"));
 }
 
