@@ -91,6 +91,10 @@ runtime behavior:
   multi-argument function calls.
 - Assignment to read-only builtin variables is allowed by default with
   warnings. BASIC should reject read-only builtin names.
+- Logical `&&` and `||` currently short-circuit in the interpreter even though
+  BASIC semantics require both operands to be evaluated.
+- Power associativity should be checked against the intended BASIC semantics
+  and locked with parser/interpreter tests.
 
 ## Non-Gaps
 
@@ -220,6 +224,18 @@ BASIC expression by accident.
    - Keep runtime handling for unknown variables as zero.
    - Keep runtime errors for internal misuse only.
 
+7. Fix BASIC logical evaluation.
+   - Ensure interpreted `&&` and `||` evaluate both operands.
+   - Ensure compiled `&&` and `||` evaluate both operands.
+   - Preserve truthiness based on the real part of complex values.
+
+8. Lock BASIC precedence behavior.
+   - Add tests for assignment as statement-only syntax.
+   - Add tests for chained assignment.
+   - Add tests for power, unary negation, multiplication, addition,
+     comparison, and logical precedence.
+   - Add tests for modulus grouping and nested modulus with parentheses.
+
 ## Tests
 
 Add parser tests for:
@@ -238,6 +254,12 @@ Add parser tests for:
 - `sin=1` fails in BASIC.
 - `Sin=1` fails in BASIC.
 - Extended call syntax remains valid in extended dialect where appropriate.
+- `q=3+(w=6)` fails in BASIC.
+- `z=q=6` parses in BASIC.
+- `1&&side_effect` evaluates both operands in BASIC once side-effect tests are
+  available.
+- `1||side_effect` evaluates both operands in BASIC once side-effect tests are
+  available.
 
 Add interpreter/compiler regression tests showing that valid BASIC formulas no
 longer rely on runtime detection for unknown functions or bad arity.
