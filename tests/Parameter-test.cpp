@@ -809,6 +809,74 @@ TEST(TestParameterParser, resolveParameterReferencesReportsInvalidParameterForwa
     EXPECT_EQ("p_unknown", result.diagnostics[1].detail);
 }
 
+TEST(TestParameterParser, resolveParameterReferencesAcceptsPluginSubParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_formulaClass.p_power=2/0\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "FormulaClass param formulaClass\n"
+                    "endparam\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    EXPECT_TRUE(result.diagnostics.empty());
+    ASSERT_EQ(3U, result.resolved.size());
+}
+
+TEST(TestParameterParser, resolveParameterReferencesRejectsInvalidPluginSubParameters)
+{
+    FileEntry entry{entry_with_body("fractal:\n"
+                                    "layer:\n"
+                                    "mapping:\n"
+                                    "formula:\n"
+                                    "filename=\"typed.ufm\" entry=\"Typed\" p_power.p_extra=2 p_missing.p_x=1\n"
+                                    "inside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Smooth\"\n"
+                                    "outside:\n"
+                                    "filename=\"dmj.ucl\" entry=\"Escape\"\n"
+                                    "gradient:\n")};
+    const ExtendedParameterEntry parameters{parse_extended_parameters(entry)};
+    ASSERT_TRUE(parameters.diagnostics.empty());
+
+    const ParameterReferenceSet result{resolve_parameter_references(parameters,
+        [](std::string_view filename, std::string_view entry_name) -> std::optional<FileEntry>
+        {
+            if (filename == "typed.ufm" && entry_name == "Typed")
+            {
+                return formula_entry_with_body(filename, entry_name,
+                    "default:\n"
+                    "float param power\n"
+                    "default=2.0\n"
+                    "endparam\n");
+            }
+            return formula_entry_with_body(filename, entry_name, "0");
+        })};
+
+    ASSERT_EQ(2U, result.diagnostics.size());
+    EXPECT_EQ(ParameterReferenceErrorCode::TYPE_MISMATCH, result.diagnostics[0].code);
+    EXPECT_EQ("p_power.p_extra", result.diagnostics[0].detail);
+    EXPECT_EQ(ParameterReferenceErrorCode::UNKNOWN_PARAMETER, result.diagnostics[1].code);
+    EXPECT_EQ("p_missing.p_x", result.diagnostics[1].detail);
+}
+
 TEST(TestParameterParser, extendedParametersAllowAlphaInsteadOfOpacity)
 {
     FileEntry entry{entry_with_body("fractal:\n"

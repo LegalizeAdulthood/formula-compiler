@@ -160,9 +160,9 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"unaryPlus", "+(1)", "unary_op:+ literal:1"},                                                                  //
     {"unaryMinusNegativeOne", "--1", "unary_op:- unary_op:- literal:1"},                                            //
     {"addAddAdd", "1+2+3", "binary_op:+ binary_op:+ literal:1 literal:2 literal:3"},                                //
-    {"capitalLetterInIdentifier", "A", "identifier:a"},                                                             //
+    {"capitalLetterInIdentifier", "A", "identifier:A"},                                                             //
     {"numberInIdentifier", "a1", "identifier:a1"},                                                                  //
-    {"underscoreInIdentifier", "A_1", "identifier:a_1"},                                                            //
+    {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                                            //
     {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                                            //
     {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"},                     //
     {"assignment", "z=4", "assignment:z literal:4"},                                                                //
@@ -672,7 +672,7 @@ TEST(TestFormulaParse, extendedExpressionForms)
               "binary_op:+ "
               "function_call:foo( literal:1 literal:2 parameter_ref:p constant_ref:c ) "
               "binary_op:% unary_op:! index:[ member:baz { identifier:bar } literal:3 ] new:thing( literal:4 ) "
-              "function_call:derived( identifier:base )",
+              "function_call:Derived( identifier:base )",
         trim_ws(to_string(result->bailout)));
 }
 
@@ -731,7 +731,7 @@ TEST(TestFormulaParse, extendedDynamicArrays)
     ASSERT_TRUE(result->per_image);
     EXPECT_EQ("statement_seq:4 { "
               "declaration:int,values[] "
-              "function_call:setlength( identifier:values literal:3 ) "
+              "function_call:setLength( identifier:values literal:3 ) "
               "assignment:{ index:[ identifier:values literal:0 ] } literal:1 "
               "assignment:{ index:[ identifier:values literal:1 ] } "
               "binary_op:+ index:[ identifier:values literal:0 ] literal:1 }",
@@ -895,7 +895,7 @@ TEST(TestFormulaParse, extendedClassObjectSyntax)
     EXPECT_FALSE(result->imports[1].implicit);
     ASSERT_TRUE(result->public_members);
     EXPECT_EQ("statement_seq:2 { "
-              "function_decl:texture() { assignment:amount literal:0.1 } "
+              "function_decl:Texture() { assignment:amount literal:0.1 } "
               "function_decl:int min(int a,int b) static { return: identifier:a } "
               "}",
         trim_ws(to_string(result->public_members)));
@@ -920,7 +920,7 @@ TEST(TestFormulaParse, extendedUnsectionedClassDefaultsToPublic)
 
     ASSERT_TRUE(result);
     ASSERT_TRUE(result->public_members);
-    EXPECT_EQ("function_decl:texture() { }", trim_ws(to_string(result->public_members)));
+    EXPECT_EQ("function_decl:Texture() { }", trim_ws(to_string(result->public_members)));
 }
 
 TEST(TestFormulaParse, coloringRejectsFractalSections)
@@ -1326,12 +1326,12 @@ static SimpleExpressionParam s_default_values[]{
     {"emptyClassParamBlock",
         "Bailout param foo\n"
         "endparam",
-        "param_block:bailout,foo {\n"
+        "param_block:Bailout,foo {\n"
         "}\n"}, //
     {"parameterForward", "param oldbailout = bailoutParam.bailout\n",
         "setting:param_forward={\n"
         "\"oldbailout\"\n"
-        "\"bailoutparam\"\n"
+        "\"bailoutParam\"\n"
         "\"bailout\"\n"
         "}\n"}, //
     {"captionParamBlock",
@@ -1502,8 +1502,8 @@ static SimpleExpressionParam s_default_values[]{
         "Bailout param foo\n"
         "default=Bailout\n"
         "endparam",
-        "param_block:bailout,foo {\n"
-        "setting:default=bailout\n"
+        "param_block:Bailout,foo {\n"
+        "setting:default=Bailout\n"
         "}\n"},
     {"enabledParamBlock",
         "bool param foo\n"

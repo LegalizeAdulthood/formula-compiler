@@ -810,6 +810,36 @@ bool parameter_value_matches_type(std::string_view type, std::string_view value)
     return true;
 }
 
+bool is_scalar_parameter_type(std::string_view type)
+{
+    return type == "bool" || type == "int" || type == "float" || type == "complex" || type == "color";
+}
+
+std::string plugin_parameter_name(std::string_view saved_name)
+{
+    if (!starts_with(saved_name, "p_"))
+    {
+        return {};
+    }
+    const std::size_t dot{saved_name.find('.')};
+    if (dot == std::string_view::npos)
+    {
+        return {};
+    }
+    return std::string{saved_name.substr(0, dot)};
+}
+
+const ParameterDefinition *find_plugin_parameter_definition(
+    const ParameterDefinitions &definitions, std::string_view saved_name)
+{
+    const std::string plugin_name{plugin_parameter_name(saved_name)};
+    if (plugin_name.empty())
+    {
+        return nullptr;
+    }
+    return find_parameter_definition(definitions, plugin_name);
+}
+
 const ParameterDefinition *find_forwarded_direct_parameter(
     const ParameterDefinitions &definitions, const ParameterForward &forward)
 {
@@ -832,6 +862,11 @@ bool has_saved_parameter_for(
         }
         const ParameterForward *forward{find_parameter_forward(definitions, parameter.key)};
         if (forward != nullptr && forward->path.size() == 1 && forward->path.front() == definition.name)
+        {
+            return true;
+        }
+        const std::string plugin_name{plugin_parameter_name(parameter.key)};
+        if (plugin_name == saved_name)
         {
             return true;
         }
@@ -860,6 +895,17 @@ void validate_reference_parameters(ParameterReferenceSet &result, const Paramete
             const ParameterDefinition *definition{find_parameter_definition(definitions, parameter.key)};
             if (definition == nullptr)
             {
+                const ParameterDefinition *plugin_definition{
+                    find_plugin_parameter_definition(definitions, parameter.key)};
+                if (plugin_definition != nullptr)
+                {
+                    if (is_scalar_parameter_type(plugin_definition->type))
+                    {
+                        add_reference_diagnostic(
+                            result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
+                    }
+                    continue;
+                }
                 const ParameterForward *forward{find_parameter_forward(definitions, parameter.key)};
                 if (forward == nullptr)
                 {

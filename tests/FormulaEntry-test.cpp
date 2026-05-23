@@ -601,7 +601,7 @@ TEST(TestFormulaEntry, loadFormulaIncludesUnresolvedReferenceDiagnostics)
     EXPECT_TRUE(result.files.resolved_references.empty());
     ASSERT_EQ(1U, result.files.diagnostics.size());
     EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.files.diagnostics[0].code);
-    EXPECT_EQ("missing", result.files.diagnostics[0].detail);
+    EXPECT_EQ("Missing", result.files.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, loadFormulaIgnoresUnreferencedImportDiagnostics)
@@ -658,9 +658,9 @@ TEST(TestFormulaEntry, referenceCollectorFindsDeclarationAndNewTypes)
 
     ASSERT_EQ(2U, references.size());
     EXPECT_EQ(FormulaReferenceKind::DECLARATION, references[0].kind);
-    EXPECT_EQ("texture", references[0].class_name);
+    EXPECT_EQ("Texture", references[0].class_name);
     EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, references[1].kind);
-    EXPECT_EQ("texture", references[1].class_name);
+    EXPECT_EQ("Texture", references[1].class_name);
 }
 
 TEST(TestFormulaEntry, referenceCollectorFindsFunctionSignatureTypes)
@@ -676,9 +676,9 @@ TEST(TestFormulaEntry, referenceCollectorFindsFunctionSignatureTypes)
 
     ASSERT_EQ(2U, references.size());
     EXPECT_EQ(FormulaReferenceKind::FUNCTION_RETURN, references[0].kind);
-    EXPECT_EQ("texture", references[0].class_name);
+    EXPECT_EQ("Texture", references[0].class_name);
     EXPECT_EQ(FormulaReferenceKind::FUNCTION_ARGUMENT, references[1].kind);
-    EXPECT_EQ("texture", references[1].class_name);
+    EXPECT_EQ("Texture", references[1].class_name);
 }
 
 TEST(TestFormulaEntry, referenceCollectorFindsBaseClass)
@@ -707,7 +707,7 @@ TEST(TestFormulaEntry, referenceCollectorFindsClassParamBlocks)
 
     ASSERT_EQ(1U, references.size());
     EXPECT_EQ(FormulaReferenceKind::PARAM_BLOCK, references[0].kind);
-    EXPECT_EQ("bailout", references[0].class_name);
+    EXPECT_EQ("Bailout", references[0].class_name);
 }
 
 TEST(TestFormulaEntry, referenceCollectorIgnoresBuiltinParamBlocks)
@@ -751,9 +751,9 @@ TEST(TestFormulaEntry, entryReferenceCollectorParsesLoadedFormulaEntry)
     EXPECT_EQ(0U, references.entry_index);
     ASSERT_EQ(2U, references.references.size());
     EXPECT_EQ(FormulaReferenceKind::DECLARATION, references.references[0].kind);
-    EXPECT_EQ("texture", references.references[0].class_name);
+    EXPECT_EQ("Texture", references.references[0].class_name);
     EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, references.references[1].kind);
-    EXPECT_EQ("texture", references.references[1].class_name);
+    EXPECT_EQ("Texture", references.references[1].class_name);
     EXPECT_TRUE(result.diagnostics.empty());
 }
 
@@ -833,9 +833,9 @@ TEST(TestFormulaEntry, fileReferenceCollectorStoresEntryReferences)
     EXPECT_EQ(0U, result.entry_references[0].entry_index);
     ASSERT_EQ(2U, result.entry_references[0].references.size());
     EXPECT_EQ(FormulaReferenceKind::DECLARATION, result.entry_references[0].references[0].kind);
-    EXPECT_EQ("texture", result.entry_references[0].references[0].class_name);
+    EXPECT_EQ("Texture", result.entry_references[0].references[0].class_name);
     EXPECT_EQ(FormulaReferenceKind::NEW_OBJECT, result.entry_references[0].references[1].kind);
-    EXPECT_EQ("texture", result.entry_references[0].references[1].class_name);
+    EXPECT_EQ("Texture", result.entry_references[0].references[1].class_name);
     EXPECT_EQ("common.ulb", result.entry_references[1].filename);
     ASSERT_EQ(1U, result.entry_references[1].references.size());
     EXPECT_EQ(FormulaReferenceKind::BASE_CLASS, result.entry_references[1].references[0].kind);
@@ -869,7 +869,7 @@ TEST(TestFormulaEntry, referenceResolverFindsLocalClasses)
     ASSERT_EQ(1U, result.resolved_references.size());
     EXPECT_EQ("main.ufm", result.resolved_references[0].entry.filename);
     EXPECT_EQ(1U, result.resolved_references[0].entry.entry_index);
-    EXPECT_EQ("texture", result.resolved_references[0].reference.class_name);
+    EXPECT_EQ("Texture", result.resolved_references[0].reference.class_name);
     EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
     EXPECT_EQ(0U, result.resolved_references[0].klass.file_index);
 }
@@ -900,7 +900,7 @@ TEST(TestFormulaEntry, referenceResolverFindsImportedClasses)
     resolve_formula_file_references(result);
 
     ASSERT_EQ(1U, result.resolved_references.size());
-    EXPECT_EQ("texture", result.resolved_references[0].reference.class_name);
+    EXPECT_EQ("Texture", result.resolved_references[0].reference.class_name);
     EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
     EXPECT_EQ("common.ulb", result.resolved_references[0].klass.filename);
 }
@@ -1167,7 +1167,7 @@ TEST(TestFormulaEntry, referenceResolverReportsUnresolvedClasses)
     EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
     EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
     EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
-    EXPECT_EQ("texture", result.diagnostics[0].detail);
+    EXPECT_EQ("Texture", result.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, referenceResolverReportsOnlyUnresolvedClasses)
@@ -1198,7 +1198,7 @@ TEST(TestFormulaEntry, referenceResolverReportsOnlyUnresolvedClasses)
     EXPECT_EQ("Texture", result.resolved_references[0].klass.class_name);
     ASSERT_EQ(1U, result.diagnostics.size());
     EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
-    EXPECT_EQ("missing", result.diagnostics[0].detail);
+    EXPECT_EQ("Missing", result.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, referenceResolverIsIdempotent)
@@ -1225,7 +1225,7 @@ TEST(TestFormulaEntry, referenceResolverIsIdempotent)
     EXPECT_TRUE(result.resolved_references.empty());
     ASSERT_EQ(1U, result.diagnostics.size());
     EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
-    EXPECT_EQ("texture", result.diagnostics[0].detail);
+    EXPECT_EQ("Texture", result.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, singleLine)

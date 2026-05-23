@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cctype>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -26,6 +27,24 @@ namespace formula::parser
 
 namespace
 {
+
+bool equals_ignore_case(std::string_view lhs, std::string_view rhs)
+{
+    if (lhs.size() != rhs.size())
+    {
+        return false;
+    }
+    for (std::size_t index = 0; index < lhs.size(); ++index)
+    {
+        const char left = static_cast<char>(std::tolower(static_cast<unsigned char>(lhs[index])));
+        const char right = static_cast<char>(std::tolower(static_cast<unsigned char>(rhs[index])));
+        if (left != right)
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
 enum class SettingType
 {
@@ -626,12 +645,13 @@ Expr FormulaParser::default_rating_setting()
         return nullptr;
     }
 
-    if (str() != "recommended" && str() != "average" && str() != "notrecommended")
+    if (!equals_ignore_case(str(), "recommended") && !equals_ignore_case(str(), "average") &&
+        !equals_ignore_case(str(), "notrecommended"))
     {
         return nullptr;
     }
 
-    const std::string rating{str() == "notrecommended" ? "notRecommended" : str()};
+    const std::string rating{equals_ignore_case(str(), "notrecommended") ? "notRecommended" : str()};
     advance(); // consume rating value
 
     if (!check(TokenType::TERMINATOR))
@@ -1967,7 +1987,7 @@ bool FormulaParser::check_context(std::string_view keyword) const
     {
         return false;
     }
-    if (check(TokenType::IDENTIFIER) && str() == keyword)
+    if (check(TokenType::IDENTIFIER) && equals_ignore_case(str(), keyword))
     {
         return true;
     }

@@ -297,6 +297,12 @@ new parameter path. Direct forwards are validated against the target
 parameter; plug-in sub-parameter paths are collected and left for
 plug-in validation.
 
+Plug-in sub-parameter assignments use dotted saved names such as
+`p_formulaClass.p_power`. The first component must name a declared
+plug-in parameter. The parser can validate that the base parameter
+exists and is not a scalar parameter; validation of the nested path
+requires resolving the selected plug-in class and its defaults.
+
 The parameter parser must not locate these files or interpret these
 references. The client reads the string assignments and resolves files
 if needed.
@@ -455,10 +461,10 @@ section) and retry paring the FileEntry as a basic parameter set.
 
 ## Implementation Slices
 
-1. Add plug-in sub-parameter validation:
+1. Complete plug-in sub-parameter validation:
     - resolve class and plug-in parameter defaults
-    - validate nested `p_` assignments against the selected plug-in type
-    - report unknown plug-in parameters and type mismatches
+    - validate nested `p_` assignments against the selected plug-in class
+    - report unknown nested plug-in parameters and type mismatches
 2. Add richer typed conversion:
     - validate enum values against `enum` lists
     - validate color and complex spelling beyond the common saved forms

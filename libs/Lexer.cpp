@@ -713,7 +713,7 @@ Token Lexer::identifier()
         {"endheading", TokenType::END_HEADING},   //
         {"endparam", TokenType::END_PARAM},       //
         {"endwhile", TokenType::END_WHILE},       //
-        {"false", TokenType::LIT_FALSE},              // boolean values
+        {"false", TokenType::LIT_FALSE},          // boolean values
         {"final", TokenType::FINAL},              //
         {"float", TokenType::TYPE_IDENTIFIER},    //
         {"func", TokenType::FUNC},                //
@@ -731,7 +731,7 @@ Token Lexer::identifier()
         {"repeat", TokenType::REPEAT},            //
         {"switch", TokenType::SWITCH},            //
         {"transform", TokenType::TRANSFORM},      //
-        {"true", TokenType::LIT_TRUE},                //
+        {"true", TokenType::LIT_TRUE},            //
         {"until", TokenType::UNTIL},              //
         {"while", TokenType::WHILE},              //
     };
@@ -796,7 +796,7 @@ Token Lexer::identifier()
     }
 
     // If not recognized as extension section name, treat as identifier (and possibly colon)
-    return {TokenType::IDENTIFIER, lower_identifier, start_loc, length};
+    return {TokenType::IDENTIFIER, identifier, start_loc, length};
 }
 
 Token Lexer::constant_identifier()

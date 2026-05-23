@@ -315,14 +315,14 @@ TEST(TestLexer, parenthesesWithIdentifiers)
     EXPECT_EQ(TokenType::CLOSE_PAREN, tokens[3].type);
 }
 
-TEST(TestLexer, identifiersAreMadeLowerCase)
+TEST(TestLexer, identifiersPreserveSourceCase)
 {
     Lexer lexer{"FOO"};
 
     const Token token{lexer.get_token()};
 
     EXPECT_EQ(TokenType::IDENTIFIER, token.type);
-    EXPECT_EQ("foo", std::get<std::string>(token.value));
+    EXPECT_EQ("FOO", std::get<std::string>(token.value));
 }
 
 TEST(TestLexer, stringWithEscapedQuotes)
