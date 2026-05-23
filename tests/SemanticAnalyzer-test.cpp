@@ -288,4 +288,63 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownParameterAndConstantRefs
     EXPECT_EQ("unknown symbol: constant", diagnostics[1].message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUserFunctionCallArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(int value)\n"
+                                            "endfunc\n"
+                                            "helper()",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_CALL_ARITY, diagnostics.front().code);
+    EXPECT_EQ("invalid call arity: helper expects 1 argument, got 0", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsUserFunctionCallArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(int value)\n"
+                                            "endfunc\n"
+                                            "helper(1)",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsBuiltinFunctionCallArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("custom(1, 2)", options)};
+    ASSERT_TRUE(loaded.ast);
+    BuiltinRegistry registry;
+    registry.types = default_builtin_registry().types;
+    const SemanticType *complex_type{registry.find_type("complex")};
+    ASSERT_TRUE(complex_type);
+    SemanticFunctionDescriptor function;
+    function.name = "custom";
+    function.return_type = *complex_type;
+    function.argument_types.push_back(*complex_type);
+    registry.functions.push_back(function);
+    FormulaSemanticContext context;
+    context.builtins = &registry;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_CALL_ARITY, diagnostics.front().code);
+    EXPECT_EQ("invalid call arity: custom expects 1 argument, got 2", diagnostics.front().message);
+}
+
 } // namespace formula::test

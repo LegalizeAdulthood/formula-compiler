@@ -8,6 +8,7 @@
 
 #include <array>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace formula::semantic
@@ -194,7 +195,7 @@ public:
         }
         if (m_predeclared_functions.find(&node) == m_predeclared_functions.end())
         {
-            declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+            declare_function(node);
         }
         begin_scope();
         for (const ast::FunctionArgument &arg : node.args())
@@ -208,7 +209,15 @@ public:
 
     void visit(const ast::FunctionCallNode &node) override
     {
-        if (!is_declared(node.name()) && !m_builtins.find_function(node.name()))
+        if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
+        {
+            validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
+        }
+        else if (const auto function = m_functions.find(node.name()); function != m_functions.end())
+        {
+            validate_call_arity(node.name(), node.args().size(), function->second);
+        }
+        else if (!is_declared(node.name()))
         {
             report_unknown_symbol(node.name());
         }
@@ -326,7 +335,7 @@ private:
     {
         if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
         {
-            declare(function->name(), SemanticSymbolKind::USER_FUNCTION);
+            declare_function(*function);
             m_predeclared_functions.insert(function);
         }
         else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
@@ -362,6 +371,28 @@ private:
             diagnostic.message = "unknown type: " + name;
             m_diagnostics.push_back(std::move(diagnostic));
         }
+    }
+
+    void validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected)
+    {
+        if (actual != expected)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_CALL_ARITY;
+            diagnostic.message = "invalid call arity: " + name + " expects " + std::to_string(expected) + " argument";
+            if (expected != 1U)
+            {
+                diagnostic.message += "s";
+            }
+            diagnostic.message += ", got " + std::to_string(actual);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    void declare_function(const ast::FunctionDeclNode &node)
+    {
+        declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+        m_functions.emplace(node.name(), node.args().size());
     }
 
     bool is_declared(const std::string &name) const
@@ -419,6 +450,7 @@ private:
 
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
+    std::unordered_map<std::string, std::size_t> m_functions;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
     std::vector<SemanticDiagnostic> m_diagnostics;
 };
