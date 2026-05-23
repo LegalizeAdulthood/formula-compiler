@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2025 Richard Thomson
+# Copyright 2025-2026 Richard Thomson
 #
 find_package(asmjit CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -23,6 +23,7 @@ add_library(formula
     include/formula/Parser.h Parser.cpp
     include/formula/Preprocessor.h Preprocessor.cpp
     include/formula/ReferenceCollector.h ReferenceCollector.cpp
+    include/formula/SemanticAnalyzer.h SemanticAnalyzer.cpp
     include/formula/Simplifier.h Simplifier.cpp
     include/formula/SourceLocation.h
     include/formula/Visitor.h

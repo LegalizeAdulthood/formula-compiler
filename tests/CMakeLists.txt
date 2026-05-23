@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2025 Richard Thomson
+# Copyright 2025-2026 Richard Thomson
 #
 include(GoogleTest)
 
@@ -52,6 +52,7 @@ add_executable("test-formula"
     "parse-id-formulas-test.cpp"
     "parse-test.cpp"
     "Preprocessor-test.cpp"
+    "SemanticAnalyzer-test.cpp"
     "simplifier-test.cpp"
     "trim_ws.h" "trim_ws.cpp"
 )
