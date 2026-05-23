@@ -544,6 +544,15 @@ TEST(TestFormulaParse, builtinVariableZIsAssignableCaseInsensitively)
     EXPECT_EQ("assignment:Z literal:1", trim_ws(to_string(result->bailout)));
 }
 
+TEST(TestFormulaParse, builtinVariableSourceSpellingIsPreserved)
+{
+    const ast::FormulaSectionsPtr result{parse("Maxit", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("identifier:Maxit", trim_ws(to_string(result->bailout)));
+}
+
 static std::vector<std::string> s_functions{
     "sin", "cos", "sinh", "cosh", "cosxx",      //
     "tan", "cotan", "tanh", "cotanh", "sqr",    //

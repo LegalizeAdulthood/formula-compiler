@@ -1889,9 +1889,11 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             "one", "zero",                              //
         };
         const bool builtin_var =
-            std::find(std::begin(builtin_vars), std::end(builtin_vars), node->name()) != std::end(builtin_vars);
+            std::find_if(std::begin(builtin_vars), std::end(builtin_vars), [&node](std::string_view name)
+                { return equals_ignore_case(name, node->name()); }) != std::end(builtin_vars);
         const bool builtin_fn =
-            std::find(std::begin(builtin_fns), std::end(builtin_fns), node->name()) != std::end(builtin_fns);
+            std::find_if(std::begin(builtin_fns), std::end(builtin_fns), [&node](std::string_view name)
+                { return equals_ignore_case(name, node->name()); }) != std::end(builtin_fns);
         if (!builtin_var && !builtin_fn)
         {
             return true;

@@ -746,6 +746,11 @@ Token Lexer::identifier()
         {"this", TokenType::CTX_THIS},     //
     };
 
+    const auto is_builtin_function = [](TokenType type)
+    {
+        return type >= TokenType::SINH && type <= TokenType::ZERO;
+    };
+
     const auto to_lower = [](std::string text)
     {
         std::transform(text.begin(), text.end(), text.begin(),
@@ -760,7 +765,7 @@ Token Lexer::identifier()
             [&lower_identifier](const TextTokenType &kw) { return kw.text == lower_identifier; });
         it != std::end(RESERVED))
     {
-        return {it->type, std::string{it->text}, start_loc, length};
+        return {it->type, is_builtin_function(it->type) ? std::string{it->text} : identifier, start_loc, length};
     }
 
     // Check extension keywords and section names only if extensions are enabled
