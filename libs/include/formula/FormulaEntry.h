@@ -141,6 +141,7 @@ struct FormulaClassReference
 struct RetainedFormulaClass
 {
     FormulaClassReference reference;
+    std::string base_class;
     ast::FormulaSectionsPtr ast;
 };
 

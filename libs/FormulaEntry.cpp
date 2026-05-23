@@ -408,7 +408,16 @@ ast::FormulaSectionsPtr retain_formula_class(FormulaFileSet &files, const Formul
         return nullptr;
     }
 
-    files.retained_classes.push_back(RetainedFormulaClass{klass, ast});
+    std::string base_class;
+    if (klass.file_index < files.files.size())
+    {
+        const FormulaFile &file{files.files[klass.file_index]};
+        if (klass.class_index < file.classes.size())
+        {
+            base_class = file.classes[klass.class_index].base_class;
+        }
+    }
+    files.retained_classes.push_back(RetainedFormulaClass{klass, std::move(base_class), ast});
     return ast;
 }
 

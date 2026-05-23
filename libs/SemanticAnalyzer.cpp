@@ -343,6 +343,18 @@ bool has_retained_class(const ParameterSetSemanticContext &context, std::string_
     return false;
 }
 
+bool has_retained_class(const FormulaSemanticContext &context, std::string_view class_name)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass && same_identifier(klass->reference.class_name, class_name))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool starts_with(std::string_view value, std::string_view prefix)
 {
     return value.size() >= prefix.size() && value.substr(0, prefix.size()) == prefix;
@@ -727,6 +739,27 @@ void check_retained_references(std::vector<SemanticDiagnostic> &diagnostics, con
         {
             report_missing_retained_class(diagnostics, entry_name, reference.class_name);
         }
+    }
+}
+
+void check_retained_class_bases(std::vector<SemanticDiagnostic> &diagnostics, const BuiltinRegistry &builtins,
+    const FormulaSemanticContext &context)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (!klass || klass->base_class.empty())
+        {
+            continue;
+        }
+        if (builtins.find_class(klass->base_class) || has_retained_class(context, klass->base_class))
+        {
+            continue;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
+        diagnostic.entry_name = klass->reference.class_name;
+        diagnostic.message = "unknown base class: " + klass->base_class;
+        diagnostics.push_back(std::move(diagnostic));
     }
 }
 
@@ -2017,7 +2050,9 @@ std::vector<SemanticDiagnostic> analyze_formula(
     const ast::FormulaSections &formula, const FormulaSemanticContext &context)
 {
     const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
-    return FormulaSymbolCollector{builtins, context}.collect(formula);
+    std::vector<SemanticDiagnostic> diagnostics{FormulaSymbolCollector{builtins, context}.collect(formula)};
+    check_retained_class_bases(diagnostics, builtins, context);
+    return diagnostics;
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,
