@@ -476,6 +476,84 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsInvalidParameterForward)
     EXPECT_EQ("invalid parameter binding: p_oldpower invalid forward", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsNestedPluginParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "Plugin param formulaClass\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula plugin{load_formula("default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        class_options)};
+    ASSERT_TRUE(plugin.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_formulaClass", "plugin.ulb:Plugin"});
+    reference.parameters.push_back({"p_formulaClass.p_power", "2.0"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    RetainedFormulaClass retained;
+    retained.reference.filename = "plugin.ulb";
+    retained.reference.class_name = "Plugin";
+    retained.ast = plugin.ast;
+    ParameterSetSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsNestedPluginParameterMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "Plugin param formulaClass\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula plugin{load_formula("default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        class_options)};
+    ASSERT_TRUE(plugin.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_formulaClass", "plugin.ulb:Plugin"});
+    reference.parameters.push_back({"p_formulaClass.p_power", "bad"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    RetainedFormulaClass retained;
+    retained.reference.filename = "plugin.ulb";
+    retained.reference.class_name = "Plugin";
+    retained.ast = plugin.ast;
+    ParameterSetSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("invalid parameter binding: p_formulaClass.p_power type mismatch", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, defaultRegistryFindsScalarTypes)
 {
     const BuiltinRegistry &registry{default_builtin_registry()};

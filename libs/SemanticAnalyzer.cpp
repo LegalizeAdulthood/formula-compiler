@@ -11,6 +11,7 @@
 #include <array>
 #include <charconv>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
@@ -270,6 +271,33 @@ std::string plugin_parameter_name(std::string_view saved_name)
     return dot == std::string_view::npos ? std::string{} : std::string{saved_name.substr(0, dot)};
 }
 
+struct PluginParameterPath
+{
+    std::string base_key;
+    std::string nested_key;
+};
+
+std::optional<PluginParameterPath> plugin_parameter_path(std::string_view saved_name)
+{
+    if (!starts_with(saved_name, "p_"))
+    {
+        return {};
+    }
+    const std::size_t first_dot{saved_name.find('.')};
+    if (first_dot == std::string_view::npos)
+    {
+        return {};
+    }
+    const std::size_t second_dot{saved_name.find('.', first_dot + 1)};
+    const std::size_t nested_start{first_dot + 1};
+    const std::size_t nested_length{
+        second_dot == std::string_view::npos ? std::string_view::npos : second_dot - nested_start};
+    return PluginParameterPath{
+        std::string{saved_name.substr(0, first_dot)},
+        std::string{saved_name.substr(nested_start, nested_length)},
+    };
+}
+
 class ParameterMetadataCollector : public ast::NullVisitor
 {
 public:
@@ -378,6 +406,17 @@ const ParameterMetadata::Param *find_parameter_binding(const ParameterMetadata &
         }
     }
     return nullptr;
+}
+
+const ParameterMetadata::Param *find_plugin_parameter_binding(
+    const ParameterMetadata &metadata, std::string_view saved_name)
+{
+    const std::string plugin_name{plugin_parameter_name(saved_name)};
+    if (plugin_name.empty())
+    {
+        return nullptr;
+    }
+    return find_parameter_binding(metadata, plugin_name);
 }
 
 bool has_function_binding(const ParameterMetadata &metadata, std::string_view saved_name)
@@ -521,6 +560,55 @@ bool parameter_value_matches_type(const ParameterMetadata::Param &param, std::st
     return true;
 }
 
+bool is_scalar_parameter_type(std::string_view type)
+{
+    return type == "bool" || type == "int" || type == "float" || type == "complex" || type == "color" ||
+        type == "string";
+}
+
+const parameter::Parameter *find_reference_parameter(
+    const parameter::ParameterReference &reference, std::string_view key)
+{
+    for (const parameter::Parameter &parameter : reference.parameters)
+    {
+        if (parameter.key == key)
+        {
+            return &parameter;
+        }
+    }
+    return nullptr;
+}
+
+struct EntrySelector
+{
+    std::string filename;
+    std::string entry;
+};
+
+std::optional<EntrySelector> parse_entry_selector(std::string_view value)
+{
+    const std::size_t separator{value.find(':')};
+    if (separator == std::string_view::npos || separator == 0 || separator + 1 == value.size())
+    {
+        return {};
+    }
+    return EntrySelector{std::string{value.substr(0, separator)}, std::string{value.substr(separator + 1)}};
+}
+
+const RetainedFormulaClass *find_retained_class(
+    const ParameterSetSemanticContext &context, const EntrySelector &selector)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass != nullptr && klass->reference.filename == selector.filename &&
+            klass->reference.class_name == selector.entry)
+        {
+            return klass;
+        }
+    }
+    return nullptr;
+}
+
 void report_missing_retained_class(
     std::vector<SemanticDiagnostic> &diagnostics, const std::string &entry_name, const std::string &class_name)
 {
@@ -558,8 +646,53 @@ void report_invalid_parameter_binding(std::vector<SemanticDiagnostic> &diagnosti
     diagnostics.push_back(std::move(diagnostic));
 }
 
-void check_parameter_bindings(
-    std::vector<SemanticDiagnostic> &diagnostics, const parameter::ParameterResolvedReference &resolved)
+void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
+    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
+    const parameter::Parameter &parameter, const ParameterMetadata::Param &plugin_param)
+{
+    if (is_scalar_parameter_type(plugin_param.type))
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+        return;
+    }
+
+    const std::optional<PluginParameterPath> path{plugin_parameter_path(parameter.key)};
+    if (!path || !starts_with(path->nested_key, "p_"))
+    {
+        return;
+    }
+    const parameter::Parameter *selector_parameter{find_reference_parameter(resolved.reference, path->base_key)};
+    if (selector_parameter == nullptr)
+    {
+        return;
+    }
+    const std::optional<EntrySelector> selector{parse_entry_selector(selector_parameter->value)};
+    if (!selector)
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, *selector_parameter, "invalid plug-in target");
+        return;
+    }
+    const RetainedFormulaClass *klass{find_retained_class(context, *selector)};
+    if (klass == nullptr || !klass->ast)
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, *selector_parameter, "missing plug-in class");
+        return;
+    }
+    const ParameterMetadata plugin_metadata{collect_parameter_metadata(*klass->ast)};
+    const ParameterMetadata::Param *nested_param{find_parameter_binding(plugin_metadata, path->nested_key)};
+    if (nested_param == nullptr)
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, parameter);
+        return;
+    }
+    if (!parameter_value_matches_type(*nested_param, parameter.value))
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+    }
+}
+
+void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, const ParameterSetSemanticContext &context,
+    const parameter::ParameterResolvedReference &resolved)
 {
     if (!resolved.ast)
     {
@@ -583,10 +716,17 @@ void check_parameter_bindings(
         }
         else if (starts_with(parameter.key, "p_"))
         {
-            const ParameterMetadata::Param *param{find_parameter_binding(metadata, parameter.key)};
-            if (param != nullptr && !parameter_value_matches_type(*param, parameter.value))
+            if (const ParameterMetadata::Param *param{find_parameter_binding(metadata, parameter.key)})
             {
-                report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+                if (!parameter_value_matches_type(*param, parameter.value))
+                {
+                    report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+                }
+            }
+            else if (const ParameterMetadata::Param *plugin_param{
+                         find_plugin_parameter_binding(metadata, parameter.key)})
+            {
+                validate_plugin_subparameter(diagnostics, context, resolved, parameter, *plugin_param);
             }
         }
         else if (starts_with(parameter.key, "f_") && !has_function_binding(metadata, parameter.key))
@@ -1653,7 +1793,7 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
         if (resolved.ast)
         {
             check_retained_references(diagnostics, builtins, context, resolved.reference.entry, *resolved.ast);
-            check_parameter_bindings(diagnostics, resolved);
+            check_parameter_bindings(diagnostics, context, resolved);
         }
     }
     for (const RetainedFormulaClass *klass : context.retained_classes)
