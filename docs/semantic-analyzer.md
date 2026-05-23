@@ -687,24 +687,25 @@ Milestone 8: downstream integration.
 - Keep runtime and codegen diagnostics limited to unsupported or dynamic
   failures not knowable by semantic analysis.
 
-1. Add semantic diagnostic types, context structs, and no-op analyzer entry
-   points.
-2. Collect formula symbols and report duplicate names.
-3. Resolve formula names and report unknown variables, functions, constants,
-   classes, and parameters.
-4. Add predefined-symbol descriptors and checks.
-5. Add expression type checking for scalar, bool, string, color, complex, and
-   array values.
-6. Add dynamic array checks for declarations, indexing, `setLength`, and
-   `length`.
-7. Add function, return, by-reference, and `const` argument checks.
-8. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
-   checks.
-9. Add section-specific formula validation.
-10. Add extended parameter-set binding validation over resolved references.
-11. Add nested plug-in/class parameter validation.
-12. Integrate interpreter and compiler entry points so unsupported or invalid
-    semantic inputs are rejected before execution/code generation.
+1. Add remaining class checks.
+   - Unknown base class.
+   - Inheritance cycle.
+   - Constructor arity.
+   - Visibility.
+   - Cast validity.
+
+2. Add remaining section-specific formula validation.
+   - Switch case value compatibility.
+   - Formula-kind-specific section availability not already enforced by the
+     parser.
+
+3. Finish extended parameter-set binding validation.
+   - Missing referenced entries converted from resolver diagnostics if needed.
+   - Incomplete retained import graph coverage for all referenced entries.
+   - Remaining enum, function, plug-in, and nested plug-in edge cases.
+
+4. Integrate interpreter and compiler entry points so unsupported or invalid
+   semantic inputs are rejected before execution/code generation.
 
 ## Tests
 
@@ -736,73 +737,24 @@ Add tests for:
 
 Keep tests aligned with the implementation milestones:
 
-1. Analyzer shell.
-   - Empty formula diagnostics.
-   - Empty parameter-set diagnostics.
-   - Parsed inputs unchanged after analysis.
-
-2. Builtin registry.
-   - Scalar type lookup.
-   - Builtin constants by entry kind.
-   - Predefined-symbol descriptors by entry kind and section.
-   - Builtin function lookup.
-   - `Image` lookup without an imported file.
-
-3. Formula symbols.
-   - Duplicate local names.
-   - Duplicate function names or signatures.
-   - Duplicate class members.
-   - Unknown type names.
-   - Source spelling preserved in diagnostics.
-
-4. Formula expressions.
-   - Unknown variable, constant, parameter, function, class, and member.
-   - Accepted predefined symbols preserve source spelling.
-   - Globally read-only predefined symbol assignment is rejected by the parser.
-   - Writable predefined symbol assignment accepted where documented.
-   - Predefined symbol use rejected outside documented formula kinds or
-     sections.
-   - Non-constant predefined symbol use rejected in constant-expression
-     contexts.
-   - Bad call arity.
-   - Bad argument conversion.
-   - Bad assignment target.
-   - Bad array index type.
-   - Bad member receiver type.
-   - Dynamic array declarations accepted with one empty dimension.
-   - Dynamic multidimensional declarations rejected.
-   - `setLength` requires a dynamic array target and integer-compatible
-     length.
-   - `length` requires a dynamic array argument and returns `int`.
-
-5. Extended formula statements and sections.
-   - Bad return value.
-   - Missing return where required.
-   - Non-bool loop or branch condition.
-   - Bad switch case value.
-   - Invalid section result.
-   - Invalid constant write.
-
-6. Classes and builtin objects.
+1. Classes and builtin objects.
    - Unknown base class.
    - Inheritance cycle.
    - Constructor arity mismatch.
    - Visibility violation.
-   - Unknown `Image` method or field.
-   - Valid documented `Image` method or field.
+   - Cast validity.
 
-7. Extended parameter-set bindings.
-   - Formula kind mismatch.
+2. Extended formula statements and sections.
+   - Bad switch case value.
+   - Formula-kind-specific section availability not already enforced by the
+     parser.
+
+3. Extended parameter-set bindings.
    - Missing referenced entry.
    - Incomplete retained import graph.
-   - Unknown saved parameter.
-   - Saved value type mismatch.
-   - Invalid enum value.
-   - Invalid function parameter target.
-   - Invalid plug-in class target.
-   - Invalid nested plug-in assignment.
+   - Remaining enum, function, plug-in, and nested plug-in edge cases.
 
-8. Downstream integration.
+4. Downstream integration.
    - Interpreter rejects semantic errors before execution.
    - Compiler rejects semantic errors before code generation.
    - Interpreter still reports runtime-only failures.
