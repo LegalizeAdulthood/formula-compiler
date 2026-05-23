@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
+#include <cstdint>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
@@ -34,7 +36,13 @@ struct ArraySymbol
 
 struct ParameterMetadata
 {
-    std::vector<std::string> params;
+    struct Param
+    {
+        std::string type;
+        std::string name;
+        std::vector<std::string> enum_values;
+    };
+    std::vector<Param> params;
     std::vector<std::string> functions;
     std::vector<std::string> forwards;
 };
@@ -271,15 +279,28 @@ public:
 
     void visit(const ast::ParamBlockNode &node) override
     {
-        m_metadata.params.push_back(node.name());
+        ParameterMetadata::Param param;
+        param.type = node.type();
+        param.name = node.name();
+        m_current_param = &param;
         if (node.block())
         {
             node.block()->visit(*this);
         }
+        m_current_param = nullptr;
+        m_metadata.params.push_back(std::move(param));
     }
 
     void visit(const ast::SettingNode &node) override
     {
+        if (node.key() == "enum" && m_current_param != nullptr)
+        {
+            const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+            if (values != nullptr)
+            {
+                m_current_param->enum_values = *values;
+            }
+        }
         if (node.key() != "param_forward")
         {
             return;
@@ -304,6 +325,7 @@ public:
 
 private:
     ParameterMetadata &m_metadata;
+    ParameterMetadata::Param *m_current_param{};
 };
 
 ParameterMetadata collect_parameter_metadata(const ast::FormulaSections &ast)
@@ -319,9 +341,9 @@ ParameterMetadata collect_parameter_metadata(const ast::FormulaSections &ast)
 
 bool has_parameter_binding(const ParameterMetadata &metadata, std::string_view saved_name)
 {
-    for (const std::string &name : metadata.params)
+    for (const ParameterMetadata::Param &param : metadata.params)
     {
-        if (saved_name == "p_" + name || plugin_parameter_name(saved_name) == "p_" + name)
+        if (saved_name == "p_" + param.name || plugin_parameter_name(saved_name) == "p_" + param.name)
         {
             return true;
         }
@@ -336,6 +358,18 @@ bool has_parameter_binding(const ParameterMetadata &metadata, std::string_view s
     return false;
 }
 
+const ParameterMetadata::Param *find_parameter_binding(const ParameterMetadata &metadata, std::string_view saved_name)
+{
+    for (const ParameterMetadata::Param &param : metadata.params)
+    {
+        if (saved_name == "p_" + param.name)
+        {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
 bool has_function_binding(const ParameterMetadata &metadata, std::string_view saved_name)
 {
     for (const std::string &name : metadata.functions)
@@ -346,6 +380,98 @@ bool has_function_binding(const ParameterMetadata &metadata, std::string_view sa
         }
     }
     return false;
+}
+
+bool parses_integer(std::string_view value)
+{
+    int result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    return parsed.ec == std::errc{} && parsed.ptr == last;
+}
+
+bool parses_uint32(std::string_view value)
+{
+    std::uint32_t result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    return parsed.ec == std::errc{} && parsed.ptr == last;
+}
+
+bool parses_number(std::string_view value)
+{
+    try
+    {
+        std::size_t parsed{};
+        (void) std::stod(std::string{value}, &parsed);
+        return parsed == value.size();
+    }
+    catch (const std::exception &)
+    {
+        return false;
+    }
+}
+
+bool parses_bool(std::string_view value)
+{
+    return same_identifier(value, "yes") || same_identifier(value, "no") || same_identifier(value, "on") ||
+        same_identifier(value, "off") || same_identifier(value, "true") || same_identifier(value, "false");
+}
+
+bool parses_complex(std::string_view value)
+{
+    const std::size_t separator{value.find('/')};
+    return separator != std::string_view::npos && parses_number(value.substr(0, separator)) &&
+        parses_number(value.substr(separator + 1));
+}
+
+bool parameter_value_matches_enum(const ParameterMetadata::Param &param, std::string_view value)
+{
+    if (param.enum_values.empty())
+    {
+        return false;
+    }
+    if (std::find(param.enum_values.begin(), param.enum_values.end(), value) != param.enum_values.end())
+    {
+        return true;
+    }
+    int index{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, index)};
+    return parsed.ec == std::errc{} && parsed.ptr == last && index >= 0 &&
+        static_cast<std::size_t>(index) < param.enum_values.size();
+}
+
+bool parameter_value_matches_type(const ParameterMetadata::Param &param, std::string_view value)
+{
+    if (!param.enum_values.empty())
+    {
+        return parameter_value_matches_enum(param, value);
+    }
+    if (param.type == "bool")
+    {
+        return parses_bool(value);
+    }
+    if (param.type == "int")
+    {
+        return parses_integer(value);
+    }
+    if (param.type == "float")
+    {
+        return parses_number(value);
+    }
+    if (param.type == "complex")
+    {
+        return parses_complex(value);
+    }
+    if (param.type == "color")
+    {
+        return parses_uint32(value);
+    }
+    return true;
 }
 
 void report_missing_retained_class(
@@ -371,12 +497,17 @@ void check_retained_references(std::vector<SemanticDiagnostic> &diagnostics, con
 }
 
 void report_invalid_parameter_binding(std::vector<SemanticDiagnostic> &diagnostics,
-    const parameter::ParameterResolvedReference &resolved, const parameter::Parameter &parameter)
+    const parameter::ParameterResolvedReference &resolved, const parameter::Parameter &parameter,
+    std::string_view reason = {})
 {
     SemanticDiagnostic diagnostic;
     diagnostic.code = SemanticDiagnosticCode::INVALID_PARAMETER_BINDING;
     diagnostic.entry_name = resolved.reference.entry;
     diagnostic.message = "invalid parameter binding: " + parameter.key;
+    if (!reason.empty())
+    {
+        diagnostic.message += " " + std::string{reason};
+    }
     diagnostics.push_back(std::move(diagnostic));
 }
 
@@ -393,6 +524,14 @@ void check_parameter_bindings(
         if (starts_with(parameter.key, "p_") && !has_parameter_binding(metadata, parameter.key))
         {
             report_invalid_parameter_binding(diagnostics, resolved, parameter);
+        }
+        else if (starts_with(parameter.key, "p_"))
+        {
+            const ParameterMetadata::Param *param{find_parameter_binding(metadata, parameter.key)};
+            if (param != nullptr && !parameter_value_matches_type(*param, parameter.value))
+            {
+                report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+            }
         }
         else if (starts_with(parameter.key, "f_") && !has_function_binding(metadata, parameter.key))
         {

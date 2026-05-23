@@ -278,6 +278,99 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsSavedParameterAndFunction)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsSavedParameterTypeMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_power", "not-a-number"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("invalid parameter binding: p_power type mismatch", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsSavedEnumMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "int param mode\n"
+                                            "enum=\"Golden\" \"Silver\"\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_mode", "Bronze"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("invalid parameter binding: p_mode type mismatch", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsSavedParameterTypes)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "bool param enabled\n"
+                                            "endparam\n"
+                                            "int param count\n"
+                                            "endparam\n"
+                                            "float param power\n"
+                                            "endparam\n"
+                                            "complex param seed\n"
+                                            "endparam\n"
+                                            "color param tint\n"
+                                            "endparam\n"
+                                            "int param mode\n"
+                                            "enum=\"Golden\" \"Silver\"\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_enabled", "yes"});
+    reference.parameters.push_back({"p_count", "3"});
+    reference.parameters.push_back({"p_power", "2.5"});
+    reference.parameters.push_back({"p_seed", "1.0/2.0"});
+    reference.parameters.push_back({"p_tint", "4294967295"});
+    reference.parameters.push_back({"p_mode", "Silver"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, defaultRegistryFindsScalarTypes)
 {
     const BuiltinRegistry &registry{default_builtin_registry()};
