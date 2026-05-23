@@ -532,6 +532,66 @@ Before starting code implementation, present the completed plan for review and
 wait for approval. Do not begin semantic analyzer source changes from this plan
 until the review is complete.
 
+Milestone 1: analyzer shell.
+
+- Add public semantic analyzer header.
+- Add diagnostic, context, type, and symbol declarations.
+- Add no-op `analyze_formula` and `analyze_parameter_set`.
+- Add tests proving syntactically valid empty inputs return no diagnostics.
+- Add tests proving the API does not mutate parsed data.
+
+Milestone 2: builtin registry.
+
+- Add scalar type descriptors.
+- Add builtin constants by entry kind and section.
+- Add builtin function descriptors needed by current parser tests.
+- Add builtin class descriptor support.
+- Add `Image` as a builtin class without import lookup.
+
+Milestone 3: formula symbols.
+
+- Collect entry, function, block, and class scopes.
+- Report duplicate declarations.
+- Preserve identifier spelling in diagnostics.
+- Add error symbols for invalid declarations so analysis can continue.
+
+Milestone 4: formula expressions.
+
+- Resolve identifiers.
+- Resolve constants and parameter references.
+- Resolve calls, member access, array indexing, and assignments.
+- Apply conversion rules.
+- Emit expression type diagnostics.
+
+Milestone 5: formula statements and sections.
+
+- Check declarations, returns, by-reference arguments, `const` arguments,
+  loops, branches, and switch expressions.
+- Check section-specific constants and result rules.
+- Keep BASIC behavior covered by the same analyzer path.
+
+Milestone 6: classes and builtin objects.
+
+- Resolve imported and current classes.
+- Check inheritance, constructors, methods, fields, visibility, `new`, and
+  casts.
+- Check `Image` members and methods through the builtin descriptor.
+
+Milestone 7: parameter-set bindings.
+
+- Validate formula kinds for fractal and layer references.
+- Validate complete retained import graphs.
+- Build parameter metadata scopes from referenced defaults.
+- Check saved values, enums, functions, plug-ins, nested plug-in assignments,
+  and builtin object parameters.
+
+Milestone 8: downstream integration.
+
+- Make interpreter entry points reject semantic errors before execution.
+- Make compiler entry points reject semantic errors before code generation.
+- Keep runtime and codegen diagnostics limited to unsupported or dynamic
+  failures not knowable by semantic analysis.
+
 1. Add semantic diagnostic types, context structs, and no-op analyzer entry
    points.
 2. Collect formula symbols and report duplicate names.
