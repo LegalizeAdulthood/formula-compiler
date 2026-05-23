@@ -690,7 +690,6 @@ Milestone 8: downstream integration.
 1. Add remaining class checks.
    - Unknown base class.
    - Inheritance cycle.
-   - Constructor arity.
    - Visibility.
    - Cast validity.
 
@@ -740,7 +739,6 @@ Keep tests aligned with the implementation milestones:
 1. Classes and builtin objects.
    - Unknown base class.
    - Inheritance cycle.
-   - Constructor arity mismatch.
    - Visibility violation.
    - Cast validity.
 

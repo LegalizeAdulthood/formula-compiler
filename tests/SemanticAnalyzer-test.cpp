@@ -626,6 +626,9 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
     EXPECT_TRUE(image->builtin);
     EXPECT_EQ(SemanticTypeKind::BUILTIN_OBJECT, image->type.kind);
     EXPECT_TRUE(registry.find_type("Image"));
+    ASSERT_EQ(1U, image->constructors.size());
+    EXPECT_EQ("Image", image->constructors[0].name);
+    EXPECT_TRUE(image->constructors[0].argument_types.empty());
     ASSERT_EQ(8U, image->methods.size());
     EXPECT_EQ("assign", image->methods[0].name);
     EXPECT_EQ("getColor", image->methods[1].name);
@@ -1280,6 +1283,38 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsScalarNewType)
     ASSERT_EQ(1U, diagnostics.size());
     EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
     EXPECT_EQ("invalid new type: int", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsImageConstructorArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Image target\n"
+                                            "target=new Image()",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsImageConstructorArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Image target\n"
+                                            "target=new Image(1)",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_CALL_ARITY, diagnostics.front().code);
+    EXPECT_EQ("invalid call arity: Image expects 0 arguments, got 1", diagnostics.front().message);
 }
 
 TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsDynamicArrayBuiltins)

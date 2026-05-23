@@ -203,6 +203,7 @@ BuiltinRegistry make_default_builtin_registry()
         image.name = "Image";
         image.type = *image_type;
         image.builtin = true;
+        image.constructors.push_back(semantic_function("Image", *image_type, {}));
         image.methods.push_back(semantic_function("assign", *void_type, {image_type}));
         image.methods.push_back(semantic_function("getColor", *color_type, {complex_type}));
         image.methods.push_back(semantic_function("getEmpty", *bool_type, {}));
@@ -1060,7 +1061,7 @@ public:
 
     void visit(const ast::NewNode &node) override
     {
-        validate_new_type(node.type());
+        validate_new_expression(node);
         for (const ast::Expr &arg : node.args())
         {
             collect(arg);
@@ -1241,15 +1242,35 @@ private:
         }
     }
 
-    void validate_new_type(const std::string &name)
+    void validate_new_expression(const ast::NewNode &node)
     {
-        if (!m_builtins.find_class(name) && !is_class(name))
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(node.type()))
+        {
+            validate_constructor_call(*klass, node.args().size());
+            return;
+        }
+        if (!is_class(node.type()))
         {
             SemanticDiagnostic diagnostic;
-            diagnostic.code = m_builtins.find_type(name) ? SemanticDiagnosticCode::INVALID_BUILTIN_USAGE
-                                                         : SemanticDiagnosticCode::UNKNOWN_TYPE;
-            diagnostic.message = "invalid new type: " + name;
+            diagnostic.code = m_builtins.find_type(node.type()) ? SemanticDiagnosticCode::INVALID_BUILTIN_USAGE
+                                                                : SemanticDiagnosticCode::UNKNOWN_TYPE;
+            diagnostic.message = "invalid new type: " + node.type();
             m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    void validate_constructor_call(const SemanticClassDescriptor &klass, std::size_t actual)
+    {
+        for (const SemanticFunctionDescriptor &constructor : klass.constructors)
+        {
+            if (constructor.argument_types.size() == actual)
+            {
+                return;
+            }
+        }
+        if (!klass.constructors.empty())
+        {
+            validate_call_arity(klass.name, actual, klass.constructors.front().argument_types.size());
         }
     }
 

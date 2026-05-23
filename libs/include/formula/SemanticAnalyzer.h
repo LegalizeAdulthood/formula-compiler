@@ -112,6 +112,7 @@ struct SemanticClassDescriptor
     std::string name;
     SemanticType type;
     bool builtin{};
+    std::vector<SemanticFunctionDescriptor> constructors;
     std::vector<SemanticSymbol> fields;
     std::vector<SemanticFunctionDescriptor> methods;
 };
