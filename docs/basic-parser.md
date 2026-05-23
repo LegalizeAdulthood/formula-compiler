@@ -10,6 +10,20 @@ needed for BASIC formulas.
 The parser should reject BASIC inputs that would otherwise fail later in the
 interpreter or compiler. Unknown variables remain valid and evaluate as zero.
 
+## Parse Mode
+
+BASIC has one parser contract. It should reject:
+
+- Unknown function calls.
+- Builtin calls with zero arguments.
+- Builtin calls with more than one argument.
+- Assignment to builtin variables.
+- Assignment to builtin function names.
+- Any extended-only syntax.
+
+Parser options that allow builtin assignment should be removed or constrained
+outside BASIC once this plan is implemented.
+
 ## Current Gaps
 
 The current parser still allows a few BASIC constructs that require later
@@ -23,9 +37,8 @@ runtime behavior:
   least one argument.
 - Multi-argument calls such as `sin(1, 2)` can parse even though BASIC has no
   multi-argument function calls.
-- Assignment to builtin variables is allowed by default with warnings. For
-  fully verified BASIC parsing, read-only builtin names should be rejected
-  unless a caller explicitly enables compatibility mode.
+- Assignment to builtin variables is allowed by default with warnings. BASIC
+  should reject read-only builtin names.
 
 ## Non-Gaps
 
@@ -72,11 +85,9 @@ or delimiter errors where possible for bad argument lists.
 
 Make the BASIC verification policy explicit:
 
-- Strict BASIC mode should reject assignment to builtin variables and builtin
-  function names.
-- Compatibility mode may keep current warning behavior when loading old
-  formula corpora.
-- Tests should state which mode they exercise.
+- BASIC should reject assignment to builtin variables and builtin function
+  names.
+- Existing warning behavior should be removed from the BASIC path.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
 
@@ -113,15 +124,14 @@ BASIC expression by accident.
    - Reject known builtin calls with argument count other than one.
    - Preserve extended multi-argument calls.
 
-3. Add strict BASIC builtin-assignment tests.
-   - Verify parser options reject builtin variable assignment.
-   - Verify parser options reject builtin function assignment.
-   - Keep compatibility tests for warning behavior if needed by corpus support.
+3. Add BASIC builtin-assignment tests.
+   - Verify builtin variable assignment is rejected.
+   - Verify builtin function assignment is rejected.
+   - Remove warning-mode expectations from BASIC tests.
 
 4. Review default parser options.
-   - Decide whether strict BASIC should be the default.
-   - If compatibility mode remains the default, name it clearly in options and
-     tests.
+   - Remove or narrow options that allow builtin assignment in BASIC.
+   - Ensure BASIC parse success means full static BASIC validation.
 
 5. Add extended-token regression tests under BASIC.
    - Ensure extended-only tokens remain invalid in BASIC.
@@ -142,8 +152,8 @@ Add parser tests for:
 - `sin()` fails in BASIC.
 - `sin(1, 2)` fails in BASIC.
 - `(sin)(1)` fails in BASIC if representable.
-- `p1=1` fails in strict BASIC.
-- `sin=1` fails in strict BASIC.
+- `p1=1` fails in BASIC.
+- `sin=1` fails in BASIC.
 - Extended call syntax remains valid in extended dialect where appropriate.
 
 Add interpreter/compiler regression tests showing that valid BASIC formulas no
