@@ -70,6 +70,23 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisDoesNotMutateParsedParameters)
     EXPECT_EQ("Example.ufm#Mandelbrot", parameters.fractal.assignments.front().value);
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsResolvedReferences)
+{
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.references.push_back(reference);
+    references.resolved.push_back({reference, {}, std::make_shared<ast::FormulaSections>()});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, defaultRegistryFindsScalarTypes)
 {
     const BuiltinRegistry &registry{default_builtin_registry()};
