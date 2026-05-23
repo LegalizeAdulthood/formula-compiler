@@ -907,6 +907,30 @@ TEST(TestFormulaParse, unknownPredefinedSymbolIsParseError)
     EXPECT_EQ(ErrorCode::UNKNOWN_PREDEFINED_SYMBOL, parser->get_errors().back().code);
 }
 
+TEST(TestFormulaParse, readonlyPredefinedSymbolAssignmentIsParseError)
+{
+    ParserPtr parser{create_parser("#pi=3", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    EXPECT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::READONLY_PREDEFINED_SYMBOL_ASSIGNMENT, parser->get_errors().back().code);
+}
+
+TEST(TestFormulaParse, writablePredefinedSymbolAssignmentParses)
+{
+    const ast::FormulaSectionsPtr result{parse("#z=1", Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("assignment:{\n"
+              "constant_ref:z\n"
+              "}\n"
+              "literal:1\n",
+        to_string(result->bailout));
+}
+
 TEST(TestFormulaParse, extendedDeclarationsAndLoops)
 {
     const ast::FormulaSectionsPtr result{parse("global:\n"

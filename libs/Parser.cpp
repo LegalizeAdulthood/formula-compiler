@@ -46,36 +46,63 @@ bool equals_ignore_case(std::string_view lhs, std::string_view rhs)
     return true;
 }
 
+struct PredefinedSymbol
+{
+    std::string_view name;
+    bool writable;
+};
+
+constexpr std::array<PredefinedSymbol, 25> PREDEFINED_SYMBOLS{
+    {
+        {"angle", false},
+        {"calculationPurpose", false},
+        {"center", false},
+        {"color", true},
+        {"dpixel", false},
+        {"dz", true},
+        {"e", false},
+        {"height", false},
+        {"index", true},
+        {"magn", false},
+        {"maxiter", false},
+        {"numiter", true},
+        {"pi", false},
+        {"pixel", true},
+        {"random", false},
+        {"randomrange", false},
+        {"screenmax", false},
+        {"screenpixel", false},
+        {"skew", false},
+        {"stretch", false},
+        {"whitesq", false},
+        {"width", false},
+        {"x", false},
+        {"y", false},
+        {"z", true},
+    },
+};
+
+const PredefinedSymbol *find_predefined_symbol(std::string_view name)
+{
+    for (const PredefinedSymbol &symbol : PREDEFINED_SYMBOLS)
+    {
+        if (symbol.name == name)
+        {
+            return &symbol;
+        }
+    }
+    return nullptr;
+}
+
 bool is_predefined_symbol(std::string_view name)
 {
-    static constexpr std::array<std::string_view, 25> symbols{
-        "angle",
-        "calculationPurpose",
-        "center",
-        "color",
-        "dpixel",
-        "dz",
-        "e",
-        "height",
-        "index",
-        "magn",
-        "maxiter",
-        "numiter",
-        "pi",
-        "pixel",
-        "random",
-        "randomrange",
-        "screenmax",
-        "screenpixel",
-        "skew",
-        "stretch",
-        "whitesq",
-        "width",
-        "x",
-        "y",
-        "z",
-    };
-    return std::find(symbols.begin(), symbols.end(), name) != symbols.end();
+    return find_predefined_symbol(name) != nullptr;
+}
+
+bool is_writable_predefined_symbol(std::string_view name)
+{
+    const PredefinedSymbol *symbol{find_predefined_symbol(name)};
+    return symbol != nullptr && symbol->writable;
 }
 
 enum class SettingType
@@ -2604,6 +2631,12 @@ Expr FormulaParser::assignment_statement()
         error(ErrorCode::EXPECTED_STATEMENT);
         return nullptr;
     }
+    if (const auto *constant = dynamic_cast<const ConstantRefNode *>(left.get());
+        constant && !is_writable_predefined_symbol(constant->name()))
+    {
+        error(ErrorCode::READONLY_PREDEFINED_SYMBOL_ASSIGNMENT);
+        return nullptr;
+    }
 
     Expr right = assignment_statement();
     if (!right)
@@ -3280,6 +3313,7 @@ std::string to_string(ErrorCode code)
         ERROR_CODE_CASE(DEFAULT_SECTION_INVALID_METHOD);
         ERROR_CODE_CASE(SWITCH_SECTION_INVALID_KEY);
         ERROR_CODE_CASE(UNKNOWN_PREDEFINED_SYMBOL);
+        ERROR_CODE_CASE(READONLY_PREDEFINED_SYMBOL_ASSIGNMENT);
     }
 
     return std::to_string(static_cast<int>(code));

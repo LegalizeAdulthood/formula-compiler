@@ -382,7 +382,8 @@ The analyzer should preserve source spelling in diagnostics.
 
 Semantic checks should:
 
-- Reject writes to read-only predefined symbols.
+- Assume the parser has already rejected writes to globally read-only
+  predefined symbols.
 - Allow writes only to documented writable symbols in allowed formula kinds and
   sections.
 - Validate use in constant-expression contexts, including array declarations
@@ -757,7 +758,7 @@ Keep tests aligned with the implementation milestones:
 4. Formula expressions.
    - Unknown variable, constant, parameter, function, class, and member.
    - Accepted predefined symbols preserve source spelling.
-   - Read-only predefined symbol assignment rejected.
+   - Globally read-only predefined symbol assignment is rejected by the parser.
    - Writable predefined symbol assignment accepted where documented.
    - Predefined symbol use rejected outside documented formula kinds or
      sections.
