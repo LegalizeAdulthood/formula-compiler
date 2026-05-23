@@ -114,6 +114,15 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
     EXPECT_TRUE(image->builtin);
     EXPECT_EQ(SemanticTypeKind::BUILTIN_OBJECT, image->type.kind);
     EXPECT_TRUE(registry.find_type("Image"));
+    ASSERT_EQ(8U, image->methods.size());
+    EXPECT_EQ("assign", image->methods[0].name);
+    EXPECT_EQ("getColor", image->methods[1].name);
+    EXPECT_EQ("getEmpty", image->methods[2].name);
+    EXPECT_EQ("getHeight", image->methods[3].name);
+    EXPECT_EQ("getPixel", image->methods[4].name);
+    EXPECT_EQ("getWidth", image->methods[5].name);
+    EXPECT_EQ("resize", image->methods[6].name);
+    EXPECT_EQ("setPixel", image->methods[7].name);
 }
 
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)
@@ -628,6 +637,38 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsSetLengthSizeType)
     ASSERT_EQ(1U, diagnostics.size());
     EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
     EXPECT_EQ("invalid argument type: setLength got string, expected int", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsImageMethodMember)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Image source\n"
+                                            "source.getWidth",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownImageMember)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Image source\n"
+                                            "source.missing",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_MEMBER_ACCESS, diagnostics.front().code);
+    EXPECT_EQ("invalid member access: Image.missing", diagnostics.front().message);
 }
 
 } // namespace formula::test

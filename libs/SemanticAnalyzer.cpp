@@ -48,6 +48,22 @@ SemanticFunctionDescriptor unary_complex_function(std::string name, const Semant
     return function;
 }
 
+SemanticFunctionDescriptor semantic_function(
+    std::string name, const SemanticType &return_type, std::initializer_list<const SemanticType *> args)
+{
+    SemanticFunctionDescriptor function;
+    function.name = std::move(name);
+    function.return_type = return_type;
+    for (const SemanticType *arg : args)
+    {
+        if (arg)
+        {
+            function.argument_types.push_back(*arg);
+        }
+    }
+    return function;
+}
+
 BuiltinRegistry make_default_builtin_registry()
 {
     BuiltinRegistry registry;
@@ -79,13 +95,25 @@ BuiltinRegistry make_default_builtin_registry()
         }
     }
 
+    const SemanticType *void_type{registry.find_type("void")};
+    const SemanticType *bool_type{registry.find_type("bool")};
+    const SemanticType *int_type{registry.find_type("int")};
+    const SemanticType *color_type{registry.find_type("color")};
     const SemanticType *image_type{registry.find_type("Image")};
-    if (image_type)
+    if (void_type && bool_type && int_type && complex_type && color_type && image_type)
     {
         SemanticClassDescriptor image;
         image.name = "Image";
         image.type = *image_type;
         image.builtin = true;
+        image.methods.push_back(semantic_function("assign", *void_type, {image_type}));
+        image.methods.push_back(semantic_function("getColor", *color_type, {complex_type}));
+        image.methods.push_back(semantic_function("getEmpty", *bool_type, {}));
+        image.methods.push_back(semantic_function("getHeight", *int_type, {}));
+        image.methods.push_back(semantic_function("getPixel", *color_type, {int_type, int_type}));
+        image.methods.push_back(semantic_function("getWidth", *int_type, {}));
+        image.methods.push_back(semantic_function("resize", *void_type, {int_type, int_type}));
+        image.methods.push_back(semantic_function("setPixel", *void_type, {int_type, int_type, color_type}));
         registry.classes.push_back(std::move(image));
     }
 
@@ -211,7 +239,7 @@ public:
     void visit(const ast::DeclarationNode &node) override
     {
         validate_type(node.type());
-        declare(node.name(), SemanticSymbolKind::LOCAL, type_kind(node.type()));
+        declare(node.name(), SemanticSymbolKind::LOCAL, node.type());
         if (node.is_array())
         {
             declare_array(node.name(), type_kind(node.type()), node.is_dynamic_array());
@@ -250,7 +278,7 @@ public:
         for (const ast::FunctionArgument &arg : node.args())
         {
             validate_type(arg.type);
-            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, type_kind(arg.type), arg.is_const);
+            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, arg.type, arg.is_const);
         }
         collect(node.body());
         m_function_return_types.pop_back();
@@ -315,7 +343,7 @@ public:
 
     void visit(const ast::MemberAccessNode &node) override
     {
-        collect(node.target());
+        validate_member_access(node);
     }
 
     void visit(const ast::NewNode &node) override
@@ -385,6 +413,7 @@ private:
     {
         m_scopes.emplace_back();
         m_symbol_types.emplace_back();
+        m_symbol_type_names.emplace_back();
         m_array_symbols.emplace_back();
         m_read_only_symbols.emplace_back();
     }
@@ -393,6 +422,7 @@ private:
     {
         m_scopes.pop_back();
         m_symbol_types.pop_back();
+        m_symbol_type_names.pop_back();
         m_array_symbols.pop_back();
         m_read_only_symbols.pop_back();
     }
@@ -443,10 +473,18 @@ private:
             m_diagnostics.push_back(std::move(diagnostic));
         }
         m_symbol_types.back().emplace(name, type);
+        m_symbol_type_names.back().emplace(name, type_name(type));
         if (is_read_only)
         {
             m_read_only_symbols.back().insert(name);
         }
+    }
+
+    void declare(
+        const std::string &name, SemanticSymbolKind kind, const std::string &type_name, bool is_read_only = false)
+    {
+        declare(name, kind, type_kind(type_name), is_read_only);
+        m_symbol_type_names.back()[name] = type_name;
     }
 
     void declare_array(const std::string &name, SemanticTypeKind element_type, bool is_dynamic)
@@ -479,6 +517,45 @@ private:
             diagnostic.message = "invalid new type: " + name;
             m_diagnostics.push_back(std::move(diagnostic));
         }
+    }
+
+    void validate_member_access(const ast::MemberAccessNode &node)
+    {
+        const std::string receiver_type{expression_type_name(node.target())};
+        if (receiver_type.empty())
+        {
+            collect(node.target());
+            return;
+        }
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+        {
+            if (!find_member(*klass, node.member()))
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+                diagnostic.message = "invalid member access: " + receiver_type + "." + node.member();
+                m_diagnostics.push_back(std::move(diagnostic));
+            }
+        }
+    }
+
+    const SemanticType *find_member(const SemanticClassDescriptor &klass, const std::string &name) const
+    {
+        for (const SemanticSymbol &field : klass.fields)
+        {
+            if (field.name == name)
+            {
+                return &field.type;
+            }
+        }
+        for (const SemanticFunctionDescriptor &method : klass.methods)
+        {
+            if (method.name == name)
+            {
+                return &method.return_type;
+            }
+        }
+        return nullptr;
     }
 
     void validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected)
@@ -672,6 +749,20 @@ private:
         return SemanticTypeKind::ERROR;
     }
 
+    std::string expression_type_name(const ast::Expr &expr)
+    {
+        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+        {
+            return symbol_type_name(identifier->name());
+        }
+        if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
+        {
+            return new_object->type();
+        }
+        collect(expr);
+        return {};
+    }
+
     SemanticTypeKind symbol_type(const std::string &name) const
     {
         for (auto scope = m_symbol_types.rbegin(); scope != m_symbol_types.rend(); ++scope)
@@ -683,6 +774,19 @@ private:
             }
         }
         return is_builtin_variable(name) ? SemanticTypeKind::COMPLEX : SemanticTypeKind::ERROR;
+    }
+
+    std::string symbol_type_name(const std::string &name) const
+    {
+        for (auto scope = m_symbol_type_names.rbegin(); scope != m_symbol_type_names.rend(); ++scope)
+        {
+            const auto found = scope->find(name);
+            if (found != scope->end())
+            {
+                return found->second;
+            }
+        }
+        return {};
     }
 
     SemanticTypeKind type_kind(const std::string &name) const
@@ -884,6 +988,7 @@ private:
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
+    std::vector<std::unordered_map<std::string, std::string>> m_symbol_type_names{{}};
     std::vector<std::unordered_map<std::string, ArraySymbol>> m_array_symbols{{}};
     std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
     std::unordered_map<std::string, FunctionSignature> m_functions;
