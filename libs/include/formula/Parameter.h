@@ -95,6 +95,7 @@ enum class ParameterReferenceErrorCode
     UNKNOWN_PARAMETER,
     MISSING_REQUIRED_PARAMETER,
     TYPE_MISMATCH,
+    INVALID_PARAMETER_FORWARD,
 };
 
 struct ParameterReferenceSite

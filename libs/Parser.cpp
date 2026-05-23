@@ -1002,6 +1002,34 @@ Expr FormulaParser::default_param_block()
     const std::string name{str()};
     advance();
 
+    if (type.empty() && check(TokenType::ASSIGN))
+    {
+        advance();
+        std::vector<std::string> path{name};
+        if (!check(TokenType::IDENTIFIER))
+        {
+            return nullptr;
+        }
+        path.push_back(str());
+        advance();
+        while (check(TokenType::DOT))
+        {
+            advance();
+            if (!check(TokenType::IDENTIFIER))
+            {
+                return nullptr;
+            }
+            path.push_back(str());
+            advance();
+        }
+        if (!check(TokenType::TERMINATOR))
+        {
+            return nullptr;
+        }
+        advance();
+        return std::make_shared<SettingNode>("param_forward", path);
+    }
+
     if (!check(TokenType::TERMINATOR))
     {
         return nullptr;

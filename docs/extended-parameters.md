@@ -291,6 +291,11 @@ referenced formula family:
 Saved formula parameters are regular assignments in those sections.
 `p_` keys bind to formula parameters. `f_` keys bind to function
 parameters such as `f_fn1`, `f_fn2`, `f_fn3`, and `f_fn4`.
+Parameter forwards declared as `param old = new.path` in a referenced
+formula's `default:` section let saved `p_old` assignments target the
+new parameter path. Direct forwards are validated against the target
+parameter; plug-in sub-parameter paths are collected and left for
+plug-in validation.
 
 The parameter parser must not locate these files or interpret these
 references. The client reads the string assignments and resolves files
@@ -450,15 +455,11 @@ section) and retry paring the FileEntry as a basic parameter set.
 
 ## Implementation Slices
 
-1. Add parameter-forward support:
-    - collect forward declarations from resolved formula defaults
-    - map old saved `p_` names to current parameter names
-    - report conflicting or unresolved forwards
-2. Add plug-in sub-parameter validation:
+1. Add plug-in sub-parameter validation:
     - resolve class and plug-in parameter defaults
     - validate nested `p_` assignments against the selected plug-in type
     - report unknown plug-in parameters and type mismatches
-3. Add richer typed conversion:
+2. Add richer typed conversion:
     - validate enum values against `enum` lists
     - validate color and complex spelling beyond the common saved forms
     - retain original strings for round-tripping

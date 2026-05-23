@@ -75,10 +75,17 @@ struct ParameterDefinition
     bool has_default{};
 };
 
+struct ParameterForward
+{
+    std::string old_name;
+    std::vector<std::string> path;
+};
+
 struct ParameterDefinitions
 {
     std::vector<ParameterDefinition> params;
     std::vector<std::string> functions;
+    std::vector<ParameterForward> forwards;
 };
 
 enum class LayerParseState
@@ -595,6 +602,17 @@ private:
         {
             m_found_default = true;
         }
+        else if (node.key() == "param_forward")
+        {
+            const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+            if (values != nullptr && values->size() >= 2)
+            {
+                ParameterForward forward;
+                forward.old_name = values->front();
+                forward.path.assign(std::next(values->begin()), values->end());
+                m_definitions.forwards.push_back(std::move(forward));
+            }
+        }
     }
 
     ParameterDefinitions &m_definitions;
@@ -680,6 +698,45 @@ const ParameterDefinition *find_parameter_definition(
     return nullptr;
 }
 
+const ParameterForward *find_parameter_forward(const ParameterDefinitions &definitions, std::string_view saved_name)
+{
+    if (!starts_with(saved_name, "p_"))
+    {
+        return nullptr;
+    }
+    const std::string_view old_name{saved_name.substr(2)};
+    for (const ParameterForward &forward : definitions.forwards)
+    {
+        if (forward.old_name == old_name)
+        {
+            return &forward;
+        }
+    }
+    return nullptr;
+}
+
+bool has_conflicting_forwards(const ParameterDefinitions &definitions, std::string_view old_name)
+{
+    const ParameterForward *first{};
+    for (const ParameterForward &forward : definitions.forwards)
+    {
+        if (forward.old_name != old_name)
+        {
+            continue;
+        }
+        if (first == nullptr)
+        {
+            first = &forward;
+            continue;
+        }
+        if (forward.path != first->path)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool has_function_definition(const ParameterDefinitions &definitions, std::string_view saved_name)
 {
     for (const std::string &name : definitions.functions)
@@ -753,9 +810,49 @@ bool parameter_value_matches_type(std::string_view type, std::string_view value)
     return true;
 }
 
+const ParameterDefinition *find_forwarded_direct_parameter(
+    const ParameterDefinitions &definitions, const ParameterForward &forward)
+{
+    if (forward.path.size() != 1)
+    {
+        return nullptr;
+    }
+    return find_parameter_definition(definitions, "p_" + forward.path.front());
+}
+
+bool has_saved_parameter_for(
+    const ParameterReference &reference, const ParameterDefinitions &definitions, const ParameterDefinition &definition)
+{
+    const std::string saved_name{"p_" + definition.name};
+    for (const Parameter &parameter : reference.parameters)
+    {
+        if (parameter.key == saved_name)
+        {
+            return true;
+        }
+        const ParameterForward *forward{find_parameter_forward(definitions, parameter.key)};
+        if (forward != nullptr && forward->path.size() == 1 && forward->path.front() == definition.name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void validate_reference_parameters(ParameterReferenceSet &result, const ParameterResolvedReference &resolved)
 {
     const ParameterDefinitions definitions{collect_definitions(*resolved.ast)};
+    std::vector<std::string> reported_forwards;
+    for (const ParameterForward &forward : definitions.forwards)
+    {
+        if (has_conflicting_forwards(definitions, forward.old_name) &&
+            std::find(reported_forwards.begin(), reported_forwards.end(), forward.old_name) == reported_forwards.end())
+        {
+            add_reference_diagnostic(result, resolved.reference, ParameterReferenceErrorCode::INVALID_PARAMETER_FORWARD,
+                {}, forward.old_name);
+            reported_forwards.push_back(forward.old_name);
+        }
+    }
     for (const Parameter &parameter : resolved.reference.parameters)
     {
         if (starts_with(parameter.key, "p_"))
@@ -763,10 +860,25 @@ void validate_reference_parameters(ParameterReferenceSet &result, const Paramete
             const ParameterDefinition *definition{find_parameter_definition(definitions, parameter.key)};
             if (definition == nullptr)
             {
-                add_reference_diagnostic(
-                    result, resolved.reference, ParameterReferenceErrorCode::UNKNOWN_PARAMETER, {}, parameter.key);
+                const ParameterForward *forward{find_parameter_forward(definitions, parameter.key)};
+                if (forward == nullptr)
+                {
+                    add_reference_diagnostic(
+                        result, resolved.reference, ParameterReferenceErrorCode::UNKNOWN_PARAMETER, {}, parameter.key);
+                    continue;
+                }
+                definition = find_forwarded_direct_parameter(definitions, *forward);
+                if (definition == nullptr)
+                {
+                    if (forward->path.size() == 1)
+                    {
+                        add_reference_diagnostic(result, resolved.reference,
+                            ParameterReferenceErrorCode::INVALID_PARAMETER_FORWARD, {}, parameter.key);
+                    }
+                    continue;
+                }
             }
-            else if (!parameter_value_matches_type(definition->type, parameter.value))
+            if (!parameter_value_matches_type(definition->type, parameter.value))
             {
                 add_reference_diagnostic(
                     result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
@@ -785,13 +897,10 @@ void validate_reference_parameters(ParameterReferenceSet &result, const Paramete
         {
             continue;
         }
-        const std::string saved_name{"p_" + definition.name};
-        const auto found = std::find_if(resolved.reference.parameters.begin(), resolved.reference.parameters.end(),
-            [&saved_name](const Parameter &parameter) { return parameter.key == saved_name; });
-        if (found == resolved.reference.parameters.end())
+        if (!has_saved_parameter_for(resolved.reference, definitions, definition))
         {
-            add_reference_diagnostic(
-                result, resolved.reference, ParameterReferenceErrorCode::MISSING_REQUIRED_PARAMETER, {}, saved_name);
+            add_reference_diagnostic(result, resolved.reference,
+                ParameterReferenceErrorCode::MISSING_REQUIRED_PARAMETER, {}, "p_" + definition.name);
         }
     }
 }

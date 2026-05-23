@@ -1328,6 +1328,12 @@ static SimpleExpressionParam s_default_values[]{
         "endparam",
         "param_block:bailout,foo {\n"
         "}\n"}, //
+    {"parameterForward", "param oldbailout = bailoutParam.bailout\n",
+        "setting:param_forward={\n"
+        "\"oldbailout\"\n"
+        "\"bailoutparam\"\n"
+        "\"bailout\"\n"
+        "}\n"}, //
     {"captionParamBlock",
         "bool param foo\n"
         "caption=\"My parameter\"\n"
