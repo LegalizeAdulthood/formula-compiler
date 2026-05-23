@@ -528,6 +528,10 @@ the interpreter or compiler needs them.
 
 ## Implementation Slices
 
+Before starting code implementation, present the completed plan for review and
+wait for approval. Do not begin semantic analyzer source changes from this plan
+until the review is complete.
+
 1. Add semantic diagnostic types, context structs, and no-op analyzer entry
    points.
 2. Collect formula symbols and report duplicate names.
