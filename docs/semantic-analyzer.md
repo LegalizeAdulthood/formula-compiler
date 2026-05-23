@@ -166,6 +166,21 @@ stored directly in one parsed formula:
 The context should not cause imports to be loaded. Import resolution remains a
 separate parser/resolver responsibility.
 
+Suggested shape:
+
+```cpp
+struct FormulaSemanticContext
+{
+    EntryKind entry_kind;
+    std::string source_name;
+    std::span<const FormulaEntry> retained_classes;
+    const BuiltinRegistry *builtins;
+};
+```
+
+Keep ownership outside the analyzer. The context should reference data produced
+by the loader, parser, resolver, or host.
+
 ## Formula Responsibilities
 
 The formula analyzer should validate:
@@ -204,6 +219,41 @@ The resolved parameter set should already contain the references needed to
 render: fractal settings, layers, referenced formulas, and retained imported
 formula/class ASTs. Interpreter and compiler stages remain responsible for
 execution behavior.
+
+Suggested shape:
+
+```cpp
+struct ParameterSetSemanticContext
+{
+    const BuiltinRegistry *builtins;
+    std::span<const FormulaEntry> referenced_formulas;
+    std::span<const FormulaEntry> retained_classes;
+};
+```
+
+Do not duplicate resolved references in the context when they already exist in
+the `ParameterReferenceSet`. The context should supply only shared lookup data
+that is not stored in the resolved reference set.
+
+## Builtin Registry
+
+Use one builtin registry for formula and parameter-set analysis. It should
+describe language-provided types, functions, constants, classes, methods, and
+fields.
+
+Initial contents:
+
+- Scalar types: `void`, `bool`, `int`, `float`, `complex`, `color`, `string`.
+- Array type construction.
+- Predefined constants by entry kind and section.
+- Builtin functions and operators.
+- Builtin object classes, including `Image`.
+
+The registry should be read-only during analysis. Tests can build small
+registries when a full host registry is not needed.
+
+`Image` must be a builtin class descriptor, not an imported class. It should be
+valid as a parameter type even when no file defines it.
 
 ## Parameter Set Responsibilities
 
