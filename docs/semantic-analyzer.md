@@ -333,6 +333,70 @@ Rules:
 - Builtin object references convert only by explicit descriptor rule.
 - Invalid conversions emit diagnostics and return error type.
 
+## Symbols And Scopes
+
+Build symbol tables before type-checking expression bodies. This supports
+forward calls, recursion, class references, and parameter metadata lookup.
+
+Initial symbol categories:
+
+- Local variable.
+- Function parameter.
+- Formula parameter.
+- Formula constant.
+- User function.
+- Builtin function.
+- Class.
+- Field.
+- Method.
+- Constructor.
+- Builtin constant.
+
+Suggested shape:
+
+```cpp
+enum class SemanticSymbolKind
+{
+    LOCAL,
+    FUNCTION_PARAMETER,
+    FORMULA_PARAMETER,
+    FORMULA_CONSTANT,
+    USER_FUNCTION,
+    BUILTIN_FUNCTION,
+    CLASS,
+    FIELD,
+    METHOD,
+    CONSTRUCTOR,
+    BUILTIN_CONSTANT,
+};
+
+struct SemanticSymbol
+{
+    SemanticSymbolKind kind;
+    std::string name;
+    SemanticType type;
+    SourceLocation location;
+};
+```
+
+Scope rules:
+
+- Entry scope contains formula parameters, formula constants, user functions,
+  classes, and builtins visible to the entry.
+- Function scope contains function parameters and local declarations.
+- Block scope contains local declarations from nested statements.
+- Class scope contains fields, methods, constructors, inherited members, and
+  visible builtin members if the class is builtin.
+- Parameter-set binding scope is built from default parameter metadata for each
+  referenced formula or selected plug-in class.
+
+Duplicate checks should run during symbol collection where possible. Unknown
+name checks should run during expression and binding analysis.
+
+Identifier lookup should preserve source spelling in diagnostics. Any
+case-insensitive lookup rule must keep the original identifier text in the AST
+and in diagnostics.
+
 ## Parameter Set Responsibilities
 
 The parameter-set analyzer should validate:
