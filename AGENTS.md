@@ -8,7 +8,7 @@
   e.g. prefer ASCII punctuation
 - Validate changes with the command `cmake --workflow rt-default` in the
   source directory; use workflow default if rt-default is not defined.
-- Generate commit messages in a code block, line width 75.
+- Generate commit messages in a code block, flow to line width 75.
 - `msg` means generate a commit message for changes
 - `next` means implement next slice and `msg`
 - Keep the copyright comment year range current when editing source files
