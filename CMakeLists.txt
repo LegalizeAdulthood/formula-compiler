@@ -45,6 +45,7 @@ misc_group_sources("GitHub" FILES
     "LICENSE.txt"
     "ReadMe.md")
 misc_group_sources("Docs" FILES
+    "docs/basic-formula.txt"
     "docs/gradient-grammar.txt"
     "docs/basic-parser.md"
     "docs/compiler-directives.md"

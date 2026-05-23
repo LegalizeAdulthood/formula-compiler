@@ -10,13 +10,17 @@ needed for BASIC formulas.
 The parser should reject BASIC inputs that would otherwise fail later in the
 interpreter or compiler. Unknown variables remain valid and evaluate as zero.
 
+The BASIC language semantics are described in `basic-formula.txt`. The
+functions listed there are the complete BASIC builtin function set. Each listed
+builtin function takes exactly one argument, even where the text does not show
+an explicit argument.
+
 ## Parse Mode
 
 BASIC has one parser contract. It should reject:
 
 - Unknown function calls.
-- Builtin calls with zero arguments.
-- Builtin calls with more than one argument.
+- Builtin calls with anything other than one argument.
 - Assignment to builtin variables.
 - Assignment to builtin function names.
 - Any extended-only syntax.
@@ -31,8 +35,8 @@ runtime behavior:
 
 - Unknown function calls such as `foo(1)` parse as generic calls and fail only
   when evaluated or compiled.
-- Builtin function calls accept any argument count. BASIC builtins should be
-  one-argument calls.
+- Builtin function calls accept any argument count. BASIC builtins listed in
+  `basic-formula.txt` should be one-argument calls.
 - Zero-argument calls such as `sin()` can parse, but later code assumes at
   least one argument.
 - Multi-argument calls such as `sin(1, 2)` can parse even though BASIC has no
@@ -75,8 +79,9 @@ In BASIC dialect, distinguish builtin function calls from generic calls:
 - Reject `foo(expr)` as an unknown function call.
 - Reject `sin()`.
 - Reject `sin(a, b)`.
-- Continue to allow builtin function names as identifiers only where existing
-  compatibility behavior explicitly permits it.
+- Reject bare calls to documented constant-like functions such as `zero()` and
+  `one()` without an argument. They are still BASIC builtin functions and take
+  one argument by parser contract.
 
 Add a parser error code for unknown BASIC function calls. Reuse existing arity
 or delimiter errors where possible for bad argument lists.
