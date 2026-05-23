@@ -683,7 +683,8 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsPredefinedSymbolRef)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
-    const LoadedFormula loaded{load_formula("complex value\n"
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "complex value\n"
                                             "value=#pixel",
         options)};
     ASSERT_TRUE(loaded.ast);
@@ -692,6 +693,44 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsPredefinedSymbolRef)
     const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
 
     EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsPredefinedSymbolKindMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("color value\n"
+                                            "value=#color",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
+    EXPECT_EQ("bailout", diagnostics.front().section_name);
+    EXPECT_EQ("invalid predefined symbol: #color in bailout", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsPredefinedSymbolSectionMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::TRANSFORMATION;
+    const LoadedFormula loaded{load_formula("transform:\n"
+                                            "#z=1",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::TRANSFORMATION;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
+    EXPECT_EQ("transform", diagnostics.front().section_name);
+    EXPECT_EQ("invalid predefined symbol: #z in transform", diagnostics.front().message);
 }
 
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)

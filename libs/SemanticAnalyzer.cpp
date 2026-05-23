@@ -851,7 +851,8 @@ class FormulaSymbolCollector : public ast::NullVisitor
 {
 public:
     FormulaSymbolCollector(const BuiltinRegistry &builtins, const FormulaSemanticContext &context) :
-        m_builtins(builtins)
+        m_builtins(builtins),
+        m_entry_kind(context.entry_kind)
     {
         for (const RetainedFormulaClass *klass : context.retained_classes)
         {
@@ -879,10 +880,10 @@ public:
         predeclare_functions(formula.protected_members);
         predeclare_functions(formula.private_members);
 
-        collect(formula.per_image);
-        collect(formula.builtin);
-        collect(formula.initialize);
-        collect(formula.iterate);
+        collect_section("global", formula.per_image);
+        collect_section("builtin", formula.builtin);
+        collect_section("init", formula.initialize);
+        collect_section("loop", formula.iterate);
         if (formula.has_bailout_section)
         {
             validate_section_result("bailout", formula.bailout,
@@ -890,12 +891,12 @@ public:
         }
         else
         {
-            collect(formula.bailout);
+            collect_section("bailout", formula.bailout);
         }
-        collect(formula.perturb_initialize);
-        collect(formula.perturb_iterate);
-        collect(formula.defaults);
-        collect(formula.type_switch);
+        collect_section("perturbinit", formula.perturb_initialize);
+        collect_section("perturbloop", formula.perturb_iterate);
+        collect_section("default", formula.defaults);
+        collect_section("switch", formula.type_switch);
         if (formula.has_final_section)
         {
             validate_section_result("final", formula.final,
@@ -904,12 +905,12 @@ public:
         }
         else
         {
-            collect(formula.final);
+            collect_section("final", formula.final);
         }
-        collect(formula.transform);
-        collect(formula.public_members);
-        collect(formula.protected_members);
-        collect(formula.private_members);
+        collect_section("transform", formula.transform);
+        collect_section("public", formula.public_members);
+        collect_section("protected", formula.protected_members);
+        collect_section("private", formula.private_members);
         return m_diagnostics;
     }
 
@@ -1018,10 +1019,7 @@ public:
 
     void visit(const ast::ConstantRefNode &node) override
     {
-        if (!m_builtins.find_predefined_symbol(node.name()))
-        {
-            report_unknown_symbol(node.name());
-        }
+        validate_predefined_symbol_ref(node);
     }
 
     void visit(const ast::IdentifierNode &node) override
@@ -1140,6 +1138,14 @@ private:
         {
             expr->visit(*this);
         }
+    }
+
+    void collect_section(std::string_view section, const ast::Expr &expr)
+    {
+        const std::string previous_section{m_section};
+        m_section = std::string{section};
+        collect(expr);
+        m_section = previous_section;
     }
 
     void collect_block(const ast::Expr &expr)
@@ -1377,7 +1383,10 @@ private:
         {
             return;
         }
+        const std::string previous_section{m_section};
+        m_section = std::string{name};
         const SemanticTypeKind type{expression_type(expr)};
+        m_section = previous_section;
         if (type == SemanticTypeKind::ERROR ||
             std::find(allowed_types.begin(), allowed_types.end(), type) != allowed_types.end())
         {
@@ -1483,6 +1492,7 @@ private:
         {
             if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(constant->name()))
             {
+                validate_predefined_symbol_ref(*constant, *symbol);
                 return symbol->type.kind;
             }
             report_unknown_symbol(constant->name());
@@ -1767,6 +1777,45 @@ private:
         }
     }
 
+    void validate_predefined_symbol_ref(const ast::ConstantRefNode &node)
+    {
+        if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(node.name()))
+        {
+            validate_predefined_symbol_ref(node, *symbol);
+            return;
+        }
+        report_unknown_symbol(node.name());
+    }
+
+    void validate_predefined_symbol_ref(
+        const ast::ConstantRefNode &node, const SemanticPredefinedSymbolDescriptor &symbol)
+    {
+        if (!is_allowed_entry_kind(symbol) || !is_allowed_section(symbol))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+            diagnostic.section_name = m_section;
+            diagnostic.message = "invalid predefined symbol: #" + node.name();
+            if (!m_section.empty())
+            {
+                diagnostic.message += " in " + m_section;
+            }
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    bool is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const
+    {
+        return std::find(symbol.entry_kinds.begin(), symbol.entry_kinds.end(), m_entry_kind) !=
+            symbol.entry_kinds.end();
+    }
+
+    bool is_allowed_section(const SemanticPredefinedSymbolDescriptor &symbol) const
+    {
+        return m_section.empty() ||
+            std::find(symbol.sections.begin(), symbol.sections.end(), m_section) != symbol.sections.end();
+    }
+
     void validate_index_type(SemanticTypeKind type)
     {
         if (!can_convert(type, SemanticTypeKind::INT))
@@ -1867,6 +1916,8 @@ private:
     }
 
     const BuiltinRegistry &m_builtins;
+    parser::EntryKind m_entry_kind{parser::EntryKind::FRACTAL};
+    std::string m_section;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
     std::vector<std::unordered_map<std::string, std::string>> m_symbol_type_names{{}};
