@@ -460,6 +460,52 @@ The parameter-set analyzer should validate:
 Section cardinality and ordering are parser responsibilities. Semantic analysis
 should assume parsed parameter sets already satisfy those syntax constraints.
 
+## Parameter Set Analysis Order
+
+Analyze one resolved extended parameter set in deterministic phases:
+
+1. Check that resolver diagnostics are empty or convert them into semantic
+   diagnostics for the caller.
+2. Check that the fractal reference exists and points to a fractal entry.
+3. Check that each layer coloring reference exists and points to a coloring
+   entry.
+4. Check that each layer transform reference exists and points to a
+   transformation entry.
+5. Check that every referenced formula has a complete retained import graph.
+6. Build parameter metadata scopes from the referenced formula defaults.
+7. Validate saved fractal parameter values against fractal metadata.
+8. Validate saved layer coloring values against coloring metadata.
+9. Validate saved layer transform values against transform metadata.
+10. Resolve selected plug-in classes for plug-in parameter values.
+11. Validate nested plug-in assignments against the selected class defaults.
+12. Validate function parameter values against callable metadata.
+13. Validate builtin object parameter values, including `Image`.
+
+The analyzer should continue after one bad layer or parameter where possible.
+Bad bindings should create error entries in the binding scope so later nested
+assignments can report precise errors without crashing or silently disappearing.
+
+## Parameter Set Result Contract
+
+The first parameter-set analyzer should return diagnostics only. Later stages
+may need a binding model:
+
+```cpp
+struct ParameterSetSemanticModel
+{
+    std::vector<SemanticDiagnostic> diagnostics;
+    // resolved formula kinds
+    // resolved parameter descriptors
+    // converted saved values
+    // resolved plug-in class bindings
+    // resolved function parameter targets
+};
+```
+
+Do not write converted values or resolved bindings back into the parsed
+parameter set. Keep the parsed parameter set as the source artifact and keep
+derived semantic data separate.
+
 ## Semantic Model
 
 Do not mutate AST or parameter-set objects. If downstream stages need resolved
