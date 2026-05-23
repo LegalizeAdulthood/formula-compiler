@@ -89,6 +89,18 @@ struct ParameterDefinitions
     std::vector<ParameterForward> forwards;
 };
 
+struct EntrySelector
+{
+    std::string filename;
+    std::string entry;
+};
+
+struct PluginParameterPath
+{
+    std::string base_key;
+    std::string nested_key;
+};
+
 enum class LayerParseState
 {
     EXPECT_LAYER,
@@ -877,6 +889,27 @@ std::string plugin_parameter_name(std::string_view saved_name)
     return std::string{saved_name.substr(0, dot)};
 }
 
+std::optional<PluginParameterPath> plugin_parameter_path(std::string_view saved_name)
+{
+    if (!starts_with(saved_name, "p_"))
+    {
+        return {};
+    }
+    const std::size_t first_dot{saved_name.find('.')};
+    if (first_dot == std::string_view::npos)
+    {
+        return {};
+    }
+    const std::size_t second_dot{saved_name.find('.', first_dot + 1)};
+    const std::size_t nested_start{first_dot + 1};
+    const std::size_t nested_length{
+        second_dot == std::string_view::npos ? std::string_view::npos : second_dot - nested_start};
+    return PluginParameterPath{
+        std::string{saved_name.substr(0, first_dot)},
+        std::string{saved_name.substr(nested_start, nested_length)},
+    };
+}
+
 const ParameterDefinition *find_plugin_parameter_definition(
     const ParameterDefinitions &definitions, std::string_view saved_name)
 {
@@ -886,6 +919,28 @@ const ParameterDefinition *find_plugin_parameter_definition(
         return nullptr;
     }
     return find_parameter_definition(definitions, plugin_name);
+}
+
+const Parameter *find_reference_parameter(const ParameterReference &reference, std::string_view key)
+{
+    for (const Parameter &parameter : reference.parameters)
+    {
+        if (parameter.key == key)
+        {
+            return &parameter;
+        }
+    }
+    return nullptr;
+}
+
+std::optional<EntrySelector> parse_entry_selector(std::string_view value)
+{
+    const std::size_t separator{value.find(':')};
+    if (separator == std::string_view::npos || separator == 0 || separator + 1 == value.size())
+    {
+        return {};
+    }
+    return EntrySelector{std::string{value.substr(0, separator)}, std::string{value.substr(separator + 1)}};
 }
 
 const ParameterDefinition *find_forwarded_direct_parameter(
@@ -922,7 +977,95 @@ bool has_saved_parameter_for(
     return false;
 }
 
-void validate_reference_parameters(ParameterReferenceSet &result, const ParameterResolvedReference &resolved)
+std::optional<ParameterDefinitions> resolve_plugin_definitions(ParameterReferenceSet &result,
+    const ParameterReference &reference, const ParameterEntryResolver &resolver, const EntrySelector &selector)
+{
+    if (!resolver)
+    {
+        return {};
+    }
+    std::optional<FileEntry> file_entry{resolver(selector.filename, selector.entry)};
+    if (!file_entry)
+    {
+        add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::UNRESOLVED_ENTRY, {},
+            selector.filename + ":" + selector.entry);
+        return {};
+    }
+
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::CLASS;
+    options.source_filename =
+        file_entry->body_range.begin.filename.empty() ? selector.filename : file_entry->body_range.begin.filename;
+
+    const parser::ParserPtr parser{parser::create_parser(file_entry->body, options)};
+    ast::FormulaSectionsPtr ast{parser->parse()};
+    if (!parser->get_errors().empty())
+    {
+        for (const parser::Diagnostic &error : parser->get_errors())
+        {
+            add_reference_diagnostic(result, reference, ParameterReferenceErrorCode::PARSE_ERROR, error.position,
+                parser::to_string(error.code));
+        }
+        return {};
+    }
+    if (!ast)
+    {
+        add_reference_diagnostic(
+            result, reference, ParameterReferenceErrorCode::PARSE_ERROR, {}, selector.filename + ":" + selector.entry);
+        return {};
+    }
+    return collect_definitions(*ast);
+}
+
+void validate_plugin_subparameter(ParameterReferenceSet &result, const ParameterResolvedReference &resolved,
+    const ParameterEntryResolver &resolver, const Parameter &parameter, const ParameterDefinition &plugin_definition)
+{
+    if (is_scalar_parameter_type(plugin_definition.type))
+    {
+        add_reference_diagnostic(
+            result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
+        return;
+    }
+
+    const std::optional<PluginParameterPath> path{plugin_parameter_path(parameter.key)};
+    if (!path || !starts_with(path->nested_key, "p_"))
+    {
+        return;
+    }
+    const Parameter *selector_parameter{find_reference_parameter(resolved.reference, path->base_key)};
+    if (selector_parameter == nullptr)
+    {
+        return;
+    }
+    const std::optional<EntrySelector> selector{parse_entry_selector(selector_parameter->value)};
+    if (!selector)
+    {
+        return;
+    }
+    const std::optional<ParameterDefinitions> plugin_definitions{
+        resolve_plugin_definitions(result, resolved.reference, resolver, *selector)};
+    if (!plugin_definitions)
+    {
+        return;
+    }
+
+    const ParameterDefinition *nested_definition{find_parameter_definition(*plugin_definitions, path->nested_key)};
+    if (nested_definition == nullptr)
+    {
+        add_reference_diagnostic(
+            result, resolved.reference, ParameterReferenceErrorCode::UNKNOWN_PARAMETER, {}, parameter.key);
+        return;
+    }
+    if (!parameter_value_matches_type(*nested_definition, parameter.value))
+    {
+        add_reference_diagnostic(
+            result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
+    }
+}
+
+void validate_reference_parameters(
+    ParameterReferenceSet &result, const ParameterResolvedReference &resolved, const ParameterEntryResolver &resolver)
 {
     const ParameterDefinitions definitions{collect_definitions(*resolved.ast)};
     std::vector<std::string> reported_forwards;
@@ -947,11 +1090,7 @@ void validate_reference_parameters(ParameterReferenceSet &result, const Paramete
                     find_plugin_parameter_definition(definitions, parameter.key)};
                 if (plugin_definition != nullptr)
                 {
-                    if (is_scalar_parameter_type(plugin_definition->type))
-                    {
-                        add_reference_diagnostic(
-                            result, resolved.reference, ParameterReferenceErrorCode::TYPE_MISMATCH, {}, parameter.key);
-                    }
+                    validate_plugin_subparameter(result, resolved, resolver, parameter, *plugin_definition);
                     continue;
                 }
                 const ParameterForward *forward{find_parameter_forward(definitions, parameter.key)};
@@ -1494,7 +1633,7 @@ ParameterReferenceSet resolve_parameter_references(
         }
 
         result.resolved.push_back(ParameterResolvedReference{reference, std::move(*file_entry), std::move(ast)});
-        validate_reference_parameters(result, result.resolved.back());
+        validate_reference_parameters(result, result.resolved.back(), resolver);
     }
     return result;
 }
