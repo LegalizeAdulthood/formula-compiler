@@ -392,6 +392,18 @@ bool has_function_binding(const ParameterMetadata &metadata, std::string_view sa
     return false;
 }
 
+bool has_parameter_name(const ParameterMetadata &metadata, std::string_view name)
+{
+    for (const ParameterMetadata::Param &param : metadata.params)
+    {
+        if (param.name == name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool has_saved_parameter_for(const parameter::ParameterReference &reference, const ParameterMetadata &metadata,
     const ParameterMetadata::Param &param)
 {
@@ -554,6 +566,15 @@ void check_parameter_bindings(
         return;
     }
     const ParameterMetadata metadata{collect_parameter_metadata(*resolved.ast)};
+    for (const ParameterMetadata::Forward &forward : metadata.forwards)
+    {
+        if (!has_parameter_name(metadata, forward.target_name))
+        {
+            parameter::Parameter invalid;
+            invalid.key = "p_" + forward.old_name;
+            report_invalid_parameter_binding(diagnostics, resolved, invalid, "invalid forward");
+        }
+    }
     for (const parameter::Parameter &parameter : resolved.reference.parameters)
     {
         if (starts_with(parameter.key, "p_") && !has_parameter_binding(metadata, parameter.key))
