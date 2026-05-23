@@ -15,13 +15,61 @@ functions listed there are the complete BASIC builtin function set. Each listed
 builtin function takes exactly one argument, even where the text does not show
 an explicit argument.
 
+## BASIC Builtins
+
+The parser should treat these predefined variables as known BASIC names:
+
+- `z`
+- `p1`, `p2`, `p3`, `p4`, `p5`
+- `pixel`
+- `lastsqr`
+- `rand`
+- `pi`
+- `e`
+- `maxit`
+- `scrnmax`
+- `scrnpix`
+- `whitesq`
+- `ismand`
+- `center`
+- `magxmag`
+- `rotskew`
+
+`z` is mutable. The other predefined variables are read-only and should not be
+valid assignment targets.
+
+Variable lookup remains permissive. Any other identifier is a user variable and
+is initialized to zero by runtime behavior.
+
+For validation, use lowercase builtin names in code. The documentation shows
+`LastSqr` in mixed case, but the parser should validate against `lastsqr`.
+
+All BASIC variable names, function names, and keywords match
+case-insensitively. Preserve identifier spelling in the AST and diagnostics,
+but normalize names for validation.
+
+The parser should treat these names as the complete BASIC builtin function set:
+
+- `sin`, `cos`, `sinh`, `cosh`, `cosxx`
+- `tan`, `cotan`, `tanh`, `cotanh`
+- `sqr`, `log`, `exp`, `abs`, `conj`, `real`, `imag`, `flip`
+- `fn1`, `fn2`, `fn3`, `fn4`
+- `srand`
+- `asin`, `asinh`, `acos`, `acosh`, `atan`, `atanh`
+- `sqrt`, `cabs`
+- `floor`, `ceil`, `trunc`, `round`
+- `ident`, `zero`, `one`
+
+Each builtin function must parse with exactly one argument. This includes
+`zero` and `one`.
+
 ## Parse Mode
 
 BASIC has one parser contract. It should reject:
 
 - Unknown function calls.
 - Builtin calls with anything other than one argument.
-- Assignment to builtin variables.
+- Assignment to read-only builtin variables.
 - Assignment to builtin function names.
 - Any extended-only syntax.
 
@@ -41,8 +89,8 @@ runtime behavior:
   least one argument.
 - Multi-argument calls such as `sin(1, 2)` can parse even though BASIC has no
   multi-argument function calls.
-- Assignment to builtin variables is allowed by default with warnings. BASIC
-  should reject read-only builtin names.
+- Assignment to read-only builtin variables is allowed by default with
+  warnings. BASIC should reject read-only builtin names.
 
 ## Non-Gaps
 
@@ -62,6 +110,8 @@ After parsing succeeds in BASIC dialect:
 
 - All function calls target known BASIC builtins.
 - Every function call has exactly one argument.
+- Variable names, function names, and keywords were matched
+  case-insensitively.
 - No extended-only nodes are present.
 - No import, class, declaration, return, array, member, object, or parameter
   reference syntax is present.
@@ -76,6 +126,7 @@ After parsing succeeds in BASIC dialect:
 In BASIC dialect, distinguish builtin function calls from generic calls:
 
 - Accept `sin(expr)` and other known builtins.
+- Accept case variants of known builtins, such as `Sin(expr)`.
 - Reject `foo(expr)` as an unknown function call.
 - Reject `sin()`.
 - Reject `sin(a, b)`.
@@ -91,7 +142,7 @@ or delimiter errors where possible for bad argument lists.
 Make the BASIC verification policy explicit:
 
 - BASIC should reject assignment to builtin variables and builtin function
-  names.
+  names, using case-insensitive matching.
 - Existing warning behavior should be removed from the BASIC path.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
@@ -127,11 +178,13 @@ BASIC expression by accident.
 2. Add BASIC-only function-call validation.
    - Reject postfix calls where the callee is not a known BASIC builtin.
    - Reject known builtin calls with argument count other than one.
+   - Match builtin function names case-insensitively.
    - Preserve extended multi-argument calls.
 
 3. Add BASIC builtin-assignment tests.
    - Verify builtin variable assignment is rejected.
    - Verify builtin function assignment is rejected.
+   - Verify read-only builtin matching is case-insensitive.
    - Remove warning-mode expectations from BASIC tests.
 
 4. Review default parser options.
@@ -154,11 +207,16 @@ Add parser tests for:
 - `a` parses as an identifier.
 - `foo(1)` fails in BASIC.
 - `sin(1)` parses in BASIC.
+- `Sin(1)` parses in BASIC.
 - `sin()` fails in BASIC.
 - `sin(1, 2)` fails in BASIC.
 - `(sin)(1)` fails in BASIC if representable.
+- `z=1` parses in BASIC.
+- `Z=1` parses in BASIC.
 - `p1=1` fails in BASIC.
+- `P1=1` fails in BASIC.
 - `sin=1` fails in BASIC.
+- `Sin=1` fails in BASIC.
 - Extended call syntax remains valid in extended dialect where appropriate.
 
 Add interpreter/compiler regression tests showing that valid BASIC formulas no
