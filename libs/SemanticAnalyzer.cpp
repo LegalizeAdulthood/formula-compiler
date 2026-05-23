@@ -186,7 +186,7 @@ public:
         declare(node.name(), SemanticSymbolKind::LOCAL, type_kind(node.type()));
         for (const ast::Expr &dimension : node.dimensions())
         {
-            collect(dimension);
+            validate_index_type(expression_type(dimension));
         }
         if (node.initializer())
         {
@@ -254,7 +254,7 @@ public:
 
     void visit(const ast::IfStatementNode &node) override
     {
-        collect(node.condition());
+        validate_condition_type(expression_type(node.condition()));
         collect_block(node.has_then_block() ? node.then_block() : ast::Expr{});
         collect_block(node.has_else_block() ? node.else_block() : ast::Expr{});
     }
@@ -264,7 +264,7 @@ public:
         collect(node.target());
         for (const ast::Expr &index : node.indices())
         {
-            collect(index);
+            validate_index_type(expression_type(index));
         }
     }
 
@@ -290,7 +290,7 @@ public:
     void visit(const ast::RepeatUntilNode &node) override
     {
         collect_block(node.body());
-        collect(node.condition());
+        validate_condition_type(expression_type(node.condition()));
     }
 
     void visit(const ast::ReturnNode &node) override
@@ -313,7 +313,7 @@ public:
 
     void visit(const ast::WhileNode &node) override
     {
-        collect(node.condition());
+        validate_condition_type(expression_type(node.condition()));
         collect_block(node.body());
     }
 
@@ -548,6 +548,28 @@ private:
         diagnostic.code = SemanticDiagnosticCode::INVALID_TYPE_CONVERSION;
         diagnostic.message = "invalid conversion: " + type_name(from) + " to " + type_name(to);
         m_diagnostics.push_back(std::move(diagnostic));
+    }
+
+    void validate_condition_type(SemanticTypeKind type)
+    {
+        if (type != SemanticTypeKind::ERROR && conversion_rank(type) < 0)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+            diagnostic.message = "invalid condition type: " + type_name(type);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    void validate_index_type(SemanticTypeKind type)
+    {
+        if (!can_convert(type, SemanticTypeKind::INT))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
+            diagnostic.message = "invalid array index type: " + type_name(type);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
     }
 
     bool is_declared(const std::string &name) const

@@ -394,4 +394,51 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidDeclarationInitializerCo
     EXPECT_EQ("invalid conversion: string to color", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidIfConditionType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("if \"text\"\n"
+                                            "endif",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
+    EXPECT_EQ("invalid condition type: string", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAllowsNumericIfConditionType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("if 1\n"
+                                            "endif",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidArrayIndexType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value[\"text\"]", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARRAY_ACCESS, diagnostics.front().code);
+    EXPECT_EQ("invalid array index type: string", diagnostics.front().message);
+}
+
 } // namespace formula::test
