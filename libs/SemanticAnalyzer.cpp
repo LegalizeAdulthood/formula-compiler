@@ -949,7 +949,7 @@ public:
         {
             if (dimension)
             {
-                validate_index_type(expression_type(dimension));
+                validate_index_type(constant_expression_type(dimension));
             }
         }
         if (node.initializer())
@@ -1065,6 +1065,12 @@ public:
         report_unknown_symbol(node.name());
     }
 
+    void visit(const ast::ParamBlockNode &node) override
+    {
+        validate_type(node.type());
+        collect(node.block());
+    }
+
     void visit(const ast::RepeatUntilNode &node) override
     {
         collect_block(node.body());
@@ -1099,6 +1105,14 @@ public:
         for (const ast::Expr &statement : node.statements())
         {
             collect(statement);
+        }
+    }
+
+    void visit(const ast::SettingNode &node) override
+    {
+        if (const auto *expr = std::get_if<ast::Expr>(&node.value()); expr != nullptr)
+        {
+            constant_expression_type(*expr);
         }
     }
 
@@ -1565,6 +1579,15 @@ private:
         return SemanticTypeKind::ERROR;
     }
 
+    SemanticTypeKind constant_expression_type(const ast::Expr &expr)
+    {
+        const bool previous_constant_expression{m_constant_expression};
+        m_constant_expression = true;
+        const SemanticTypeKind type{expression_type(expr)};
+        m_constant_expression = previous_constant_expression;
+        return type;
+    }
+
     SemanticTypeKind binary_expression_type(const ast::BinaryOpNode &node)
     {
         const SemanticTypeKind left{expression_type(node.left())};
@@ -1802,6 +1825,14 @@ private:
             }
             m_diagnostics.push_back(std::move(diagnostic));
         }
+        if (m_constant_expression && !symbol.constant_expression)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+            diagnostic.section_name = m_section;
+            diagnostic.message = "invalid predefined symbol: #" + node.name() + " in constant expression";
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
     }
 
     bool is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const
@@ -1918,6 +1949,7 @@ private:
     const BuiltinRegistry &m_builtins;
     parser::EntryKind m_entry_kind{parser::EntryKind::FRACTAL};
     std::string m_section;
+    bool m_constant_expression{};
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
     std::vector<std::unordered_map<std::string, std::string>> m_symbol_type_names{{}};

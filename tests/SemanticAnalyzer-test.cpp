@@ -733,6 +733,54 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsPredefinedSymbolSectionMismatch
     EXPECT_EQ("invalid predefined symbol: #z in transform", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsConstantPredefinedSymbolInArrayDimension)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "int values[#width]",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsNonConstantPredefinedSymbolInArrayDimension)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "int values[#x]",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
+    EXPECT_EQ("init", diagnostics.front().section_name);
+    EXPECT_EQ("invalid predefined symbol: #x in constant expression", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsNonConstantPredefinedSymbolInDefaultSetting)
+{
+    ast::FormulaSections formula;
+    formula.defaults =
+        std::make_shared<ast::SettingNode>("precision", std::make_shared<ast::ConstantRefNode>("random"));
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(formula, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
+    EXPECT_EQ("default", diagnostics.front().section_name);
+    EXPECT_EQ("invalid predefined symbol: #random in constant expression", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)
 {
     parser::Options options;
