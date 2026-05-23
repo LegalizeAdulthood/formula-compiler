@@ -719,3 +719,20 @@ Keep tests aligned with the implementation milestones:
 This document defines the semantic-analysis boundary for both formulas and
 resolved extended parameter sets. Keep `extended-semantics.md` as background
 until this plan is implemented, then merge or retire overlapping material.
+
+## Review Questions
+
+Resolve these before source implementation starts:
+
+- Should formula analysis initially return only diagnostics, or should the
+  first slice also include an empty semantic model type?
+- Should resolver diagnostics be passed through unchanged, or translated into
+  semantic diagnostics at the parameter-set analyzer boundary?
+- Should parameter-set saved values be converted in the first analyzer pass, or
+  only checked until an interpreter or compiler model needs converted values?
+- Should builtin descriptors live in a new semantic analyzer module, or in a
+  shared runtime-facing module used by analyzer, interpreter, and compiler?
+- Should case-insensitive matching be implemented only where UF semantics
+  require it, with source spelling preserved everywhere?
+- Which documented `Image` methods and fields should be accepted before the
+  interpreter and compiler implement image runtime behavior?
