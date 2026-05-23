@@ -601,6 +601,8 @@ Milestone 4: formula expressions.
 - Resolve identifiers.
 - Resolve constants and parameter references.
 - Resolve calls, member access, array indexing, and assignments.
+- Track static and dynamic array declarations separately from scalar values.
+- Validate `setLength` and `length` calls for dynamic arrays.
 - Apply conversion rules.
 - Emit expression type diagnostics.
 
@@ -640,13 +642,15 @@ Milestone 8: downstream integration.
    classes, and parameters.
 4. Add expression type checking for scalar, bool, string, color, complex, and
    array values.
-5. Add function, return, by-reference, and `const` argument checks.
-6. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
+5. Add dynamic array checks for declarations, indexing, `setLength`, and
+   `length`.
+6. Add function, return, by-reference, and `const` argument checks.
+7. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
    checks.
-7. Add section-specific formula validation.
-8. Add extended parameter-set binding validation over resolved references.
-9. Add nested plug-in/class parameter validation.
-10. Integrate interpreter and compiler entry points so unsupported or invalid
+8. Add section-specific formula validation.
+9. Add extended parameter-set binding validation over resolved references.
+10. Add nested plug-in/class parameter validation.
+11. Integrate interpreter and compiler entry points so unsupported or invalid
     semantic inputs are rejected before execution/code generation.
 
 ## Tests
@@ -663,6 +667,8 @@ Add tests for:
 - Bad call arity and argument types.
 - Bad return statements.
 - Bad array indexing.
+- Bad dynamic array declarations.
+- Bad `setLength` and `length` calls.
 - Bad `new`, cast, and member access expressions.
 - Builtin `Image` fields and methods.
 - Formula-kind mismatch in parameter sets.
@@ -701,6 +707,11 @@ Keep tests aligned with the implementation milestones:
    - Bad assignment target.
    - Bad array index type.
    - Bad member receiver type.
+   - Dynamic array declarations accepted with one empty dimension.
+   - Dynamic multidimensional declarations rejected.
+   - `setLength` requires a dynamic array target and integer-compatible
+     length.
+   - `length` requires a dynamic array argument and returns `int`.
 
 5. Extended formula statements and sections.
    - Bad return value.
