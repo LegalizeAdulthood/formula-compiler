@@ -231,6 +231,7 @@ The formula analyzer should validate:
 - Duplicate declarations in each scope.
 - References to variables, constants, functions, parameters, classes, and
   members.
+- Predefined-symbol rules described in the Predefined Symbols section.
 - Assignment targets and assignment value compatibility.
 - Function call arity and argument compatibility.
 - User function return paths and return value compatibility.
@@ -330,6 +331,7 @@ Initial contents:
 - Scalar types: `void`, `bool`, `int`, `float`, `complex`, `color`, `string`.
 - Array type construction.
 - Predefined constants by entry kind and section.
+- Predefined symbol descriptors.
 - Builtin functions and operators.
 - Builtin object classes, including `Image`.
 
@@ -338,6 +340,54 @@ registries when a full host registry is not needed.
 
 `Image` must be a builtin class descriptor, not an imported class. It should be
 valid as a parameter type even when no file defines it.
+
+## Predefined Symbols
+
+The parser validates that `#` references name only documented predefined
+symbols. Semantic analysis owns the remaining meaning for those accepted
+symbols.
+
+The semantic predefined-symbol descriptor table should use the same documented
+set accepted by the parser:
+
+- `#angle`
+- `#calculationPurpose`
+- `#center`
+- `#color`
+- `#dpixel`
+- `#dz`
+- `#e`
+- `#height`
+- `#index`
+- `#magn`
+- `#maxiter`
+- `#numiter`
+- `#pi`
+- `#pixel`
+- `#random`
+- `#randomrange`
+- `#screenmax`
+- `#screenpixel`
+- `#skew`
+- `#stretch`
+- `#whitesq`
+- `#width`
+- `#x`
+- `#y`
+- `#z`
+
+Each descriptor should store canonical name, type, mutability,
+constant-expression availability, allowed formula kinds, and allowed sections.
+The analyzer should preserve source spelling in diagnostics.
+
+Semantic checks should:
+
+- Reject writes to read-only predefined symbols.
+- Allow writes only to documented writable symbols in allowed formula kinds and
+  sections.
+- Validate use in constant-expression contexts, including array declarations
+  and default settings.
+- Validate formula-kind and section availability.
 
 ## Type Model
 
@@ -585,6 +635,7 @@ Milestone 2: builtin registry.
 
 - Add scalar type descriptors.
 - Add builtin constants by entry kind and section.
+- Add predefined-symbol descriptors by entry kind and section.
 - Add builtin function descriptors needed by current parser tests.
 - Add builtin class descriptor support.
 - Add `Image` as a builtin class without import lookup.
@@ -640,17 +691,18 @@ Milestone 8: downstream integration.
 2. Collect formula symbols and report duplicate names.
 3. Resolve formula names and report unknown variables, functions, constants,
    classes, and parameters.
-4. Add expression type checking for scalar, bool, string, color, complex, and
+4. Add predefined-symbol descriptors and checks.
+5. Add expression type checking for scalar, bool, string, color, complex, and
    array values.
-5. Add dynamic array checks for declarations, indexing, `setLength`, and
+6. Add dynamic array checks for declarations, indexing, `setLength`, and
    `length`.
-6. Add function, return, by-reference, and `const` argument checks.
-7. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
+7. Add function, return, by-reference, and `const` argument checks.
+8. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
    checks.
-8. Add section-specific formula validation.
-9. Add extended parameter-set binding validation over resolved references.
-10. Add nested plug-in/class parameter validation.
-11. Integrate interpreter and compiler entry points so unsupported or invalid
+9. Add section-specific formula validation.
+10. Add extended parameter-set binding validation over resolved references.
+11. Add nested plug-in/class parameter validation.
+12. Integrate interpreter and compiler entry points so unsupported or invalid
     semantic inputs are rejected before execution/code generation.
 
 ## Tests
@@ -663,6 +715,7 @@ Add tests for:
   fully parser-validated.
 - Duplicate symbols.
 - Unknown variables, functions, constants, types, classes, and members.
+- Predefined-symbol rule violations.
 - Bad assignment targets.
 - Bad call arity and argument types.
 - Bad return statements.
@@ -690,6 +743,7 @@ Keep tests aligned with the implementation milestones:
 2. Builtin registry.
    - Scalar type lookup.
    - Builtin constants by entry kind.
+   - Predefined-symbol descriptors by entry kind and section.
    - Builtin function lookup.
    - `Image` lookup without an imported file.
 
@@ -702,6 +756,13 @@ Keep tests aligned with the implementation milestones:
 
 4. Formula expressions.
    - Unknown variable, constant, parameter, function, class, and member.
+   - Accepted predefined symbols preserve source spelling.
+   - Read-only predefined symbol assignment rejected.
+   - Writable predefined symbol assignment accepted where documented.
+   - Predefined symbol use rejected outside documented formula kinds or
+     sections.
+   - Non-constant predefined symbol use rejected in constant-expression
+     contexts.
    - Bad call arity.
    - Bad argument conversion.
    - Bad assignment target.

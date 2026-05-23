@@ -83,27 +83,10 @@ The AST must preserve source spelling for accepted predefined symbols. Lookup
 should be case-sensitive unless a specific UF document says otherwise for
 predefined symbols.
 
-Validation of predefined-symbol mutability, type, constant-expression
-availability, and formula-kind or section availability belongs to semantic
-analysis.
-
 ## Remaining Parser Work
 
 No remaining extended formula parser implementation slices are planned in this
 file.
-
-Remaining predefined-symbol work is semantic:
-
-1. Add a semantic predefined-symbol descriptor table using the documented set.
-   Store canonical name, type, mutability, constant-expression availability,
-   allowed formula kinds, and allowed sections.
-2. Validate assignments to predefined symbols. Reject writes to read-only
-   symbols and allow writes only to documented writable symbols in allowed
-   formula kinds and sections.
-3. Validate use in constant-expression contexts, including array declarations
-   and default settings, using the documented constant behavior.
-4. Add semantic tests for every documented predefined symbol. Tests should cover
-   source spelling preservation and any documented writable symbols.
 
 Future parser work should be added here only when it is truly syntactic. If the
 work needs symbol tables, type information, imported class metadata, formula
