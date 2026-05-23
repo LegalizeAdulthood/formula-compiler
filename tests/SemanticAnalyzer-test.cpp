@@ -231,7 +231,7 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsDeclaredVariableAndBuiltinVaria
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
-    const LoadedFormula loaded{load_formula("int value\nvalue=z", options)};
+    const LoadedFormula loaded{load_formula("complex value\nvalue=z", options)};
     ASSERT_TRUE(loaded.ast);
     const FormulaSemanticContext context;
 
@@ -345,6 +345,53 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsBuiltinFunctionCallArity)
     ASSERT_EQ(1U, diagnostics.size());
     EXPECT_EQ(SemanticDiagnosticCode::INVALID_CALL_ARITY, diagnostics.front().code);
     EXPECT_EQ("invalid call arity: custom expects 1 argument, got 2", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidAssignmentConversion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value\n"
+                                            "value=\"text\"",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_TYPE_CONVERSION, diagnostics.front().code);
+    EXPECT_EQ("invalid conversion: string to int", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAllowsNumericAssignmentPromotion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("complex value\n"
+                                            "value=1",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidDeclarationInitializerConversion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("color value=\"text\"", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_TYPE_CONVERSION, diagnostics.front().code);
+    EXPECT_EQ("invalid conversion: string to color", diagnostics.front().message);
 }
 
 } // namespace formula::test

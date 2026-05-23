@@ -166,8 +166,12 @@ public:
 
     void visit(const ast::AssignmentNode &node) override
     {
-        collect(node.target());
-        collect(node.expression());
+        const SemanticTypeKind target_type{expression_type(node.target())};
+        const SemanticTypeKind value_type{expression_type(node.expression())};
+        if (!can_convert(value_type, target_type))
+        {
+            report_invalid_conversion(value_type, target_type);
+        }
     }
 
     void visit(const ast::BinaryOpNode &node) override
@@ -179,12 +183,20 @@ public:
     void visit(const ast::DeclarationNode &node) override
     {
         validate_type(node.type());
-        declare(node.name(), SemanticSymbolKind::LOCAL);
+        declare(node.name(), SemanticSymbolKind::LOCAL, type_kind(node.type()));
         for (const ast::Expr &dimension : node.dimensions())
         {
             collect(dimension);
         }
-        collect(node.initializer());
+        if (node.initializer())
+        {
+            const SemanticTypeKind value_type{expression_type(node.initializer())};
+            const SemanticTypeKind target_type{type_kind(node.type())};
+            if (!can_convert(value_type, target_type))
+            {
+                report_invalid_conversion(value_type, target_type);
+            }
+        }
     }
 
     void visit(const ast::FunctionDeclNode &node) override
@@ -201,7 +213,7 @@ public:
         for (const ast::FunctionArgument &arg : node.args())
         {
             validate_type(arg.type);
-            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER);
+            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, type_kind(arg.type));
         }
         collect(node.body());
         end_scope();
@@ -309,11 +321,13 @@ private:
     void begin_scope()
     {
         m_scopes.emplace_back();
+        m_symbol_types.emplace_back();
     }
 
     void end_scope()
     {
         m_scopes.pop_back();
+        m_symbol_types.pop_back();
     }
 
     void collect(const ast::Expr &expr)
@@ -347,7 +361,7 @@ private:
         }
     }
 
-    void declare(const std::string &name, SemanticSymbolKind)
+    void declare(const std::string &name, SemanticSymbolKind, SemanticTypeKind type = SemanticTypeKind::ERROR)
     {
         if (m_scopes.empty())
         {
@@ -360,6 +374,7 @@ private:
             diagnostic.message = "duplicate symbol: " + name;
             m_diagnostics.push_back(std::move(diagnostic));
         }
+        m_symbol_types.back().emplace(name, type);
     }
 
     void validate_type(const std::string &name)
@@ -391,8 +406,148 @@ private:
 
     void declare_function(const ast::FunctionDeclNode &node)
     {
-        declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
+        declare(node.name(), SemanticSymbolKind::USER_FUNCTION, SemanticTypeKind::FUNCTION);
         m_functions.emplace(node.name(), node.args().size());
+    }
+
+    SemanticTypeKind expression_type(const ast::Expr &expr)
+    {
+        if (!expr)
+        {
+            return SemanticTypeKind::VOID;
+        }
+        if (const auto *literal = dynamic_cast<const ast::LiteralNode *>(expr.get()))
+        {
+            switch (literal->value().index())
+            {
+            case 0:
+                return SemanticTypeKind::INT;
+            case 1:
+                return SemanticTypeKind::FLOAT;
+            case 2:
+                return SemanticTypeKind::COMPLEX;
+            case 3:
+                return SemanticTypeKind::BOOL;
+            case 4:
+                return SemanticTypeKind::STRING;
+            case 5:
+                return SemanticTypeKind::COLOR;
+            default:
+                return SemanticTypeKind::ERROR;
+            }
+        }
+        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+        {
+            if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
+            {
+                report_unknown_symbol(identifier->name());
+                return SemanticTypeKind::ERROR;
+            }
+            return symbol_type(identifier->name());
+        }
+        if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
+        {
+            visit(*call);
+            if (const SemanticFunctionDescriptor *function = m_builtins.find_function(call->name()))
+            {
+                return function->return_type.kind;
+            }
+            return SemanticTypeKind::ERROR;
+        }
+        collect(expr);
+        return SemanticTypeKind::ERROR;
+    }
+
+    SemanticTypeKind symbol_type(const std::string &name) const
+    {
+        for (auto scope = m_symbol_types.rbegin(); scope != m_symbol_types.rend(); ++scope)
+        {
+            const auto found = scope->find(name);
+            if (found != scope->end())
+            {
+                return found->second;
+            }
+        }
+        return is_builtin_variable(name) ? SemanticTypeKind::COMPLEX : SemanticTypeKind::ERROR;
+    }
+
+    SemanticTypeKind type_kind(const std::string &name) const
+    {
+        if (const SemanticType *type = m_builtins.find_type(name))
+        {
+            return type->kind;
+        }
+        if (m_builtins.find_class(name))
+        {
+            return SemanticTypeKind::CLASS_OBJECT;
+        }
+        return SemanticTypeKind::ERROR;
+    }
+
+    bool can_convert(SemanticTypeKind from, SemanticTypeKind to) const
+    {
+        if (from == SemanticTypeKind::ERROR || to == SemanticTypeKind::ERROR || from == to)
+        {
+            return true;
+        }
+        return conversion_rank(from) >= 0 && conversion_rank(to) >= 0 && conversion_rank(from) <= conversion_rank(to);
+    }
+
+    int conversion_rank(SemanticTypeKind type) const
+    {
+        switch (type)
+        {
+        case SemanticTypeKind::BOOL:
+            return 0;
+        case SemanticTypeKind::INT:
+            return 1;
+        case SemanticTypeKind::FLOAT:
+            return 2;
+        case SemanticTypeKind::COMPLEX:
+            return 3;
+        default:
+            return -1;
+        }
+    }
+
+    std::string type_name(SemanticTypeKind type) const
+    {
+        switch (type)
+        {
+        case SemanticTypeKind::BOOL:
+            return "bool";
+        case SemanticTypeKind::INT:
+            return "int";
+        case SemanticTypeKind::FLOAT:
+            return "float";
+        case SemanticTypeKind::COMPLEX:
+            return "complex";
+        case SemanticTypeKind::COLOR:
+            return "color";
+        case SemanticTypeKind::STRING:
+            return "string";
+        case SemanticTypeKind::BUILTIN_OBJECT:
+            return "builtin object";
+        case SemanticTypeKind::CLASS_OBJECT:
+            return "class object";
+        case SemanticTypeKind::FUNCTION:
+            return "function";
+        case SemanticTypeKind::VOID:
+            return "void";
+        case SemanticTypeKind::ARRAY:
+            return "array";
+        case SemanticTypeKind::ERROR:
+            return "error";
+        }
+        return "error";
+    }
+
+    void report_invalid_conversion(SemanticTypeKind from, SemanticTypeKind to)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_TYPE_CONVERSION;
+        diagnostic.message = "invalid conversion: " + type_name(from) + " to " + type_name(to);
+        m_diagnostics.push_back(std::move(diagnostic));
     }
 
     bool is_declared(const std::string &name) const
@@ -450,6 +605,7 @@ private:
 
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
+    std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
     std::unordered_map<std::string, std::size_t> m_functions;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
     std::vector<SemanticDiagnostic> m_diagnostics;
