@@ -164,8 +164,13 @@ In BASIC dialect, distinguish builtin function calls from generic calls:
   `one()` without an argument. They are still BASIC builtin functions and take
   one argument by parser contract.
 
-Add a parser error code for unknown BASIC function calls. Reuse existing arity
-or delimiter errors where possible for bad argument lists.
+Add parser error codes for:
+
+- Unknown BASIC function call.
+- Invalid BASIC function arity.
+
+Continue to use existing delimiter errors for malformed call syntax, such as a
+missing close parenthesis.
 
 ### Builtin Assignment
 
@@ -176,6 +181,14 @@ Make the BASIC verification policy explicit:
 - Existing warning behavior should be removed from the BASIC path.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
+
+Add parser error codes for:
+
+- Assignment to a read-only BASIC builtin variable.
+- Assignment to a BASIC builtin function name.
+
+Do not report read-only variable assignment as a generic expected-statement
+error. Use a specific diagnostic so tests can verify the rule directly.
 
 ### Extended Syntax Rejection
 
@@ -204,6 +217,8 @@ BASIC expression by accident.
    - Unknown function calls fail during parse.
    - Builtin calls require exactly one argument.
    - Multi-argument and zero-argument builtin calls fail during parse.
+   - Read-only builtin variable assignment reports a specific parser error.
+   - Builtin function assignment reports a specific parser error.
 
 2. Add BASIC-only function-call validation.
    - Reject postfix calls where the callee is not a known BASIC builtin.
