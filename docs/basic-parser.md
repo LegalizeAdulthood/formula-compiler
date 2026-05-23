@@ -212,6 +212,9 @@ BASIC expression by accident.
 
 ## Implementation Slices
 
+Before starting code implementation, present the completed BASIC parser plan
+for review and wait for approval.
+
 1. Add parse tests that document the intended BASIC contract.
    - Unknown variables still parse and evaluate as zero.
    - Unknown function calls fail during parse.
@@ -256,6 +259,19 @@ BASIC expression by accident.
    - Add tests for power, unary negation, multiplication, addition,
      comparison, and logical precedence.
    - Add tests for modulus grouping and nested modulus with parentheses.
+
+Suggested implementation order:
+
+1. Add failing parser tests for BASIC function call validation.
+2. Add parser error codes.
+3. Implement BASIC function call validation.
+4. Add failing parser tests for read-only builtin assignment.
+5. Implement BASIC builtin assignment validation.
+6. Add case-insensitive matching tests.
+7. Normalize BASIC validation lookups while preserving source spelling.
+8. Add runtime tests for non-short-circuit logical evaluation.
+9. Fix interpreter and compiler logical evaluation.
+10. Add precedence and modulus regression tests.
 
 ## Tests
 
