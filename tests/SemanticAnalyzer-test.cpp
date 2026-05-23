@@ -218,10 +218,13 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsUnknownSavedParameter)
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
 
-    ASSERT_EQ(1U, diagnostics.size());
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
-    EXPECT_EQ("Mandelbrot", diagnostics.front().entry_name);
-    EXPECT_EQ("invalid parameter binding: p_missing", diagnostics.front().message);
+    ASSERT_EQ(2U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[0].code);
+    EXPECT_EQ("Mandelbrot", diagnostics[0].entry_name);
+    EXPECT_EQ("invalid parameter binding: p_missing", diagnostics[0].message);
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[1].code);
+    EXPECT_EQ("Mandelbrot", diagnostics[1].entry_name);
+    EXPECT_EQ("invalid parameter binding: p_power missing required value", diagnostics[1].message);
 }
 
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsUnknownSavedFunction)
@@ -363,6 +366,80 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsSavedParameterTypes)
     reference.parameters.push_back({"p_seed", "1.0/2.0"});
     reference.parameters.push_back({"p_tint", "4294967295"});
     reference.parameters.push_back({"p_mode", "Silver"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingRequiredParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("invalid parameter binding: p_power missing required value", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsDefaultedParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "float param power\n"
+                                            "default=2.0\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsForwardedRequiredParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "param oldpower = power\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_oldpower", "2.0"});
     references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
     const ParameterSetSemanticContext context;
 

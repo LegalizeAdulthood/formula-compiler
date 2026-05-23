@@ -41,10 +41,16 @@ struct ParameterMetadata
         std::string type;
         std::string name;
         std::vector<std::string> enum_values;
+        bool has_default{};
+    };
+    struct Forward
+    {
+        std::string old_name;
+        std::string target_name;
     };
     std::vector<Param> params;
     std::vector<std::string> functions;
-    std::vector<std::string> forwards;
+    std::vector<Forward> forwards;
 };
 
 SemanticType semantic_type(SemanticTypeKind kind, std::string name)
@@ -293,6 +299,10 @@ public:
 
     void visit(const ast::SettingNode &node) override
     {
+        if (node.key() == "default" && m_current_param != nullptr)
+        {
+            m_current_param->has_default = true;
+        }
         if (node.key() == "enum" && m_current_param != nullptr)
         {
             const auto *values = std::get_if<std::vector<std::string>>(&node.value());
@@ -308,7 +318,7 @@ public:
         const auto *values = std::get_if<std::vector<std::string>>(&node.value());
         if (values != nullptr && values->size() >= 2U)
         {
-            m_metadata.forwards.push_back(values->front());
+            m_metadata.forwards.push_back({values->front(), (*values)[1]});
         }
     }
 
@@ -348,9 +358,9 @@ bool has_parameter_binding(const ParameterMetadata &metadata, std::string_view s
             return true;
         }
     }
-    for (const std::string &name : metadata.forwards)
+    for (const ParameterMetadata::Forward &forward : metadata.forwards)
     {
-        if (saved_name == "p_" + name)
+        if (saved_name == "p_" + forward.old_name)
         {
             return true;
         }
@@ -375,6 +385,31 @@ bool has_function_binding(const ParameterMetadata &metadata, std::string_view sa
     for (const std::string &name : metadata.functions)
     {
         if (saved_name == "f_" + name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool has_saved_parameter_for(const parameter::ParameterReference &reference, const ParameterMetadata &metadata,
+    const ParameterMetadata::Param &param)
+{
+    const std::string saved_name{"p_" + param.name};
+    for (const parameter::Parameter &parameter : reference.parameters)
+    {
+        if (parameter.key == saved_name)
+        {
+            return true;
+        }
+        for (const ParameterMetadata::Forward &forward : metadata.forwards)
+        {
+            if (parameter.key == "p_" + forward.old_name && forward.target_name == param.name)
+            {
+                return true;
+            }
+        }
+        if (plugin_parameter_name(parameter.key) == saved_name)
         {
             return true;
         }
@@ -536,6 +571,15 @@ void check_parameter_bindings(
         else if (starts_with(parameter.key, "f_") && !has_function_binding(metadata, parameter.key))
         {
             report_invalid_parameter_binding(diagnostics, resolved, parameter);
+        }
+    }
+    for (const ParameterMetadata::Param &param : metadata.params)
+    {
+        if (!param.has_default && !has_saved_parameter_for(resolved.reference, metadata, param))
+        {
+            parameter::Parameter missing;
+            missing.key = "p_" + param.name;
+            report_invalid_parameter_binding(diagnostics, resolved, missing, "missing required value");
         }
     }
 }
