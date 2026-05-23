@@ -167,4 +167,49 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateFunctionArguments)
     EXPECT_EQ("duplicate symbol: value", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownDeclarationType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Bogus value", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_TYPE, diagnostics.front().code);
+    EXPECT_EQ("unknown type: Bogus", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownFunctionArgumentType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(Bogus value)\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::UNKNOWN_TYPE, diagnostics.front().code);
+    EXPECT_EQ("unknown type: Bogus", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsBuiltinImageType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Image source", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 } // namespace formula::test

@@ -124,6 +124,11 @@ const BuiltinRegistry &default_builtin_registry()
 class FormulaSymbolCollector : public ast::NullVisitor
 {
 public:
+    explicit FormulaSymbolCollector(const BuiltinRegistry &builtins) :
+        m_builtins(builtins)
+    {
+    }
+
     std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
     {
         collect(formula.per_image);
@@ -157,6 +162,7 @@ public:
 
     void visit(const ast::DeclarationNode &node) override
     {
+        validate_type(node.type());
         declare(node.name(), SemanticSymbolKind::LOCAL);
         for (const ast::Expr &dimension : node.dimensions())
         {
@@ -167,10 +173,15 @@ public:
 
     void visit(const ast::FunctionDeclNode &node) override
     {
+        if (!node.return_type().empty())
+        {
+            validate_type(node.return_type());
+        }
         declare(node.name(), SemanticSymbolKind::USER_FUNCTION);
         begin_scope();
         for (const ast::FunctionArgument &arg : node.args())
         {
+            validate_type(arg.type);
             declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER);
         }
         collect(node.body());
@@ -208,6 +219,7 @@ public:
 
     void visit(const ast::NewNode &node) override
     {
+        validate_type(node.type());
         for (const ast::Expr &arg : node.args())
         {
             collect(arg);
@@ -285,13 +297,27 @@ private:
         }
     }
 
+    void validate_type(const std::string &name)
+    {
+        if (!m_builtins.find_type(name) && !m_builtins.find_class(name))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
+            diagnostic.message = "unknown type: " + name;
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<SemanticDiagnostic> m_diagnostics;
 };
 
-std::vector<SemanticDiagnostic> analyze_formula(const ast::FormulaSections &formula, const FormulaSemanticContext &)
+std::vector<SemanticDiagnostic> analyze_formula(
+    const ast::FormulaSections &formula, const FormulaSemanticContext &context)
 {
-    return FormulaSymbolCollector{}.collect(formula);
+    const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
+    return FormulaSymbolCollector{builtins}.collect(formula);
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,
