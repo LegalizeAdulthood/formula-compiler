@@ -13,6 +13,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cctype>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -495,25 +496,41 @@ static std::vector<std::string> s_builtin_vars{
 TEST_P(BuiltinVariables, notAssignable)
 {
     const std::string text{GetParam() + "=1"};
-    Options options;
-    options.allow_builtin_assignment = false;
-    options.dialect = Dialect::BASIC;
-    ParserPtr parser{create_parser(text, options)};
+    ParserPtr parser{create_parser(text, basic_options())};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
     ASSERT_FALSE(result) << "should have parsed '" << text << "'";
     ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
     const auto &error{parser->get_errors().front()};
-    EXPECT_EQ(ErrorCode::EXPECTED_STATEMENT, error.code);
+    EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, error.code);
     EXPECT_EQ(GetParam().length() + 2, error.position.column);
 }
 
-TEST_P(BuiltinVariables, assignable)
+TEST_P(BuiltinVariables, notAssignableInExtended)
 {
-    const ast::FormulaSectionsPtr result{parse(GetParam() + "=1", Options{true})};
+    const std::string text{GetParam() + "=1"};
+    ParserPtr parser{create_parser(text, Options{})};
 
-    ASSERT_TRUE(result);
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result) << "should have rejected '" << text << "'";
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, parser->get_errors().front().code);
+}
+
+TEST_P(BuiltinVariables, caseInsensitiveNotAssignable)
+{
+    std::string name{GetParam()};
+    name[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(name[0])));
+    const std::string text{name + "=1"};
+    ParserPtr parser{create_parser(text, Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result) << "should have rejected '" << text << "'";
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    EXPECT_EQ(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT, parser->get_errors().front().code);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinVariables, ValuesIn(s_builtin_vars));
@@ -526,13 +543,13 @@ static std::vector<std::string> s_functions{
     "fn4", "srand", "asin", "acos", "asinh",    //
     "acosh", "atan", "atanh", "sqrt", "cabs",   //
     "floor", "ceil", "trunc", "round", "ident", //
-    "zero", "one",                               //
+    "zero", "one",                              //
 };
 
 TEST_P(Functions, notAssignable)
 {
     const std::string text{GetParam() + "=1"};
-    ParserPtr parser{create_parser(text, Options{false})};
+    ParserPtr parser{create_parser(text, basic_options())};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
@@ -541,6 +558,32 @@ TEST_P(Functions, notAssignable)
     const auto &error{parser->get_errors().front()};
     EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, error.code);
     EXPECT_EQ(GetParam().length() + 2, error.position.column);
+}
+
+TEST_P(Functions, notAssignableInExtended)
+{
+    const std::string text{GetParam() + "=1"};
+    ParserPtr parser{create_parser(text, Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result) << "Formula should not have parsed";
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, parser->get_errors().front().code);
+}
+
+TEST_P(Functions, caseInsensitiveNotAssignable)
+{
+    std::string name{GetParam()};
+    name[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(name[0])));
+    const std::string text{name + "=1"};
+    ParserPtr parser{create_parser(text, Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result) << "Formula should not have parsed";
+    ASSERT_FALSE(parser->get_errors().empty()) << "parser should have produced an error";
+    EXPECT_EQ(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, parser->get_errors().front().code);
 }
 
 TEST_P(Functions, functionOne)

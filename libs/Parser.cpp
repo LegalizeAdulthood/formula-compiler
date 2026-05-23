@@ -1894,15 +1894,10 @@ bool FormulaParser::is_user_identifier(const Expr &expr) const
             return true;
         }
 
-        // identifier matches a builtin variable
-        if (m_options.allow_builtin_assignment)
-        {
-            warning(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
-            return true;
-        }
-
-        m_errors.push_back(Diagnostic{
-            builtin_var ? ErrorCode::EXPECTED_STATEMENT : ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT, m_curr.location});
+        m_errors.push_back(
+            Diagnostic{builtin_var ? ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT : ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT,
+                m_curr.location});
+        return false;
     }
 
     m_errors.push_back(Diagnostic{ErrorCode::EXPECTED_IDENTIFIER, m_curr.location});
