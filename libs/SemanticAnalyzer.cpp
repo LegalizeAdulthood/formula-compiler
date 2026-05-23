@@ -133,9 +133,16 @@ const BuiltinRegistry &default_builtin_registry()
 class FormulaSymbolCollector : public ast::NullVisitor
 {
 public:
-    explicit FormulaSymbolCollector(const BuiltinRegistry &builtins) :
+    FormulaSymbolCollector(const BuiltinRegistry &builtins, const FormulaSemanticContext &context) :
         m_builtins(builtins)
     {
+        for (const RetainedFormulaClass *klass : context.retained_classes)
+        {
+            if (klass)
+            {
+                m_class_names.insert(klass->reference.class_name);
+            }
+        }
     }
 
     std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
@@ -296,7 +303,7 @@ public:
 
     void visit(const ast::NewNode &node) override
     {
-        validate_type(node.type());
+        validate_new_type(node.type());
         for (const ast::Expr &arg : node.args())
         {
             collect(arg);
@@ -425,11 +432,23 @@ private:
 
     void validate_type(const std::string &name)
     {
-        if (!m_builtins.find_type(name) && !m_builtins.find_class(name))
+        if (!m_builtins.find_type(name) && !m_builtins.find_class(name) && !is_class(name))
         {
             SemanticDiagnostic diagnostic;
             diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
             diagnostic.message = "unknown type: " + name;
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
+    void validate_new_type(const std::string &name)
+    {
+        if (!m_builtins.find_class(name) && !is_class(name))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = m_builtins.find_type(name) ? SemanticDiagnosticCode::INVALID_BUILTIN_USAGE
+                                                         : SemanticDiagnosticCode::UNKNOWN_TYPE;
+            diagnostic.message = "invalid new type: " + name;
             m_diagnostics.push_back(std::move(diagnostic));
         }
     }
@@ -552,6 +571,15 @@ private:
             }
             return SemanticTypeKind::ERROR;
         }
+        if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
+        {
+            visit(*new_object);
+            if (m_builtins.find_class(new_object->type()))
+            {
+                return SemanticTypeKind::BUILTIN_OBJECT;
+            }
+            return is_class(new_object->type()) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+        }
         collect(expr);
         return SemanticTypeKind::ERROR;
     }
@@ -575,7 +603,7 @@ private:
         {
             return type->kind;
         }
-        if (m_builtins.find_class(name))
+        if (m_builtins.find_class(name) || is_class(name))
         {
             return SemanticTypeKind::CLASS_OBJECT;
         }
@@ -689,6 +717,11 @@ private:
         return false;
     }
 
+    bool is_class(const std::string &name) const
+    {
+        return m_class_names.find(name) != m_class_names.end();
+    }
+
     bool is_read_only_symbol(const std::string &name) const
     {
         for (auto scope = m_read_only_symbols.rbegin(); scope != m_read_only_symbols.rend(); ++scope)
@@ -747,6 +780,7 @@ private:
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
     std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
     std::unordered_map<std::string, FunctionSignature> m_functions;
+    std::unordered_set<std::string> m_class_names;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
     std::vector<SemanticTypeKind> m_function_return_types;
     std::vector<SemanticDiagnostic> m_diagnostics;
@@ -756,7 +790,7 @@ std::vector<SemanticDiagnostic> analyze_formula(
     const ast::FormulaSections &formula, const FormulaSemanticContext &context)
 {
     const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
-    return FormulaSymbolCollector{builtins}.collect(formula);
+    return FormulaSymbolCollector{builtins, context}.collect(formula);
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,

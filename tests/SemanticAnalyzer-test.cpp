@@ -528,4 +528,39 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsConstArgumentAssignment)
     EXPECT_EQ("invalid assignment target: value is const", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsRetainedClassTypes)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture\n"
+                                            "texture=new Texture()",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsScalarNewType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int value\n"
+                                            "value=new int()",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_BUILTIN_USAGE, diagnostics.front().code);
+    EXPECT_EQ("invalid new type: int", diagnostics.front().message);
+}
+
 } // namespace formula::test
