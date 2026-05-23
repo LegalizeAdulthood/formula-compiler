@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace formula::semantic
@@ -99,9 +100,34 @@ struct SemanticSymbol
     SourceLocation location;
 };
 
+struct SemanticFunctionDescriptor
+{
+    std::string name;
+    SemanticType return_type;
+    std::vector<SemanticType> argument_types;
+};
+
+struct SemanticClassDescriptor
+{
+    std::string name;
+    SemanticType type;
+    bool builtin{};
+    std::vector<SemanticSymbol> fields;
+    std::vector<SemanticFunctionDescriptor> methods;
+};
+
 struct BuiltinRegistry
 {
+    std::vector<SemanticType> types;
+    std::vector<SemanticFunctionDescriptor> functions;
+    std::vector<SemanticClassDescriptor> classes;
+
+    const SemanticType *find_type(std::string_view name) const;
+    const SemanticFunctionDescriptor *find_function(std::string_view name) const;
+    const SemanticClassDescriptor *find_class(std::string_view name) const;
 };
+
+const BuiltinRegistry &default_builtin_registry();
 
 struct FormulaSemanticContext
 {

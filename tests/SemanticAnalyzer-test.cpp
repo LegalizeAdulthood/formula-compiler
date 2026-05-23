@@ -70,4 +70,50 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisDoesNotMutateParsedParameters)
     EXPECT_EQ("Example.ufm#Mandelbrot", parameters.fractal.assignments.front().value);
 }
 
+TEST(TestSemanticAnalyzer, defaultRegistryFindsScalarTypes)
+{
+    const BuiltinRegistry &registry{default_builtin_registry()};
+
+    ASSERT_TRUE(registry.find_type("void"));
+    EXPECT_EQ(SemanticTypeKind::VOID, registry.find_type("void")->kind);
+    ASSERT_TRUE(registry.find_type("bool"));
+    EXPECT_EQ(SemanticTypeKind::BOOL, registry.find_type("bool")->kind);
+    ASSERT_TRUE(registry.find_type("int"));
+    EXPECT_EQ(SemanticTypeKind::INT, registry.find_type("int")->kind);
+    ASSERT_TRUE(registry.find_type("float"));
+    EXPECT_EQ(SemanticTypeKind::FLOAT, registry.find_type("float")->kind);
+    ASSERT_TRUE(registry.find_type("complex"));
+    EXPECT_EQ(SemanticTypeKind::COMPLEX, registry.find_type("complex")->kind);
+    ASSERT_TRUE(registry.find_type("color"));
+    EXPECT_EQ(SemanticTypeKind::COLOR, registry.find_type("color")->kind);
+    ASSERT_TRUE(registry.find_type("string"));
+    EXPECT_EQ(SemanticTypeKind::STRING, registry.find_type("string")->kind);
+}
+
+TEST(TestSemanticAnalyzer, defaultRegistryFindsBuiltinFunctionDescriptors)
+{
+    const BuiltinRegistry &registry{default_builtin_registry()};
+
+    const SemanticFunctionDescriptor *function{registry.find_function("sin")};
+
+    ASSERT_TRUE(function);
+    EXPECT_EQ("sin", function->name);
+    EXPECT_EQ(SemanticTypeKind::COMPLEX, function->return_type.kind);
+    ASSERT_EQ(1U, function->argument_types.size());
+    EXPECT_EQ(SemanticTypeKind::COMPLEX, function->argument_types.front().kind);
+}
+
+TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
+{
+    const BuiltinRegistry &registry{default_builtin_registry()};
+
+    const SemanticClassDescriptor *image{registry.find_class("Image")};
+
+    ASSERT_TRUE(image);
+    EXPECT_EQ("Image", image->name);
+    EXPECT_TRUE(image->builtin);
+    EXPECT_EQ(SemanticTypeKind::BUILTIN_OBJECT, image->type.kind);
+    EXPECT_TRUE(registry.find_type("Image"));
+}
+
 } // namespace formula::test
