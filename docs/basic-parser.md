@@ -82,43 +82,33 @@ BASIC has one parser contract. It should reject:
 - Assignment to builtin function names.
 - Any extended-only syntax.
 
-Parser options that allow builtin assignment should be removed or constrained
-outside BASIC once this plan is implemented.
-
 The same static restrictions should be enforced in extended formulas for
 shared BASIC constructs. Extended-only constructs can add valid forms, such as
 user-defined function calls or class member calls, but they should not make
 read-only builtin assignment, builtin arity errors, malformed assignment, or
 other BASIC syntax violations valid.
 
-## Current Parser Gaps
+## Closed Parser Gaps
 
-The current parser still allows a few BASIC constructs that require later
+The parser now rejects the BASIC constructs that previously required later
 runtime behavior:
 
-- Unknown function calls such as `foo(1)` parse as generic calls and fail only
-  when evaluated or compiled.
-- Builtin function calls accept any argument count. BASIC builtins listed in
-  `basic-formula.txt` should be one-argument calls.
-- Zero-argument calls such as `sin()` can parse, but later code assumes at
-  least one argument.
-- Generic multi-argument calls such as `sin(a, b)` can parse even though BASIC
-  has no multi-argument function calls.
-- Numeric pair calls such as `sin(1, 2)` should be parsed as one complex
+- Unknown function calls such as `foo(1)`.
+- Builtin function calls with anything other than one argument.
+- Zero-argument calls such as `sin()`.
+- Generic multi-argument calls such as `sin(a, b)`.
+- Numeric pair calls such as `sin(1, 2)` are parsed as one complex
   literal argument, matching legacy parser behavior and the `round(2.5, 3.4)`
   example in `basic-formula.txt`.
-- Assignment to read-only builtin variables is allowed by default with
-  warnings. BASIC should reject read-only builtin names.
+- Assignment to read-only builtin variables.
 
-## Runtime Semantics Gaps
+## Closed Runtime Semantics Gaps
 
-These are not semantic-analysis requirements, but they must be fixed so parsed
-BASIC formulas execute according to `basic-formula.txt`:
+These are not semantic-analysis requirements, but they must remain locked so
+parsed BASIC formulas execute according to `basic-formula.txt`:
 
-- Logical `&&` and `||` currently short-circuit in the interpreter even though
-  BASIC semantics require both operands to be evaluated.
-- Power associativity should be checked against the intended BASIC semantics
-  and locked with parser/interpreter tests.
+- Logical `&&` and `||` evaluate both operands.
+- Power associativity is locked by parser, interpreter, and compiler tests.
 
 ## Non-Gaps
 
@@ -130,7 +120,7 @@ These already match BASIC parse-time verification:
 - Malformed numeric and complex literals are parser errors.
 - BASIC expression operands are numeric or complex after parse.
 - Bailout expressions are numeric or complex and use existing truthiness rules.
-- Read-only builtin assignment can already be rejected with parser options.
+- Read-only builtin assignment is rejected during parsing.
 
 ## Desired BASIC Contract
 
@@ -205,9 +195,8 @@ Make the BASIC verification policy explicit:
 
 - Shared BASIC semantics should reject assignment to builtin variables and
   builtin function names, using case-insensitive matching.
-- Existing warning behavior should be removed or constrained so both BASIC and
-  extended formulas reject invalid builtin assignment in shared expression
-  contexts.
+- Both BASIC and extended formulas reject invalid builtin assignment in shared
+  expression contexts.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
 
@@ -272,7 +261,7 @@ for review and wait for approval.
    - Remove warning-mode expectations from parser tests.
 
 4. Review default parser options.
-   - Remove or narrow options that allow builtin assignment in BASIC.
+   - Remove options that allow builtin assignment in BASIC.
    - Ensure BASIC parse success means full static BASIC validation.
 
 5. Add extended-token regression tests under BASIC.

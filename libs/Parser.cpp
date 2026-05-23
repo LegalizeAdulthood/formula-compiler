@@ -176,13 +176,11 @@ private:
     Expr repeat_statement();
     bool is_builtin_var() const;
     bool is_builtin_fn() const;
-    bool is_assignable() const;
     Expr foo();
     Expr statement();
     Expr if_statement();
     Expr if_statement_no_endif();
     Expr block();
-    Expr variable();
     Expr assignment_statement();
     Expr conjunctive();
     Expr comparative();
@@ -226,10 +224,6 @@ private:
         return std::any_of(types.begin(), types.end(), [this](TokenType t) { return check(t); });
     }
 
-    void warning(ErrorCode code) const
-    {
-        m_warnings.push_back(Diagnostic{code, m_lexer.source_location()});
-    }
     void error(ErrorCode code) const
     {
         m_errors.push_back(Diagnostic{code, m_lexer.source_location()});
@@ -2354,12 +2348,6 @@ bool FormulaParser::is_builtin_fn() const
     return std::find(BUILTIN_FNS.begin(), BUILTIN_FNS.end(), m_curr.type) != BUILTIN_FNS.end();
 }
 
-bool FormulaParser::is_assignable() const
-{
-    return check(TokenType::IDENTIFIER) //
-        || (m_options.allow_builtin_assignment && (is_builtin_var() || is_builtin_fn()));
-}
-
 Expr FormulaParser::statement()
 {
     if (is_extended() && check_context("static"))
@@ -2547,28 +2535,6 @@ Expr FormulaParser::block()
         return statements[0];
     }
     return std::make_shared<StatementSeqNode>(statements);
-}
-
-Expr FormulaParser::variable()
-{
-    if (check(TokenType::IDENTIFIER))
-    {
-        return identifier();
-    }
-
-    if (Expr var = builtin_var())
-    {
-        warning(ErrorCode::BUILTIN_VARIABLE_ASSIGNMENT);
-        return var;
-    }
-
-    if (Expr var = builtin_fn())
-    {
-        warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
-        return var;
-    }
-
-    return nullptr;
 }
 
 Expr FormulaParser::assignment_statement()
@@ -3063,12 +3029,6 @@ Expr FormulaParser::identifier()
 
     if (std::find(BUILTIN_FNS.begin(), BUILTIN_FNS.end(), m_curr.type) != BUILTIN_FNS.end())
     {
-        if (m_options.allow_builtin_assignment)
-        {
-            warning(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
-            return make_identifier();
-        }
-
         error(ErrorCode::BUILTIN_FUNCTION_ASSIGNMENT);
     }
 
