@@ -4,6 +4,7 @@
 //
 #include <formula/SemanticAnalyzer.h>
 
+#include <formula/ReferenceCollector.h>
 #include <formula/Visitor.h>
 
 #include <algorithm>
@@ -193,6 +194,66 @@ std::string entry_kind_name(parser::EntryKind kind)
         return "class";
     }
     return "fractal";
+}
+
+bool same_identifier(std::string_view lhs, std::string_view rhs)
+{
+    if (lhs.size() != rhs.size())
+    {
+        return false;
+    }
+    for (std::size_t index = 0; index < lhs.size(); ++index)
+    {
+        char left{lhs[index]};
+        char right{rhs[index]};
+        if (left >= 'A' && left <= 'Z')
+        {
+            left = static_cast<char>(left - 'A' + 'a');
+        }
+        if (right >= 'A' && right <= 'Z')
+        {
+            right = static_cast<char>(right - 'A' + 'a');
+        }
+        if (left != right)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool has_retained_class(const ParameterSetSemanticContext &context, std::string_view class_name)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass && same_identifier(klass->reference.class_name, class_name))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void report_missing_retained_class(
+    std::vector<SemanticDiagnostic> &diagnostics, const std::string &entry_name, const std::string &class_name)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH;
+    diagnostic.entry_name = entry_name;
+    diagnostic.message = "incomplete reference graph: missing retained class " + class_name;
+    diagnostics.push_back(std::move(diagnostic));
+}
+
+void check_retained_references(std::vector<SemanticDiagnostic> &diagnostics, const BuiltinRegistry &builtins,
+    const ParameterSetSemanticContext &context, const std::string &entry_name, const ast::FormulaSections &ast)
+{
+    for (const FormulaReference &reference : collect_formula_references(ast))
+    {
+        if (!builtins.find_class(reference.class_name) && !has_retained_class(context, reference.class_name))
+        {
+            report_missing_retained_class(diagnostics, entry_name, reference.class_name);
+        }
+    }
 }
 
 class FormulaSymbolCollector : public ast::NullVisitor
@@ -1223,9 +1284,10 @@ std::vector<SemanticDiagnostic> analyze_formula(
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,
-    const parameter::ParameterReferenceSet &references, const ParameterSetSemanticContext &)
+    const parameter::ParameterReferenceSet &references, const ParameterSetSemanticContext &context)
 {
     std::vector<SemanticDiagnostic> diagnostics;
+    const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
     for (const parameter::ParameterResolvedReference &resolved : references.resolved)
     {
         const parser::EntryKind expected{expected_entry_kind(resolved.reference.site.kind)};
@@ -1238,6 +1300,17 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
                 resolved.reference.entry + " is " + entry_kind_name(resolved.entry_kind) + ", expected " +
                 entry_kind_name(expected);
             diagnostics.push_back(std::move(diagnostic));
+        }
+        if (resolved.ast)
+        {
+            check_retained_references(diagnostics, builtins, context, resolved.reference.entry, *resolved.ast);
+        }
+    }
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass && klass->ast)
+        {
+            check_retained_references(diagnostics, builtins, context, klass->reference.class_name, *klass->ast);
         }
     }
     return diagnostics;
