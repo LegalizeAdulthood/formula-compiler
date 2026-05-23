@@ -441,4 +441,91 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidArrayIndexType)
     EXPECT_EQ("invalid array index type: string", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidReturnConversion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int func helper()\n"
+                                            "return \"text\"\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_RETURN, diagnostics.front().code);
+    EXPECT_EQ("invalid return: string to int", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsReturnOutsideFunction)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("return 1", options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_RETURN, diagnostics.front().code);
+    EXPECT_EQ("invalid return outside function", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUserFunctionArgumentConversion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(int value)\n"
+                                            "endfunc\n"
+                                            "helper(\"text\")",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
+    EXPECT_EQ("invalid argument type: helper got string, expected int", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidByRefArgument)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(int &value)\n"
+                                            "endfunc\n"
+                                            "helper(1)",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
+    EXPECT_EQ("invalid by-ref argument: helper", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsConstArgumentAssignment)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper(const int value)\n"
+                                            "value=1\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET, diagnostics.front().code);
+    EXPECT_EQ("invalid assignment target: value is const", diagnostics.front().message);
+}
+
 } // namespace formula::test

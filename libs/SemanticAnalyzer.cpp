@@ -6,6 +6,7 @@
 
 #include <formula/Visitor.h>
 
+#include <algorithm>
 #include <array>
 #include <string_view>
 #include <unordered_map>
@@ -16,6 +17,13 @@ namespace formula::semantic
 
 namespace
 {
+
+struct FunctionSignature
+{
+    SemanticTypeKind return_type{SemanticTypeKind::VOID};
+    std::vector<SemanticTypeKind> argument_types;
+    std::vector<bool> by_ref_arguments;
+};
 
 SemanticType semantic_type(SemanticTypeKind kind, std::string name)
 {
@@ -166,6 +174,13 @@ public:
 
     void visit(const ast::AssignmentNode &node) override
     {
+        if (!node.variable().empty() && is_read_only_symbol(node.variable()))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
+            diagnostic.message = "invalid assignment target: " + node.variable() + " is const";
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
         const SemanticTypeKind target_type{expression_type(node.target())};
         const SemanticTypeKind value_type{expression_type(node.expression())};
         if (!can_convert(value_type, target_type))
@@ -210,32 +225,38 @@ public:
             declare_function(node);
         }
         begin_scope();
+        m_function_return_types.push_back(
+            node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type()));
         for (const ast::FunctionArgument &arg : node.args())
         {
             validate_type(arg.type);
-            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, type_kind(arg.type));
+            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, type_kind(arg.type), arg.is_const);
         }
         collect(node.body());
+        m_function_return_types.pop_back();
         end_scope();
     }
 
     void visit(const ast::FunctionCallNode &node) override
     {
+        std::size_t checked_args{};
         if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
         {
             validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
+            checked_args = validate_builtin_call_arguments(node, *function);
         }
         else if (const auto function = m_functions.find(node.name()); function != m_functions.end())
         {
-            validate_call_arity(node.name(), node.args().size(), function->second);
+            validate_call_arity(node.name(), node.args().size(), function->second.argument_types.size());
+            checked_args = validate_user_call_arguments(node, function->second);
         }
         else if (!is_declared(node.name()))
         {
             report_unknown_symbol(node.name());
         }
-        for (const ast::Expr &arg : node.args())
+        for (std::size_t index = checked_args; index < node.args().size(); ++index)
         {
-            collect(arg);
+            collect(node.args()[index]);
         }
     }
 
@@ -295,7 +316,25 @@ public:
 
     void visit(const ast::ReturnNode &node) override
     {
-        collect(node.expression());
+        if (m_function_return_types.empty())
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
+            diagnostic.message = "invalid return outside function";
+            m_diagnostics.push_back(std::move(diagnostic));
+            collect(node.expression());
+            return;
+        }
+        const SemanticTypeKind expected_type{m_function_return_types.back()};
+        const SemanticTypeKind actual_type{
+            node.expression() ? expression_type(node.expression()) : SemanticTypeKind::VOID};
+        if (!can_convert(actual_type, expected_type))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
+            diagnostic.message = "invalid return: " + type_name(actual_type) + " to " + type_name(expected_type);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
     }
 
     void visit(const ast::StatementSeqNode &node) override
@@ -322,12 +361,14 @@ private:
     {
         m_scopes.emplace_back();
         m_symbol_types.emplace_back();
+        m_read_only_symbols.emplace_back();
     }
 
     void end_scope()
     {
         m_scopes.pop_back();
         m_symbol_types.pop_back();
+        m_read_only_symbols.pop_back();
     }
 
     void collect(const ast::Expr &expr)
@@ -361,7 +402,8 @@ private:
         }
     }
 
-    void declare(const std::string &name, SemanticSymbolKind, SemanticTypeKind type = SemanticTypeKind::ERROR)
+    void declare(const std::string &name, SemanticSymbolKind, SemanticTypeKind type = SemanticTypeKind::ERROR,
+        bool is_read_only = false)
     {
         if (m_scopes.empty())
         {
@@ -375,6 +417,10 @@ private:
             m_diagnostics.push_back(std::move(diagnostic));
         }
         m_symbol_types.back().emplace(name, type);
+        if (is_read_only)
+        {
+            m_read_only_symbols.back().insert(name);
+        }
     }
 
     void validate_type(const std::string &name)
@@ -404,10 +450,58 @@ private:
         }
     }
 
+    std::size_t validate_builtin_call_arguments(
+        const ast::FunctionCallNode &node, const SemanticFunctionDescriptor &function)
+    {
+        const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
+        for (std::size_t index = 0; index < count; ++index)
+        {
+            validate_argument_type(
+                node.name(), expression_type(node.args()[index]), function.argument_types[index].kind);
+        }
+        return count;
+    }
+
+    std::size_t validate_user_call_arguments(const ast::FunctionCallNode &node, const FunctionSignature &function)
+    {
+        const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
+        for (std::size_t index = 0; index < count; ++index)
+        {
+            validate_argument_type(node.name(), expression_type(node.args()[index]), function.argument_types[index]);
+            if (function.by_ref_arguments[index] && !is_assignment_target(node.args()[index]))
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+                diagnostic.message = "invalid by-ref argument: " + node.name();
+                m_diagnostics.push_back(std::move(diagnostic));
+            }
+        }
+        return count;
+    }
+
+    void validate_argument_type(const std::string &name, SemanticTypeKind actual, SemanticTypeKind expected)
+    {
+        if (!can_convert(actual, expected))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+            diagnostic.message =
+                "invalid argument type: " + name + " got " + type_name(actual) + ", expected " + type_name(expected);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
     void declare_function(const ast::FunctionDeclNode &node)
     {
         declare(node.name(), SemanticSymbolKind::USER_FUNCTION, SemanticTypeKind::FUNCTION);
-        m_functions.emplace(node.name(), node.args().size());
+        FunctionSignature signature;
+        signature.return_type = node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type());
+        for (const ast::FunctionArgument &arg : node.args())
+        {
+            signature.argument_types.push_back(type_kind(arg.type));
+            signature.by_ref_arguments.push_back(arg.is_by_ref);
+        }
+        m_functions.emplace(node.name(), std::move(signature));
     }
 
     SemanticTypeKind expression_type(const ast::Expr &expr)
@@ -451,6 +545,10 @@ private:
             if (const SemanticFunctionDescriptor *function = m_builtins.find_function(call->name()))
             {
                 return function->return_type.kind;
+            }
+            if (const auto function = m_functions.find(call->name()); function != m_functions.end())
+            {
+                return function->second.return_type;
             }
             return SemanticTypeKind::ERROR;
         }
@@ -550,6 +648,13 @@ private:
         m_diagnostics.push_back(std::move(diagnostic));
     }
 
+    bool is_assignment_target(const ast::Expr &expr) const
+    {
+        return dynamic_cast<const ast::IdentifierNode *>(expr.get()) != nullptr ||
+            dynamic_cast<const ast::IndexNode *>(expr.get()) != nullptr ||
+            dynamic_cast<const ast::MemberAccessNode *>(expr.get()) != nullptr;
+    }
+
     void validate_condition_type(SemanticTypeKind type)
     {
         if (type != SemanticTypeKind::ERROR && conversion_rank(type) < 0)
@@ -575,6 +680,18 @@ private:
     bool is_declared(const std::string &name) const
     {
         for (auto scope = m_scopes.rbegin(); scope != m_scopes.rend(); ++scope)
+        {
+            if (scope->find(name) != scope->end())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool is_read_only_symbol(const std::string &name) const
+    {
+        for (auto scope = m_read_only_symbols.rbegin(); scope != m_read_only_symbols.rend(); ++scope)
         {
             if (scope->find(name) != scope->end())
             {
@@ -628,8 +745,10 @@ private:
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
-    std::unordered_map<std::string, std::size_t> m_functions;
+    std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
+    std::unordered_map<std::string, FunctionSignature> m_functions;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
+    std::vector<SemanticTypeKind> m_function_return_types;
     std::vector<SemanticDiagnostic> m_diagnostics;
 };
 
