@@ -535,6 +535,15 @@ TEST_P(BuiltinVariables, caseInsensitiveNotAssignable)
 
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, BuiltinVariables, ValuesIn(s_builtin_vars));
 
+TEST(TestFormulaParse, builtinVariableZIsAssignableCaseInsensitively)
+{
+    const ast::FormulaSectionsPtr result{parse("Z=1", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("assignment:Z literal:1", trim_ws(to_string(result->bailout)));
+}
+
 static std::vector<std::string> s_functions{
     "sin", "cos", "sinh", "cosh", "cosxx",      //
     "tan", "cotan", "tanh", "cotanh", "sqr",    //
@@ -599,6 +608,17 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaParse, Functions, ValuesIn(s_functions));
 TEST(TestFormulaParse, basicUnknownFunctionCallRejected)
 {
     const ParserPtr parser{create_parser("foo(1)", basic_options())};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::UNKNOWN_BASIC_FUNCTION, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, basicUnknownFunctionCallRejectedCaseInsensitively)
+{
+    const ParserPtr parser{create_parser("Foo(1)", basic_options())};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
@@ -679,6 +699,17 @@ TEST(TestFormulaParse, basicFunctionCallAcceptsNegativeNumericPairAsComplexLiter
 TEST(TestFormulaParse, extendedBuiltinFunctionCallRejectsGenericMultiArgumentCall)
 {
     const ParserPtr parser{create_parser("sin(a, b)", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, extendedBuiltinFunctionCallRejectsGenericMultiArgumentCallCaseInsensitively)
+{
+    const ParserPtr parser{create_parser("Sin(a, b)", Options{})};
 
     const ast::FormulaSectionsPtr result{parser->parse()};
 
