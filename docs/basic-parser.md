@@ -1,0 +1,159 @@
+# BASIC Parser Verification Plan
+
+## Summary
+
+BASIC formulas cannot reference user functions, other formulas, classes,
+imports, parameters, or extended formula metadata. Every valid BASIC construct
+should therefore be verifiable during parsing. No semantic analyzer should be
+needed for BASIC formulas.
+
+The parser should reject BASIC inputs that would otherwise fail later in the
+interpreter or compiler. Unknown variables remain valid and evaluate as zero.
+
+## Current Gaps
+
+The current parser still allows a few BASIC constructs that require later
+runtime behavior:
+
+- Unknown function calls such as `foo(1)` parse as generic calls and fail only
+  when evaluated or compiled.
+- Builtin function calls accept any argument count. BASIC builtins should be
+  one-argument calls.
+- Zero-argument calls such as `sin()` can parse, but later code assumes at
+  least one argument.
+- Multi-argument calls such as `sin(1, 2)` can parse even though BASIC has no
+  multi-argument function calls.
+- Assignment to builtin variables is allowed by default with warnings. For
+  fully verified BASIC parsing, read-only builtin names should be rejected
+  unless a caller explicitly enables compatibility mode.
+
+## Non-Gaps
+
+These already match BASIC parse-time verification:
+
+- Unknown variables parse as identifiers and evaluate as zero.
+- Invalid assignment targets are parser errors.
+- Reserved words cannot be assigned unless used as longer identifiers.
+- Malformed numeric and complex literals are parser errors.
+- BASIC expression operands are numeric or complex after parse.
+- Bailout expressions are numeric or complex and use existing truthiness rules.
+- Read-only builtin assignment can already be rejected with parser options.
+
+## Desired BASIC Contract
+
+After parsing succeeds in BASIC dialect:
+
+- All function calls target known BASIC builtins.
+- Every function call has exactly one argument.
+- No extended-only nodes are present.
+- No import, class, declaration, return, array, member, object, or parameter
+  reference syntax is present.
+- Assignment targets are syntactically valid BASIC targets.
+- Unknown identifiers are variables initialized to zero by runtime behavior.
+- Interpreter and compiler do not need to report static BASIC errors.
+
+## Parser Changes
+
+### Function Calls
+
+In BASIC dialect, distinguish builtin function calls from generic calls:
+
+- Accept `sin(expr)` and other known builtins.
+- Reject `foo(expr)` as an unknown function call.
+- Reject `sin()`.
+- Reject `sin(a, b)`.
+- Continue to allow builtin function names as identifiers only where existing
+  compatibility behavior explicitly permits it.
+
+Add a parser error code for unknown BASIC function calls. Reuse existing arity
+or delimiter errors where possible for bad argument lists.
+
+### Builtin Assignment
+
+Make the BASIC verification policy explicit:
+
+- Strict BASIC mode should reject assignment to builtin variables and builtin
+  function names.
+- Compatibility mode may keep current warning behavior when loading old
+  formula corpora.
+- Tests should state which mode they exercise.
+
+Do not use a semantic analyzer to reject read-only builtin assignments.
+
+### Extended Syntax Rejection
+
+Keep rejecting extended-only syntax in BASIC through lexer/parser dialect
+checks:
+
+- typed declarations
+- arrays
+- member access
+- parameter refs
+- constant refs
+- strings
+- bool literals
+- `new`
+- `return`
+- loops other than existing BASIC `if`
+- functions and classes
+
+Add regression tests for any extended token that currently becomes a generic
+BASIC expression by accident.
+
+## Implementation Slices
+
+1. Add parse tests that document the intended BASIC contract.
+   - Unknown variables still parse and evaluate as zero.
+   - Unknown function calls fail during parse.
+   - Builtin calls require exactly one argument.
+   - Multi-argument and zero-argument builtin calls fail during parse.
+
+2. Add BASIC-only function-call validation.
+   - Reject postfix calls where the callee is not a known BASIC builtin.
+   - Reject known builtin calls with argument count other than one.
+   - Preserve extended multi-argument calls.
+
+3. Add strict BASIC builtin-assignment tests.
+   - Verify parser options reject builtin variable assignment.
+   - Verify parser options reject builtin function assignment.
+   - Keep compatibility tests for warning behavior if needed by corpus support.
+
+4. Review default parser options.
+   - Decide whether strict BASIC should be the default.
+   - If compatibility mode remains the default, name it clearly in options and
+     tests.
+
+5. Add extended-token regression tests under BASIC.
+   - Ensure extended-only tokens remain invalid in BASIC.
+   - Ensure no extended AST nodes can be produced in BASIC.
+
+6. Update interpreter and compiler assumptions.
+   - Remove or simplify BASIC runtime checks that duplicate parser validation.
+   - Keep runtime handling for unknown variables as zero.
+   - Keep runtime errors for internal misuse only.
+
+## Tests
+
+Add parser tests for:
+
+- `a` parses as an identifier.
+- `foo(1)` fails in BASIC.
+- `sin(1)` parses in BASIC.
+- `sin()` fails in BASIC.
+- `sin(1, 2)` fails in BASIC.
+- `(sin)(1)` fails in BASIC if representable.
+- `p1=1` fails in strict BASIC.
+- `sin=1` fails in strict BASIC.
+- Extended call syntax remains valid in extended dialect where appropriate.
+
+Add interpreter/compiler regression tests showing that valid BASIC formulas no
+longer rely on runtime detection for unknown functions or bad arity.
+
+## Relationship To Semantic Analysis
+
+The semantic analyzer should not analyze BASIC formulas. BASIC parse success is
+the complete static validation boundary.
+
+Extended formulas and resolved parameter sets still require semantic analysis
+because they can reference user functions, classes, imported entities, typed
+parameters, builtin objects, and cross-entry bindings.
