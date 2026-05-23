@@ -12,6 +12,24 @@ parameter sets remain immutable syntax artifacts. If later compiler or
 interpreter stages need resolved bindings or inferred types, add a separate
 semantic model built alongside the parsed data.
 
+## Scope
+
+Semantic analysis is only for extended formulas and extended parameter sets.
+
+BASIC formulas do not need semantic analysis. They cannot reference user
+functions, other formulas, classes, imports, extended parameters, or object
+metadata. All static BASIC validation should be completed by the parser. Unknown
+BASIC identifiers remain valid variables with runtime zero initialization.
+
+BASIC parameter sets do not need semantic analysis. They are flat assignment
+lists with no formula reference graph, layer structure, imported classes, or
+typed parameter metadata to validate. Their syntax and value parsing are parser
+responsibilities.
+
+The remaining semantic analyzer work therefore starts at the extended language
+boundary: typed formulas, user functions, classes, imports, builtin objects,
+resolved extended parameter sets, and cross-entry bindings.
+
 ## Pipeline Boundary
 
 Keep the pipeline split into four explicit stages:
@@ -29,10 +47,10 @@ transforms, classes, and retained imported classes that are referenced by a
 formula or parameter set. It reports missing files and missing entries where a
 reference cannot be resolved.
 
-The semantic analyzer owns meaning. It validates whether parsed and resolved
-data can be used together: names, types, calls, member access, class use,
-parameter bindings, formula kind compatibility, builtin use, and complete
-reference graphs.
+The semantic analyzer owns extended-language meaning. It validates whether
+parsed and resolved extended data can be used together: names, types, calls,
+member access, class use, parameter bindings, formula kind compatibility,
+builtin use, and complete reference graphs.
 
 The interpreter and compiler own execution. They should consume only data that
 has passed semantic analysis. They may still reject unsupported runtime or
@@ -64,7 +82,7 @@ all information needed to report it accurately.
 
 ## Proposed Entry Points
 
-Use two global functions:
+Use two global functions for extended inputs:
 
 ```cpp
 std::vector<SemanticDiagnostic> analyze_formula(
@@ -83,13 +101,13 @@ or expression types.
 
 ## Analyzer Inputs
 
-The formula analyzer input is one parsed formula plus a context containing
-entry kind, retained imports, builtins, and host rules.
+The formula analyzer input is one parsed extended formula plus a context
+containing entry kind, retained imports, builtins, and host rules.
 
 The parameter-set analyzer input is one parsed extended parameter set plus its
 resolved reference set. The parameter set itself is not enough, because saved
 values are meaningful only when checked against the defaults and types of the
-referenced formulas and classes.
+referenced formulas and classes. BASIC parameter sets are excluded.
 
 Parameter-set semantic analysis is needed for more than reference existence.
 It also checks whether saved values bind to real parameters, whether those
@@ -247,9 +265,8 @@ Each phase should keep going after errors where possible. Later phases should
 see error symbols and error types for invalid earlier declarations so one bad
 declaration does not hide unrelated diagnostics.
 
-For BASIC formulas, most phases are trivial. BASIC still benefits from the same
-pipeline because constants, builtin functions, assignment targets, and section
-result checks can share implementation with extended formulas.
+BASIC formulas are not analyzed by this pipeline. Parser success is their
+complete static validation boundary.
 
 ## Formula Result Contract
 
@@ -587,12 +604,12 @@ Milestone 4: formula expressions.
 - Apply conversion rules.
 - Emit expression type diagnostics.
 
-Milestone 5: formula statements and sections.
+Milestone 5: extended formula statements and sections.
 
 - Check declarations, returns, by-reference arguments, `const` arguments,
   loops, branches, and switch expressions.
 - Check section-specific constants and result rules.
-- Keep BASIC behavior covered by the same analyzer path.
+- Leave BASIC behavior covered by parser validation only.
 
 Milestone 6: classes and builtin objects.
 
@@ -627,7 +644,7 @@ Milestone 8: downstream integration.
 6. Add class, member, constructor, `new`, cast, visibility, and builtin `Image`
    checks.
 7. Add section-specific formula validation.
-8. Add parameter-set binding validation over resolved references.
+8. Add extended parameter-set binding validation over resolved references.
 9. Add nested plug-in/class parameter validation.
 10. Integrate interpreter and compiler entry points so unsupported or invalid
     semantic inputs are rejected before execution/code generation.
@@ -636,6 +653,10 @@ Milestone 8: downstream integration.
 
 Add tests for:
 
+- BASIC formulas produce no semantic analyzer coverage because they are fully
+  parser-validated.
+- BASIC parameter sets produce no semantic analyzer coverage because they are
+  fully parser-validated.
 - Duplicate symbols.
 - Unknown variables, functions, constants, types, classes, and members.
 - Bad assignment targets.
@@ -681,7 +702,7 @@ Keep tests aligned with the implementation milestones:
    - Bad array index type.
    - Bad member receiver type.
 
-5. Formula statements and sections.
+5. Extended formula statements and sections.
    - Bad return value.
    - Missing return where required.
    - Non-bool loop or branch condition.
@@ -697,7 +718,7 @@ Keep tests aligned with the implementation milestones:
    - Unknown `Image` method or field.
    - Valid documented `Image` method or field.
 
-7. Parameter-set bindings.
+7. Extended parameter-set bindings.
    - Formula kind mismatch.
    - Missing referenced entry.
    - Incomplete retained import graph.
@@ -717,8 +738,9 @@ Keep tests aligned with the implementation milestones:
 ## Documentation
 
 This document defines the semantic-analysis boundary for both formulas and
-resolved extended parameter sets. Keep `extended-semantics.md` as background
-until this plan is implemented, then merge or retire overlapping material.
+resolved extended parameter sets. It explicitly excludes BASIC formulas and
+BASIC parameter sets. Keep `extended-semantics.md` as background until this plan
+is implemented, then merge or retire overlapping material.
 
 ## Review Questions
 
