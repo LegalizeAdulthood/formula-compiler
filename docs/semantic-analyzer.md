@@ -78,6 +78,50 @@ Add a semantic diagnostic type separate from parser diagnostics. Parser
 diagnostics describe invalid syntax. Semantic diagnostics describe syntactically
 valid input that cannot be used correctly.
 
+Suggested shape:
+
+```cpp
+enum class SemanticDiagnosticSeverity
+{
+    ERROR,
+    WARNING,
+};
+
+enum class SemanticDiagnosticCode
+{
+    UNKNOWN_SYMBOL,
+    DUPLICATE_SYMBOL,
+    UNKNOWN_TYPE,
+    INVALID_TYPE_CONVERSION,
+    INVALID_ASSIGNMENT_TARGET,
+    INVALID_CALL_TARGET,
+    INVALID_CALL_ARITY,
+    INVALID_ARGUMENT_TYPE,
+    INVALID_MEMBER_ACCESS,
+    INVALID_ARRAY_ACCESS,
+    INVALID_RETURN,
+    INVALID_SECTION_RESULT,
+    INVALID_PARAMETER_BINDING,
+    INVALID_FORMULA_KIND,
+    INVALID_BUILTIN_USAGE,
+    INCOMPLETE_REFERENCE_GRAPH,
+    UNSUPPORTED_SEMANTIC_FEATURE,
+};
+
+struct SemanticDiagnostic
+{
+    SemanticDiagnosticSeverity severity;
+    SemanticDiagnosticCode code;
+    SourceLocation location;
+    std::string message;
+    std::string entry_name;
+    std::string section_name;
+};
+```
+
+Start with errors only. Add warnings after the analyzer is integrated and the
+call sites have a policy for displaying or suppressing them.
+
 Initial diagnostic categories:
 
 - Unknown symbol.
@@ -96,10 +140,15 @@ Initial diagnostic categories:
 - Invalid formula kind.
 - Invalid builtin usage.
 - Incomplete reference graph.
+- Unsupported semantic feature.
 
 Diagnostics should carry source location when available. For parameter-set
 errors, prefer the parameter assignment location. For formula errors, use the
 formula source location.
+
+Messages should name the invalid symbol, type, member, parameter, or formula
+kind. The diagnostic code should stay stable enough for tests to assert against
+it without depending on exact prose.
 
 ## Formula Context
 
