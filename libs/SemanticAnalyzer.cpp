@@ -32,6 +32,13 @@ struct ArraySymbol
     bool is_dynamic{};
 };
 
+struct ParameterMetadata
+{
+    std::vector<std::string> params;
+    std::vector<std::string> functions;
+    std::vector<std::string> forwards;
+};
+
 SemanticType semantic_type(SemanticTypeKind kind, std::string name)
 {
     SemanticType type;
@@ -234,6 +241,113 @@ bool has_retained_class(const ParameterSetSemanticContext &context, std::string_
     return false;
 }
 
+bool starts_with(std::string_view value, std::string_view prefix)
+{
+    return value.size() >= prefix.size() && value.substr(0, prefix.size()) == prefix;
+}
+
+std::string plugin_parameter_name(std::string_view saved_name)
+{
+    if (!starts_with(saved_name, "p_"))
+    {
+        return {};
+    }
+    const std::size_t dot{saved_name.find('.')};
+    return dot == std::string_view::npos ? std::string{} : std::string{saved_name.substr(0, dot)};
+}
+
+class ParameterMetadataCollector : public ast::NullVisitor
+{
+public:
+    explicit ParameterMetadataCollector(ParameterMetadata &metadata) :
+        m_metadata(metadata)
+    {
+    }
+
+    void visit(const ast::FunctionBlockNode &node) override
+    {
+        m_metadata.functions.push_back(node.name());
+    }
+
+    void visit(const ast::ParamBlockNode &node) override
+    {
+        m_metadata.params.push_back(node.name());
+        if (node.block())
+        {
+            node.block()->visit(*this);
+        }
+    }
+
+    void visit(const ast::SettingNode &node) override
+    {
+        if (node.key() != "param_forward")
+        {
+            return;
+        }
+        const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+        if (values != nullptr && values->size() >= 2U)
+        {
+            m_metadata.forwards.push_back(values->front());
+        }
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            if (statement)
+            {
+                statement->visit(*this);
+            }
+        }
+    }
+
+private:
+    ParameterMetadata &m_metadata;
+};
+
+ParameterMetadata collect_parameter_metadata(const ast::FormulaSections &ast)
+{
+    ParameterMetadata metadata;
+    if (ast.defaults)
+    {
+        ParameterMetadataCollector collector{metadata};
+        ast.defaults->visit(collector);
+    }
+    return metadata;
+}
+
+bool has_parameter_binding(const ParameterMetadata &metadata, std::string_view saved_name)
+{
+    for (const std::string &name : metadata.params)
+    {
+        if (saved_name == "p_" + name || plugin_parameter_name(saved_name) == "p_" + name)
+        {
+            return true;
+        }
+    }
+    for (const std::string &name : metadata.forwards)
+    {
+        if (saved_name == "p_" + name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool has_function_binding(const ParameterMetadata &metadata, std::string_view saved_name)
+{
+    for (const std::string &name : metadata.functions)
+    {
+        if (saved_name == "f_" + name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void report_missing_retained_class(
     std::vector<SemanticDiagnostic> &diagnostics, const std::string &entry_name, const std::string &class_name)
 {
@@ -252,6 +366,37 @@ void check_retained_references(std::vector<SemanticDiagnostic> &diagnostics, con
         if (!builtins.find_class(reference.class_name) && !has_retained_class(context, reference.class_name))
         {
             report_missing_retained_class(diagnostics, entry_name, reference.class_name);
+        }
+    }
+}
+
+void report_invalid_parameter_binding(std::vector<SemanticDiagnostic> &diagnostics,
+    const parameter::ParameterResolvedReference &resolved, const parameter::Parameter &parameter)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_PARAMETER_BINDING;
+    diagnostic.entry_name = resolved.reference.entry;
+    diagnostic.message = "invalid parameter binding: " + parameter.key;
+    diagnostics.push_back(std::move(diagnostic));
+}
+
+void check_parameter_bindings(
+    std::vector<SemanticDiagnostic> &diagnostics, const parameter::ParameterResolvedReference &resolved)
+{
+    if (!resolved.ast)
+    {
+        return;
+    }
+    const ParameterMetadata metadata{collect_parameter_metadata(*resolved.ast)};
+    for (const parameter::Parameter &parameter : resolved.reference.parameters)
+    {
+        if (starts_with(parameter.key, "p_") && !has_parameter_binding(metadata, parameter.key))
+        {
+            report_invalid_parameter_binding(diagnostics, resolved, parameter);
+        }
+        else if (starts_with(parameter.key, "f_") && !has_function_binding(metadata, parameter.key))
+        {
+            report_invalid_parameter_binding(diagnostics, resolved, parameter);
         }
     }
 }
@@ -1304,6 +1449,7 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
         if (resolved.ast)
         {
             check_retained_references(diagnostics, builtins, context, resolved.reference.entry, *resolved.ast);
+            check_parameter_bindings(diagnostics, resolved);
         }
     }
     for (const RetainedFormulaClass *klass : context.retained_classes)
