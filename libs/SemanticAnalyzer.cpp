@@ -982,6 +982,13 @@ public:
             declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, arg.type, arg.is_const);
         }
         collect(node.body());
+        if (m_function_return_types.back() != SemanticTypeKind::VOID && !returns_on_all_paths(node.body()))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
+            diagnostic.message = "missing return: " + node.name();
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
         m_function_return_types.pop_back();
         end_scope();
     }
@@ -1465,6 +1472,29 @@ private:
             signature.by_ref_arguments.push_back(arg.is_by_ref);
         }
         m_functions.emplace(node.name(), std::move(signature));
+    }
+
+    bool returns_on_all_paths(const ast::Expr &expr) const
+    {
+        if (!expr)
+        {
+            return false;
+        }
+        if (dynamic_cast<const ast::ReturnNode *>(expr.get()) != nullptr)
+        {
+            return true;
+        }
+        if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+        {
+            return std::any_of(sequence->statements().begin(), sequence->statements().end(),
+                [this](const ast::Expr &statement) { return returns_on_all_paths(statement); });
+        }
+        if (const auto *branch = dynamic_cast<const ast::IfStatementNode *>(expr.get()))
+        {
+            return branch->has_then_block() && branch->has_else_block() && returns_on_all_paths(branch->then_block()) &&
+                returns_on_all_paths(branch->else_block());
+        }
+        return false;
     }
 
     SemanticTypeKind expression_type(const ast::Expr &expr)

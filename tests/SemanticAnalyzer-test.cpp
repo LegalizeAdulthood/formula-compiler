@@ -1139,6 +1139,60 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsReturnOutsideFunction)
     EXPECT_EQ("invalid return outside function", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsMissingFunctionReturn)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int func helper()\n"
+                                            "int value\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_RETURN, diagnostics.front().code);
+    EXPECT_EQ("missing return: helper", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsVoidFunctionWithoutReturn)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("func helper()\n"
+                                            "int value\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsIfElseReturnPaths)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int func helper(bool value)\n"
+                                            "if value\n"
+                                            "return 1\n"
+                                            "else\n"
+                                            "return 2\n"
+                                            "endif\n"
+                                            "endfunc",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsUserFunctionArgumentConversion)
 {
     parser::Options options;
