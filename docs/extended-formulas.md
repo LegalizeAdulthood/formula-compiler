@@ -1,167 +1,117 @@
-# Ultra Fractal Parse + AST Coverage Plan
+# Extended Formula Parser Plan
 
-## Summary
-- Target parse + AST coverage, not execution/codegen.
-- Prioritize procedural core first: declarations, types, arrays, loops,
-  functions, returns, params, constants.
-- Keep BASIC behavior intact. Add features only under EXTENDED.
-- Preserve CRLF in touched text files; source stays ASCII.
+## Status
 
-## Key Changes
-- Add AST nodes for: typed variable declarations, array
-  declarations/indexing, multi-arg calls, return, while, repeat/until,
-  function declarations, parameter refs, constant refs, bool/string/color
-  literals.
-- Extend lexer with UF operators/tokens: `[ ]`, `.`, `%`, `!`, `&`,
-  `public`, `protected`, `private`, `class`, and `final`; typed, color,
-  bool, and string literal support is already implied by docs. Long
-  strings use the normal backslash line-continuation rule; raw newlines
-  inside quoted strings are not documented as valid.
-- Replace single-arg call shape with argument-list calls. Existing unary
-  built-ins become one-arg calls.
-- Add `EntryKind` to parse options: `FRACTAL`, `COLORING`,
-  `TRANSFORMATION`, `CLASS`. Default stays `FRACTAL`.
-- Add import metadata so formula loading can parse import chains before
-  semantic checks. Imports are syntax in the source file, but their
-  effect is loader-level class availability, not runtime execution.
-- Add a per-entry import scope. The parse/load phase uses it to resolve
-  class names found in base classes, declarations, casts, `new`, and
-  plug-in parameters against parsed imported class ASTs and the current
-  file.
-- Add `Options::file_importer`, a
-  `std::function<std::string(std::string_view)>`, so callers supply
-  imported file text. The parser never locates files itself.
-- Add `Options::source_filename` and preserve it in diagnostics so
-  imported source locations keep their original filename.
-- Add section rules by kind:
-  - fractal: existing order plus perturb sections.
-  - coloring: `global`, `init`, `loop`, `final`, `default`.
-  - transformation: `global`, `transform`, `default`.
-  - class: visibility sections plus optional `default`.
-- Do not evaluate new nodes yet. Visitors get stub methods; formatter
-  prints stable shapes; interpreter/codegen reject unsupported nodes
-  clearly.
+The extended formula parser and load-time reference coverage from the earlier
+plan has been implemented. This document now records only the remaining
+parser-facing policy so completed implementation steps do not linger as open
+work.
 
-## Implementation Order
-1. Lexer + expression grammar.
-   - Add missing tokens.
-   - Apply UF line continuation before lexing quoted strings. A `\` at
-     physical end of line joins the next line; raw line endings inside
-     quotes remain invalid.
-   - Parse operator precedence exactly from UF docs: `new`,
-     member/index/call, unary `!`/`-`, power, `* / %`, `+ -`,
-     comparisons, `&&`, `||`, assignment.
-   - Add multi-arg calls and parenthesized arg lists.
+Implemented coverage includes:
 
-2. Statements + declarations.
-   - Parse typed declarations with optional initializer.
-   - Parse static and dynamic arrays.
-   - Parse `while/endwhile`, `repeat/until`, `return`.
-   - Keep current `if/elseif/else/endif`.
+- Extended lexer tokens and expression precedence.
+- Multi-argument calls.
+- Typed declarations and array declarations.
+- `if`, `while`, `repeat`, `return`, and nested statement blocks.
+- Function declarations, arguments, `const`, and by-reference metadata.
+- Formula kinds and section ordering for fractal, coloring, transformation,
+  and class entries.
+- `final`, `transform`, switch, perturb, and visibility sections.
+- Parameter and predefined-symbol reference AST nodes.
+- Bool, string, color, and typed literal forms.
+- Member access, indexing, `new`, casts, class declarations, inheritance
+  syntax, fields, methods, constructors, static methods, and plug-in parameter
+  syntax.
+- Import metadata, source filenames, import graph loading, class indexing,
+  reference collection, reference resolution, and lazy retention of referenced
+  imported class ASTs.
 
-3. Functions.
-   - Parse return type optional, `func name(args)`, `endfunc`.
-   - Parse `const` args and `&` by-ref args as metadata.
-   - Allow declarations anywhere a statement can appear.
+## Parser Boundary
 
-4. Formula kinds.
-   - Add kind-specific section parsing.
-   - Add `final` and `transform` sections.
-   - Preserve legacy fractal splitting rules.
+The parser owns syntax and structural entry rules. It should continue to report:
 
-5. Objects/classes later.
-   - Parse class entries, inheritance, visibility, fields, methods,
-     constructors, static methods, member access, `new`, casts,
-     plug-in params.
-   - No semantic validation beyond parse shape in this pass.
+- Invalid tokens or malformed expressions.
+- Invalid statement forms.
+- Invalid section order or section cardinality.
+- Invalid entry-kind section use.
+- Invalid parser-only setting syntax.
+- Impossible AST shapes, such as assignment to a literal.
 
-6. Import metadata.
-   - Parse `import "file"` statements anywhere a formula or class can
-     contain statements.
-   - Record import directives in source order without returning them as
-     executable section AST statements.
-   - Store directives on the parsed entry, e.g. filename, source
-     location, and whether the import was implicit.
+The parser should not validate semantic meaning that requires types, imported
+class descriptors, callable descriptors, or section-specific symbol rules.
+Those checks belong in `semantic-analyzer.md`.
 
-7. File and class indexes.
-   - Add a formula loading pass that calls `Options::file_importer` for
-     imported file text, preprocesses and parses imported files, follows
-     chained imports, and retains only referenced imported ASTs.
-   - Set `Options::source_filename` while preprocessing and parsing
-     imported text so every diagnostic keeps file, line, and column.
-   - Report missing imported files, import cycles, and syntax errors in
-     imported files as load/parse diagnostics attached to the importing
-     formula.
-   - Load imported files first into `FormulaEntry` records and build a
-     file-level class header index. Do not retain every imported class
-     AST.
-   - Treat `class Derived(File.ufm:Base)` as an implicit import of
-     `File.ufm` before explicit imports, matching UF class lookup rules.
-   - Build a file-level class index for every loaded file. Each indexed
-     class can parse or expose its AST when referenced. Each entry has an
-     import scope from its implicit import, explicit imports in source
-     order, and the current file.
+## Predefined Symbols
 
-8. Reference collection.
-   - Fully parse the referencing entry first, then post-process its AST
-     with a reference-collection visitor. Collect class references from
-     base class specs, declarations, casts, `new`, and plug-in params.
+The lexer may still tokenize `#` followed by identifier syntax, but the parser
+must reject any predefined symbol that is not explicitly documented in
+`docs/uf6/predefined-symbols.txt` and the files under `docs/uf6/predefined`.
+Referencing `#foo` when `foo` is not in that documented list is a parse error,
+not a semantic diagnostic.
 
-9. Reference resolution.
-   - Resolve collected class names by searching explicit imports from
-     last to first, then the implicit ancestor import, then the current
-     file. Store resolution results as references to parsed class ASTs.
-     Report unresolved class names as diagnostics.
+The documented predefined-symbol set is:
 
-10. Lazy imported AST retention.
-   - Parse and retain only resolved imported entities referenced by the
-     current AST. Repeat reference collection and resolution for each
-     retained imported AST until no new referenced entities are found.
+- `#angle`
+- `#calculationPurpose`
+- `#center`
+- `#color`
+- `#dpixel`
+- `#dz`
+- `#e`
+- `#height`
+- `#index`
+- `#magn`
+- `#maxiter`
+- `#numiter`
+- `#pi`
+- `#pixel`
+- `#random`
+- `#randomrange`
+- `#screenmax`
+- `#screenpixel`
+- `#skew`
+- `#stretch`
+- `#whitesq`
+- `#width`
+- `#x`
+- `#y`
+- `#z`
 
-11. Public load result.
-   - Expose resolved imports as attached parse/load metadata: main entry
-     AST, referenced imported ASTs, import graph, diagnostics, and a
-     resolved class table. Do not retain unreferenced imported entry ASTs
-     and do not inline imported class ASTs into the main entry's
-     executable section AST.
-   - `LoadedFormula::files` is the public metadata container. It carries
-     loaded file records, `import_graph`, `class_index`,
-     `entry_references`, `resolved_references`, `retained_classes`, and
-     diagnostics.
-   - Public loading resolves root-entry references, then expands retained
-     imported AST metadata from that referenced graph. Full-file reference
-     resolution remains available as an explicit lower-level API.
+The AST must preserve source spelling for accepted predefined symbols. Lookup
+should be case-sensitive unless a specific UF document says otherwise for
+predefined symbols.
 
-## Tests
-- Lexer: all new tokens, BASIC rejects extended-only syntax, EXTENDED
-  accepts it.
-- Expressions: precedence/associativity for `%`, `!`, `.`, `[]`,
-  multi-arg calls, `new`.
-- Statements: typed vars, arrays, loops, returns, nested blocks.
-- Functions: typed/void funcs, const args, by-ref args, recursion syntax.
-- Sections: fractal/coloring/transformation/class section order and
-  invalid-order errors.
-- Imports: quoted filename syntax, import anywhere, chained imports,
-  import order preservation, imported diagnostic filenames, implicit
-  ancestor-file import, referenced imported AST retention, imported
-  class-reference resolution, public import graph metadata, missing files,
-  cycles, and imported-file syntax errors.
-- Regression: all existing parse tests, ID formulas, and workflow command:
-  `cmake --workflow rt-default`
+Validation of predefined-symbol mutability, type, constant-expression
+availability, and formula-kind or section availability belongs to semantic
+analysis.
 
-## Assumptions
-- This pass builds syntax coverage and durable AST only.
-- Import loading parses imported files enough to build class indexes,
-  retains only referenced imported ASTs, and resolves referenced class
-  names to those ASTs in the entry import scope. Detailed type, member,
-  and overload checks remain semantic work after parse coverage.
-- Referenced imported entities are discovered by a post-parse AST walk.
-  Resolution is iterative because retained imported ASTs can introduce
-  more class references.
-- Import directives are metadata and loader work, not executable AST
-  nodes.
-- Imported class ASTs are attached through parse/load metadata, not
-  physically embedded into the importing entry AST.
-- Type checking, object model, runtime behavior, interpreter, and shader
-  generation come after parse coverage.
-- `Dialect.h` remains shared so lexer does not depend on parser header.
+## Remaining Parser Work
+
+1. Add a parser-visible predefined-symbol name table from the documented set
+   above. Reject unknown `#` names during parse while preserving source spelling
+   for accepted names.
+2. Add a semantic predefined-symbol descriptor table using the same documented
+   set. Store canonical name, type, mutability, constant-expression
+   availability, allowed formula kinds, and allowed sections.
+3. Validate assignments to predefined symbols. Reject writes to read-only
+   symbols and allow writes only to documented writable symbols in allowed
+   formula kinds and sections.
+4. Validate use in constant-expression contexts, including array declarations
+   and default settings, using the documented constant behavior.
+5. Add tests for every documented predefined symbol and at least one unknown
+   symbol parse error. Tests should cover source spelling preservation and any
+   documented writable symbols.
+
+Future parser work should be added here only when it is truly syntactic. If the
+work needs symbol tables, type information, imported class metadata, formula
+kind compatibility, or runtime/compiler support, record it in the semantic,
+interpreter, or compiler plan instead.
+
+## Verification
+
+Keep coverage in the existing parser, loader, and reference-resolution tests.
+The required project workflow remains:
+
+```text
+cmake --workflow rt-default
+```
