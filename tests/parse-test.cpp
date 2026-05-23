@@ -667,6 +667,46 @@ TEST(TestFormulaParse, basicFunctionCallAcceptsDecimalPairAsComplexLiteral)
     EXPECT_EQ("function_call:round( literal:(2.5,3.4) )", trim_ws(to_string(result->bailout)));
 }
 
+TEST(TestFormulaParse, basicFunctionCallAcceptsNegativeNumericPairAsComplexLiteral)
+{
+    const ast::FormulaSectionsPtr result{parse("log(-1, -2)", basic_options())};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:log( literal:(-1,-2) )", trim_ws(to_string(result->bailout)));
+}
+
+TEST(TestFormulaParse, extendedBuiltinFunctionCallRejectsGenericMultiArgumentCall)
+{
+    const ParserPtr parser{create_parser("sin(a, b)", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, extendedBuiltinFunctionCallRejectsTooManyArguments)
+{
+    const ParserPtr parser{create_parser("sin(1, 2, 3)", Options{})};
+
+    const ast::FormulaSectionsPtr result{parser->parse()};
+
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(parser->get_errors().empty());
+    EXPECT_EQ(ErrorCode::INVALID_BASIC_FUNCTION_ARITY, parser->get_errors().front().code);
+}
+
+TEST(TestFormulaParse, extendedBuiltinFunctionCallAcceptsNumericPairAsComplexLiteral)
+{
+    const ast::FormulaSectionsPtr result{parse("sin(1, 2)", Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->bailout);
+    EXPECT_EQ("function_call:sin( literal:(1,2) )", trim_ws(to_string(result->bailout)));
+}
+
 TEST(TestFormulaParse, extendedFunctionCallStillAllowsMultipleArguments)
 {
     const ast::FormulaSectionsPtr result{parse("foo(1, 2)", Options{})};

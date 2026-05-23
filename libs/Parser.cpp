@@ -255,6 +255,7 @@ private:
     Token m_curr;
     std::vector<Token> m_backtrack;
     bool m_backtracking{};
+    bool m_validate_builtin_calls{true};
     Options m_options{};
     mutable std::vector<Diagnostic> m_warnings;
     mutable std::vector<Diagnostic> m_errors;
@@ -813,7 +814,9 @@ std::optional<Expr> FormulaParser::param_number(const std::string &type, const s
 
 std::optional<Expr> FormulaParser::function_block_default()
 {
+    m_validate_builtin_calls = false;
     Expr expr = expression();
+    m_validate_builtin_calls = true;
     if (!expr)
     {
         return {};
@@ -2828,20 +2831,30 @@ Expr FormulaParser::postfix()
 std::optional<double> numeric_literal_value(const Expr &expr)
 {
     const auto *literal = dynamic_cast<const LiteralNode *>(expr.get());
-    if (literal == nullptr)
+    if (literal != nullptr)
+    {
+        const LiteralNode::ValueType value{literal->value()};
+        if (std::holds_alternative<int>(value))
+        {
+            return static_cast<double>(std::get<int>(value));
+        }
+        if (std::holds_alternative<double>(value))
+        {
+            return std::get<double>(value);
+        }
+    }
+
+    const auto *unary = dynamic_cast<const UnaryOpNode *>(expr.get());
+    if (unary == nullptr || (unary->op() != '-' && unary->op() != '+'))
     {
         return {};
     }
-    const LiteralNode::ValueType value{literal->value()};
-    if (std::holds_alternative<int>(value))
+    const std::optional<double> value{numeric_literal_value(unary->operand())};
+    if (!value)
     {
-        return static_cast<double>(std::get<int>(value));
+        return {};
     }
-    if (std::holds_alternative<double>(value))
-    {
-        return std::get<double>(value);
-    }
-    return {};
+    return unary->op() == '-' ? -*value : *value;
 }
 
 bool FormulaParser::validate_basic_function_call(std::vector<Expr> &args) const
@@ -2908,7 +2921,7 @@ std::optional<Expr> FormulaParser::builtin_function()
         }
         if (args.has_value())
         {
-            if (!is_extended() && !validate_basic_function_call(args.value()))
+            if (m_validate_builtin_calls && !validate_basic_function_call(args.value()))
             {
                 end_tracking();
                 return Expr{};
