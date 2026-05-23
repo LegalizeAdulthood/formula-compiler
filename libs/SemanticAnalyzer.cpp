@@ -25,6 +25,12 @@ struct FunctionSignature
     std::vector<bool> by_ref_arguments;
 };
 
+struct ArraySymbol
+{
+    SemanticTypeKind element_type{SemanticTypeKind::ERROR};
+    bool is_dynamic{};
+};
+
 SemanticType semantic_type(SemanticTypeKind kind, std::string name)
 {
     SemanticType type;
@@ -206,9 +212,16 @@ public:
     {
         validate_type(node.type());
         declare(node.name(), SemanticSymbolKind::LOCAL, type_kind(node.type()));
+        if (node.is_array())
+        {
+            declare_array(node.name(), type_kind(node.type()), node.is_dynamic_array());
+        }
         for (const ast::Expr &dimension : node.dimensions())
         {
-            validate_index_type(expression_type(dimension));
+            if (dimension)
+            {
+                validate_index_type(expression_type(dimension));
+            }
         }
         if (node.initializer())
         {
@@ -247,7 +260,11 @@ public:
     void visit(const ast::FunctionCallNode &node) override
     {
         std::size_t checked_args{};
-        if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
+        if (is_array_builtin(node.name()))
+        {
+            checked_args = validate_array_builtin_call(node);
+        }
+        else if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
         {
             validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
             checked_args = validate_builtin_call_arguments(node, *function);
@@ -368,6 +385,7 @@ private:
     {
         m_scopes.emplace_back();
         m_symbol_types.emplace_back();
+        m_array_symbols.emplace_back();
         m_read_only_symbols.emplace_back();
     }
 
@@ -375,6 +393,7 @@ private:
     {
         m_scopes.pop_back();
         m_symbol_types.pop_back();
+        m_array_symbols.pop_back();
         m_read_only_symbols.pop_back();
     }
 
@@ -430,6 +449,15 @@ private:
         }
     }
 
+    void declare_array(const std::string &name, SemanticTypeKind element_type, bool is_dynamic)
+    {
+        if (m_array_symbols.empty())
+        {
+            begin_scope();
+        }
+        m_array_symbols.back().emplace(name, ArraySymbol{element_type, is_dynamic});
+    }
+
     void validate_type(const std::string &name)
     {
         if (!m_builtins.find_type(name) && !m_builtins.find_class(name) && !is_class(name))
@@ -467,6 +495,58 @@ private:
             diagnostic.message += ", got " + std::to_string(actual);
             m_diagnostics.push_back(std::move(diagnostic));
         }
+    }
+
+    std::size_t validate_array_builtin_call(const ast::FunctionCallNode &node)
+    {
+        if (node.name() == "setLength")
+        {
+            validate_call_arity(node.name(), node.args().size(), 2U);
+            if (!node.args().empty())
+            {
+                validate_dynamic_array_argument(node.name(), node.args().front());
+            }
+            if (node.args().size() >= 2U)
+            {
+                validate_argument_type(node.name(), expression_type(node.args()[1]), SemanticTypeKind::INT);
+            }
+            return std::min<std::size_t>(node.args().size(), 2U);
+        }
+        validate_call_arity(node.name(), node.args().size(), 1U);
+        if (!node.args().empty())
+        {
+            validate_dynamic_array_argument(node.name(), node.args().front());
+        }
+        return std::min<std::size_t>(node.args().size(), 1U);
+    }
+
+    void validate_dynamic_array_argument(const std::string &name, const ast::Expr &arg)
+    {
+        const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(arg.get());
+        if (!identifier)
+        {
+            report_invalid_dynamic_array_argument(name);
+            collect(arg);
+            return;
+        }
+        if (!is_declared(identifier->name()))
+        {
+            report_unknown_symbol(identifier->name());
+            return;
+        }
+        const ArraySymbol *array = array_symbol(identifier->name());
+        if (!array || !array->is_dynamic)
+        {
+            report_invalid_dynamic_array_argument(name);
+        }
+    }
+
+    void report_invalid_dynamic_array_argument(const std::string &name)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+        diagnostic.message = "invalid dynamic array argument: " + name;
+        m_diagnostics.push_back(std::move(diagnostic));
     }
 
     std::size_t validate_builtin_call_arguments(
@@ -561,6 +641,14 @@ private:
         if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
         {
             visit(*call);
+            if (call->name() == "length")
+            {
+                return SemanticTypeKind::INT;
+            }
+            if (call->name() == "setLength")
+            {
+                return SemanticTypeKind::VOID;
+            }
             if (const SemanticFunctionDescriptor *function = m_builtins.find_function(call->name()))
             {
                 return function->return_type.kind;
@@ -717,6 +805,24 @@ private:
         return false;
     }
 
+    const ArraySymbol *array_symbol(const std::string &name) const
+    {
+        for (auto scope = m_array_symbols.rbegin(); scope != m_array_symbols.rend(); ++scope)
+        {
+            const auto found = scope->find(name);
+            if (found != scope->end())
+            {
+                return &found->second;
+            }
+        }
+        return nullptr;
+    }
+
+    bool is_array_builtin(const std::string &name) const
+    {
+        return name == "setLength" || name == "length";
+    }
+
     bool is_class(const std::string &name) const
     {
         return m_class_names.find(name) != m_class_names.end();
@@ -778,6 +884,7 @@ private:
     const BuiltinRegistry &m_builtins;
     std::vector<std::unordered_set<std::string>> m_scopes{{}};
     std::vector<std::unordered_map<std::string, SemanticTypeKind>> m_symbol_types{{}};
+    std::vector<std::unordered_map<std::string, ArraySymbol>> m_array_symbols{{}};
     std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
     std::unordered_map<std::string, FunctionSignature> m_functions;
     std::unordered_set<std::string> m_class_names;
