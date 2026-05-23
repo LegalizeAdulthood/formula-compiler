@@ -173,10 +173,14 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"underscoreInIdentifier", "A_1", "identifier:A_1"},                                                            //
     {"power", "2^3", "binary_op:^ literal:2 literal:3"},                                                            //
     {"powerLeftAssociative", "1^2^3", "binary_op:^ binary_op:^ literal:1 literal:2 literal:3"},                     //
+    {"unaryPowerPrecedence", "-2^2", "unary_op:- binary_op:^ literal:2 literal:2"},                                 //
+    {"powerTermPrecedence", "2*3^2", "binary_op:* literal:2 binary_op:^ literal:3 literal:2"},                      //
     {"assignment", "z=4", "assignment:z literal:4"},                                                                //
+    {"chainedAssignment", "z=q=6", "assignment:z assignment:q literal:6"},                                          //
     {"assignmentLongVariable", "this_is_another4_variable_name2=4",                                                 //
         "assignment:this_is_another4_variable_name2 literal:4"},                                                    //
     {"modulus", "|-3.0|", "unary_op:| unary_op:- literal:3"},                                                       //
+    {"nestedModulusWithParens", "|(|z|)|", "unary_op:| unary_op:| identifier:z"},                                   //
     {"compareLess", "4<3", "binary_op:< literal:4 literal:3"},                                                      //
     {"compareLessEqual", "4<=3", "binary_op:<= literal:4 literal:3"},                                               //
     {"compareGreater", "4>3", "binary_op:> literal:4 literal:3"},                                                   //
@@ -186,6 +190,8 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"compareNotEqual", "4!=3", "binary_op:!= literal:4 literal:3"},                                                //
     {"logicalAnd", "4==3&&5==6", "binary_op:&& binary_op:== literal:4 literal:3 binary_op:== literal:5 literal:6"}, //
     {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== literal:4 literal:3 binary_op:== literal:5 literal:6"},  //
+    {"comparisonLogicalPrecedence", "1+2<4&&5",                                                                     //
+        "binary_op:&& binary_op:< binary_op:+ literal:1 literal:2 literal:4 literal:5"},                            //
     {"ignoreComments", "3; z=6 oh toodlee doo", "literal:3"},                                                       //
     {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "literal:3"},                                                   //
     {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "literal:3"},                                               //
@@ -842,6 +848,9 @@ static ParseFailureParam s_parse_failures[]{
     {"complexLiteralWithoutClosingParen", "(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                      //
     {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                                      //
     {"assignmentAsExpression", "2+z=4", ErrorCode::EXPECTED_STATEMENT},                                  //
+    {"assignmentInParenthesizedExpression", "q=3+(w=6)", ErrorCode::EXPECTED_CLOSE_PAREN},               //
+    {"assignmentInModulus", "|w=6|", ErrorCode::EXPECTED_CLOSE_MODULUS},                                 //
+    {"nestedModulusWithoutParens", "||z||", ErrorCode::EXPECTED_PRIMARY},                                //
 };
 
 TEST_P(ParseFailures, parse)

@@ -3192,8 +3192,7 @@ Expr FormulaParser::primary()
             return expr;
         }
 
-        // Allow full expressions including assignment in parens
-        if (Expr expr = expression())
+        if (Expr expr = conjunctive())
         {
             if (check(TokenType::CLOSE_PAREN))
             {
@@ -3212,7 +3211,7 @@ Expr FormulaParser::primary()
     if (check(TokenType::MODULUS))
     {
         advance();
-        if (Expr expr = expression())
+        if (Expr expr = conjunctive())
         {
             if (check(TokenType::MODULUS))
             {
