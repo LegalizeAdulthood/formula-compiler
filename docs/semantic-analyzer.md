@@ -255,6 +255,84 @@ registries when a full host registry is not needed.
 `Image` must be a builtin class descriptor, not an imported class. It should be
 valid as a parameter type even when no file defines it.
 
+## Type Model
+
+Represent semantic types independently from parser spelling. Source identifiers
+must still be preserved in the AST exactly as written.
+
+Initial type categories:
+
+- Error.
+- Void.
+- Bool.
+- Int.
+- Float.
+- Complex.
+- Color.
+- String.
+- Array.
+- Class object.
+- Builtin object.
+- Function.
+
+Use an error type after emitting a diagnostic. This lets analysis continue
+without creating a cascade of secondary errors from one bad expression.
+
+Suggested shape:
+
+```cpp
+enum class SemanticTypeKind
+{
+    ERROR,
+    VOID,
+    BOOL,
+    INT,
+    FLOAT,
+    COMPLEX,
+    COLOR,
+    STRING,
+    ARRAY,
+    CLASS_OBJECT,
+    BUILTIN_OBJECT,
+    FUNCTION,
+};
+
+struct SemanticType
+{
+    SemanticTypeKind kind;
+    std::string name;
+    std::shared_ptr<const SemanticType> element_type;
+};
+```
+
+The final implementation may use indexes or handles instead of owned strings
+and shared pointers. The important boundary is that semantic types are not
+stored back into the parsed AST.
+
+## Conversion Rules
+
+Define conversion rules once and share them between formula analysis and
+parameter-set binding analysis.
+
+Initial allowed numeric promotion chain:
+
+```text
+bool -> int -> float -> complex
+```
+
+Rules:
+
+- Assignment may convert from value type to declared target type when allowed.
+- Function arguments may convert to declared parameter types when allowed.
+- Return values may convert to declared return type when allowed.
+- Parameter-set saved values may convert to default parameter type when allowed.
+- `color` does not implicitly convert to numeric values.
+- `string` does not implicitly convert except where a documented setting
+  requires string parsing.
+- Object references may convert through inheritance where valid.
+- Builtin object references convert only by explicit descriptor rule.
+- Invalid conversions emit diagnostics and return error type.
+
 ## Parameter Set Responsibilities
 
 The parameter-set analyzer should validate:
