@@ -195,14 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill interpreter runtime backstop tests for static class members.
-    - Add tests for invalid static class method/member runtime failures.
-    - Add tests for static method return conversion, by-ref arguments, and
-      const arguments.
-    - Add tests for class constants with omitted initializers and explicitly
-      unsupported constant value shapes.
-
-2. User constructors and casts.
+1. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
