@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/Formula.h>
 
@@ -94,6 +94,10 @@ const Expr &ParsedFormula::get_section(Section section) const
         return m_ast->defaults;
     case Section::SWITCH:
         return m_ast->type_switch;
+    case Section::FINAL:
+        return m_ast->final;
+    case Section::TRANSFORM:
+        return m_ast->transform;
 
     default:
         throw std::runtime_error("Unknown section " + std::to_string(+section));
@@ -340,6 +344,8 @@ std::string_view to_string(Section value)
         SECTION_CASE(PERTURB_ITERATE);
         SECTION_CASE(DEFAULT);
         SECTION_CASE(SWITCH);
+        SECTION_CASE(FINAL);
+        SECTION_CASE(TRANSFORM);
         SECTION_CASE(NUM_SECTIONS);
     }
     throw std::runtime_error("Unknown Section value " + std::to_string(+value));

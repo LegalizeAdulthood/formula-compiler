@@ -30,6 +30,13 @@ ExtendedInterpreterOptions options()
     return result;
 }
 
+ExtendedInterpreterOptions options(parser::EntryKind entry_kind)
+{
+    ExtendedInterpreterOptions result{options()};
+    result.parser.entry_kind = entry_kind;
+    return result;
+}
+
 } // namespace
 
 TEST(TestExtendedInterpreter, parseFailureBlocksExecution)
@@ -83,6 +90,51 @@ TEST(TestExtendedInterpreter, emptyValidSectionRuns)
     ASSERT_TRUE(interpreter.ok());
 
     EXPECT_EQ(Value{}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, missingValidSectionRunsAsNoOp)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"), options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::BAILOUT));
+}
+
+TEST(TestExtendedInterpreter, coloringFinalSectionDispatches)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n"), options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::FINAL));
+}
+
+TEST(TestExtendedInterpreter, transformationTransformSectionDispatches)
+{
+    ExtendedInterpreter interpreter{formula_entry("transform:\n"), options(parser::EntryKind::TRANSFORMATION)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::TRANSFORM));
+}
+
+TEST(TestExtendedInterpreter, invalidSectionForEntryKindThrows)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n"), options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::BAILOUT), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, classEntriesDoNotDispatchRuntimeSections)
+{
+    ExtendedInterpreter interpreter{formula_entry("public:\nint value\n"), options(parser::EntryKind::CLASS)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::PER_IMAGE), std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, nonEmptyValidSectionReportsUnsupportedExecution)

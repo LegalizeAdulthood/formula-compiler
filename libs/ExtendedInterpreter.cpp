@@ -56,9 +56,32 @@ const ast::Expr &section_expr(const ast::FormulaSections &formula, Section secti
         return formula.defaults;
     case Section::SWITCH:
         return formula.type_switch;
+    case Section::FINAL:
+        return formula.final;
+    case Section::TRANSFORM:
+        return formula.transform;
     default:
         throw std::runtime_error("invalid section");
     }
+}
+
+bool section_allowed(parser::EntryKind kind, Section section)
+{
+    switch (kind)
+    {
+    case parser::EntryKind::FRACTAL:
+        return section == Section::PER_IMAGE || section == Section::INITIALIZE || section == Section::ITERATE ||
+            section == Section::BAILOUT || section == Section::PERTURB_INITIALIZE ||
+            section == Section::PERTURB_ITERATE;
+    case parser::EntryKind::COLORING:
+        return section == Section::PER_IMAGE || section == Section::INITIALIZE || section == Section::ITERATE ||
+            section == Section::FINAL;
+    case parser::EntryKind::TRANSFORMATION:
+        return section == Section::PER_IMAGE || section == Section::TRANSFORM;
+    case parser::EntryKind::CLASS:
+        return false;
+    }
+    throw std::runtime_error("unknown entry kind");
 }
 
 } // namespace
@@ -101,6 +124,10 @@ Value ExtendedInterpreter::interpret(Section section)
     if (!m_ast)
     {
         throw std::runtime_error("extended interpreter has no AST");
+    }
+    if (!section_allowed(m_options.parser.entry_kind, section))
+    {
+        throw std::runtime_error("invalid section for entry kind");
     }
     if (!section_expr(*m_ast, section))
     {

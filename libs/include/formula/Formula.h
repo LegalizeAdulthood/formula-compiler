@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -36,6 +36,8 @@ enum class Section
     PERTURB_ITERATE,    // perturbloop:
     DEFAULT,            // default:
     SWITCH,             // switch:
+    FINAL,              // final:
+    TRANSFORM,          // transform:
     NUM_SECTIONS
 };
 
