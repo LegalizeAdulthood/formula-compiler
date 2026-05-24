@@ -688,8 +688,8 @@ Milestone 8: downstream integration.
   failures not knowable by semantic analysis.
 
 1. Finish extended parameter-set binding validation.
-   - Remaining enum, function, nested plug-in, and builtin object parameter
-     edge cases.
+   - Remaining function, nested plug-in, and builtin object parameter edge
+     cases.
 
 2. Integrate interpreter and compiler entry points so unsupported or invalid
    semantic inputs are rejected before execution/code generation.
@@ -725,8 +725,8 @@ Add tests for:
 Keep tests aligned with the implementation milestones:
 
 1. Extended parameter-set bindings.
-   - Remaining enum, function, nested plug-in, and builtin object parameter
-     edge cases.
+   - Remaining function, nested plug-in, and builtin object parameter edge
+     cases.
 
 2. Downstream integration.
    - Interpreter rejects semantic errors before execution.
