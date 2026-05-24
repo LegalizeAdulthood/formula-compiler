@@ -29,6 +29,12 @@ TEST(TestValue, defaultValueCreatesExpectedRuntimeValues)
     ASSERT_EQ(ValueKind::IMAGE, image.kind());
     ASSERT_TRUE(std::get<Value::ImagePtr>(image.storage()));
     EXPECT_TRUE(std::get<Value::ImagePtr>(image.storage())->empty);
+
+    const Value plugin{default_value(ValueKind::PLUGIN)};
+    ASSERT_EQ(ValueKind::PLUGIN, plugin.kind());
+    ASSERT_TRUE(std::get<Value::PluginPtr>(plugin.storage()));
+    EXPECT_TRUE(std::get<Value::PluginPtr>(plugin.storage())->filename.empty());
+    EXPECT_TRUE(std::get<Value::PluginPtr>(plugin.storage())->class_name.empty());
 }
 
 TEST(TestValue, convertsNumericValuesUpward)
@@ -49,6 +55,7 @@ TEST(TestValue, rejectsInvalidConversions)
     EXPECT_THROW((convert_value(Value{Complex{1.0, 0.0}}, ValueKind::FLOAT)), std::runtime_error);
     EXPECT_THROW((convert_value(Value{ColorValue{1.0, 0.0, 0.0, 1.0}}, ValueKind::COMPLEX)), std::runtime_error);
     EXPECT_THROW(convert_value(Value{std::string{"yes"}}, ValueKind::BOOL), std::runtime_error);
+    EXPECT_THROW(convert_value(make_plugin_value(PluginValue{}), ValueKind::BOOL), std::runtime_error);
 }
 
 TEST(TestValue, truthinessUsesNumericValues)
@@ -63,6 +70,7 @@ TEST(TestValue, truthinessUsesNumericValues)
     EXPECT_FALSE(is_truthy(Value{Complex{0.0, 0.0}}));
     EXPECT_TRUE(is_truthy(Value{Complex{0.0, 1.0}}));
     EXPECT_THROW(is_truthy(Value{ColorValue{0.0, 0.0, 0.0, 1.0}}), std::runtime_error);
+    EXPECT_THROW(is_truthy(make_plugin_value(PluginValue{})), std::runtime_error);
 }
 
 TEST(TestValue, formatsValuesForRuntimeMessages)
@@ -81,9 +89,11 @@ TEST(TestValue, formatsValuesForRuntimeMessages)
     EXPECT_EQ("array[1]", format_value(make_array_value(array)));
     EXPECT_EQ("image(empty)", format_value(make_image_value(ImageValue{})));
     EXPECT_EQ("image(source)", format_value(make_image_value(ImageValue{"source", false})));
+    EXPECT_EQ("plugin(Texture)", format_value(make_plugin_value(PluginValue{"", "Texture"})));
+    EXPECT_EQ("plugin(common.ulb:Texture)", format_value(make_plugin_value(PluginValue{"common.ulb", "Texture"})));
 }
 
-TEST(TestValue, comparesArrayAndImageValuesByContents)
+TEST(TestValue, comparesAggregateValuesByContents)
 {
     ArrayValue lhs;
     lhs.element_kind = ValueKind::INT;
@@ -98,6 +108,36 @@ TEST(TestValue, comparesArrayAndImageValuesByContents)
 
     EXPECT_EQ(make_image_value(ImageValue{"source", false}), make_image_value(ImageValue{"source", false}));
     EXPECT_NE(make_image_value(ImageValue{"source", false}), make_image_value(ImageValue{"other", false}));
+
+    EXPECT_EQ(
+        make_enum_value(EnumValue{1, "one", {"zero", "one"}}), make_enum_value(EnumValue{1, "one", {"zero", "one"}}));
+    EXPECT_NE(
+        make_enum_value(EnumValue{1, "one", {"zero", "one"}}), make_enum_value(EnumValue{0, "zero", {"zero", "one"}}));
+}
+
+TEST(TestValue, makesAndComparesPluginValuesByContents)
+{
+    PluginValue lhs;
+    lhs.filename = "common.ulb";
+    lhs.class_name = "Texture";
+    lhs.base_class = "Object";
+    lhs.nested_values = {{"opacity", Value{0.5}}};
+    lhs.object_fields = {{"width", Value{32}}};
+    lhs.object_initialized = true;
+
+    PluginValue rhs{lhs};
+    const Value value{make_plugin_value(lhs)};
+
+    ASSERT_EQ(ValueKind::PLUGIN, value.kind());
+    ASSERT_TRUE(std::get<Value::PluginPtr>(value.storage()));
+    EXPECT_EQ("common.ulb", std::get<Value::PluginPtr>(value.storage())->filename);
+    EXPECT_EQ("Texture", std::get<Value::PluginPtr>(value.storage())->class_name);
+    EXPECT_EQ("Object", std::get<Value::PluginPtr>(value.storage())->base_class);
+    EXPECT_TRUE(std::get<Value::PluginPtr>(value.storage())->object_initialized);
+    EXPECT_EQ(make_plugin_value(lhs), make_plugin_value(rhs));
+
+    rhs.object_fields[0].second = Value{64};
+    EXPECT_NE(make_plugin_value(lhs), make_plugin_value(rhs));
 }
 
 } // namespace formula::test

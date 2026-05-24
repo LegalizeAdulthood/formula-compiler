@@ -195,19 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill Value tests for plug-in and object values.
-    - Add tests for `default_value(ValueKind::PLUGIN)` and
-      `make_plugin_value`.
-    - Add equality tests covering plug-in filename, class name, base class,
-      retained AST pointer, nested values, object fields, and initialized
-      object state.
-    - Add formatting tests for plug-in selector values and initialized object
-      values.
-    - Add conversion and truthiness rejection tests for plug-in values.
-    - Add tests that plug-in and object handles compare by pointed-to
-      contents, matching array, image, and enum value behavior.
-
-2. Backfill SemanticAnalyzer edge tests for static class members.
+1. Backfill SemanticAnalyzer edge tests for static class members.
     - Add tests for class-name static method arity errors.
     - Add tests for class-name static method argument conversion errors.
     - Add tests documenting that class-name member calls currently validate
@@ -218,7 +206,7 @@ workflow before being considered complete.
     - Add tests for unknown class-name identifiers used without member access
       so the no-unknown-symbol rule for retained classes is explicit.
 
-3. Backfill Parser tests for static class and plug-in syntax.
+2. Backfill Parser tests for static class and plug-in syntax.
     - Add formatter/parser tests that `Class.member` parses as member access
       with the class identifier preserved as the target.
     - Add formatter/parser tests that `Class.method(...)` parses as a
@@ -233,7 +221,7 @@ workflow before being considered complete.
     - Add parser failure tests for malformed member access and malformed
       targeted calls.
 
-4. Backfill FormulaEntry tests for retained class metadata.
+3. Backfill FormulaEntry tests for retained class metadata.
     - Add tests that `retain_formula_class` stores `base_class` for retained
       classes with same-file bases and explicit imported bases.
     - Add tests that `retain_formula_class` does not duplicate entries when
@@ -246,7 +234,7 @@ workflow before being considered complete.
     - Add tests that missing imports used only by class-member references
       produce the same import diagnostics as declaration references.
 
-5. Backfill ExtendedRuntime tests for plug-in and object values.
+4. Backfill ExtendedRuntime tests for plug-in and object values.
     - Add tests that formula, parameter, and predefined storage preserve
       shared plug-in/object handles and stored metadata.
     - Add tests that formula and parameter lvalues can replace plug-in values
@@ -259,7 +247,7 @@ workflow before being considered complete.
       and does not alter formula-scope or predefined values with the same
       source spelling.
 
-6. User constructors and casts.
+5. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
