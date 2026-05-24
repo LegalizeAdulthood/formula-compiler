@@ -46,6 +46,20 @@ Value interpret_init(std::string expression)
     return interpreter.interpret(Section::INITIALIZE);
 }
 
+void expect_unsupported(ExtendedInterpreter &interpreter, Section section, std::string_view node)
+{
+    ASSERT_TRUE(interpreter.ok());
+    try
+    {
+        (void) interpreter.interpret(section);
+        FAIL() << "expected unsupported runtime node";
+    }
+    catch (const std::runtime_error &err)
+    {
+        EXPECT_EQ(std::string{node} + " is not supported by the extended interpreter", err.what());
+    }
+}
+
 } // namespace
 
 TEST(TestExtendedInterpreter, parseFailureBlocksExecution)
@@ -380,6 +394,78 @@ TEST(TestExtendedInterpreter, bailoutSectionRejectsInvalidRuntimeResult)
     interpreter.set_value("@value", Value{std::string{"bad"}});
 
     EXPECT_THROW(interpreter.interpret(Section::BAILOUT), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, unsupportedObjectConstructionFailsClearly)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\nnew Image()"), options()};
+
+    expect_unsupported(interpreter, Section::INITIALIZE, "NewNode");
+}
+
+TEST(TestExtendedInterpreter, unsupportedObjectMethodCallFailsClearly)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@image.getEmpty()\n"
+                                                  "default:\n"
+                                                  "Image param image\n"
+                                                  "endparam\n"),
+        options()};
+
+    expect_unsupported(interpreter, Section::INITIALIZE, "FunctionCallNode");
+}
+
+TEST(TestExtendedInterpreter, unsupportedObjectFieldAccessFailsClearly)
+{
+    semantic::BuiltinRegistry registry{semantic::default_builtin_registry()};
+    const semantic::SemanticType *bool_type{registry.find_type("bool")};
+    ASSERT_TRUE(bool_type);
+    for (semantic::SemanticClassDescriptor &klass : registry.classes)
+    {
+        if (klass.name == "Image")
+        {
+            klass.fields.push_back({semantic::SemanticSymbolKind::FIELD, "empty", *bool_type, {}});
+        }
+    }
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.builtins = &registry;
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@image.empty\n"
+                                                  "default:\n"
+                                                  "Image param image\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    expect_unsupported(interpreter, Section::INITIALIZE, "MemberAccessNode");
+}
+
+TEST(TestExtendedInterpreter, unsupportedClassCastFailsClearly)
+{
+    const std::string body{"import \"common.ulb\"\n"
+                           "global:\n"
+                           "Texture texture\n"
+                           "init:\n"
+                           "Texture(@image)\n"
+                           "default:\n"
+                           "Image param image\n"
+                           "endparam\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\n" + body + "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry(body), interpreter_options};
+
+    expect_unsupported(interpreter, Section::INITIALIZE, "FunctionCallNode");
 }
 
 TEST(TestExtendedInterpreter, interpretsScalarDeclarations)
