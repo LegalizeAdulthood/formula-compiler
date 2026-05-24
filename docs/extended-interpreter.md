@@ -195,23 +195,14 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill semantic analyzer tests for static class members.
-    - Add tests that retained class-name member access and class-name static
-      method calls are accepted.
-    - Add tests that inherited class-name members are accepted.
-    - Add tests that unknown or non-public class-name members report
-      `INVALID_MEMBER_ACCESS`.
-    - Add a test that a class-name call target does not also produce an
-      unknown-identifier diagnostic.
-
-2. Backfill interpreter runtime backstop tests for static class members.
+1. Backfill interpreter runtime backstop tests for static class members.
     - Add tests for invalid static class method/member runtime failures.
     - Add tests for static method return conversion, by-ref arguments, and
       const arguments.
     - Add tests for class constants with omitted initializers and explicitly
       unsupported constant value shapes.
 
-3. User constructors and casts.
+2. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

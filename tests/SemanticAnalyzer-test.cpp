@@ -1969,6 +1969,115 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsPublicRetainedClassMember)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsClassNameRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("public:\n"
+                                                  "int width",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture.width", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsClassNameRetainedClassStaticMethod)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("public:\n"
+                                                  "static int func width()\n"
+                                                  "return 1\n"
+                                                  "endfunc\n",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture.width()", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsInheritedClassNameRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula base_class{load_formula("public:\n"
+                                                "int width",
+        class_options)};
+    ASSERT_TRUE(base_class.ast);
+    const LoadedFormula derived_class{load_formula("public:\n"
+                                                   "int height",
+        class_options)};
+    ASSERT_TRUE(derived_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture.width", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass base;
+    base.reference.class_name = "Base";
+    base.ast = base_class.ast;
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.base_class = "Base";
+    retained.ast = derived_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&base);
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownClassNameRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("public:\n"
+                                                  "int width",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture.height", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_MEMBER_ACCESS, diagnostics.front().code);
+    EXPECT_EQ("invalid member access: Texture.height", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsPrivateRetainedClassMember)
 {
     parser::Options class_options;
@@ -1983,6 +2092,32 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsPrivateRetainedClassMember)
     const LoadedFormula loaded{load_formula("Texture texture\n"
                                             "texture.width",
         options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_MEMBER_ACCESS, diagnostics.front().code);
+    EXPECT_EQ("invalid member access: Texture.width is not public", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsPrivateClassNameRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("private:\n"
+                                                  "int width",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture.width", options)};
     ASSERT_TRUE(loaded.ast);
     RetainedFormulaClass retained;
     retained.reference.class_name = "Texture";
