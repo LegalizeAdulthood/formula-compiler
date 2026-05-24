@@ -409,4 +409,63 @@ TEST(TestExtendedInterpreter, functionConstArgumentsAreReadOnly)
                        "helper(3)"));
 }
 
+TEST(TestExtendedInterpreter, staticArrayElementsReadAndWrite)
+{
+    EXPECT_EQ(Value{7},
+        interpret_init("int values[2]\n"
+                       "values[1]=7\n"
+                       "values[1]"));
+}
+
+TEST(TestExtendedInterpreter, staticArrayIndexesFlattenMultipleDimensions)
+{
+    EXPECT_EQ(Value{5},
+        interpret_init("int values[2,3]\n"
+                       "values[1,2]=5\n"
+                       "values[1,2]"));
+}
+
+TEST(TestExtendedInterpreter, staticArrayBoundsAreChecked)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int values[1]\n"
+                                                  "values[1]"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, staticArrayElementAssignmentConvertsValue)
+{
+    EXPECT_EQ((Value{Complex{2.0, 0.0}}),
+        interpret_init("complex values[1]\n"
+                       "values[0]=2\n"
+                       "values[0]"));
+}
+
+TEST(TestExtendedInterpreter, wholeStaticArrayAssignmentCopiesMatchingArrays)
+{
+    EXPECT_EQ(Value{4},
+        interpret_init("int source[2]\n"
+                       "int target[2]\n"
+                       "source[1]=4\n"
+                       "target=source\n"
+                       "target[1]"));
+}
+
+TEST(TestExtendedInterpreter, wholeStaticArrayAssignmentRejectsMismatchedArrays)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int source[2]\n"
+                                                  "int target[3]\n"
+                                                  "target=source"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 } // namespace formula::test

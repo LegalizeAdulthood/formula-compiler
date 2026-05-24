@@ -10,6 +10,7 @@
 #include <formula/Visitor.h>
 
 #include <cmath>
+#include <numeric>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -221,6 +222,21 @@ ValueKind value_kind_for_type(std::string_view type)
     throw std::runtime_error("unsupported declaration type: " + std::string{type});
 }
 
+void check_array_copy(const Value &target, const Value &source)
+{
+    if (target.kind() != ValueKind::ARRAY || source.kind() != ValueKind::ARRAY)
+    {
+        return;
+    }
+    const Value::ArrayPtr target_array{std::get<Value::ArrayPtr>(target.storage())};
+    const Value::ArrayPtr source_array{std::get<Value::ArrayPtr>(source.storage())};
+    if (!target_array || !source_array || target_array->element_kind != source_array->element_kind ||
+        target_array->dimensions != source_array->dimensions)
+    {
+        throw std::runtime_error("invalid array assignment");
+    }
+}
+
 using FunctionMap = std::unordered_map<std::string, const ast::FunctionDeclNode *>;
 
 void collect_function_declarations(const ast::Expr &node, FunctionMap &functions)
@@ -308,7 +324,9 @@ public:
     void visit(const ast::AssignmentNode &node) override
     {
         Value value{interpret(node.expression())};
-        lvalue(node.target()).set(value);
+        const RuntimeLValue target{lvalue(node.target())};
+        check_array_copy(target.get(), value);
+        target.set(value);
         m_result = std::move(value);
     }
 
@@ -345,7 +363,14 @@ public:
     {
         if (node.is_array())
         {
-            unsupported_runtime_node("DeclarationNode");
+            if (node.is_dynamic_array())
+            {
+                unsupported_runtime_node("DeclarationNode");
+            }
+            const Value value{make_static_array(node)};
+            m_state.declare_local_value(node.name(), value);
+            m_result = value;
+            return;
         }
         const ValueKind kind{value_kind_for_type(node.type())};
         Value value{node.initializer() ? convert_value(interpret(node.initializer()), kind) : default_value(kind)};
@@ -403,9 +428,9 @@ public:
         }
     }
 
-    void visit(const ast::IndexNode &) override
+    void visit(const ast::IndexNode &node) override
     {
-        unsupported_runtime_node("IndexNode");
+        m_result = array_lvalue(node).get();
     }
 
     void visit(const ast::LiteralNode &node) override
@@ -532,6 +557,57 @@ public:
     }
 
 private:
+    Value make_static_array(const ast::DeclarationNode &node)
+    {
+        ArrayValue array;
+        array.element_kind = value_kind_for_type(node.type());
+        array.dimensions.reserve(node.dimensions().size());
+        for (const ast::Expr &dimension : node.dimensions())
+        {
+            const Value value{convert_value(interpret(dimension), ValueKind::INT)};
+            const int size{std::get<int>(value.storage())};
+            if (size < 0)
+            {
+                throw std::runtime_error("invalid array dimension");
+            }
+            array.dimensions.push_back(size);
+        }
+        const int count{std::accumulate(
+            array.dimensions.begin(), array.dimensions.end(), 1, [](int left, int right) { return left * right; })};
+        array.elements.assign(static_cast<std::size_t>(count), default_value(array.element_kind));
+        return make_array_value(std::move(array));
+    }
+
+    RuntimeLValue array_lvalue(const ast::IndexNode &node)
+    {
+        const Value array_value{interpret(node.target())};
+        if (array_value.kind() != ValueKind::ARRAY)
+        {
+            throw std::runtime_error("expected array value");
+        }
+        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+        if (!array)
+        {
+            throw std::runtime_error("expected array value");
+        }
+        if (node.indices().size() != array->dimensions.size())
+        {
+            throw std::runtime_error("invalid array index count");
+        }
+        std::size_t flat{};
+        for (std::size_t i = 0; i < node.indices().size(); ++i)
+        {
+            const Value value{convert_value(interpret(node.indices()[i]), ValueKind::INT)};
+            const int index{std::get<int>(value.storage())};
+            if (index < 0 || index >= array->dimensions[i])
+            {
+                throw std::runtime_error("array index out of range");
+            }
+            flat = flat * static_cast<std::size_t>(array->dimensions[i]) + static_cast<std::size_t>(index);
+        }
+        return RuntimeLValue::array_element(array, flat);
+    }
+
     Value call_function(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
     {
         if (args.size() != function.args().size())
@@ -633,6 +709,10 @@ private:
         if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(node.get()); parameter)
         {
             return m_state.parameter_lvalue(parameter->name());
+        }
+        if (const auto *index = dynamic_cast<const ast::IndexNode *>(node.get()); index)
+        {
+            return array_lvalue(*index);
         }
         throw std::runtime_error("invalid assignment target");
     }

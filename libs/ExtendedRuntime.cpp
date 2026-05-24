@@ -74,7 +74,7 @@ RuntimeLValue RuntimeLValue::array_element(Value::ArrayPtr array, std::size_t in
         [array, index](Value next)
         {
             check_array_index(array, index);
-            array->elements[index] = std::move(next);
+            array->elements[index] = convert_value(next, array->element_kind);
         },
         writable};
 }
