@@ -55,6 +55,7 @@ add_executable("test-formula"
     "SemanticAnalyzer-test.cpp"
     "simplifier-test.cpp"
     "trim_ws.h" "trim_ws.cpp"
+    "Value-test.cpp"
 )
 target_include_directories("test-formula" PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries("test-formula" PUBLIC formula GTest::gtest_main)

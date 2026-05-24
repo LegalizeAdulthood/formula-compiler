@@ -26,6 +26,7 @@ add_library(formula
     include/formula/SemanticAnalyzer.h SemanticAnalyzer.cpp
     include/formula/Simplifier.h Simplifier.cpp
     include/formula/SourceLocation.h
+    include/formula/Value.h Value.cpp
     include/formula/Visitor.h
 )
 target_compile_options(formula PRIVATE
