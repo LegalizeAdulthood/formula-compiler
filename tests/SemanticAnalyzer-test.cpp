@@ -215,6 +215,61 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsRetainedClassReference)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsRetainedClassWithoutAst)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture", options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    ParameterSetSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH, diagnostics.front().code);
+    EXPECT_EQ("Mandelbrot", diagnostics.front().entry_name);
+    EXPECT_EQ("incomplete reference graph: missing retained class Texture", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsNestedMissingRetainedClass)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture", options)};
+    ASSERT_TRUE(loaded.ast);
+    const LoadedFormula loaded_class{load_formula("Filter filter", options)};
+    ASSERT_TRUE(loaded_class.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    ParameterSetSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH, diagnostics.front().code);
+    EXPECT_EQ("Texture", diagnostics.front().entry_name);
+    EXPECT_EQ("incomplete reference graph: missing retained class Filter", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsUnknownSavedParameter)
 {
     parser::Options options;

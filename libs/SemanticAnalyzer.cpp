@@ -363,7 +363,7 @@ bool has_retained_class(const ParameterSetSemanticContext &context, std::string_
 {
     for (const RetainedFormulaClass *klass : context.retained_classes)
     {
-        if (klass && same_identifier(klass->reference.class_name, class_name))
+        if (klass && klass->ast && same_identifier(klass->reference.class_name, class_name))
         {
             return true;
         }
@@ -752,7 +752,7 @@ const RetainedFormulaClass *find_retained_class(
     for (const RetainedFormulaClass *klass : context.retained_classes)
     {
         if (klass != nullptr && klass->reference.filename == selector.filename &&
-            klass->reference.class_name == selector.entry)
+            klass->reference.class_name == selector.entry && klass->ast)
         {
             return klass;
         }
