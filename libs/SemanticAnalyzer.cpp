@@ -35,6 +35,19 @@ struct ArraySymbol
     bool is_dynamic{};
 };
 
+enum class ClassMemberVisibility
+{
+    PUBLIC,
+    PROTECTED,
+    PRIVATE,
+};
+
+struct ClassMemberDescriptor
+{
+    std::string name;
+    ClassMemberVisibility visibility{ClassMemberVisibility::PUBLIC};
+};
+
 struct ParameterMetadata
 {
     struct Param
@@ -967,6 +980,8 @@ public:
             if (klass)
             {
                 m_class_names.insert(klass->reference.class_name);
+                m_class_bases.emplace(normalized_identifier(klass->reference.class_name), klass->base_class);
+                collect_class_members(*klass);
             }
         }
     }
@@ -1399,6 +1414,10 @@ private:
                 m_diagnostics.push_back(std::move(diagnostic));
             }
         }
+        else if (is_class(receiver_type))
+        {
+            validate_user_member_access(receiver_type, node.member());
+        }
     }
 
     const SemanticType *find_member(const SemanticClassDescriptor &klass, const std::string &name) const
@@ -1440,6 +1459,11 @@ private:
             }
             validate_call_arity(node.name(), node.args().size(), method->argument_types.size());
             return validate_builtin_call_arguments(node, *method);
+        }
+        if (is_class(receiver_type))
+        {
+            validate_user_member_access(receiver_type, node.name());
+            return 0U;
         }
         collect(node.target());
         return 0U;
@@ -2051,6 +2075,91 @@ private:
         return m_class_names.find(name) != m_class_names.end();
     }
 
+    void collect_class_members(const RetainedFormulaClass &klass)
+    {
+        if (!klass.ast)
+        {
+            return;
+        }
+        std::vector<ClassMemberDescriptor> members;
+        collect_class_members(klass.ast->public_members, ClassMemberVisibility::PUBLIC, members);
+        collect_class_members(klass.ast->protected_members, ClassMemberVisibility::PROTECTED, members);
+        collect_class_members(klass.ast->private_members, ClassMemberVisibility::PRIVATE, members);
+        m_class_members.emplace(normalized_identifier(klass.reference.class_name), std::move(members));
+    }
+
+    void collect_class_members(
+        const ast::Expr &expr, ClassMemberVisibility visibility, std::vector<ClassMemberDescriptor> &members)
+    {
+        if (!expr)
+        {
+            return;
+        }
+        if (const auto *declaration = dynamic_cast<const ast::DeclarationNode *>(expr.get()))
+        {
+            members.push_back({declaration->name(), visibility});
+        }
+        else if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
+        {
+            members.push_back({function->name(), visibility});
+        }
+        else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+        {
+            for (const ast::Expr &statement : sequence->statements())
+            {
+                collect_class_members(statement, visibility, members);
+            }
+        }
+    }
+
+    const ClassMemberDescriptor *find_class_member(
+        const std::string &class_name, const std::string &member_name, std::unordered_set<std::string> &seen) const
+    {
+        const std::string key{normalized_identifier(class_name)};
+        if (!seen.insert(key).second)
+        {
+            return nullptr;
+        }
+        const auto members = m_class_members.find(key);
+        if (members != m_class_members.end())
+        {
+            for (const ClassMemberDescriptor &member : members->second)
+            {
+                if (same_identifier(member.name, member_name))
+                {
+                    return &member;
+                }
+            }
+        }
+        const auto base = m_class_bases.find(key);
+        if (base == m_class_bases.end() || base->second.empty())
+        {
+            return nullptr;
+        }
+        return find_class_member(base->second, member_name, seen);
+    }
+
+    void validate_user_member_access(const std::string &class_name, const std::string &member_name)
+    {
+        std::unordered_set<std::string> seen;
+        const ClassMemberDescriptor *member{find_class_member(class_name, member_name, seen)};
+        if (!member)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + class_name + "." + member_name;
+            m_diagnostics.push_back(std::move(diagnostic));
+            return;
+        }
+        if (member->visibility != ClassMemberVisibility::PUBLIC)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + class_name + "." + member_name + " is not public";
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+
     bool is_read_only_symbol(const std::string &name) const
     {
         for (auto scope = m_read_only_symbols.rbegin(); scope != m_read_only_symbols.rend(); ++scope)
@@ -2115,6 +2224,8 @@ private:
     std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
     std::unordered_map<std::string, FunctionSignature> m_functions;
     std::unordered_set<std::string> m_class_names;
+    std::unordered_map<std::string, std::string> m_class_bases;
+    std::unordered_map<std::string, std::vector<ClassMemberDescriptor>> m_class_members;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
     std::vector<SemanticTypeKind> m_function_return_types;
     std::vector<SemanticDiagnostic> m_diagnostics;

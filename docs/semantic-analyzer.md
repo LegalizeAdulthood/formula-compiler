@@ -688,7 +688,6 @@ Milestone 8: downstream integration.
   failures not knowable by semantic analysis.
 
 1. Add remaining class checks.
-   - Visibility.
    - Cast validity.
 
 2. Add remaining section-specific formula validation.
@@ -735,7 +734,6 @@ Add tests for:
 Keep tests aligned with the implementation milestones:
 
 1. Classes and builtin objects.
-   - Visibility violation.
    - Cast validity.
 
 2. Extended formula statements and sections.

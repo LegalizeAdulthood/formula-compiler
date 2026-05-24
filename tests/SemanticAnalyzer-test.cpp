@@ -1312,6 +1312,60 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsRetainedClassInheritanceCycle)
     EXPECT_EQ("inheritance cycle: Texture", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsPublicRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("public:\n"
+                                                  "int width",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture\n"
+                                            "texture.width",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsPrivateRetainedClassMember)
+{
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula loaded_class{load_formula("private:\n"
+                                                  "int width",
+        class_options)};
+    ASSERT_TRUE(loaded_class.ast);
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture\n"
+                                            "texture.width",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Texture";
+    retained.ast = loaded_class.ast;
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_MEMBER_ACCESS, diagnostics.front().code);
+    EXPECT_EQ("invalid member access: Texture.width is not public", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsScalarNewType)
 {
     parser::Options options;
