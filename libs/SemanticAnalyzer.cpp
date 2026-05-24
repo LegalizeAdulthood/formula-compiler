@@ -1579,9 +1579,45 @@ private:
 
     void validate_new_expression(const ast::NewNode &node)
     {
+        if (!node.type().empty() && node.type().front() == '@')
+        {
+            const std::string type_name{parameter_type_name(node.type())};
+            if (type_name.empty())
+            {
+                report_unknown_symbol(node.type());
+                return;
+            }
+            if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
+            {
+                validate_constructor_call(*klass, node.args().size());
+            }
+            else if (!is_class(type_name))
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+                diagnostic.message = "invalid new type: " + node.type();
+                m_diagnostics.push_back(std::move(diagnostic));
+            }
+            return;
+        }
         if (const SemanticClassDescriptor *klass = m_builtins.find_class(node.type()))
         {
             validate_constructor_call(*klass, node.args().size());
+            return;
+        }
+        if (const std::string type_name{parameter_type_name(node.type())}; !type_name.empty())
+        {
+            if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
+            {
+                validate_constructor_call(*klass, node.args().size());
+            }
+            else if (!is_class(type_name))
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+                diagnostic.message = "invalid new type: " + node.type();
+                m_diagnostics.push_back(std::move(diagnostic));
+            }
             return;
         }
         if (!is_class(node.type()))
@@ -1987,6 +2023,23 @@ private:
         if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
         {
             visit(*new_object);
+            if (!new_object->type().empty() && new_object->type().front() == '@')
+            {
+                const std::string type_name{parameter_type_name(new_object->type())};
+                if (m_builtins.find_class(type_name))
+                {
+                    return SemanticTypeKind::BUILTIN_OBJECT;
+                }
+                return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+            }
+            if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
+            {
+                if (m_builtins.find_class(type_name))
+                {
+                    return SemanticTypeKind::BUILTIN_OBJECT;
+                }
+                return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+            }
             if (m_builtins.find_class(new_object->type()))
             {
                 return SemanticTypeKind::BUILTIN_OBJECT;
@@ -2102,6 +2155,14 @@ private:
         }
         if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
         {
+            if (!new_object->type().empty() && new_object->type().front() == '@')
+            {
+                return parameter_type_name(new_object->type());
+            }
+            if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
+            {
+                return type_name;
+            }
             return new_object->type();
         }
         collect(expr);
@@ -2157,6 +2218,18 @@ private:
             }
         }
         return std::nullopt;
+    }
+
+    std::string parameter_type_name(const std::string &name) const
+    {
+        for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
+        {
+            if (param.name == name)
+            {
+                return param.type;
+            }
+        }
+        return {};
     }
 
     bool can_convert(SemanticTypeKind from, SemanticTypeKind to) const

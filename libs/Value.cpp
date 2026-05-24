@@ -171,7 +171,8 @@ bool operator!=(const ArrayValue &lhs, const ArrayValue &rhs)
 
 bool operator==(const ImageValue &lhs, const ImageValue &rhs)
 {
-    return lhs.name == rhs.name && lhs.empty == rhs.empty;
+    return lhs.name == rhs.name && lhs.empty == rhs.empty && lhs.width == rhs.width && lhs.height == rhs.height &&
+        lhs.pixels == rhs.pixels;
 }
 
 bool operator!=(const ImageValue &lhs, const ImageValue &rhs)

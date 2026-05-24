@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <sstream>
@@ -164,6 +165,20 @@ ColorValue color_value(const Value &value)
     return std::get<ColorValue>(value.storage());
 }
 
+Value::ImagePtr image_value(const Value &value)
+{
+    if (value.kind() != ValueKind::IMAGE)
+    {
+        throw std::runtime_error("expected image value, got " + std::string{type_name(value)});
+    }
+    Value::ImagePtr image{std::get<Value::ImagePtr>(value.storage())};
+    if (!image)
+    {
+        image = std::make_shared<ImageValue>();
+    }
+    return image;
+}
+
 void check_arity(std::string_view name, std::size_t actual, std::size_t expected)
 {
     if (actual != expected)
@@ -259,6 +274,37 @@ int random_seed(int seed)
         return static_cast<int>(next);
     }
     return -static_cast<int>((~next) + 1U);
+}
+
+std::size_t image_pixel_index(const ImageValue &image, int x, int y)
+{
+    return static_cast<std::size_t>(y) * static_cast<std::size_t>(image.width) + static_cast<std::size_t>(x);
+}
+
+ColorValue transparent_color()
+{
+    return {};
+}
+
+ColorValue image_pixel(const ImageValue &image, int x, int y)
+{
+    if (image.empty || x < 0 || y < 0 || x >= image.width || y >= image.height)
+    {
+        return transparent_color();
+    }
+    return image.pixels[image_pixel_index(image, x, y)];
+}
+
+void resize_image(ImageValue &image, int width, int height)
+{
+    if (width < 0 || height < 0)
+    {
+        throw std::runtime_error("invalid image size");
+    }
+    image.empty = width == 0 || height == 0;
+    image.width = width;
+    image.height = height;
+    image.pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), transparent_color());
 }
 
 Value compare_values(const Value &lhs, const Value &rhs, const std::string &op)
@@ -558,6 +604,11 @@ public:
     {
         if (node.has_target())
         {
+            if (const auto result = call_member(node))
+            {
+                m_result = *result;
+                return;
+            }
             unsupported_runtime_node("FunctionCallNode");
         }
         if (const auto builtin = call_builtin(node))
@@ -640,8 +691,34 @@ public:
         unsupported_runtime_node("MemberAccessNode");
     }
 
-    void visit(const ast::NewNode &) override
+    void visit(const ast::NewNode &node) override
     {
+        if (node.type() == "Image")
+        {
+            check_arity("Image", node.args().size(), 0U);
+            m_result = make_image_value(ImageValue{});
+            return;
+        }
+        if (!node.type().empty() && node.type().front() == '@')
+        {
+            check_arity(node.type(), node.args().size(), 0U);
+            m_result = m_state.parameter_value(node.type());
+            if (m_result.kind() == ValueKind::EMPTY)
+            {
+                m_result = default_value(ValueKind::IMAGE);
+            }
+            return;
+        }
+        if (m_state.has_parameter_value(node.type()))
+        {
+            check_arity(node.type(), node.args().size(), 0U);
+            m_result = m_state.parameter_value(node.type());
+            if (m_result.kind() == ValueKind::EMPTY)
+            {
+                m_result = default_value(ValueKind::IMAGE);
+            }
+            return;
+        }
         unsupported_runtime_node("NewNode");
     }
 
@@ -902,6 +979,81 @@ private:
         return std::nullopt;
     }
 
+    std::optional<Value> call_member(const ast::FunctionCallNode &node)
+    {
+        Value target_value{interpret(node.target())};
+        if (target_value.kind() != ValueKind::IMAGE)
+        {
+            return std::nullopt;
+        }
+        const std::string &name{node.name()};
+        const std::vector<ast::Expr> &args{node.args()};
+        Value::ImagePtr image{image_value(target_value)};
+        if (name == "assign")
+        {
+            check_arity(name, args.size(), 1U);
+            const Value source{interpret(args.front())};
+            RuntimeLValue target{lvalue(node.target())};
+            target.set(source.kind() == ValueKind::EMPTY ? default_value(ValueKind::IMAGE) : source);
+            return Value{};
+        }
+        if (name == "getEmpty")
+        {
+            check_arity(name, args.size(), 0U);
+            return Value{!image || image->empty};
+        }
+        if (name == "getWidth")
+        {
+            check_arity(name, args.size(), 0U);
+            return Value{image && !image->empty ? image->width : 0};
+        }
+        if (name == "getHeight")
+        {
+            check_arity(name, args.size(), 0U);
+            return Value{image && !image->empty ? image->height : 0};
+        }
+        if (name == "getPixel")
+        {
+            check_arity(name, args.size(), 2U);
+            const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+            const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+            return Value{image ? image_pixel(*image, x, y) : transparent_color()};
+        }
+        if (name == "setPixel")
+        {
+            check_arity(name, args.size(), 3U);
+            const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+            const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+            const ColorValue color{color_value(interpret(args[2]))};
+            if (image && !image->empty && x >= 0 && y >= 0 && x < image->width && y < image->height)
+            {
+                image->pixels[image_pixel_index(*image, x, y)] = color;
+            }
+            return Value{};
+        }
+        if (name == "resize")
+        {
+            check_arity(name, args.size(), 2U);
+            const int width{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+            const int height{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+            resize_image(*image, width, height);
+            return Value{};
+        }
+        if (name == "getColor")
+        {
+            check_arity(name, args.size(), 1U);
+            const Complex point{complex_value(interpret(args.front()))};
+            if (!image || image->empty)
+            {
+                return Value{transparent_color()};
+            }
+            const int x{static_cast<int>(((point.re + 1.0) / 2.0) * image->width)};
+            const int y{static_cast<int>(((1.0 - point.im) / 2.0) * image->height)};
+            return Value{image_pixel(*image, x, y)};
+        }
+        return std::nullopt;
+    }
+
     RuntimeLValue array_lvalue(const ast::IndexNode &node)
     {
         const Value array_value{interpret(node.target())};
@@ -1071,6 +1223,10 @@ public:
     {
         m_current_parameter = &node;
         collect(node.block());
+        if (node.type() == "Image" && !m_state.has_parameter_value(node.name()))
+        {
+            m_state.set_parameter_value(node.name(), default_value(ValueKind::IMAGE));
+        }
         m_current_parameter = nullptr;
     }
 

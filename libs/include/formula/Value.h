@@ -76,6 +76,9 @@ struct ImageValue
 {
     std::string name;
     bool empty{true};
+    int width{};
+    int height{};
+    std::vector<ColorValue> pixels;
 };
 
 bool operator==(const ColorValue &lhs, const ColorValue &rhs);

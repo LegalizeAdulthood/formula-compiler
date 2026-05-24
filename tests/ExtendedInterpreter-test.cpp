@@ -398,12 +398,73 @@ TEST(TestExtendedInterpreter, bailoutSectionRejectsInvalidRuntimeResult)
 
 TEST(TestExtendedInterpreter, unsupportedObjectConstructionFailsClearly)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nnew Image()"), options()};
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture texture\n"
+            "init:\n"
+            "new Texture()\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"common.ulb\"\n"
+                                                  "global:\n"
+                                                  "Texture texture\n"
+                                                  "init:\n"
+                                                  "new Texture()\n"),
+        interpreter_options};
 
     expect_unsupported(interpreter, Section::INITIALIZE, "NewNode");
 }
 
 TEST(TestExtendedInterpreter, unsupportedObjectMethodCallFailsClearly)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture texture\n"
+            "init:\n"
+            "texture.getValue()\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int func getValue()\n"
+            "return 1\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"common.ulb\"\n"
+                                                  "global:\n"
+                                                  "Texture texture\n"
+                                                  "init:\n"
+                                                  "texture.getValue()\n"),
+        interpreter_options};
+
+    expect_unsupported(interpreter, Section::INITIALIZE, "FunctionCallNode");
+}
+
+TEST(TestExtendedInterpreter, imageParametersDefaultToEmptyImages)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"
                                                   "@image.getEmpty()\n"
@@ -412,7 +473,70 @@ TEST(TestExtendedInterpreter, unsupportedObjectMethodCallFailsClearly)
                                                   "endparam\n"),
         options()};
 
-    expect_unsupported(interpreter, Section::INITIALIZE, "FunctionCallNode");
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{true}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{0}, interpret_init("Image image\nimage.getWidth()"));
+}
+
+TEST(TestExtendedInterpreter, imageMethodsReadHostBoundImageData)
+{
+    ImageValue image;
+    image.name = "source";
+    image.empty = false;
+    image.width = 2;
+    image.height = 1;
+    image.pixels = {ColorValue{1.0, 0.0, 0.0, 1.0}, ColorValue{0.0, 1.0, 0.0, 1.0}};
+
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "Image image=new @source\n"
+                                                  "image.getPixel(1,0)\n"
+                                                  "default:\n"
+                                                  "Image param source\n"
+                                                  "endparam\n"),
+        options()};
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@source", make_image_value(image));
+
+    EXPECT_EQ((Value{ColorValue{0.0, 1.0, 0.0, 1.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, imageMethodsMutateStandaloneImageData)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "Image image=new Image()\n"
+                                                  "image.resize(2,2)\n"
+                                                  "image.setPixel(1,1,rgba(0.25,0.5,0.75,1))\n"
+                                                  "image.getPixel(1,1)\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ((Value{ColorValue{0.25, 0.5, 0.75, 1.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, imageAssignCopiesImageHandles)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "Image source=new Image()\n"
+                                                  "source.resize(1,1)\n"
+                                                  "source.setPixel(0,0,rgba(1,0,0,1))\n"
+                                                  "Image target=new Image()\n"
+                                                  "target.assign(source)\n"
+                                                  "target.getPixel(0,0)\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, imageMethodRuntimeBackstopsRejectBadCalls)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "Image image=new Image()\n"
+                                                  "image.resize(-1,1)\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, unsupportedObjectFieldAccessFailsClearly)

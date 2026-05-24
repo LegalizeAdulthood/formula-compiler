@@ -4,9 +4,10 @@
 - Target procedural UF6 runtime first: typed values, declarations,
   arrays, params/constants, loops, returns, user functions, color values,
   and `final`/`transform` sections.
-- Defer object/class execution: `new`, member access, methods,
+- Defer user object/class execution: user `new`, member access, methods,
   inheritance, casts, and plug-in object instantiation remain
-  unsupported, but imports are resolved before interpretation.
+  unsupported, but imports are resolved before interpretation. The builtin
+  `Image` object has runtime support.
 - Treat the existing `Formula` interface as the BASIC formula execution
   surface. Extended execution needs a separate value-aware interpreter
   facade.
@@ -39,13 +40,14 @@
   plug-in assignments, and complete retained reference graphs.
 - The semantic analyzer is diagnostic-only. It does not mutate ASTs, create
   a typed semantic model, execute formulas, or generate code.
-- Extended interpreter and extended compiler support do not exist yet. The
-  current interpreter/compiler remain BASIC-oriented and reject unsupported
+- The extended interpreter supports procedural runtime features and builtin
+  `Image`. The extended compiler does not exist yet. The current
+  interpreter/compiler remain BASIC-oriented and reject unsupported
   extended AST nodes.
 
 ## Interpreter Work
 - Add `formula::Value`: `monostate`, `bool`, `int`, `double`,
-  `Complex`, `Color`, `std::string`, `ArrayValue`.
+  `Complex`, `Color`, `std::string`, `ArrayValue`, `ImageValue`.
 - Add a C++17 `ExtendedInterpreter` facade for interpreting one
   extended formula entry:
 
@@ -172,17 +174,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Builtin `Image` runtime.
-    - Add host-bindable `ImageValue` handles.
-    - Initialize `Image` parameters to empty image handles when no host
-      image is supplied.
-    - Implement documented `Image` fields and methods from the UF6 image
-      parameter docs.
-    - Keep unsupported documented operations explicit until implemented.
-    - Tests: empty default image, host-bound image, supported fields,
-      supported methods, arity/type backstops, and unknown member backstop.
-
-2. Parameter-set binding bridge.
+1. Parameter-set binding bridge.
     - Add helper code that constructs one `ExtendedInterpreter` per
       referenced formula in a resolved extended parameter set.
     - Bind saved fractal, coloring, transform, function, plug-in, and image
@@ -194,7 +186,7 @@ workflow before being considered complete.
       targets, plug-in nested values, image parameters, and diagnostics
       blocking preparation.
 
-3. Regression and compatibility pass.
+2. Regression and compatibility pass.
     - Ensure existing BASIC parser, interpreter, and compiler tests keep
       using the current `Formula` interface.
     - Add explicit tests proving extended interpreter changes do not alter
@@ -215,9 +207,6 @@ workflow before being considered complete.
 - Tests for arrays: static multidimensional indexing, dynamic
   `setLength`, `length`, bounds failures, static copy, dynamic copy
   rejection.
-- Tests for builtin `Image`: image param blocks do not resolve through
-  imports, default image values are empty, host-bound image data can be
-  read, and unsupported image members fail clearly.
 - Tests for color construction, extraction, color arithmetic,
   final-section color return.
 - Tests for section dispatch: fractal, coloring `final`, transformation
