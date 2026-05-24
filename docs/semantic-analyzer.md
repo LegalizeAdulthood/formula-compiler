@@ -108,8 +108,8 @@ std::vector<FormulaParameterInfo> collect_formula_parameters(
 This query returns parameter type, source name, explicit-default presence, and
 plug-in classification. It does not validate the formula and does not mutate
 the parsed AST. Plug-in classification uses builtin descriptors and retained
-class context so standalone formula hosts can discover which parameters need
-plug-in bindings.
+class context. Direct clients may call it, but the extended interpreter facade
+uses it internally and exposes the result through `parameters()`.
 
 A future overload may return a `SemanticModel` when downstream stages need
 resolved symbols, member bindings, or expression types.

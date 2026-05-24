@@ -40,9 +40,9 @@
   plug-in assignments, and complete retained reference graphs.
 - The semantic analyzer is diagnostic-only. It does not mutate ASTs, create
   a typed semantic model, execute formulas, or generate code.
-- The semantic analyzer exposes `collect_formula_parameters` so hosts can
-  discover formula parameters, defaults, and plug-in parameter sites before
-  binding values for standalone formula interpretation.
+- The semantic analyzer exposes `collect_formula_parameters`; the extended
+  interpreter calls it during construction and exposes the result through
+  `parameters()`.
 - The extended interpreter supports procedural runtime features and builtin
   `Image`. The extended compiler does not exist yet. The current
   interpreter/compiler remain BASIC-oriented and reject unsupported
@@ -62,6 +62,7 @@
 
       const std::vector<Diagnostic> &diagnostics() const;
       bool ok() const;
+      const std::vector<FormulaParameterInfo> &parameters() const;
 
       void set_value(std::string_view name, Value value);
       Value value(std::string_view name) const;
@@ -71,10 +72,13 @@
   ```
 
   The constructor should run the cold pipeline for one entry: parse,
-  resolve referenced files/classes, and analyze semantics. `interpret`
-  runs one section and fails if diagnostics contain errors. The facade owns
-  formula evaluation state, but not image rendering, pixel scheduling,
-  tiling, threading, or layer orchestration.
+  resolve referenced files/classes, analyze semantics, and collect parameter
+  metadata. After construction, the client queries `parameters()` to discover
+  settable scalar, image, function, and plug-in parameters, then binds runtime
+  values with `set_value`. `interpret` runs one section and fails if
+  diagnostics contain errors. The facade owns formula evaluation state, but
+  not image rendering, pixel scheduling, tiling, threading, or layer
+  orchestration.
 - Add public value-aware APIs while preserving current `Complex`
   wrappers:
   - `Formula::set_value(std::string_view, Value)`
@@ -185,8 +189,9 @@ workflow before being considered complete.
       parameter set. The API should accept the parameter name, resolved
       selected class entry, retained class AST/reference metadata, and
       nested saved values.
-    - Use `collect_formula_parameters` to let hosts discover which formula
-      parameters are plug-in parameters before supplying those bindings.
+    - Use `ExtendedInterpreter::parameters()` to let hosts discover which
+      formula parameters are plug-in parameters before supplying those
+      bindings.
     - Keep string-only saved plug-in values as compatibility input, but
       convert them to resolved plug-in bindings before interpretation.
     - Tests: host-bound plug-in selector is visible as a runtime object,

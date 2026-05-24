@@ -1576,6 +1576,11 @@ bool ExtendedInterpreter::ok() const
     return m_diagnostics.empty();
 }
 
+const std::vector<semantic::FormulaParameterInfo> &ExtendedInterpreter::parameters() const
+{
+    return m_parameters;
+}
+
 void ExtendedInterpreter::set_value(std::string_view name, Value value)
 {
     const semantic::BuiltinRegistry &builtins{builtins_or_default(m_options.builtins)};
@@ -1673,6 +1678,7 @@ void ExtendedInterpreter::analyze()
     context.source_name = m_options.parser.source_filename.empty() ? m_entry.name : m_options.parser.source_filename;
     context.retained_classes = std::move(retained_classes);
     context.builtins = m_options.builtins;
+    m_parameters = semantic::collect_formula_parameters(*m_ast, context);
     add_semantic_diagnostics(semantic::analyze_formula(*m_ast, context));
     initialize_runtime_state();
 }

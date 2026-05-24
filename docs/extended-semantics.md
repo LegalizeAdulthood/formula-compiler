@@ -62,9 +62,9 @@ std::vector<FormulaParameterInfo> collect_formula_parameters(
 
 This returns each `default:` parameter type, source name, whether it has an
 explicit default, and whether the parameter is a plug-in parameter. Plug-in
-classification uses builtin descriptors and retained class context, so clients
-can discover parameters that require host plug-in binding before constructing
-an extended interpreter.
+classification uses builtin descriptors and retained class context. Direct
+clients may call this API, but the normal interpreter facade calls it during
+construction and exposes the result through `ExtendedInterpreter::parameters`.
 
 ## Diagnostics
 

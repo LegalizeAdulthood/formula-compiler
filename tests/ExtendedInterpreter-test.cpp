@@ -130,6 +130,33 @@ TEST(TestExtendedInterpreter, semanticFailureBlocksExecution)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, exposesParameterMetadataAfterConstruction)
+{
+    ExtendedInterpreter interpreter{formula_entry("default:\n"
+                                                  "float param power\n"
+                                                  "default=2.0\n"
+                                                  "endparam\n"
+                                                  "Plugin param bailout\n"
+                                                  "endparam\n"
+                                                  "Image param source\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    const std::vector<semantic::FormulaParameterInfo> &parameters{interpreter.parameters()};
+    ASSERT_EQ(3U, parameters.size());
+    EXPECT_EQ("float", parameters[0].type);
+    EXPECT_EQ("power", parameters[0].name);
+    EXPECT_TRUE(parameters[0].has_default);
+    EXPECT_FALSE(parameters[0].is_plugin);
+    EXPECT_EQ("Plugin", parameters[1].type);
+    EXPECT_EQ("bailout", parameters[1].name);
+    EXPECT_TRUE(parameters[1].is_plugin);
+    EXPECT_EQ("Image", parameters[2].type);
+    EXPECT_EQ("source", parameters[2].name);
+    EXPECT_FALSE(parameters[2].is_plugin);
+}
+
 TEST(TestExtendedInterpreter, emptyValidSectionRuns)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"), options()};

@@ -53,6 +53,7 @@ public:
 
     const std::vector<ExtendedInterpreterDiagnostic> &diagnostics() const;
     bool ok() const;
+    const std::vector<semantic::FormulaParameterInfo> &parameters() const;
 
     void set_value(std::string_view name, Value value);
     Value value(std::string_view name) const;
@@ -74,6 +75,7 @@ private:
     ast::FormulaSectionsPtr m_ast;
     FormulaFileSet m_files;
     std::vector<ExtendedInterpreterDiagnostic> m_diagnostics;
+    std::vector<semantic::FormulaParameterInfo> m_parameters;
     ExtendedRuntimeState m_state;
 };
 
