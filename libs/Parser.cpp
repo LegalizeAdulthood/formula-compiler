@@ -3187,7 +3187,7 @@ Expr FormulaParser::primary()
         std::string type;
         if (check({TokenType::IDENTIFIER, TokenType::TYPE_IDENTIFIER, TokenType::PARAMETER_IDENTIFIER}))
         {
-            type = str();
+            type = check(TokenType::PARAMETER_IDENTIFIER) ? '@' + str() : str();
             advance();
         }
         else

@@ -851,6 +851,8 @@ static ParseFailureParam s_parse_failures[]{
     {"assignmentInParenthesizedExpression", "q=3+(w=6)", ErrorCode::EXPECTED_CLOSE_PAREN},               //
     {"assignmentInModulus", "|w=6|", ErrorCode::EXPECTED_CLOSE_MODULUS},                                 //
     {"nestedModulusWithoutParens", "||z||", ErrorCode::EXPECTED_PRIMARY},                                //
+    {"memberAccessWithoutMember", "Texture.", ErrorCode::EXPECTED_IDENTIFIER},                           //
+    {"targetedCallWithoutMember", "Texture.(1)", ErrorCode::EXPECTED_IDENTIFIER},                        //
 };
 
 TEST_P(ParseFailures, parse)
@@ -1008,6 +1010,59 @@ TEST(TestFormulaParse, extendedMethodCallPreservesTarget)
         trim_ws(to_string(result->per_image)));
 }
 
+TEST(TestFormulaParse, extendedClassMemberAccessPreservesTarget)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "Texture.width\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("member:width { identifier:Texture }", trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedClassMethodCallPreservesTarget)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "Texture.width(1, 2)\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ(
+        "function_call:width( target: identifier:Texture literal:1 literal:2 )", trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedChainedMemberAccessPreservesTargets)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "Outer.Inner.value\n"
+                                               "Outer.Inner.value()\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:2 { "
+              "member:value { member:Inner { identifier:Outer } } "
+              "function_call:value( target: member:Inner { identifier:Outer } ) }",
+        trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedNewObjectAndPluginArgumentsParse)
+{
+    const ast::FormulaSectionsPtr result{parse("global:\n"
+                                               "new @trap(1, 2)\n"
+                                               "new Texture(3, 4)\n",
+        Options{})};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->per_image);
+    EXPECT_EQ("statement_seq:2 { "
+              "new:@trap( literal:1 literal:2 ) "
+              "new:Texture( literal:3 literal:4 ) }",
+        trim_ws(to_string(result->per_image)));
+}
+
 TEST(TestFormulaParse, extendedReturnWithoutExpression)
 {
     const ast::FormulaSectionsPtr result{parse("global:\n"
@@ -1031,6 +1086,22 @@ TEST(TestFormulaParse, extendedFunctionDeclaration)
     ASSERT_TRUE(result->per_image);
     EXPECT_EQ("function_decl:float blend(const float a,color &b) const { return: identifier:a }",
         trim_ws(to_string(result->per_image)));
+}
+
+TEST(TestFormulaParse, extendedStaticConstFunctionDeclaration)
+{
+    Options options;
+    options.entry_kind = EntryKind::CLASS;
+    const ast::FormulaSectionsPtr result{parse("public:\n"
+                                               "static int func width() const\n"
+                                               "return 1\n"
+                                               "endfunc\n",
+        options)};
+
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->public_members);
+    EXPECT_EQ(
+        "function_decl:int width() const static { return: literal:1 }", trim_ws(to_string(result->public_members)));
 }
 
 TEST(TestFormulaParse, extendedVoidFunctionDeclaration)

@@ -195,22 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill Parser tests for static class and plug-in syntax.
-    - Add formatter/parser tests that `Class.member` parses as member access
-      with the class identifier preserved as the target.
-    - Add formatter/parser tests that `Class.method(...)` parses as a
-      targeted function call with the class identifier preserved as the
-      target.
-    - Add formatter/parser tests for chained member access such as
-      `Outer.Inner.value` and targeted calls such as `Outer.Inner.value()`.
-    - Add parser tests that static function declarations preserve
-      `is_static`, return type, arguments, and trailing `const`.
-    - Add parser tests for `new @plugin(...)` and `new Class(...)` argument
-      lists, including arity shape preservation.
-    - Add parser failure tests for malformed member access and malformed
-      targeted calls.
-
-2. Backfill FormulaEntry tests for retained class metadata.
+1. Backfill FormulaEntry tests for retained class metadata.
     - Add tests that `retain_formula_class` stores `base_class` for retained
       classes with same-file bases and explicit imported bases.
     - Add tests that `retain_formula_class` does not duplicate entries when
@@ -223,7 +208,7 @@ workflow before being considered complete.
     - Add tests that missing imports used only by class-member references
       produce the same import diagnostics as declaration references.
 
-3. Backfill ExtendedRuntime tests for plug-in and object values.
+2. Backfill ExtendedRuntime tests for plug-in and object values.
     - Add tests that formula, parameter, and predefined storage preserve
       shared plug-in/object handles and stored metadata.
     - Add tests that formula and parameter lvalues can replace plug-in values
@@ -236,7 +221,7 @@ workflow before being considered complete.
       and does not alter formula-scope or predefined values with the same
       source spelling.
 
-4. User constructors and casts.
+3. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
