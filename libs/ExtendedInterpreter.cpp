@@ -244,6 +244,7 @@ struct RuntimeParameterInfo
     std::vector<std::string> enum_values;
     std::optional<std::string> default_selector;
     bool is_plugin{};
+    bool selectable{true};
 };
 
 struct RuntimeParameterForward
@@ -297,6 +298,14 @@ public:
             if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
             {
                 m_current_param->enum_values = *values;
+            }
+            return;
+        }
+        if (node.key() == "selectable" && m_current_param != nullptr)
+        {
+            if (const auto *selectable = std::get_if<bool>(&node.value()))
+            {
+                m_current_param->selectable = *selectable;
             }
             return;
         }
@@ -627,6 +636,16 @@ bool bind_forwarded_runtime_parameter(ExtendedInterpreter &interpreter, const Ru
     }
     interpreter.set_parameter(name, std::move(value));
     return true;
+}
+
+bool plugin_has_nested_runtime_parameter(const PluginValue &plugin, std::string_view name)
+{
+    if (!plugin.ast)
+    {
+        return false;
+    }
+    const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*plugin.ast)};
+    return find_runtime_parameter(metadata, name) != nullptr;
 }
 
 semantic::SemanticTypeKind semantic_type_kind(std::string_view type)
@@ -2172,7 +2191,41 @@ void ExtendedInterpreter::set_value(std::string_view name, Value value)
 
 void ExtendedInterpreter::set_parameter(std::string_view name, Value value)
 {
+    if (set_nonselectable_plugin_parameter_value(name, value))
+    {
+        return;
+    }
     set_value("@" + std::string{name}, std::move(value));
+}
+
+bool ExtendedInterpreter::set_nonselectable_plugin_parameter_value(std::string_view name, Value value)
+{
+    if (!m_ast || find_runtime_parameter(collect_runtime_parameter_metadata(*m_ast), name) != nullptr)
+    {
+        return false;
+    }
+
+    const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*m_ast)};
+    for (const RuntimeParameterInfo &parameter : metadata.params)
+    {
+        if (parameter.selectable || !is_runtime_plugin_parameter(m_parameters, parameter.name))
+        {
+            continue;
+        }
+        const Value current{m_state.parameter_value(parameter.name)};
+        if (current.kind() != ValueKind::PLUGIN)
+        {
+            continue;
+        }
+        const Value::PluginPtr plugin{std::get<Value::PluginPtr>(current.storage())};
+        if (!plugin || !plugin_has_nested_runtime_parameter(*plugin, name))
+        {
+            continue;
+        }
+        set_plugin_parameter_value(parameter.name, name, std::move(value));
+        return true;
+    }
+    return false;
 }
 
 void ExtendedInterpreter::set_function_parameter(std::string_view name, std::string_view target)
@@ -2563,7 +2616,10 @@ PreparedParameterSet prepare_parameter_interpreters(
             {
                 const std::string name{
                     forwarded_runtime_parameter_name(metadata, std::string_view{parameter.key}.substr(2))};
-                (void) bind_forwarded_runtime_parameter(interpreter, metadata, name, parameter);
+                if (!bind_forwarded_runtime_parameter(interpreter, metadata, name, parameter))
+                {
+                    interpreter.set_parameter(name, Value{parameter.value});
+                }
                 continue;
             }
             if (starts_with(parameter.key, "f_"))

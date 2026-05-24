@@ -561,6 +561,96 @@ TEST(TestExtendedInterpreter, hostPluginParameterOverrideReplacesRuntimeValue)
     EXPECT_EQ("Other", plugin->class_name);
 }
 
+TEST(TestExtendedInterpreter, nonselectablePluginParameterDefaultIsRuntimeValue)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "default:\n"
+            "Base param filter\n"
+            "default=Default\n"
+            "selectable=false\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "class Default(Base) {\n"
+            "public:\n"
+            "int first\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Default\n"
+                                                  "selectable=false\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(interpreter.value("@filter").storage())};
+    ASSERT_TRUE(plugin);
+    EXPECT_EQ("Default", plugin->class_name);
+}
+
+TEST(TestExtendedInterpreter, nonselectablePluginParameterAcceptsDirectChildBinding)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "default:\n"
+            "Base param filter\n"
+            "default=Default\n"
+            "selectable=false\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "class Default(Base) {\n"
+            "default:\n"
+            "float param power\n"
+            "endparam\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Default\n"
+                                                  "selectable=false\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_parameter("power", Value{2.5});
+
+    ASSERT_TRUE(interpreter.ok());
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(interpreter.value("@filter").storage())};
+    ASSERT_TRUE(plugin);
+    ASSERT_EQ(1U, plugin->nested_values.size());
+    EXPECT_EQ("power", plugin->nested_values[0].first);
+    EXPECT_EQ(Value{2.5}, plugin->nested_values[0].second);
+}
+
 TEST(TestExtendedInterpreter, pluginParameterBindingReportsMissingClass)
 {
     std::unordered_map<std::string, std::string> files{
@@ -1078,6 +1168,60 @@ TEST(TestExtendedInterpreter, directParameterSetBindingBypassesForward)
         std::get<Value::PluginPtr>(prepared.formulas[0].interpreter.value("@plugin").storage())};
     ASSERT_TRUE(plugin);
     EXPECT_TRUE(plugin->nested_values.empty());
+}
+
+TEST(TestExtendedInterpreter, preparesNonselectablePluginParameterSetBindings)
+{
+    const std::string body{"import \"plugin.ulb\"\n"
+                           "init:\n"
+                           "1\n"
+                           "default:\n"
+                           "Base param plugin\n"
+                           "default=Default\n"
+                           "selectable=false\n"
+                           "endparam\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"formula.ufm",
+            "Mandelbrot {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "1\n"
+            "default:\n"
+            "Base param plugin\n"
+            "default=Default\n"
+            "selectable=false\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "class Default(Base) {\n"
+            "default:\n"
+            "float param power\n"
+            "endparam\n"
+            "}\n"},
+    };
+    parameter::ParameterReferenceSet references;
+    references.resolved.push_back(resolved_parameter_reference(
+        "formula.ufm", "Mandelbrot", body, parser::EntryKind::FRACTAL, {{"p_power", "2.0"}}));
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, interpreter_options)};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(1U, prepared.formulas.size());
+    const Value::PluginPtr plugin{
+        std::get<Value::PluginPtr>(prepared.formulas[0].interpreter.value("@plugin").storage())};
+    ASSERT_TRUE(plugin);
+    ASSERT_EQ(1U, plugin->nested_values.size());
+    EXPECT_EQ("power", plugin->nested_values[0].first);
+    EXPECT_EQ(Value{std::string{"2.0"}}, plugin->nested_values[0].second);
 }
 
 TEST(TestExtendedInterpreter, prepareParameterSetInterpretersBlocksDiagnostics)

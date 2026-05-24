@@ -78,6 +78,7 @@ private:
     void add_binding_diagnostic(std::string_view name, std::string message);
     void clear_binding_diagnostics(std::string_view name);
     void rebuild_diagnostics();
+    bool set_nonselectable_plugin_parameter_value(std::string_view name, Value value);
 
     FileEntry m_entry;
     ExtendedInterpreterOptions m_options;
