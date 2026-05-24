@@ -468,4 +468,66 @@ TEST(TestExtendedInterpreter, wholeStaticArrayAssignmentRejectsMismatchedArrays)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, dynamicArraysStartEmpty)
+{
+    EXPECT_EQ(Value{0},
+        interpret_init("int values[]\n"
+                       "length(values)"));
+}
+
+TEST(TestExtendedInterpreter, dynamicArraySetLengthResizesUpAndDown)
+{
+    EXPECT_EQ(Value{2},
+        interpret_init("int values[]\n"
+                       "setLength(values, 3)\n"
+                       "values[2]=7\n"
+                       "setLength(values, 2)\n"
+                       "length(values)"));
+}
+
+TEST(TestExtendedInterpreter, dynamicArrayNewElementsUseDefaultValues)
+{
+    EXPECT_EQ(Value{0},
+        interpret_init("int values[]\n"
+                       "setLength(values, 2)\n"
+                       "values[1]"));
+}
+
+TEST(TestExtendedInterpreter, dynamicArrayBuiltinsRejectScalarArgument)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int value=0\n"
+                                                  "setLength(value, 1)"),
+        options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, dynamicArrayBuiltinsRejectStaticArrayArgument)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int values[1]\n"
+                                                  "length(values)"),
+        options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, wholeDynamicArrayAssignmentIsRejected)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int source[]\n"
+                                                  "int target[]\n"
+                                                  "setLength(source, 1)\n"
+                                                  "setLength(target, 1)\n"
+                                                  "target=source"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 } // namespace formula::test

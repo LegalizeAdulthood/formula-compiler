@@ -67,6 +67,7 @@ private:
 struct ArrayValue
 {
     ValueKind element_kind{ValueKind::EMPTY};
+    bool dynamic{};
     std::vector<int> dimensions;
     std::vector<Value> elements;
 };

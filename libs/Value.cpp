@@ -160,7 +160,8 @@ bool operator!=(const ColorValue &lhs, const ColorValue &rhs)
 
 bool operator==(const ArrayValue &lhs, const ArrayValue &rhs)
 {
-    return lhs.element_kind == rhs.element_kind && lhs.dimensions == rhs.dimensions && lhs.elements == rhs.elements;
+    return lhs.element_kind == rhs.element_kind && lhs.dynamic == rhs.dynamic && lhs.dimensions == rhs.dimensions &&
+        lhs.elements == rhs.elements;
 }
 
 bool operator!=(const ArrayValue &lhs, const ArrayValue &rhs)

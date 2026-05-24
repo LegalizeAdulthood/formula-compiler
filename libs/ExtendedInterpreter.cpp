@@ -230,7 +230,8 @@ void check_array_copy(const Value &target, const Value &source)
     }
     const Value::ArrayPtr target_array{std::get<Value::ArrayPtr>(target.storage())};
     const Value::ArrayPtr source_array{std::get<Value::ArrayPtr>(source.storage())};
-    if (!target_array || !source_array || target_array->element_kind != source_array->element_kind ||
+    if (!target_array || !source_array || target_array->dynamic || source_array->dynamic ||
+        target_array->element_kind != source_array->element_kind ||
         target_array->dimensions != source_array->dimensions)
     {
         throw std::runtime_error("invalid array assignment");
@@ -365,7 +366,10 @@ public:
         {
             if (node.is_dynamic_array())
             {
-                unsupported_runtime_node("DeclarationNode");
+                const Value value{make_dynamic_array(node)};
+                m_state.declare_local_value(node.name(), value);
+                m_result = value;
+                return;
             }
             const Value value{make_static_array(node)};
             m_state.declare_local_value(node.name(), value);
@@ -393,6 +397,16 @@ public:
         if (node.has_target())
         {
             unsupported_runtime_node("FunctionCallNode");
+        }
+        if (node.name() == "setLength")
+        {
+            m_result = call_set_length(node.args());
+            return;
+        }
+        if (node.name() == "length")
+        {
+            m_result = call_length(node.args());
+            return;
         }
         const auto function = m_functions.find(node.name());
         if (function == m_functions.end())
@@ -576,6 +590,61 @@ private:
             array.dimensions.begin(), array.dimensions.end(), 1, [](int left, int right) { return left * right; })};
         array.elements.assign(static_cast<std::size_t>(count), default_value(array.element_kind));
         return make_array_value(std::move(array));
+    }
+
+    Value make_dynamic_array(const ast::DeclarationNode &node)
+    {
+        ArrayValue array;
+        array.element_kind = value_kind_for_type(node.type());
+        array.dynamic = true;
+        array.dimensions = {0};
+        return make_array_value(std::move(array));
+    }
+
+    Value call_set_length(const std::vector<ast::Expr> &args)
+    {
+        if (args.size() != 2U)
+        {
+            throw std::runtime_error("invalid call arity: setLength");
+        }
+        const RuntimeLValue value{lvalue(args.front())};
+        Value array_value{value.get()};
+        if (array_value.kind() != ValueKind::ARRAY)
+        {
+            throw std::runtime_error("invalid dynamic array argument: setLength");
+        }
+        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+        if (!array || !array->dynamic)
+        {
+            throw std::runtime_error("invalid dynamic array argument: setLength");
+        }
+        const int size{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+        if (size < 0)
+        {
+            throw std::runtime_error("invalid array length");
+        }
+        array->dimensions = {size};
+        array->elements.resize(static_cast<std::size_t>(size), default_value(array->element_kind));
+        return {};
+    }
+
+    Value call_length(const std::vector<ast::Expr> &args)
+    {
+        if (args.size() != 1U)
+        {
+            throw std::runtime_error("invalid call arity: length");
+        }
+        const Value array_value{interpret(args.front())};
+        if (array_value.kind() != ValueKind::ARRAY)
+        {
+            throw std::runtime_error("invalid dynamic array argument: length");
+        }
+        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+        if (!array || !array->dynamic)
+        {
+            throw std::runtime_error("invalid dynamic array argument: length");
+        }
+        return Value{static_cast<int>(array->elements.size())};
     }
 
     RuntimeLValue array_lvalue(const ast::IndexNode &node)
