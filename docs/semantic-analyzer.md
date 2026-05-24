@@ -22,38 +22,32 @@ support expands.
 - parameter-set formula kind, saved value, function, plug-in, nested plug-in,
   and retained graph checks
 - diagnostic-free formula parameter metadata collection
+- no parameter-set binding model; runtime binding data stays owned by the
+  interpreter or compiler until a shared derived model is needed
 
 ## Implementation Slices
 
-1. Parameter-set binding model decision.
-    - Wait until interpreter or compiler parameter-set execution needs derived
-      binding data.
-    - If needed, design a separate model that carries converted saved values,
-      resolved function targets, and resolved plug-in selections.
-    - Keep the existing diagnostic-only API and parsed parameter-set data
-      unchanged.
-
-2. Formula semantic model decision.
+1. Formula semantic model decision.
     - Wait until interpreter or compiler execution needs typed expressions,
       resolved calls, or member bindings from analysis.
     - If needed, design a separate model beside the AST.
     - Keep AST nodes source-preserving and unmodified.
 
-3. Interpreter integration regression.
+2. Interpreter integration regression.
     - Keep construction rejecting semantic diagnostics before execution.
     - Keep post-construction parameter binding diagnostics owned by the
       interpreter.
     - Add regression tests when new interpreter entry points consume semantic
       analyzer output.
 
-4. Compiler integration regression.
+3. Compiler integration regression.
     - Keep compiler entry points rejecting semantic diagnostics before code
       generation.
     - Keep compiler diagnostics focused on unsupported lowering or codegen
       failures after semantic analysis succeeds.
     - Add regression tests when extended compiler entry points are introduced.
 
-5. Warning support.
+4. Warning support.
     - Add warning-producing checks only after callers have policy for display,
       suppression, and test expectations.
     - Keep current diagnostics as errors until then.
