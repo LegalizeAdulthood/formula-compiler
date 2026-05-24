@@ -1159,6 +1159,25 @@ bool section_allowed(parser::EntryKind kind, Section section)
     throw std::runtime_error("unknown entry kind");
 }
 
+Value section_result(Section section, const Value &value)
+{
+    switch (section)
+    {
+    case Section::BAILOUT:
+        return Value{is_truthy(value)};
+    case Section::FINAL:
+        if (value.kind() == ValueKind::EMPTY || value.kind() == ValueKind::COLOR || is_numeric(value.kind()))
+        {
+            return value;
+        }
+        throw std::runtime_error("invalid final section result");
+    case Section::TRANSFORM:
+        return {};
+    default:
+        return value;
+    }
+}
+
 } // namespace
 
 ExtendedInterpreter::ExtendedInterpreter(FileEntry entry, ExtendedInterpreterOptions options) :
@@ -1236,8 +1255,9 @@ Value ExtendedInterpreter::interpret(Section section)
         return {};
     }
     FunctionMap functions{collect_function_declarations(*m_ast)};
-    return ExpressionInterpreter{m_state, functions, m_options.max_loop_iterations}.interpret(
-        section_expr(*m_ast, section));
+    const Value result{ExpressionInterpreter{m_state, functions, m_options.max_loop_iterations}.interpret(
+        section_expr(*m_ast, section))};
+    return section_result(section, result);
 }
 
 void ExtendedInterpreter::parse()

@@ -172,18 +172,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Section result rules.
-    - Apply section-specific result conversion during interpretation.
-    - `bailout` returns truthiness.
-    - `final` returns a color or numeric result for the caller.
-    - `transform` returns no meaningful value and communicates through
-      predefined-symbol mutation.
-    - Perturb sections follow fractal-style numeric behavior until later
-      compiler/runtime work needs a richer contract.
-    - Tests: bailout true/false, final color, final numeric value,
-      transform mutation, and invalid result conversion backstops.
-
-2. Unsupported object/class runtime boundary.
+1. Unsupported object/class runtime boundary.
     - Keep class declarations, imports, and semantic validation as current
       pre-runtime work.
     - At runtime, reject unsupported object construction, casts, field
@@ -194,7 +183,7 @@ workflow before being considered complete.
     - Tests: unsupported `new`, casts, member access, method calls, and
       plug-in object use fail clearly without crashing.
 
-3. Builtin `Image` runtime.
+2. Builtin `Image` runtime.
     - Add host-bindable `ImageValue` handles.
     - Initialize `Image` parameters to empty image handles when no host
       image is supplied.
@@ -204,7 +193,7 @@ workflow before being considered complete.
     - Tests: empty default image, host-bound image, supported fields,
       supported methods, arity/type backstops, and unknown member backstop.
 
-4. Parameter-set binding bridge.
+3. Parameter-set binding bridge.
     - Add helper code that constructs one `ExtendedInterpreter` per
       referenced formula in a resolved extended parameter set.
     - Bind saved fractal, coloring, transform, function, plug-in, and image
@@ -216,7 +205,7 @@ workflow before being considered complete.
       targets, plug-in nested values, image parameters, and diagnostics
       blocking preparation.
 
-5. Regression and compatibility pass.
+4. Regression and compatibility pass.
     - Ensure existing BASIC parser, interpreter, and compiler tests keep
       using the current `Formula` interface.
     - Add explicit tests proving extended interpreter changes do not alter

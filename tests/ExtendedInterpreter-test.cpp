@@ -298,7 +298,7 @@ TEST(TestExtendedInterpreter, transformationWritesPixelAndSolid)
 
     ASSERT_TRUE(interpreter.ok());
 
-    EXPECT_EQ(Value{true}, interpreter.interpret(Section::TRANSFORM));
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::TRANSFORM));
     EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("#pixel"));
     EXPECT_EQ(Value{true}, interpreter.value("#solid"));
 }
@@ -329,6 +329,57 @@ TEST(TestExtendedInterpreter, coloringWritesDirectColor)
 
     EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpreter.interpret(Section::FINAL));
     EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpreter.value("#color"));
+}
+
+TEST(TestExtendedInterpreter, bailoutSectionReturnsTruthiness)
+{
+    ExtendedInterpreter false_interpreter{formula_entry("bailout:\n0"), options()};
+    ExtendedInterpreter true_interpreter{formula_entry("bailout:\n(0,1)"), options()};
+
+    ASSERT_TRUE(false_interpreter.ok());
+    ASSERT_TRUE(true_interpreter.ok());
+
+    EXPECT_EQ(Value{false}, false_interpreter.interpret(Section::BAILOUT));
+    EXPECT_EQ(Value{true}, true_interpreter.interpret(Section::BAILOUT));
+}
+
+TEST(TestExtendedInterpreter, finalSectionReturnsNumericValue)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n0.25"), options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{0.25}, interpreter.interpret(Section::FINAL));
+}
+
+TEST(TestExtendedInterpreter, finalSectionRejectsInvalidRuntimeResult)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n"
+                                                  "@value\n"
+                                                  "default:\n"
+                                                  "float param value\n"
+                                                  "endparam\n"),
+        options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@value", Value{std::string{"bad"}});
+
+    EXPECT_THROW(interpreter.interpret(Section::FINAL), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, bailoutSectionRejectsInvalidRuntimeResult)
+{
+    ExtendedInterpreter interpreter{formula_entry("bailout:\n"
+                                                  "@value\n"
+                                                  "default:\n"
+                                                  "bool param value\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@value", Value{std::string{"bad"}});
+
+    EXPECT_THROW(interpreter.interpret(Section::BAILOUT), std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, interpretsScalarDeclarations)
