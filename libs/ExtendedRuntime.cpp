@@ -89,6 +89,11 @@ bool RuntimeLValue::writable() const
     return valid() && m_writable;
 }
 
+RuntimeLValue RuntimeLValue::read_only() const
+{
+    return RuntimeLValue{m_getter, m_setter, false};
+}
+
 Value RuntimeLValue::get() const
 {
     if (!valid())
@@ -122,14 +127,14 @@ void ExtendedRuntimeState::set_formula_value(std::string_view name, Value value)
     m_formula_scope[key] = make_binding(name, std::move(value), true);
 }
 
-void ExtendedRuntimeState::declare_local_value(std::string_view name, Value value)
+void ExtendedRuntimeState::declare_local_value(std::string_view name, Value value, bool writable)
 {
     if (m_local_scopes.empty())
     {
-        set_formula_value(name, std::move(value));
+        m_formula_scope[std::string{name}] = make_binding(name, std::move(value), writable);
         return;
     }
-    m_local_scopes.back()[std::string{name}] = make_binding(name, std::move(value), true);
+    m_local_scopes.back()[std::string{name}] = make_binding(name, std::move(value), writable);
 }
 
 void ExtendedRuntimeState::bind_local_reference(std::string_view name, RuntimeLValue value)

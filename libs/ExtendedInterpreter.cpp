@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -220,11 +221,76 @@ ValueKind value_kind_for_type(std::string_view type)
     throw std::runtime_error("unsupported declaration type: " + std::string{type});
 }
 
+using FunctionMap = std::unordered_map<std::string, const ast::FunctionDeclNode *>;
+
+void collect_function_declarations(const ast::Expr &node, FunctionMap &functions)
+{
+    if (!node)
+    {
+        return;
+    }
+    if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(node.get()); function)
+    {
+        functions[function->name()] = function;
+        return;
+    }
+    if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(node.get()); sequence)
+    {
+        for (const ast::Expr &statement : sequence->statements())
+        {
+            collect_function_declarations(statement, functions);
+        }
+        return;
+    }
+    if (const auto *branch = dynamic_cast<const ast::IfStatementNode *>(node.get()); branch)
+    {
+        if (branch->has_then_block())
+        {
+            collect_function_declarations(branch->then_block(), functions);
+        }
+        if (branch->has_else_block())
+        {
+            collect_function_declarations(branch->else_block(), functions);
+        }
+        return;
+    }
+    if (const auto *loop = dynamic_cast<const ast::WhileNode *>(node.get()); loop)
+    {
+        collect_function_declarations(loop->body(), functions);
+        return;
+    }
+    if (const auto *loop = dynamic_cast<const ast::RepeatUntilNode *>(node.get()); loop)
+    {
+        collect_function_declarations(loop->body(), functions);
+    }
+}
+
+FunctionMap collect_function_declarations(const ast::FormulaSections &formula)
+{
+    FunctionMap functions;
+    collect_function_declarations(formula.per_image, functions);
+    collect_function_declarations(formula.builtin, functions);
+    collect_function_declarations(formula.initialize, functions);
+    collect_function_declarations(formula.iterate, functions);
+    collect_function_declarations(formula.bailout, functions);
+    collect_function_declarations(formula.perturb_initialize, functions);
+    collect_function_declarations(formula.perturb_iterate, functions);
+    collect_function_declarations(formula.defaults, functions);
+    collect_function_declarations(formula.type_switch, functions);
+    collect_function_declarations(formula.final, functions);
+    collect_function_declarations(formula.transform, functions);
+    collect_function_declarations(formula.public_members, functions);
+    collect_function_declarations(formula.protected_members, functions);
+    collect_function_declarations(formula.private_members, functions);
+    return functions;
+}
+
 class ExpressionInterpreter : public ast::NullVisitor
 {
 public:
-    ExpressionInterpreter(ExtendedRuntimeState &state, std::size_t max_loop_iterations) :
+    ExpressionInterpreter(ExtendedRuntimeState &state, const FunctionMap &functions, std::size_t max_loop_iterations) :
         m_state(state),
+        m_functions(functions),
         m_max_loop_iterations(max_loop_iterations)
     {
     }
@@ -292,14 +358,23 @@ public:
         unsupported_runtime_node("FunctionBlockNode");
     }
 
-    void visit(const ast::FunctionDeclNode &) override
+    void visit(const ast::FunctionDeclNode &node) override
     {
-        unsupported_runtime_node("FunctionDeclNode");
+        m_functions[node.name()] = &node;
     }
 
-    void visit(const ast::FunctionCallNode &) override
+    void visit(const ast::FunctionCallNode &node) override
     {
-        unsupported_runtime_node("FunctionCallNode");
+        if (node.has_target())
+        {
+            unsupported_runtime_node("FunctionCallNode");
+        }
+        const auto function = m_functions.find(node.name());
+        if (function == m_functions.end())
+        {
+            unsupported_runtime_node("FunctionCallNode");
+        }
+        m_result = call_function(*function->second, node.args());
     }
 
     void visit(const ast::HeadingBlockNode &) override
@@ -457,6 +532,70 @@ public:
     }
 
 private:
+    Value call_function(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+    {
+        if (args.size() != function.args().size())
+        {
+            throw std::runtime_error("invalid call arity: " + function.name());
+        }
+        const bool caller_returning{m_returning};
+        const Value caller_result{m_result};
+        bool frame_active{true};
+        m_returning = false;
+        m_state.push_function_frame();
+        try
+        {
+            bind_function_arguments(function, args);
+            const Value body_result{interpret(function.body())};
+            Value result{m_returning ? m_result : body_result};
+            m_state.pop_function_frame();
+            frame_active = false;
+            if (!m_returning && !function.return_type().empty())
+            {
+                throw std::runtime_error("missing return: " + function.name());
+            }
+            if (!function.return_type().empty())
+            {
+                result = convert_value(result, value_kind_for_type(function.return_type()));
+            }
+            else
+            {
+                result = {};
+            }
+            m_returning = caller_returning;
+            m_result = caller_returning ? caller_result : result;
+            return result;
+        }
+        catch (...)
+        {
+            if (frame_active)
+            {
+                m_state.pop_function_frame();
+            }
+            m_returning = caller_returning;
+            m_result = caller_result;
+            throw;
+        }
+    }
+
+    void bind_function_arguments(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+    {
+        for (std::size_t i = 0; i < args.size(); ++i)
+        {
+            const ast::FunctionArgument &arg{function.args()[i]};
+            const ValueKind kind{value_kind_for_type(arg.type)};
+            if (arg.is_by_ref)
+            {
+                RuntimeLValue value{lvalue(args[i])};
+                m_state.bind_local_reference(arg.name, arg.is_const ? value.read_only() : value);
+            }
+            else
+            {
+                m_state.declare_local_value(arg.name, convert_value(interpret(args[i]), kind), !arg.is_const);
+            }
+        }
+    }
+
     Value interpret_block(const ast::Expr &node)
     {
         m_state.push_local_scope();
@@ -499,6 +638,7 @@ private:
     }
 
     ExtendedRuntimeState &m_state;
+    FunctionMap m_functions;
     std::size_t m_max_loop_iterations{};
     Value m_result;
     bool m_returning{};
@@ -621,7 +761,9 @@ Value ExtendedInterpreter::interpret(Section section)
     {
         return {};
     }
-    return ExpressionInterpreter{m_state, m_options.max_loop_iterations}.interpret(section_expr(*m_ast, section));
+    FunctionMap functions{collect_function_declarations(*m_ast)};
+    return ExpressionInterpreter{m_state, functions, m_options.max_loop_iterations}.interpret(
+        section_expr(*m_ast, section));
 }
 
 void ExtendedInterpreter::parse()

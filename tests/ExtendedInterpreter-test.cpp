@@ -343,4 +343,70 @@ TEST(TestExtendedInterpreter, loopGuardRejectsRunawayLoops)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, interpretsForwardFunctionCalls)
+{
+    EXPECT_EQ(Value{3},
+        interpret_init("add(1,2)\n"
+                       "int func add(int left, int right)\n"
+                       "return left+right\n"
+                       "endfunc"));
+}
+
+TEST(TestExtendedInterpreter, interpretsRecursiveFunctionCalls)
+{
+    EXPECT_EQ(Value{24},
+        interpret_init("factorial(4)\n"
+                       "int func factorial(int value)\n"
+                       "if value<=1\n"
+                       "return 1\n"
+                       "endif\n"
+                       "return value*factorial(value-1)\n"
+                       "endfunc"));
+}
+
+TEST(TestExtendedInterpreter, functionLocalsDoNotLeak)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int value=1\n"
+                                                  "helper()\n"
+                                                  "value\n"
+                                                  "func helper()\n"
+                                                  "int value=2\n"
+                                                  "endfunc"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{1}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, convertsFunctionReturnValue)
+{
+    EXPECT_EQ(Value{2.0},
+        interpret_init("float func helper()\n"
+                       "return 2\n"
+                       "endfunc\n"
+                       "helper()"));
+}
+
+TEST(TestExtendedInterpreter, functionByRefArgumentsMutateCaller)
+{
+    EXPECT_EQ(Value{2},
+        interpret_init("int value=1\n"
+                       "increment(value)\n"
+                       "value\n"
+                       "func increment(int &target)\n"
+                       "target=target+1\n"
+                       "endfunc"));
+}
+
+TEST(TestExtendedInterpreter, functionConstArgumentsAreReadOnly)
+{
+    EXPECT_EQ(Value{3},
+        interpret_init("int func helper(const int value)\n"
+                       "return value\n"
+                       "endfunc\n"
+                       "helper(3)"));
+}
+
 } // namespace formula::test

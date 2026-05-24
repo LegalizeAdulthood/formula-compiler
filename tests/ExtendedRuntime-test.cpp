@@ -113,6 +113,18 @@ TEST(TestExtendedRuntime, readOnlyLvalueRejectsAssignment)
     EXPECT_THROW(state.predefined_lvalue("pi").set(Value{4.0}), std::runtime_error);
 }
 
+TEST(TestExtendedRuntime, readOnlyAliasRejectsAssignment)
+{
+    ExtendedRuntimeState state;
+    state.set_formula_value("target", Value{5});
+    state.push_function_frame();
+    state.bind_local_reference("arg", state.lvalue("target").read_only());
+
+    EXPECT_EQ(Value{5}, state.value("arg"));
+    EXPECT_THROW(state.lvalue("arg").set(Value{6}), std::runtime_error);
+    EXPECT_EQ(Value{5}, state.value("target"));
+}
+
 TEST(TestExtendedRuntime, recordsRuntimeMessages)
 {
     ExtendedRuntimeState state;

@@ -30,6 +30,7 @@ public:
 
     bool valid() const;
     bool writable() const;
+    RuntimeLValue read_only() const;
     Value get() const;
     void set(Value value) const;
 
@@ -49,7 +50,7 @@ class ExtendedRuntimeState
 {
 public:
     void set_formula_value(std::string_view name, Value value);
-    void declare_local_value(std::string_view name, Value value);
+    void declare_local_value(std::string_view name, Value value, bool writable = true);
     void bind_local_reference(std::string_view name, RuntimeLValue value);
 
     Value value(std::string_view name) const;
