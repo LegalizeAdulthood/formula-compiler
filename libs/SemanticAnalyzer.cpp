@@ -1135,6 +1135,7 @@ public:
     std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
     {
         validate_section_availability(formula);
+        m_parameter_metadata = collect_parameter_metadata(formula);
         predeclare_functions(formula.per_image);
         predeclare_functions(formula.builtin);
         predeclare_functions(formula.initialize);
@@ -1343,7 +1344,10 @@ public:
 
     void visit(const ast::ParameterRefNode &node) override
     {
-        report_unknown_symbol(node.name());
+        if (!parameter_type(node.name()))
+        {
+            report_unknown_symbol(node.name());
+        }
     }
 
     void visit(const ast::ParamBlockNode &node) override
@@ -1898,6 +1902,16 @@ private:
             report_unknown_symbol(constant->name());
             return SemanticTypeKind::ERROR;
         }
+        if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(expr.get()))
+        {
+            const std::optional<SemanticTypeKind> type{parameter_type(parameter->name())};
+            if (!type)
+            {
+                report_unknown_symbol(parameter->name());
+                return SemanticTypeKind::ERROR;
+            }
+            return *type;
+        }
         if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
         {
             return binary_expression_type(*binary);
@@ -2104,6 +2118,18 @@ private:
             return SemanticTypeKind::CLASS_OBJECT;
         }
         return SemanticTypeKind::ERROR;
+    }
+
+    std::optional<SemanticTypeKind> parameter_type(const std::string &name) const
+    {
+        for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
+        {
+            if (param.name == name)
+            {
+                return type_kind(param.type);
+            }
+        }
+        return std::nullopt;
     }
 
     bool can_convert(SemanticTypeKind from, SemanticTypeKind to) const
@@ -2449,6 +2475,7 @@ private:
     std::unordered_map<std::string, std::string> m_class_bases;
     std::unordered_map<std::string, std::vector<ClassMemberDescriptor>> m_class_members;
     std::unordered_set<const ast::FunctionDeclNode *> m_predeclared_functions;
+    ParameterMetadata m_parameter_metadata;
     std::vector<SemanticTypeKind> m_function_return_types;
     std::vector<SemanticDiagnostic> m_diagnostics;
 };

@@ -7,7 +7,9 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace formula::test
 {
@@ -35,6 +37,13 @@ ExtendedInterpreterOptions options(parser::EntryKind entry_kind)
     ExtendedInterpreterOptions result{options()};
     result.parser.entry_kind = entry_kind;
     return result;
+}
+
+Value interpret_init(std::string expression)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n" + std::move(expression)), options()};
+    EXPECT_TRUE(interpreter.ok());
+    return interpreter.interpret(Section::INITIALIZE);
 }
 
 } // namespace
@@ -139,7 +148,7 @@ TEST(TestExtendedInterpreter, classEntriesDoNotDispatchRuntimeSections)
 
 TEST(TestExtendedInterpreter, nonEmptyValidSectionReportsUnsupportedExecution)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nz=1"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\nsin(1)"), options()};
 
     ASSERT_TRUE(interpreter.ok());
 
@@ -154,6 +163,73 @@ TEST(TestExtendedInterpreter, setAndGetRuntimeValues)
     interpreter.set_value("pixel", Value{Complex{1.0, 2.0}});
 
     EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("pixel"));
+}
+
+TEST(TestExtendedInterpreter, interpretsLiteralValues)
+{
+    EXPECT_EQ(Value{7}, interpret_init("7"));
+    EXPECT_EQ(Value{1.5}, interpret_init("1.5"));
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpret_init("(1,2)"));
+    EXPECT_EQ(Value{true}, interpret_init("true"));
+    EXPECT_EQ(Value{std::string{"text"}}, interpret_init("\"text\""));
+}
+
+TEST(TestExtendedInterpreter, interpretsPredefinedSymbolReferences)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel"), options()};
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("#pixel", Value{Complex{1.0, 2.0}});
+
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, interpretsParameterReferences)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@power\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "endparam\n"),
+        options()};
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@power", Value{2.5});
+
+    EXPECT_EQ(Value{2.5}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, interpretsArithmeticAndComparisonExpressions)
+{
+    EXPECT_EQ(Value{7}, interpret_init("1+2*3"));
+    EXPECT_EQ(Value{1}, interpret_init("7%3"));
+    EXPECT_EQ(Value{8.0}, interpret_init("2^3"));
+    EXPECT_EQ(Value{true}, interpret_init("2<3"));
+    EXPECT_EQ(Value{false}, interpret_init("2==3"));
+    EXPECT_EQ((Value{Complex{4.0, 6.0}}), interpret_init("(1,2)+(3,4)"));
+}
+
+TEST(TestExtendedInterpreter, interpretsUnaryExpressions)
+{
+    EXPECT_EQ(Value{-3}, interpret_init("-3"));
+    EXPECT_EQ(Value{3}, interpret_init("+3"));
+    EXPECT_EQ(Value{false}, interpret_init("!true"));
+    EXPECT_EQ(Value{25.0}, interpret_init("|(3,4)|"));
+}
+
+TEST(TestExtendedInterpreter, interpretsLogicalExpressions)
+{
+    EXPECT_EQ(Value{false}, interpret_init("true && false"));
+    EXPECT_EQ(Value{true}, interpret_init("true || false"));
+    // No explicit short-circuit side-effect test is possible until user functions can mutate state.
+}
+
+TEST(TestExtendedInterpreter, interpretsAssignmentToWritablePredefinedSymbol)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel=(1,2)"), options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("#pixel"));
 }
 
 } // namespace formula::test

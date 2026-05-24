@@ -1224,6 +1224,24 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownParameterRef)
     EXPECT_EQ("unknown symbol: param", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsDeclaredParameterRef)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("init:\n"
+                                            "@power\n"
+                                            "default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsUserFunctionCallArity)
 {
     parser::Options options;
