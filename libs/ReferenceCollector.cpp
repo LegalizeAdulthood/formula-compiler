@@ -164,6 +164,13 @@ public:
 
     void visit(const ast::SettingNode &node) override
     {
+        if (node.key() == "default")
+        {
+            if (const auto *default_class = std::get_if<ast::EnumName>(&node.value()))
+            {
+                add_reference(FormulaReferenceKind::PARAM_DEFAULT, default_class->name);
+            }
+        }
         if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
         {
             visit_expr(*expr);

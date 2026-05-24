@@ -59,6 +59,7 @@ struct ParameterMetadata
     {
         std::string type;
         std::string name;
+        std::optional<std::string> default_selector;
         std::vector<std::string> enum_values;
         bool has_default{};
     };
@@ -507,6 +508,10 @@ public:
         if (node.key() == "default" && m_current_param != nullptr)
         {
             m_current_param->has_default = true;
+            if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
+            {
+                m_current_param->default_selector = selector->name;
+            }
         }
         if (node.key() == "enum" && m_current_param != nullptr)
         {
@@ -831,6 +836,13 @@ bool is_plugin_parameter_type(
     return false;
 }
 
+bool is_plugin_parameter_type(
+    std::string_view type, const BuiltinRegistry &builtins, const ParameterSetSemanticContext &)
+{
+    return is_plugin_parameter_type(type) ||
+        (!type.empty() && type != "Image" && !builtins.find_type(type) && !builtins.find_class(type));
+}
+
 const parameter::Parameter *find_reference_parameter(
     const parameter::ParameterReference &reference, std::string_view key)
 {
@@ -884,6 +896,43 @@ const RetainedFormulaClass *find_retained_class(const ParameterSetSemanticContex
         }
     }
     return nullptr;
+}
+
+const std::string *find_retained_class_base(const ParameterSetSemanticContext &context, std::string_view class_name)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass != nullptr && same_identifier(klass->reference.class_name, class_name))
+        {
+            return &klass->base_class;
+        }
+    }
+    return nullptr;
+}
+
+bool class_matches_parameter_type(
+    const ParameterSetSemanticContext &context, std::string_view class_name, std::string_view parameter_type)
+{
+    if (same_identifier(class_name, parameter_type))
+    {
+        return true;
+    }
+
+    std::unordered_set<std::string> seen;
+    std::string current{class_name};
+    while (const std::string *base = find_retained_class_base(context, current))
+    {
+        if (base->empty() || !seen.insert(normalized_identifier(*base)).second)
+        {
+            return false;
+        }
+        if (same_identifier(*base, parameter_type))
+        {
+            return true;
+        }
+        current = *base;
+    }
+    return false;
 }
 
 void report_missing_retained_class(
@@ -954,7 +1003,76 @@ void check_retained_class_bases(std::vector<SemanticDiagnostic> &diagnostics, co
     }
 }
 
+void check_retained_class_bases(std::vector<SemanticDiagnostic> &diagnostics, const BuiltinRegistry &builtins,
+    const ParameterSetSemanticContext &context)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (!klass || klass->base_class.empty())
+        {
+            continue;
+        }
+        if (builtins.find_class(klass->base_class) || has_retained_class(context, klass->base_class))
+        {
+            continue;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
+        diagnostic.entry_name = klass->reference.class_name;
+        diagnostic.message = "unknown base class: " + klass->base_class;
+        diagnostics.push_back(std::move(diagnostic));
+    }
+}
+
 void check_retained_class_cycles(std::vector<SemanticDiagnostic> &diagnostics, const FormulaSemanticContext &context)
+{
+    std::unordered_set<std::string> reported_cycles;
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (!klass)
+        {
+            continue;
+        }
+        std::vector<std::string> path;
+        std::string current{klass->reference.class_name};
+        while (const std::string *base = find_retained_class_base(context, current))
+        {
+            if (base->empty())
+            {
+                break;
+            }
+            if (std::find_if(path.begin(), path.end(),
+                    [base](const std::string &item) { return same_identifier(item, *base); }) != path.end() ||
+                same_identifier(klass->reference.class_name, *base))
+            {
+                std::vector<std::string> cycle_names{path};
+                cycle_names.push_back(current);
+                cycle_names.push_back(*base);
+                const bool already_reported{
+                    std::any_of(cycle_names.begin(), cycle_names.end(), [&reported_cycles](const std::string &name)
+                        { return reported_cycles.find(normalized_identifier(name)) != reported_cycles.end(); })};
+                if (!already_reported)
+                {
+                    for (const std::string &name : cycle_names)
+                    {
+                        reported_cycles.insert(normalized_identifier(name));
+                    }
+                    SemanticDiagnostic diagnostic;
+                    diagnostic.code = SemanticDiagnosticCode::INHERITANCE_CYCLE;
+                    diagnostic.entry_name = klass->reference.class_name;
+                    diagnostic.message = "inheritance cycle: " + *base;
+                    diagnostics.push_back(std::move(diagnostic));
+                }
+                break;
+            }
+            path.push_back(current);
+            current = *base;
+        }
+    }
+}
+
+void check_retained_class_cycles(
+    std::vector<SemanticDiagnostic> &diagnostics, const ParameterSetSemanticContext &context)
 {
     std::unordered_set<std::string> reported_cycles;
     for (const RetainedFormulaClass *klass : context.retained_classes)
@@ -1018,7 +1136,7 @@ void report_invalid_parameter_binding(std::vector<SemanticDiagnostic> &diagnosti
 
 const RetainedFormulaClass *validate_plugin_selector(std::vector<SemanticDiagnostic> &diagnostics,
     const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
-    const parameter::Parameter &selector_parameter)
+    const parameter::Parameter &selector_parameter, const ParameterMetadata::Param &plugin_param)
 {
     const std::optional<EntrySelector> selector{parse_entry_selector(selector_parameter.value)};
     if (!selector)
@@ -1032,22 +1150,40 @@ const RetainedFormulaClass *validate_plugin_selector(std::vector<SemanticDiagnos
         report_invalid_parameter_binding(diagnostics, resolved, selector_parameter, "missing plug-in class");
         return nullptr;
     }
+    if (!class_matches_parameter_type(context, klass->reference.class_name, plugin_param.type))
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, selector_parameter, "invalid plug-in target");
+        return nullptr;
+    }
     return klass;
 }
 
 const RetainedFormulaClass *validate_default_plugin_selector(std::vector<SemanticDiagnostic> &diagnostics,
-    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
-    const parameter::Parameter &parameter, const ParameterMetadata::Param &plugin_param)
+    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved, std::string key,
+    const ParameterMetadata::Param &plugin_param)
 {
-    const RetainedFormulaClass *klass{find_retained_class(context, plugin_param.type)};
+    const std::string selector{plugin_param.default_selector.value_or(plugin_param.type)};
+    const RetainedFormulaClass *klass{find_retained_class(context, selector)};
+    parameter::Parameter parameter;
+    parameter.key = std::move(key);
     if (klass == nullptr || !klass->ast)
     {
-        parameter::Parameter missing;
-        missing.key = plugin_parameter_name(parameter.key);
-        report_invalid_parameter_binding(diagnostics, resolved, missing, "missing plug-in class");
+        report_invalid_parameter_binding(diagnostics, resolved, parameter, "missing plug-in class");
+        return nullptr;
+    }
+    if (!class_matches_parameter_type(context, klass->reference.class_name, plugin_param.type))
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, parameter, "invalid plug-in target");
         return nullptr;
     }
     return klass;
+}
+
+bool has_plugin_subparameter_binding(const parameter::ParameterReference &reference, std::string_view plugin_key)
+{
+    const std::string prefix{std::string{plugin_key} + "."};
+    return std::any_of(reference.parameters.begin(), reference.parameters.end(),
+        [&prefix](const parameter::Parameter &parameter) { return starts_with(parameter.key, prefix); });
 }
 
 void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
@@ -1067,8 +1203,9 @@ void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
     }
     const parameter::Parameter *selector_parameter{find_reference_parameter(resolved.reference, path->base_key)};
     const RetainedFormulaClass *klass{selector_parameter != nullptr
-            ? validate_plugin_selector(diagnostics, context, resolved, *selector_parameter)
-            : validate_default_plugin_selector(diagnostics, context, resolved, parameter, plugin_param)};
+            ? validate_plugin_selector(diagnostics, context, resolved, *selector_parameter, plugin_param)
+            : validate_default_plugin_selector(
+                  diagnostics, context, resolved, plugin_parameter_name(parameter.key), plugin_param)};
     if (klass == nullptr)
     {
         return;
@@ -1103,6 +1240,16 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
             report_invalid_parameter_binding(diagnostics, resolved, invalid, "invalid forward");
         }
     }
+    for (const ParameterMetadata::Param &param : metadata.params)
+    {
+        const std::string key{"p_" + param.name};
+        if (is_plugin_parameter_type(param.type, builtins, context) &&
+            find_reference_parameter(resolved.reference, key) == nullptr &&
+            !has_plugin_subparameter_binding(resolved.reference, key))
+        {
+            validate_default_plugin_selector(diagnostics, context, resolved, key, param);
+        }
+    }
     for (const parameter::Parameter &parameter : resolved.reference.parameters)
     {
         if (starts_with(parameter.key, "p_") && !has_parameter_binding(metadata, parameter.key))
@@ -1117,9 +1264,9 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
                 {
                     report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
                 }
-                if (is_plugin_parameter_type(param->type))
+                if (is_plugin_parameter_type(param->type, builtins, context))
                 {
-                    validate_plugin_selector(diagnostics, context, resolved, parameter);
+                    validate_plugin_selector(diagnostics, context, resolved, parameter, *param);
                 }
             }
             else if (const ParameterMetadata::Param *plugin_param{
@@ -2647,6 +2794,8 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
             check_retained_references(diagnostics, builtins, context, klass->reference.class_name, *klass->ast);
         }
     }
+    check_retained_class_bases(diagnostics, builtins, context);
+    check_retained_class_cycles(diagnostics, context);
     return diagnostics;
 }
 

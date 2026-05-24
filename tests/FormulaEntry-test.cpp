@@ -710,6 +710,23 @@ TEST(TestFormulaEntry, referenceCollectorFindsClassParamBlocks)
     EXPECT_EQ("Bailout", references[0].class_name);
 }
 
+TEST(TestFormulaEntry, referenceCollectorFindsClassParamDefault)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("default:\n"
+                                               "Bailout param bailoutMethod\n"
+                                               "default=TrapBailout\n"
+                                               "endparam\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(2U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::PARAM_BLOCK, references[0].kind);
+    EXPECT_EQ("Bailout", references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::PARAM_DEFAULT, references[1].kind);
+    EXPECT_EQ("TrapBailout", references[1].class_name);
+}
+
 TEST(TestFormulaEntry, referenceCollectorIgnoresBuiltinParamBlocks)
 {
     ast::FormulaSectionsPtr ast{parse_extended("default:\n"

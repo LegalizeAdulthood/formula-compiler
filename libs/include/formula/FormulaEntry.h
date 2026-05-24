@@ -153,6 +153,7 @@ enum class FormulaReferenceKind
     FUNCTION_ARGUMENT,
     NEW_OBJECT,
     PARAM_BLOCK,
+    PARAM_DEFAULT,
 };
 
 struct FormulaReference
