@@ -742,6 +742,50 @@ TEST(TestFormulaEntry, referenceCollectorFindsClassParamDefault)
     EXPECT_EQ("TrapBailout", references[1].class_name);
 }
 
+TEST(TestFormulaEntry, referenceCollectorFindsClassMemberAccess)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Texture.value\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsClassMethodAccess)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Texture.value()\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorIgnoresLowercaseObjectMembers)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "int texture\n"
+                                               "texture.value\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    EXPECT_TRUE(references.empty());
+}
+
 TEST(TestFormulaEntry, referenceCollectorIgnoresBuiltinParamBlocks)
 {
     ast::FormulaSectionsPtr ast{parse_extended("default:\n"
@@ -1070,6 +1114,41 @@ TEST(TestFormulaEntry, retainResolvedImportedClassesRetainsNestedImports)
     EXPECT_EQ("Filter", result.retained_classes[1].reference.class_name);
 }
 
+TEST(TestFormulaEntry, retainResolvedImportedClassesRetainsSameFileBaseClass)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Derived.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int answer\n"
+            "}\n"
+            "class Derived(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+
+    ASSERT_EQ(2U, result.retained_classes.size());
+    EXPECT_EQ("Derived", result.retained_classes[0].reference.class_name);
+    EXPECT_EQ("Base", result.retained_classes[1].reference.class_name);
+}
+
 TEST(TestFormulaEntry, retainResolvedImportedClassesIsRepeatable)
 {
     std::unordered_map<std::string, std::string> files{
@@ -1107,6 +1186,30 @@ TEST(TestFormulaEntry, retainResolvedImportedClassesIsRepeatable)
 
     EXPECT_EQ(retained_count, result.retained_classes.size());
     EXPECT_EQ(resolved_count, result.resolved_references.size());
+}
+
+TEST(TestFormulaEntry, unresolvedClassMemberReferenceReportsDiagnostic)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "global:\n"
+            "Missing.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
+    EXPECT_EQ("Missing", result.diagnostics[0].detail);
 }
 
 TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
