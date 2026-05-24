@@ -50,6 +50,11 @@ struct ClassMemberDescriptor
 
 struct ParameterMetadata
 {
+    struct Function
+    {
+        std::string type;
+        std::string name;
+    };
     struct Param
     {
         std::string type;
@@ -63,7 +68,7 @@ struct ParameterMetadata
         std::string target_name;
     };
     std::vector<Param> params;
-    std::vector<std::string> functions;
+    std::vector<Function> functions;
     std::vector<Forward> forwards;
 };
 
@@ -156,6 +161,20 @@ BuiltinRegistry make_default_builtin_registry()
     const SemanticType *image_type{registry.find_type("Image")};
     if (void_type && bool_type && int_type && float_type && complex_type && color_type && image_type)
     {
+        static constexpr std::array<std::string_view, 19> merge_functions{
+            "mergenormal", "mergemultiply", "mergescreen",      //
+            "mergeoverlay", "mergehardlight", "mergesoftlight", //
+            "mergedarken", "mergelighten", "mergedifference",   //
+            "mergehue", "mergesaturation", "mergecolor",        //
+            "mergeluminance", "mergeaddition",                  //
+            "mergesubtraction", "mergehsladdition",             //
+            "mergered", "mergegreen", "mergeblue",              //
+        };
+        for (std::string_view name : merge_functions)
+        {
+            registry.functions.push_back(semantic_function(std::string{name}, *color_type, {color_type, color_type}));
+        }
+
         const auto formula_entries = {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING,
             parser::EntryKind::TRANSFORMATION, parser::EntryKind::CLASS};
         const auto fractal_entries = {parser::EntryKind::FRACTAL};
@@ -447,7 +466,7 @@ public:
 
     void visit(const ast::FunctionBlockNode &node) override
     {
-        m_metadata.functions.push_back(node.name());
+        m_metadata.functions.push_back({node.type().empty() ? "complex" : node.type(), node.name()});
     }
 
     void visit(const ast::ParamBlockNode &node) override
@@ -560,9 +579,9 @@ const ParameterMetadata::Param *find_plugin_parameter_binding(
 
 bool has_function_binding(const ParameterMetadata &metadata, std::string_view saved_name)
 {
-    for (const std::string &name : metadata.functions)
+    for (const ParameterMetadata::Function &function : metadata.functions)
     {
-        if (saved_name == "f_" + name)
+        if (saved_name == "f_" + function.name)
         {
             return true;
         }
@@ -570,14 +589,89 @@ bool has_function_binding(const ParameterMetadata &metadata, std::string_view sa
     return false;
 }
 
-bool has_builtin_function(const BuiltinRegistry &builtins, std::string_view name)
+const ParameterMetadata::Function *find_function_binding(const ParameterMetadata &metadata, std::string_view saved_name)
+{
+    for (const ParameterMetadata::Function &function : metadata.functions)
+    {
+        if (saved_name == "f_" + function.name)
+        {
+            return &function;
+        }
+    }
+    return nullptr;
+}
+
+SemanticTypeKind parameter_type_kind(const BuiltinRegistry &builtins, std::string_view name)
+{
+    if (const SemanticType *type = builtins.find_type(name))
+    {
+        return type->kind;
+    }
+    return SemanticTypeKind::ERROR;
+}
+
+int parameter_conversion_rank(SemanticTypeKind type)
+{
+    switch (type)
+    {
+    case SemanticTypeKind::BOOL:
+        return 0;
+    case SemanticTypeKind::INT:
+        return 1;
+    case SemanticTypeKind::FLOAT:
+        return 2;
+    case SemanticTypeKind::COMPLEX:
+        return 3;
+    default:
+        return -1;
+    }
+}
+
+bool can_convert_parameter_type(SemanticTypeKind from, SemanticTypeKind to)
+{
+    if (from == SemanticTypeKind::ERROR || to == SemanticTypeKind::ERROR || from == to)
+    {
+        return true;
+    }
+    return parameter_conversion_rank(from) >= 0 && parameter_conversion_rank(to) >= 0 &&
+        parameter_conversion_rank(from) <= parameter_conversion_rank(to);
+}
+
+const SemanticFunctionDescriptor *find_parameter_function_target(
+    const BuiltinRegistry &builtins, std::string_view target_name)
 {
     for (const SemanticFunctionDescriptor &function : builtins.functions)
     {
-        if (same_identifier(function.name, name))
+        if (same_identifier(function.name, target_name))
         {
-            return true;
+            return &function;
         }
+    }
+    return nullptr;
+}
+
+bool function_target_matches_binding(
+    const BuiltinRegistry &builtins, const ParameterMetadata::Function &binding, std::string_view target_name)
+{
+    const SemanticFunctionDescriptor *target{find_parameter_function_target(builtins, target_name)};
+    if (target == nullptr)
+    {
+        return false;
+    }
+    const SemanticTypeKind binding_type{parameter_type_kind(builtins, binding.type)};
+    if (!can_convert_parameter_type(target->return_type.kind, binding_type))
+    {
+        return false;
+    }
+    if (binding_type == SemanticTypeKind::COLOR)
+    {
+        return target->argument_types.size() == 2U && target->argument_types[0].kind == SemanticTypeKind::COLOR &&
+            target->argument_types[1].kind == SemanticTypeKind::COLOR;
+    }
+    if (binding_type == SemanticTypeKind::COMPLEX)
+    {
+        return target->argument_types.size() == 1U &&
+            can_convert_parameter_type(target->argument_types.front().kind, SemanticTypeKind::COMPLEX);
     }
     return false;
 }
@@ -998,9 +1092,13 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
         {
             report_invalid_parameter_binding(diagnostics, resolved, parameter);
         }
-        else if (starts_with(parameter.key, "f_") && !has_builtin_function(builtins, parameter.value))
+        else if (starts_with(parameter.key, "f_"))
         {
-            report_invalid_parameter_binding(diagnostics, resolved, parameter, "invalid function target");
+            const ParameterMetadata::Function *function{find_function_binding(metadata, parameter.key)};
+            if (function != nullptr && !function_target_matches_binding(builtins, *function, parameter.value))
+            {
+                report_invalid_parameter_binding(diagnostics, resolved, parameter, "invalid function target");
+            }
         }
     }
     for (const ParameterMetadata::Param &param : metadata.params)

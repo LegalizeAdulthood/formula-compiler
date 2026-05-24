@@ -380,6 +380,61 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsInvalidSavedFunctionTarget
     EXPECT_EQ("invalid parameter binding: f_fn1 invalid function target", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsSavedFunctionShapeMismatch)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "complex func fn1\n"
+                                            "endfunc\n"
+                                            "color func merge\n"
+                                            "endfunc\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"f_fn1", "mergenormal"});
+    reference.parameters.push_back({"f_merge", "sin"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(2U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[0].code);
+    EXPECT_EQ("invalid parameter binding: f_fn1 invalid function target", diagnostics[0].message);
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[1].code);
+    EXPECT_EQ("invalid parameter binding: f_merge invalid function target", diagnostics[1].message);
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsColorFunctionTarget)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "color func merge\n"
+                                            "endfunc\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"f_merge", "mergenormal"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsSavedParameterTypeMismatch)
 {
     parser::Options options;
