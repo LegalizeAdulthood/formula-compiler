@@ -1366,6 +1366,70 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsPrivateRetainedClassMember)
     EXPECT_EQ("invalid member access: Texture.width is not public", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsRetainedClassCast)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Base base\n"
+                                            "Derived derived=Derived(base)",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass base;
+    base.reference.class_name = "Base";
+    RetainedFormulaClass derived;
+    derived.reference.class_name = "Derived";
+    derived.base_class = "Base";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&base);
+    context.retained_classes.push_back(&derived);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsRetainedClassCastArity)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Base base\n"
+                                            "Derived derived=Derived()",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass base;
+    base.reference.class_name = "Base";
+    RetainedFormulaClass derived;
+    derived.reference.class_name = "Derived";
+    derived.base_class = "Base";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&base);
+    context.retained_classes.push_back(&derived);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_CALL_ARITY, diagnostics.front().code);
+    EXPECT_EQ("invalid call arity: Derived expects 1 argument, got 0", diagnostics.front().message);
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsRetainedClassCastArgumentType)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Derived derived=Derived(1)", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass derived;
+    derived.reference.class_name = "Derived";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&derived);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
+    EXPECT_EQ("invalid cast argument: Derived got int", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsScalarNewType)
 {
     parser::Options options;

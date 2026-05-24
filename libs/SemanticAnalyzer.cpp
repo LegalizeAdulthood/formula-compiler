@@ -1137,6 +1137,10 @@ public:
             validate_call_arity(node.name(), node.args().size(), function->second.argument_types.size());
             checked_args = validate_user_call_arguments(node, function->second);
         }
+        else if (is_class(node.name()))
+        {
+            checked_args = validate_cast_call(node);
+        }
         else if (!is_declared(node.name()))
         {
             report_unknown_symbol(node.name());
@@ -1601,6 +1605,24 @@ private:
         return count;
     }
 
+    std::size_t validate_cast_call(const ast::FunctionCallNode &node)
+    {
+        validate_call_arity(node.name(), node.args().size(), 1U);
+        if (!node.args().empty())
+        {
+            const SemanticTypeKind arg_type{expression_type(node.args().front())};
+            if (arg_type != SemanticTypeKind::CLASS_OBJECT && arg_type != SemanticTypeKind::BUILTIN_OBJECT &&
+                arg_type != SemanticTypeKind::ERROR)
+            {
+                SemanticDiagnostic diagnostic;
+                diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+                diagnostic.message = "invalid cast argument: " + node.name() + " got " + type_name(arg_type);
+                m_diagnostics.push_back(std::move(diagnostic));
+            }
+        }
+        return std::min<std::size_t>(node.args().size(), 1U);
+    }
+
     void validate_argument_type(const std::string &name, SemanticTypeKind actual, SemanticTypeKind expected)
     {
         if (!can_convert(actual, expected))
@@ -1732,6 +1754,10 @@ private:
             if (const auto function = m_functions.find(call->name()); function != m_functions.end())
             {
                 return function->second.return_type;
+            }
+            if (is_class(call->name()))
+            {
+                return SemanticTypeKind::CLASS_OBJECT;
             }
             return SemanticTypeKind::ERROR;
         }

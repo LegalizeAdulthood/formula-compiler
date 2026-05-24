@@ -687,20 +687,17 @@ Milestone 8: downstream integration.
 - Keep runtime and codegen diagnostics limited to unsupported or dynamic
   failures not knowable by semantic analysis.
 
-1. Add remaining class checks.
-   - Cast validity.
-
-2. Add remaining section-specific formula validation.
+1. Add remaining section-specific formula validation.
    - Switch case value compatibility.
    - Formula-kind-specific section availability not already enforced by the
      parser.
 
-3. Finish extended parameter-set binding validation.
+2. Finish extended parameter-set binding validation.
    - Missing referenced entries converted from resolver diagnostics if needed.
    - Incomplete retained import graph coverage for all referenced entries.
    - Remaining enum, function, plug-in, and nested plug-in edge cases.
 
-4. Integrate interpreter and compiler entry points so unsupported or invalid
+3. Integrate interpreter and compiler entry points so unsupported or invalid
    semantic inputs are rejected before execution/code generation.
 
 ## Tests
@@ -733,20 +730,17 @@ Add tests for:
 
 Keep tests aligned with the implementation milestones:
 
-1. Classes and builtin objects.
-   - Cast validity.
-
-2. Extended formula statements and sections.
+1. Extended formula statements and sections.
    - Bad switch case value.
    - Formula-kind-specific section availability not already enforced by the
      parser.
 
-3. Extended parameter-set bindings.
+2. Extended parameter-set bindings.
    - Missing referenced entry.
    - Incomplete retained import graph.
    - Remaining enum, function, plug-in, and nested plug-in edge cases.
 
-4. Downstream integration.
+3. Downstream integration.
    - Interpreter rejects semantic errors before execution.
    - Compiler rejects semantic errors before code generation.
    - Interpreter still reports runtime-only failures.
