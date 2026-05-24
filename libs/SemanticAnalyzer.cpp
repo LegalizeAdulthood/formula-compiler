@@ -770,6 +770,31 @@ void report_missing_retained_class(
     diagnostics.push_back(std::move(diagnostic));
 }
 
+bool is_missing_reference_diagnostic(parameter::ParameterReferenceErrorCode code)
+{
+    return code == parameter::ParameterReferenceErrorCode::MISSING_FILENAME ||
+        code == parameter::ParameterReferenceErrorCode::MISSING_ENTRY ||
+        code == parameter::ParameterReferenceErrorCode::UNRESOLVED_ENTRY;
+}
+
+void translate_missing_reference_diagnostics(
+    std::vector<SemanticDiagnostic> &diagnostics, const parameter::ParameterReferenceSet &references)
+{
+    for (const parameter::ParameterReferenceDiagnostic &reference_diagnostic : references.diagnostics)
+    {
+        if (!is_missing_reference_diagnostic(reference_diagnostic.code))
+        {
+            continue;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH;
+        diagnostic.location = reference_diagnostic.location;
+        diagnostic.entry_name = reference_diagnostic.detail;
+        diagnostic.message = "incomplete reference graph: missing referenced entry " + reference_diagnostic.detail;
+        diagnostics.push_back(std::move(diagnostic));
+    }
+}
+
 void check_retained_references(std::vector<SemanticDiagnostic> &diagnostics, const BuiltinRegistry &builtins,
     const ParameterSetSemanticContext &context, const std::string &entry_name, const ast::FormulaSections &ast)
 {
@@ -2322,6 +2347,7 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedP
 {
     std::vector<SemanticDiagnostic> diagnostics;
     const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
+    translate_missing_reference_diagnostics(diagnostics, references);
     for (const parameter::ParameterResolvedReference &resolved : references.resolved)
     {
         const parser::EntryKind expected{expected_entry_kind(resolved.reference.site.kind)};

@@ -152,6 +152,22 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsTransformKindMismatch)
         diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingReferencedEntry)
+{
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    references.diagnostics.push_back(
+        {parameter::ParameterReferenceErrorCode::UNRESOLVED_ENTRY, {}, "Example.ufm:Missing"});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH, diagnostics.front().code);
+    EXPECT_EQ("Example.ufm:Missing", diagnostics.front().entry_name);
+    EXPECT_EQ("incomplete reference graph: missing referenced entry Example.ufm:Missing", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingRetainedClass)
 {
     parser::Options options;
