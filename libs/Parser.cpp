@@ -52,7 +52,7 @@ struct PredefinedSymbol
     bool writable;
 };
 
-constexpr std::array<PredefinedSymbol, 25> PREDEFINED_SYMBOLS{
+constexpr std::array<PredefinedSymbol, 26> PREDEFINED_SYMBOLS{
     {
         {"angle", false},
         {"calculationPurpose", false},
@@ -73,6 +73,7 @@ constexpr std::array<PredefinedSymbol, 25> PREDEFINED_SYMBOLS{
         {"screenmax", false},
         {"screenpixel", false},
         {"skew", false},
+        {"solid", true},
         {"stretch", false},
         {"whitesq", false},
         {"width", false},

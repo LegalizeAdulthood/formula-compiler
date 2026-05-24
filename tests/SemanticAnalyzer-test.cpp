@@ -911,7 +911,7 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsImageAsBuiltinClass)
 TEST(TestSemanticAnalyzer, defaultRegistryFindsPredefinedSymbols)
 {
     const BuiltinRegistry &registry{default_builtin_registry()};
-    static constexpr std::array<std::string_view, 25> names{
+    static constexpr std::array<std::string_view, 26> names{
         "angle",
         "calculationPurpose",
         "center",
@@ -931,6 +931,7 @@ TEST(TestSemanticAnalyzer, defaultRegistryFindsPredefinedSymbols)
         "screenmax",
         "screenpixel",
         "skew",
+        "solid",
         "stretch",
         "whitesq",
         "width",

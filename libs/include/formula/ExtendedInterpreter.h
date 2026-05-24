@@ -63,6 +63,7 @@ private:
     void parse();
     void resolve_references();
     void analyze();
+    void initialize_runtime_state();
     void add_parse_diagnostics(const parser::Parser &parser);
     void add_reference_diagnostics();
     void add_semantic_diagnostics(const std::vector<semantic::SemanticDiagnostic> &diagnostics);

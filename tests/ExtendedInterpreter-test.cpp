@@ -196,6 +196,56 @@ TEST(TestExtendedInterpreter, interpretsParameterReferences)
     EXPECT_EQ(Value{2.5}, interpreter.interpret(Section::INITIALIZE));
 }
 
+TEST(TestExtendedInterpreter, initializesParametersFromDefaults)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@power\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "default=2.5\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{2.5}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{2.5}, interpreter.value("@power"));
+}
+
+TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@power\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "default=2.5\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@power", Value{4.0});
+
+    EXPECT_EQ(Value{4.0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, initializesPredefinedSymbols)
+{
+    EXPECT_EQ(Value{std::atan2(0.0, -1.0)}, interpret_init("#pi"));
+    EXPECT_EQ(Value{std::exp(1.0)}, interpret_init("#e"));
+    EXPECT_EQ(Value{2147483648.0}, interpret_init("#randomrange"));
+    EXPECT_EQ((Value{Complex{0.0, 0.0}}), interpret_init("#z"));
+}
+
+TEST(TestExtendedInterpreter, hostPredefinedValueOverridesDefaultValue)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel"), options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("#pixel", Value{Complex{1.0, 2.0}});
+
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
 TEST(TestExtendedInterpreter, interpretsArithmeticAndComparisonExpressions)
 {
     EXPECT_EQ(Value{7}, interpret_init("1+2*3"));
@@ -229,6 +279,56 @@ TEST(TestExtendedInterpreter, interpretsAssignmentToWritablePredefinedSymbol)
 
     EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.interpret(Section::INITIALIZE));
     EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("#pixel"));
+}
+
+TEST(TestExtendedInterpreter, readOnlyPredefinedSymbolAssignmentIsRejected)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n#pi=4"), options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, transformationWritesPixelAndSolid)
+{
+    ExtendedInterpreter interpreter{formula_entry("transform:\n"
+                                                  "#pixel=(1,2)\n"
+                                                  "#solid=true"),
+        options(parser::EntryKind::TRANSFORMATION)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{true}, interpreter.interpret(Section::TRANSFORM));
+    EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("#pixel"));
+    EXPECT_EQ(Value{true}, interpreter.value("#solid"));
+}
+
+TEST(TestExtendedInterpreter, coloringWritesIndexAndSolid)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n"
+                                                  "#index=0.5\n"
+                                                  "#solid=true\n"
+                                                  "#solid"),
+        options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{true}, interpreter.interpret(Section::FINAL));
+    EXPECT_EQ(Value{0.5}, interpreter.value("#index"));
+    EXPECT_EQ(Value{true}, interpreter.value("#solid"));
+}
+
+TEST(TestExtendedInterpreter, coloringWritesDirectColor)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\n"
+                                                  "#color=rgb(1,0,0)\n"
+                                                  "#color"),
+        options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpreter.interpret(Section::FINAL));
+    EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpreter.value("#color"));
 }
 
 TEST(TestExtendedInterpreter, interpretsScalarDeclarations)

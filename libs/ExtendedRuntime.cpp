@@ -214,6 +214,11 @@ void ExtendedRuntimeState::set_parameter_value(std::string_view name, Value valu
     m_parameters[key] = make_binding(key, std::move(value), writable);
 }
 
+bool ExtendedRuntimeState::has_parameter_value(std::string_view name) const
+{
+    return m_parameters.find(parameter_key(name)) != m_parameters.end();
+}
+
 Value ExtendedRuntimeState::parameter_value(std::string_view name) const
 {
     const std::string key{parameter_key(name)};
@@ -239,6 +244,11 @@ void ExtendedRuntimeState::set_predefined_value(std::string_view name, Value val
 {
     const std::string key{predefined_key(name)};
     m_predefined[key] = make_binding(key, std::move(value), writable);
+}
+
+bool ExtendedRuntimeState::has_predefined_value(std::string_view name) const
+{
+    return m_predefined.find(predefined_key(name)) != m_predefined.end();
 }
 
 Value ExtendedRuntimeState::predefined_value(std::string_view name) const

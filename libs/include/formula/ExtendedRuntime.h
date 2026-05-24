@@ -63,10 +63,12 @@ public:
     void pop_function_frame();
 
     void set_parameter_value(std::string_view name, Value value, bool writable = false);
+    bool has_parameter_value(std::string_view name) const;
     Value parameter_value(std::string_view name) const;
     RuntimeLValue parameter_lvalue(std::string_view name);
 
     void set_predefined_value(std::string_view name, Value value, bool writable);
+    bool has_predefined_value(std::string_view name) const;
     Value predefined_value(std::string_view name) const;
     RuntimeLValue predefined_lvalue(std::string_view name);
 

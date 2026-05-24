@@ -236,6 +236,8 @@ BuiltinRegistry make_default_builtin_registry()
         registry.predefined_symbols.push_back(
             predefined_symbol("skew", *float_type, false, true, formula_entries, formula_sections));
         registry.predefined_symbols.push_back(
+            predefined_symbol("solid", *bool_type, true, false, formula_entries, {"final", "transform"}));
+        registry.predefined_symbols.push_back(
             predefined_symbol("stretch", *float_type, false, true, formula_entries, formula_sections));
         registry.predefined_symbols.push_back(
             predefined_symbol("whitesq", *bool_type, false, false, formula_entries, formula_sections));

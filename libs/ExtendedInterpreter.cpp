@@ -334,6 +334,56 @@ ValueKind value_kind_for_type(std::string_view type)
     throw std::runtime_error("unsupported declaration type: " + std::string{type});
 }
 
+ValueKind value_kind_for_type(semantic::SemanticTypeKind type)
+{
+    switch (type)
+    {
+    case semantic::SemanticTypeKind::BOOL:
+        return ValueKind::BOOL;
+    case semantic::SemanticTypeKind::INT:
+        return ValueKind::INT;
+    case semantic::SemanticTypeKind::FLOAT:
+        return ValueKind::FLOAT;
+    case semantic::SemanticTypeKind::COMPLEX:
+        return ValueKind::COMPLEX;
+    case semantic::SemanticTypeKind::COLOR:
+        return ValueKind::COLOR;
+    case semantic::SemanticTypeKind::STRING:
+        return ValueKind::STRING;
+    case semantic::SemanticTypeKind::BUILTIN_OBJECT:
+    case semantic::SemanticTypeKind::CLASS_OBJECT:
+        return ValueKind::IMAGE;
+    default:
+        return ValueKind::EMPTY;
+    }
+}
+
+Value value_from_setting(const ast::SettingNode::ValueType &value)
+{
+    switch (value.index())
+    {
+    case 0:
+        return Value{std::get<double>(value)};
+    case 1:
+        return Value{std::get<Complex>(value)};
+    case 2:
+        return Value{std::get<std::string>(value)};
+    case 3:
+        return Value{std::get<int>(value)};
+    case 4:
+        return Value{std::get<ast::EnumName>(value).name};
+    case 5:
+        return Value{std::get<bool>(value)};
+    default:
+        return {};
+    }
+}
+
+const semantic::BuiltinRegistry &builtins_or_default(const semantic::BuiltinRegistry *builtins)
+{
+    return builtins != nullptr ? *builtins : semantic::default_builtin_registry();
+}
+
 void check_array_copy(const Value &target, const Value &source)
 {
     if (target.kind() != ValueKind::ARRAY || source.kind() != ValueKind::ARRAY)
@@ -998,6 +1048,67 @@ private:
     bool m_returning{};
 };
 
+class ParameterDefaultCollector : public ast::NullVisitor
+{
+public:
+    ParameterDefaultCollector(
+        ExtendedRuntimeState &state, const FunctionMap &functions, std::size_t max_loop_iterations) :
+        m_state(state),
+        m_functions(functions),
+        m_max_loop_iterations(max_loop_iterations)
+    {
+    }
+
+    void collect(const ast::Expr &node)
+    {
+        if (node)
+        {
+            node->visit(*this);
+        }
+    }
+
+    void visit(const ast::ParamBlockNode &node) override
+    {
+        m_current_parameter = &node;
+        collect(node.block());
+        m_current_parameter = nullptr;
+    }
+
+    void visit(const ast::SettingNode &node) override
+    {
+        if (m_current_parameter == nullptr || node.key() != "default" ||
+            m_state.has_parameter_value(m_current_parameter->name()))
+        {
+            return;
+        }
+        Value value;
+        if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
+        {
+            value = ExpressionInterpreter{m_state, m_functions, m_max_loop_iterations}.interpret(*expr);
+        }
+        else
+        {
+            value = value_from_setting(node.value());
+        }
+        m_state.set_parameter_value(
+            m_current_parameter->name(), convert_value(value, value_kind_for_type(m_current_parameter->type())));
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            collect(statement);
+        }
+    }
+
+private:
+    ExtendedRuntimeState &m_state;
+    FunctionMap m_functions;
+    std::size_t m_max_loop_iterations{};
+    const ast::ParamBlockNode *m_current_parameter{};
+};
+
 const ast::Expr &section_expr(const ast::FormulaSections &formula, Section section)
 {
     switch (section)
@@ -1071,6 +1182,7 @@ bool ExtendedInterpreter::ok() const
 
 void ExtendedInterpreter::set_value(std::string_view name, Value value)
 {
+    const semantic::BuiltinRegistry &builtins{builtins_or_default(m_options.builtins)};
     if (!name.empty() && name.front() == '@')
     {
         m_state.set_parameter_value(name, std::move(value));
@@ -1078,7 +1190,10 @@ void ExtendedInterpreter::set_value(std::string_view name, Value value)
     }
     if (!name.empty() && name.front() == '#')
     {
-        m_state.set_predefined_value(name, std::move(value), true);
+        std::string_view symbol{name};
+        symbol.remove_prefix(1);
+        const semantic::SemanticPredefinedSymbolDescriptor *descriptor{builtins.find_predefined_symbol(symbol)};
+        m_state.set_predefined_value(name, std::move(value), descriptor == nullptr || descriptor->writable);
         return;
     }
     m_state.set_formula_value(name, std::move(value));
@@ -1162,6 +1277,39 @@ void ExtendedInterpreter::analyze()
     context.retained_classes = std::move(retained_classes);
     context.builtins = m_options.builtins;
     add_semantic_diagnostics(semantic::analyze_formula(*m_ast, context));
+    initialize_runtime_state();
+}
+
+void ExtendedInterpreter::initialize_runtime_state()
+{
+    if (!m_ast || !m_diagnostics.empty())
+    {
+        return;
+    }
+    const semantic::BuiltinRegistry &builtins{builtins_or_default(m_options.builtins)};
+    for (const semantic::SemanticPredefinedSymbolDescriptor &symbol : builtins.predefined_symbols)
+    {
+        if (m_state.has_predefined_value(symbol.name))
+        {
+            continue;
+        }
+        Value value{default_value(value_kind_for_type(symbol.type.kind))};
+        if (symbol.name == "pi")
+        {
+            value = Value{std::atan2(0.0, -1.0)};
+        }
+        else if (symbol.name == "e")
+        {
+            value = Value{std::exp(1.0)};
+        }
+        else if (symbol.name == "randomrange")
+        {
+            value = Value{2147483648.0};
+        }
+        m_state.set_predefined_value(symbol.name, std::move(value), symbol.writable);
+    }
+    FunctionMap functions{collect_function_declarations(*m_ast)};
+    ParameterDefaultCollector{m_state, functions, m_options.max_loop_iterations}.collect(m_ast->defaults);
 }
 
 void ExtendedInterpreter::add_parse_diagnostics(const parser::Parser &parser)
