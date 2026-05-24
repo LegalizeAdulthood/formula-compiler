@@ -174,6 +174,79 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
+1. Plug-in binding data model.
+    - Add a runtime `PluginValue` or equivalent handle that stores the
+      selected class reference, retained class AST pointer, nested saved
+      parameter bindings, and initialized object state.
+    - Add public host APIs for binding a plug-in parameter outside a
+      parameter set. The API should accept the parameter name, resolved
+      selected class entry, retained class AST/reference metadata, and
+      nested saved values.
+    - Keep string-only saved plug-in values as compatibility input, but
+      convert them to resolved plug-in bindings before interpretation.
+    - Tests: host-bound plug-in selector is visible as a runtime object,
+      unbound plug-in parameters remain empty, and invalid unresolved
+      string selectors still fail before runtime use.
+
+2. Resolve plug-in bindings for standalone formulas.
+    - Extend `ExtendedInterpreterOptions` with a resolver or binding source
+      for plug-in parameter selections.
+    - During interpreter construction, resolve any host-supplied
+      `File.ulb:Class` selector the same way parameter-set references do.
+    - Retain referenced class ASTs and run the same semantic checks against
+      the selected class and nested saved values.
+    - Tests: standalone formula with `Plugin param p` and `new @p` can be
+      prepared from a host selector; missing entry, parse error, kind
+      mismatch, and nested parameter mismatch become diagnostics.
+
+3. Bind plug-ins from resolved parameter sets.
+    - Replace the current string preservation for `p_plugin=File.ulb:Class`
+      and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
+    - Reuse the parameter-set reference resolver data so the bridge does not
+      reparse entries that are already resolved and retained.
+    - Preserve layer/transform site metadata and support independent plugin
+      object instances per prepared formula.
+    - Tests: parameter-set bridge binds plug-in selectors and nested saved
+      values as resolved runtime objects; separate layers get separate
+      object state.
+
+4. Construct plug-in instances.
+    - Implement `new @pluginParam` for resolved plug-in parameters.
+    - Allocate object state from the retained class AST: public/protected/
+      private fields, default values, nested plug-in/image parameters, and
+      function parameter bindings.
+    - Apply nested saved parameter bindings before constructors run.
+    - Keep user constructors unsupported until the method-dispatch slice if
+      needed, but return a clear diagnostic/runtime error rather than a raw
+      unsupported node.
+    - Tests: `new @pluginParam` returns an object with initialized fields,
+      missing plug-in binding fails clearly, and nested defaults are applied.
+
+5. User class field access and assignment.
+    - Implement lvalues for object fields, including visibility rules already
+      validated by semantic analysis.
+    - Allow member reads/writes on plug-in and user class instances.
+    - Preserve object identity for by-reference use and assignments.
+    - Tests: field read/write, copied object references, private member
+      access remains a semantic error, and assignment through fields works.
+
+6. User class method dispatch.
+    - Implement method calls on plug-in and user class instances, including
+      `this`, local scope, return conversion, by-ref/const args, and access
+      to object fields.
+    - Support method lookup through base classes in the same order the
+      semantic analyzer validates.
+    - Tests: public method call, inherited method call, method mutating
+      object state, by-ref args, const args, and return conversion.
+
+7. User constructors and casts.
+    - Run class constructors during `new Class(...)` and `new @plugin(...)`
+      once method dispatch exists.
+    - Implement casts between object references according to the retained
+      class inheritance graph; failed casts return an empty/null reference.
+    - Tests: constructor arguments initialize fields, base-to-derived casts,
+      failed casts, and constructor arity/type backstops.
+
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and
   invalid conversions.
