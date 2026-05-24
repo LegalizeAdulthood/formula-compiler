@@ -190,7 +190,7 @@ struct FormulaFileSet
     std::vector<FormulaFileDiagnostic> diagnostics;
 };
 
-using FormulaFileImporter = std::function<std::string(std::string_view)>;
+using FormulaFileImporter = std::function<std::optional<std::string>(std::string_view)>;
 
 std::vector<FormulaEntry> load_formula_entries(std::istream &in);
 FormulaFile load_formula_file(std::istream &in, std::string filename = {});

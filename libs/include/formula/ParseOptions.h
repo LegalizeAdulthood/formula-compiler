@@ -7,6 +7,7 @@
 #include <formula/Dialect.h>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -25,7 +26,7 @@ struct Options
 {
     Dialect dialect{Dialect::EXTENDED};
     EntryKind entry_kind{EntryKind::FRACTAL};
-    std::function<std::string(std::string_view)> file_importer;
+    std::function<std::optional<std::string>(std::string_view)> file_importer;
     std::string source_filename;
 };
 

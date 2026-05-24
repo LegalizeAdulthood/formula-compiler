@@ -279,18 +279,15 @@ static void load_formula_file_tree(std::string_view filename, const FormulaFileI
     states.emplace(key, LoadState::LOADING);
     import_stack.push_back(key);
 
-    std::string text;
-    try
-    {
-        text = importer(filename);
-    }
-    catch (...)
+    std::optional<std::string> imported_text{importer(filename)};
+    if (!imported_text)
     {
         add_diagnostic(result, FormulaFileDiagnosticCode::MISSING_IMPORT, filename, import_stack);
         states[key] = LoadState::LOADED;
         import_stack.pop_back();
         return;
     }
+    std::string text{std::move(*imported_text)};
 
     preprocessor::Preprocessor preprocessor{preprocessor::UltraFractalMacros::ULTRAFRACTAL6, key};
     text = preprocessor.process(text);

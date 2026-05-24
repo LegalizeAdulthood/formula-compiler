@@ -450,8 +450,16 @@ TEST(TestFormulaEntry, fileTreeReportsMissingImport)
             "}\n"},
     };
 
-    auto result{load_formula_file_tree(
-        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+    auto result{load_formula_file_tree("main.ufm",
+        [&files](std::string_view filename) -> std::optional<std::string>
+        {
+            const auto found = files.find(std::string{filename});
+            if (found == files.end())
+            {
+                return std::nullopt;
+            }
+            return found->second;
+        })};
 
     ASSERT_EQ(1U, result.diagnostics.size());
     EXPECT_EQ(FormulaFileDiagnosticCode::MISSING_IMPORT, result.diagnostics[0].code);
@@ -459,6 +467,13 @@ TEST(TestFormulaEntry, fileTreeReportsMissingImport)
     ASSERT_EQ(2U, result.diagnostics[0].import_stack.size());
     EXPECT_EQ("main.ufm", result.diagnostics[0].import_stack[0]);
     EXPECT_EQ("missing.ufm", result.diagnostics[0].import_stack[1]);
+}
+
+TEST(TestFormulaEntry, fileTreePropagatesImporterExceptions)
+{
+    EXPECT_THROW(load_formula_file_tree("main.ufm",
+                     [](std::string_view) -> std::optional<std::string> { throw std::runtime_error{"import failed"}; }),
+        std::runtime_error);
 }
 
 TEST(TestFormulaEntry, fileTreeReportsImportCycle)
