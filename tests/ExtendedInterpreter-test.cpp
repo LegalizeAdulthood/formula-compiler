@@ -417,6 +417,61 @@ TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
     EXPECT_EQ(Value{4.0}, interpreter.interpret(Section::INITIALIZE));
 }
 
+TEST(TestExtendedInterpreter, initializesEnumParameterDefault)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@mode==\"Silver\"\n"
+                                                  "default:\n"
+                                                  "int param mode\n"
+                                                  "enum=\"Golden\" \"Silver\"\n"
+                                                  "default=1\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{true}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{1}, convert_value(interpreter.value("@mode"), ValueKind::INT));
+}
+
+TEST(TestExtendedInterpreter, bindsEnumParameterByLabelAndIndex)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@mode==\"Silver\"\n"
+                                                  "default:\n"
+                                                  "int param mode\n"
+                                                  "enum=\"Golden\" \"Silver\"\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_parameter("mode", Value{std::string{"Silver"}});
+
+    EXPECT_EQ(Value{true}, interpreter.interpret(Section::INITIALIZE));
+
+    interpreter.set_parameter("mode", Value{0});
+
+    EXPECT_EQ(Value{false}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, invalidEnumParameterBindingBlocksExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@mode\n"
+                                                  "default:\n"
+                                                  "int param mode\n"
+                                                  "enum=\"Golden\" \"Silver\"\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_parameter("mode", Value{std::string{"Bronze"}});
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"

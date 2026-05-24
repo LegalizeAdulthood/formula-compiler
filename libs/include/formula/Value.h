@@ -26,6 +26,7 @@ enum class ValueKind
     STRING,
     ARRAY,
     IMAGE,
+    ENUM,
 };
 
 struct ColorValue
@@ -38,14 +39,16 @@ struct ColorValue
 
 struct ArrayValue;
 struct ImageValue;
+struct EnumValue;
 
 class Value
 {
 public:
     using ArrayPtr = std::shared_ptr<ArrayValue>;
     using ImagePtr = std::shared_ptr<ImageValue>;
+    using EnumPtr = std::shared_ptr<EnumValue>;
     using Storage =
-        std::variant<std::monostate, bool, int, double, Complex, ColorValue, std::string, ArrayPtr, ImagePtr>;
+        std::variant<std::monostate, bool, int, double, Complex, ColorValue, std::string, ArrayPtr, ImagePtr, EnumPtr>;
 
     Value() = default;
     explicit Value(bool value);
@@ -56,6 +59,7 @@ public:
     explicit Value(std::string value);
     explicit Value(ArrayPtr value);
     explicit Value(ImagePtr value);
+    explicit Value(EnumPtr value);
 
     ValueKind kind() const;
     const Storage &storage() const;
@@ -81,12 +85,21 @@ struct ImageValue
     std::vector<ColorValue> pixels;
 };
 
+struct EnumValue
+{
+    int index{};
+    std::string label;
+    std::vector<std::string> labels;
+};
+
 bool operator==(const ColorValue &lhs, const ColorValue &rhs);
 bool operator!=(const ColorValue &lhs, const ColorValue &rhs);
 bool operator==(const ArrayValue &lhs, const ArrayValue &rhs);
 bool operator!=(const ArrayValue &lhs, const ArrayValue &rhs);
 bool operator==(const ImageValue &lhs, const ImageValue &rhs);
 bool operator!=(const ImageValue &lhs, const ImageValue &rhs);
+bool operator==(const EnumValue &lhs, const EnumValue &rhs);
+bool operator!=(const EnumValue &lhs, const EnumValue &rhs);
 bool operator==(const Value &lhs, const Value &rhs);
 bool operator!=(const Value &lhs, const Value &rhs);
 
@@ -97,6 +110,7 @@ ValueKind promote_numeric_kind(ValueKind lhs, ValueKind rhs);
 Value default_value(ValueKind kind);
 Value make_array_value(ArrayValue value);
 Value make_image_value(ImageValue value);
+Value make_enum_value(EnumValue value);
 Value convert_value(const Value &value, ValueKind target);
 bool is_truthy(const Value &value);
 std::string format_value(const Value &value);

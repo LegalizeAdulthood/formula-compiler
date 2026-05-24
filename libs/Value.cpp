@@ -26,6 +26,7 @@ int numeric_rank(ValueKind kind)
     case ValueKind::FLOAT:
         return 2;
     case ValueKind::COMPLEX:
+    case ValueKind::ENUM:
         return 3;
     default:
         throw std::runtime_error("non-numeric value kind: " + std::string{type_name(kind)});
@@ -44,6 +45,11 @@ double numeric_real_part(const Value &value)
         return std::get<double>(value.storage());
     case ValueKind::COMPLEX:
         return std::get<Complex>(value.storage()).re;
+    case ValueKind::ENUM:
+    {
+        const Value::EnumPtr enum_value{std::get<Value::EnumPtr>(value.storage())};
+        return enum_value ? static_cast<double>(enum_value->index) : 0.0;
+    }
     default:
         throw std::runtime_error("cannot read numeric value from " + std::string{type_name(value)});
     }
@@ -116,6 +122,11 @@ Value::Value(ImagePtr value) :
 {
 }
 
+Value::Value(EnumPtr value) :
+    m_storage(std::move(value))
+{
+}
+
 ValueKind Value::kind() const
 {
     switch (m_storage.index())
@@ -138,6 +149,8 @@ ValueKind Value::kind() const
         return ValueKind::ARRAY;
     case 8:
         return ValueKind::IMAGE;
+    case 9:
+        return ValueKind::ENUM;
     default:
         throw std::runtime_error("value variant index out of range");
     }
@@ -180,6 +193,16 @@ bool operator!=(const ImageValue &lhs, const ImageValue &rhs)
     return !(lhs == rhs);
 }
 
+bool operator==(const EnumValue &lhs, const EnumValue &rhs)
+{
+    return lhs.index == rhs.index && lhs.label == rhs.label && lhs.labels == rhs.labels;
+}
+
+bool operator!=(const EnumValue &lhs, const EnumValue &rhs)
+{
+    return !(lhs == rhs);
+}
+
 bool operator==(const Value &lhs, const Value &rhs)
 {
     if (lhs.kind() != rhs.kind())
@@ -206,6 +229,8 @@ bool operator==(const Value &lhs, const Value &rhs)
         return ptr_equal(std::get<Value::ArrayPtr>(lhs.storage()), std::get<Value::ArrayPtr>(rhs.storage()));
     case ValueKind::IMAGE:
         return ptr_equal(std::get<Value::ImagePtr>(lhs.storage()), std::get<Value::ImagePtr>(rhs.storage()));
+    case ValueKind::ENUM:
+        return ptr_equal(std::get<Value::EnumPtr>(lhs.storage()), std::get<Value::EnumPtr>(rhs.storage()));
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -237,6 +262,8 @@ std::string_view type_name(ValueKind kind)
         return "array";
     case ValueKind::IMAGE:
         return "image";
+    case ValueKind::ENUM:
+        return "enum";
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -248,7 +275,8 @@ std::string_view type_name(const Value &value)
 
 bool is_numeric(ValueKind kind)
 {
-    return kind == ValueKind::BOOL || kind == ValueKind::INT || kind == ValueKind::FLOAT || kind == ValueKind::COMPLEX;
+    return kind == ValueKind::BOOL || kind == ValueKind::INT || kind == ValueKind::FLOAT ||
+        kind == ValueKind::COMPLEX || kind == ValueKind::ENUM;
 }
 
 ValueKind promote_numeric_kind(ValueKind lhs, ValueKind rhs)
@@ -282,6 +310,8 @@ Value default_value(ValueKind kind)
         return make_array_value(ArrayValue{});
     case ValueKind::IMAGE:
         return make_image_value(ImageValue{});
+    case ValueKind::ENUM:
+        return make_enum_value(EnumValue{});
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -296,6 +326,11 @@ Value make_image_value(ImageValue value)
     return Value{std::make_shared<ImageValue>(std::move(value))};
 }
 
+Value make_enum_value(EnumValue value)
+{
+    return Value{std::make_shared<EnumValue>(std::move(value))};
+}
+
 Value convert_value(const Value &value, ValueKind target)
 {
     if (value.kind() == target)
@@ -305,6 +340,20 @@ Value convert_value(const Value &value, ValueKind target)
     if (target == ValueKind::BOOL && is_numeric(value.kind()))
     {
         return Value{is_truthy(value)};
+    }
+    if (value.kind() == ValueKind::ENUM && is_numeric(target))
+    {
+        switch (target)
+        {
+        case ValueKind::INT:
+            return Value{static_cast<int>(numeric_real_part(value))};
+        case ValueKind::FLOAT:
+            return Value{numeric_real_part(value)};
+        case ValueKind::COMPLEX:
+            return Value{numeric_complex_value(value)};
+        default:
+            break;
+        }
     }
     if (is_numeric(value.kind()) && is_numeric(target) && numeric_rank(value.kind()) <= numeric_rank(target))
     {
@@ -339,6 +388,11 @@ bool is_truthy(const Value &value)
     {
         const Complex complex{std::get<Complex>(value.storage())};
         return complex.re != 0.0 || complex.im != 0.0;
+    }
+    case ValueKind::ENUM:
+    {
+        const Value::EnumPtr enum_value{std::get<Value::EnumPtr>(value.storage())};
+        return enum_value && enum_value->index != 0;
     }
     default:
         throw std::runtime_error("cannot test truthiness of " + std::string{type_name(value)});
@@ -384,6 +438,12 @@ std::string format_value(const Value &value)
     {
         const Value::ImagePtr image{std::get<Value::ImagePtr>(value.storage())};
         out << "image(" << (!image || image->empty ? "empty" : image->name) << ')';
+        break;
+    }
+    case ValueKind::ENUM:
+    {
+        const Value::EnumPtr enum_value{std::get<Value::EnumPtr>(value.storage())};
+        out << "enum(" << (!enum_value ? 0 : enum_value->index) << ')';
         break;
     }
     }

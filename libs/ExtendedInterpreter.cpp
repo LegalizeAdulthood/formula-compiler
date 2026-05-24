@@ -241,6 +241,7 @@ struct RuntimeParameterInfo
 {
     std::string type;
     std::string name;
+    std::vector<std::string> enum_values;
 };
 
 struct RuntimeParameterForward
@@ -267,16 +268,28 @@ public:
 
     void visit(const ast::FunctionBlockNode &node) override
     {
-        m_metadata.functions.push_back({node.type(), node.name()});
+        m_metadata.functions.push_back({node.type(), node.name(), {}});
     }
 
     void visit(const ast::ParamBlockNode &node) override
     {
-        m_metadata.params.push_back({node.type(), node.name()});
+        RuntimeParameterInfo param{node.type(), node.name(), {}};
+        m_current_param = &param;
+        visit_node(node.block());
+        m_current_param = nullptr;
+        m_metadata.params.push_back(std::move(param));
     }
 
     void visit(const ast::SettingNode &node) override
     {
+        if (node.key() == "enum" && m_current_param != nullptr)
+        {
+            if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+            {
+                m_current_param->enum_values = *values;
+            }
+            return;
+        }
         if (node.key() != "param_forward")
         {
             return;
@@ -306,6 +319,7 @@ private:
     }
 
     RuntimeParameterMetadata m_metadata;
+    RuntimeParameterInfo *m_current_param{};
 };
 
 bool starts_with(std::string_view text, std::string_view prefix)
@@ -363,6 +377,59 @@ const RuntimeParameterInfo *find_runtime_function(const RuntimeParameterMetadata
         }
     }
     return nullptr;
+}
+
+std::optional<int> parse_enum_index(std::string_view value)
+{
+    int result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    if (parsed.ec == std::errc{} && parsed.ptr == last)
+    {
+        return result;
+    }
+    return std::nullopt;
+}
+
+std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &parameter, const Value &value)
+{
+    if (parameter.enum_values.empty())
+    {
+        return std::nullopt;
+    }
+    int index{};
+    if (value.kind() == ValueKind::STRING)
+    {
+        const std::string &text{std::get<std::string>(value.storage())};
+        const auto found{std::find(parameter.enum_values.begin(), parameter.enum_values.end(), text)};
+        if (found == parameter.enum_values.end())
+        {
+            if (const std::optional<int> parsed{parse_enum_index(text)})
+            {
+                index = *parsed;
+            }
+            else
+            {
+                throw std::runtime_error("invalid enum value: " + text);
+            }
+        }
+        else
+        {
+            index = static_cast<int>(std::distance(parameter.enum_values.begin(), found));
+        }
+    }
+    else
+    {
+        const Value converted{convert_value(value, ValueKind::INT)};
+        index = std::get<int>(converted.storage());
+    }
+    if (index < 0 || static_cast<std::size_t>(index) >= parameter.enum_values.size())
+    {
+        throw std::runtime_error("invalid enum value: " + std::to_string(index));
+    }
+    return make_enum_value(
+        EnumValue{index, parameter.enum_values[static_cast<std::size_t>(index)], parameter.enum_values});
 }
 
 std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
@@ -532,6 +599,37 @@ Value parse_saved_parameter_value(std::string_view type, std::string_view value)
     return Value{std::string{value}};
 }
 
+std::optional<bool> compare_enum_to_string(const Value &lhs, const Value &rhs, const std::string &op)
+{
+    const Value *enum_value{nullptr};
+    const Value *string_value{nullptr};
+    if (lhs.kind() == ValueKind::ENUM && rhs.kind() == ValueKind::STRING)
+    {
+        enum_value = &lhs;
+        string_value = &rhs;
+    }
+    else if (lhs.kind() == ValueKind::STRING && rhs.kind() == ValueKind::ENUM)
+    {
+        enum_value = &rhs;
+        string_value = &lhs;
+    }
+    if (enum_value == nullptr)
+    {
+        return std::nullopt;
+    }
+    const Value::EnumPtr enum_ptr{std::get<Value::EnumPtr>(enum_value->storage())};
+    const bool matches{enum_ptr && enum_ptr->label == std::get<std::string>(string_value->storage())};
+    if (op == "==")
+    {
+        return matches;
+    }
+    if (op == "!=")
+    {
+        return !matches;
+    }
+    return std::nullopt;
+}
+
 std::string parameter_reference_message(const parameter::ParameterReferenceDiagnostic &diagnostic)
 {
     switch (diagnostic.code)
@@ -632,6 +730,10 @@ void resize_image(ImageValue &image, int width, int height)
 
 Value compare_values(const Value &lhs, const Value &rhs, const std::string &op)
 {
+    if (const std::optional<bool> result{compare_enum_to_string(lhs, rhs, op)})
+    {
+        return Value{*result};
+    }
     if (op == "==")
     {
         if (is_numeric(lhs.kind()) && is_numeric(rhs.kind()))
@@ -1630,12 +1732,20 @@ public:
     void visit(const ast::ParamBlockNode &node) override
     {
         m_current_parameter = &node;
+        m_current_enum_values.clear();
         collect(node.block());
         if (!m_state.has_parameter_value(node.name()))
         {
-            m_state.set_parameter_value(node.name(), implicit_parameter_default(node.type()));
+            Value value{implicit_parameter_default(node.type())};
+            if (!m_current_enum_values.empty())
+            {
+                value = *make_enum_parameter_value(
+                    RuntimeParameterInfo{node.type(), node.name(), m_current_enum_values}, value);
+            }
+            m_state.set_parameter_value(node.name(), std::move(value));
         }
         m_current_parameter = nullptr;
+        m_current_enum_values.clear();
     }
 
     void visit(const ast::FunctionBlockNode &node) override
@@ -1654,6 +1764,13 @@ public:
     {
         if (node.key() != "default")
         {
+            if (node.key() == "enum" && m_current_parameter != nullptr)
+            {
+                if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+                {
+                    m_current_enum_values = *values;
+                }
+            }
             return;
         }
         if (m_current_function != nullptr && !m_state.has_parameter_value(m_current_function->name()))
@@ -1677,8 +1794,14 @@ public:
         {
             value = value_from_setting(node.value());
         }
-        m_state.set_parameter_value(
-            m_current_parameter->name(), convert_parameter_default(value, m_current_parameter->type()));
+        value = convert_parameter_default(value, m_current_parameter->type());
+        if (!m_current_enum_values.empty())
+        {
+            value = *make_enum_parameter_value(
+                RuntimeParameterInfo{m_current_parameter->type(), m_current_parameter->name(), m_current_enum_values},
+                value);
+        }
+        m_state.set_parameter_value(m_current_parameter->name(), std::move(value));
     }
 
     void visit(const ast::StatementSeqNode &node) override
@@ -1695,6 +1818,7 @@ private:
     std::size_t m_max_loop_iterations{};
     const ast::ParamBlockNode *m_current_parameter{};
     const ast::FunctionBlockNode *m_current_function{};
+    std::vector<std::string> m_current_enum_values;
 };
 
 const ast::Expr &section_expr(const ast::FormulaSections &formula, Section section)
@@ -1800,20 +1924,42 @@ void ExtendedInterpreter::set_value(std::string_view name, Value value)
         std::string_view parameter_name{name};
         parameter_name.remove_prefix(1);
         clear_binding_diagnostics(parameter_name);
-        if (const auto found = std::find_if(m_parameters.begin(), m_parameters.end(),
-                [parameter_name](const auto &parameter) { return parameter.name == parameter_name; });
-            found != m_parameters.end())
+        if (m_ast)
         {
-            if (const std::optional<ValueKind> kind{parameter_value_kind(found->type)})
+            const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*m_ast)};
+            if (const RuntimeParameterInfo *parameter{find_runtime_parameter(metadata, parameter_name)})
             {
                 try
                 {
-                    value = convert_value(value, *kind);
+                    if (const std::optional<Value> enum_value{make_enum_parameter_value(*parameter, value)})
+                    {
+                        value = *enum_value;
+                    }
                 }
                 catch (const std::runtime_error &error)
                 {
                     add_binding_diagnostic(parameter_name, error.what());
                     return;
+                }
+            }
+        }
+        if (value.kind() != ValueKind::ENUM)
+        {
+            if (const auto found = std::find_if(m_parameters.begin(), m_parameters.end(),
+                    [parameter_name](const auto &parameter) { return parameter.name == parameter_name; });
+                found != m_parameters.end())
+            {
+                if (const std::optional<ValueKind> kind{parameter_value_kind(found->type)})
+                {
+                    try
+                    {
+                        value = convert_value(value, *kind);
+                    }
+                    catch (const std::runtime_error &error)
+                    {
+                        add_binding_diagnostic(parameter_name, error.what());
+                        return;
+                    }
                 }
             }
         }
@@ -2109,7 +2255,12 @@ PreparedParameterSet prepare_parameter_interpreters(
                 const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
                 if (info != nullptr)
                 {
-                    interpreter.set_parameter(name, parse_saved_parameter_value(info->type, parameter.value));
+                    Value value{parse_saved_parameter_value(info->type, parameter.value)};
+                    if (const std::optional<Value> enum_value{make_enum_parameter_value(*info, value)})
+                    {
+                        value = *enum_value;
+                    }
+                    interpreter.set_parameter(name, std::move(value));
                 }
                 continue;
             }
