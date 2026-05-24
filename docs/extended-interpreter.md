@@ -256,12 +256,17 @@ workflow before being considered complete.
 5. Function parameter binding and dispatch.
     - Implement `set_function_parameter` for raw parameter names.
     - Validate function targets at binding time and record binding diagnostics.
+    - Compare binding-time target validation with parameter-set analysis so
+      host overrides and saved `f_` bindings reject the same invalid shapes.
+    - Keep target-shape, callable-kind, and global-section restriction checks
+      aligned between construction diagnostics and binding diagnostics.
     - Dispatch calls through function parameters to builtin or user functions
       as allowed by semantic rules.
     - Preserve global-section `const` function restrictions.
     - Tests: default fallback functions, host function override, invalid
-      target diagnostics, builtin target call, user target call, and global
-      restriction enforcement.
+      target diagnostics, builtin target call, user target call, global
+      restriction enforcement, and analyzer-only failure coverage for any
+      construction-time cases discovered while implementing the interpreter.
 
 6. Enum parameter runtime values.
     - Represent enum parameters as values that preserve selected label and
