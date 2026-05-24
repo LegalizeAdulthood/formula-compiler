@@ -3,6 +3,7 @@
 // Copyright 2026 Richard Thomson
 //
 #include <formula/ExtendedInterpreter.h>
+#include <formula/Parser.h>
 
 #include <gtest/gtest.h>
 
@@ -44,6 +45,29 @@ Value interpret_init(std::string expression)
     ExtendedInterpreter interpreter{formula_entry("init:\n" + std::move(expression)), options()};
     EXPECT_TRUE(interpreter.ok());
     return interpreter.interpret(Section::INITIALIZE);
+}
+
+parameter::ParameterResolvedReference resolved_parameter_reference(std::string filename, std::string entry_name,
+    std::string body, parser::EntryKind entry_kind, std::vector<parameter::Parameter> parameters)
+{
+    parser::Options parser_options;
+    parser_options.dialect = Dialect::EXTENDED;
+    parser_options.entry_kind = entry_kind;
+    const parser::ParserPtr parser{parser::create_parser(body, parser_options)};
+    ast::FormulaSectionsPtr ast{parser->parse()};
+    EXPECT_TRUE(parser->get_errors().empty());
+    EXPECT_TRUE(ast);
+
+    parameter::ParameterReference reference;
+    reference.filename = std::move(filename);
+    reference.entry = std::move(entry_name);
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.parameters = std::move(parameters);
+
+    FileEntry entry;
+    entry.name = reference.entry;
+    entry.body = std::move(body);
+    return {std::move(reference), std::move(entry), std::move(ast), entry_kind};
 }
 
 void expect_unsupported(ExtendedInterpreter &interpreter, Section section, std::string_view node)
@@ -240,6 +264,94 @@ TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
     interpreter.set_value("@power", Value{4.0});
 
     EXPECT_EQ(Value{4.0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, preparesParameterSetInterpretersWithSavedValues)
+{
+    parameter::ParameterReferenceSet references;
+    references.resolved.push_back(resolved_parameter_reference("formula.ufm", "Mandelbrot",
+        "init:\n"
+        "@power\n"
+        "default:\n"
+        "float param power\n"
+        "endparam\n",
+        parser::EntryKind::FRACTAL, {{"p_power", "2.5"}}));
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, options())};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(1U, prepared.formulas.size());
+    EXPECT_EQ("formula.ufm", prepared.formulas[0].filename);
+    EXPECT_EQ("Mandelbrot", prepared.formulas[0].entry);
+    EXPECT_EQ(Value{2.5}, prepared.formulas[0].interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, preparesLayerSpecificParameterSetInterpreters)
+{
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterResolvedReference first{resolved_parameter_reference("formula.ufm", "Mandelbrot",
+        "init:\n"
+        "@power\n"
+        "default:\n"
+        "float param power\n"
+        "endparam\n",
+        parser::EntryKind::FRACTAL, {{"p_power", "2.0"}})};
+    first.reference.site.layer_index = 0;
+    parameter::ParameterResolvedReference second{resolved_parameter_reference("formula.ufm", "Mandelbrot",
+        "init:\n"
+        "@power\n"
+        "default:\n"
+        "float param power\n"
+        "endparam\n",
+        parser::EntryKind::FRACTAL, {{"p_power", "3.0"}})};
+    second.reference.site.layer_index = 1;
+    references.resolved.push_back(std::move(first));
+    references.resolved.push_back(std::move(second));
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, options())};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(2U, prepared.formulas.size());
+    EXPECT_EQ(0U, prepared.formulas[0].site.layer_index);
+    EXPECT_EQ(Value{2.0}, prepared.formulas[0].interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(1U, prepared.formulas[1].site.layer_index);
+    EXPECT_EQ(Value{3.0}, prepared.formulas[1].interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, preparesImageFunctionAndPluginParameterBindings)
+{
+    parameter::ParameterReferenceSet references;
+    references.resolved.push_back(resolved_parameter_reference("formula.ufm", "Mandelbrot",
+        "init:\n"
+        "1\n"
+        "default:\n"
+        "Image param source\n"
+        "endparam\n"
+        "complex func fn1\n"
+        "endfunc\n",
+        parser::EntryKind::FRACTAL, {{"p_source", "source.png"}, {"f_fn1", "sin"}, {"p_plugin.p_power", "2.0"}}));
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, options())};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(1U, prepared.formulas.size());
+    EXPECT_EQ(Value{std::string{"sin"}}, prepared.formulas[0].interpreter.value("@fn1"));
+    EXPECT_EQ(Value{std::string{"2.0"}}, prepared.formulas[0].interpreter.value("@plugin.p_power"));
+    EXPECT_EQ(false, std::get<Value::ImagePtr>(prepared.formulas[0].interpreter.value("@source").storage())->empty);
+}
+
+TEST(TestExtendedInterpreter, prepareParameterSetInterpretersBlocksDiagnostics)
+{
+    parameter::ParameterReferenceSet references;
+    references.diagnostics.push_back(
+        {parameter::ParameterReferenceErrorCode::UNRESOLVED_ENTRY, {}, "formula.ufm:Missing"});
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, options())};
+
+    EXPECT_FALSE(prepared.ok());
+    EXPECT_TRUE(prepared.formulas.empty());
+    ASSERT_EQ(1U, prepared.diagnostics.size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::REFERENCE, prepared.diagnostics[0].kind);
 }
 
 TEST(TestExtendedInterpreter, initializesPredefinedSymbols)

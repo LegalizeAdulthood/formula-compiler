@@ -7,6 +7,7 @@
 #include <formula/ExtendedRuntime.h>
 #include <formula/FileEntry.h>
 #include <formula/Formula.h>
+#include <formula/Parameter.h>
 #include <formula/ParseOptions.h>
 #include <formula/SemanticAnalyzer.h>
 
@@ -75,5 +76,24 @@ private:
     std::vector<ExtendedInterpreterDiagnostic> m_diagnostics;
     ExtendedRuntimeState m_state;
 };
+
+struct PreparedParameterFormula
+{
+    parameter::ParameterReferenceSite site;
+    std::string filename;
+    std::string entry;
+    ExtendedInterpreter interpreter;
+};
+
+struct PreparedParameterSet
+{
+    std::vector<PreparedParameterFormula> formulas;
+    std::vector<ExtendedInterpreterDiagnostic> diagnostics;
+
+    bool ok() const;
+};
+
+PreparedParameterSet prepare_parameter_interpreters(
+    const parameter::ParameterReferenceSet &references, ExtendedInterpreterOptions options);
 
 } // namespace formula

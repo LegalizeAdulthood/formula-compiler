@@ -174,19 +174,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Parameter-set binding bridge.
-    - Add helper code that constructs one `ExtendedInterpreter` per
-      referenced formula in a resolved extended parameter set.
-    - Bind saved fractal, coloring, transform, function, plug-in, and image
-      parameters into each interpreter runtime state after semantic
-      analysis succeeds.
-    - Do not add pixel orchestration here; return prepared interpreters or
-      formula-evaluation objects to the client.
-    - Tests: saved value binding, layer-specific values, function parameter
-      targets, plug-in nested values, image parameters, and diagnostics
-      blocking preparation.
-
-2. Regression and compatibility pass.
+1. Regression and compatibility pass.
     - Ensure existing BASIC parser, interpreter, and compiler tests keep
       using the current `Formula` interface.
     - Add explicit tests proving extended interpreter changes do not alter

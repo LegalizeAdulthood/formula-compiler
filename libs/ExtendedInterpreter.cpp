@@ -12,6 +12,8 @@
 #include "functions.h"
 
 #include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -234,6 +236,225 @@ struct HslValue
     double saturation{};
     double luminance{};
 };
+
+struct RuntimeParameterInfo
+{
+    std::string type;
+    std::string name;
+};
+
+struct RuntimeParameterForward
+{
+    std::string old_name;
+    std::string target_name;
+};
+
+struct RuntimeParameterMetadata
+{
+    std::vector<RuntimeParameterInfo> params;
+    std::vector<RuntimeParameterInfo> functions;
+    std::vector<RuntimeParameterForward> forwards;
+};
+
+class RuntimeParameterMetadataCollector : public ast::NullVisitor
+{
+public:
+    RuntimeParameterMetadata collect(const ast::Expr &node)
+    {
+        visit_node(node);
+        return std::move(m_metadata);
+    }
+
+    void visit(const ast::FunctionBlockNode &node) override
+    {
+        m_metadata.functions.push_back({node.type(), node.name()});
+    }
+
+    void visit(const ast::ParamBlockNode &node) override
+    {
+        m_metadata.params.push_back({node.type(), node.name()});
+    }
+
+    void visit(const ast::SettingNode &node) override
+    {
+        if (node.key() != "param_forward")
+        {
+            return;
+        }
+        if (const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+            values != nullptr && values->size() >= 2U)
+        {
+            m_metadata.forwards.push_back({values->front(), (*values)[1]});
+        }
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            visit_node(statement);
+        }
+    }
+
+private:
+    void visit_node(const ast::Expr &node)
+    {
+        if (node)
+        {
+            node->visit(*this);
+        }
+    }
+
+    RuntimeParameterMetadata m_metadata;
+};
+
+bool starts_with(std::string_view text, std::string_view prefix)
+{
+    return text.size() >= prefix.size() && text.substr(0, prefix.size()) == prefix;
+}
+
+bool same_identifier(std::string_view left, std::string_view right)
+{
+    if (left.size() != right.size())
+    {
+        return false;
+    }
+    for (std::size_t index = 0; index < left.size(); ++index)
+    {
+        const char left_char{static_cast<char>(std::tolower(static_cast<unsigned char>(left[index])))};
+        const char right_char{static_cast<char>(std::tolower(static_cast<unsigned char>(right[index])))};
+        if (left_char != right_char)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+RuntimeParameterMetadata collect_runtime_parameter_metadata(const ast::FormulaSections &ast)
+{
+    return RuntimeParameterMetadataCollector{}.collect(ast.defaults);
+}
+
+const RuntimeParameterInfo *find_runtime_parameter(const RuntimeParameterMetadata &metadata, std::string_view name)
+{
+    for (const RuntimeParameterInfo &param : metadata.params)
+    {
+        if (param.name == name)
+        {
+            return &param;
+        }
+    }
+    return nullptr;
+}
+
+std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
+{
+    for (const RuntimeParameterForward &forward : metadata.forwards)
+    {
+        if (forward.old_name == name)
+        {
+            return forward.target_name;
+        }
+    }
+    return std::string{name};
+}
+
+int parse_saved_int(std::string_view value)
+{
+    int result{};
+    const char *first{value.data()};
+    const char *last{value.data() + value.size()};
+    const std::from_chars_result parsed{std::from_chars(first, last, result)};
+    if (parsed.ec != std::errc{} || parsed.ptr != last)
+    {
+        throw std::runtime_error("invalid saved int parameter");
+    }
+    return result;
+}
+
+double parse_saved_float(std::string_view value)
+{
+    std::size_t pos{};
+    const double result{std::stod(std::string{value}, &pos)};
+    if (pos != value.size())
+    {
+        throw std::runtime_error("invalid saved float parameter");
+    }
+    return result;
+}
+
+Value parse_saved_parameter_value(std::string_view type, std::string_view value)
+{
+    if (type == "bool")
+    {
+        if (same_identifier(value, "yes") || same_identifier(value, "on") || same_identifier(value, "true"))
+        {
+            return Value{true};
+        }
+        if (same_identifier(value, "no") || same_identifier(value, "off") || same_identifier(value, "false"))
+        {
+            return Value{false};
+        }
+        throw std::runtime_error("invalid saved bool parameter");
+    }
+    if (type == "int")
+    {
+        return Value{parse_saved_int(value)};
+    }
+    if (type == "float")
+    {
+        return Value{parse_saved_float(value)};
+    }
+    if (type == "complex")
+    {
+        const std::size_t separator{value.find('/')};
+        if (separator == std::string_view::npos)
+        {
+            throw std::runtime_error("invalid saved complex parameter");
+        }
+        return Value{
+            Complex{parse_saved_float(value.substr(0, separator)), parse_saved_float(value.substr(separator + 1))}};
+    }
+    if (type == "color")
+    {
+        const std::uint32_t packed{static_cast<std::uint32_t>(parse_saved_int(value))};
+        return Value{ColorValue{static_cast<double>((packed >> 16U) & 0xffU) / 255.0,
+            static_cast<double>((packed >> 8U) & 0xffU) / 255.0, static_cast<double>(packed & 0xffU) / 255.0,
+            static_cast<double>((packed >> 24U) & 0xffU) / 255.0}};
+    }
+    if (type == "Image")
+    {
+        return make_image_value(ImageValue{std::string{value}, false});
+    }
+    return Value{std::string{value}};
+}
+
+std::string parameter_reference_message(const parameter::ParameterReferenceDiagnostic &diagnostic)
+{
+    switch (diagnostic.code)
+    {
+    case parameter::ParameterReferenceErrorCode::MISSING_FILENAME:
+        return "missing parameter reference filename";
+    case parameter::ParameterReferenceErrorCode::MISSING_ENTRY:
+        return "missing parameter reference entry";
+    case parameter::ParameterReferenceErrorCode::UNRESOLVED_ENTRY:
+        return "unresolved parameter reference: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::PARSE_ERROR:
+        return "parameter reference parse error: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::UNKNOWN_PARAMETER:
+        return "unknown parameter binding: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::MISSING_REQUIRED_PARAMETER:
+        return "missing required parameter binding: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::TYPE_MISMATCH:
+        return "parameter binding type mismatch: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::INVALID_PARAMETER_FORWARD:
+        return "invalid parameter forward: " + diagnostic.detail;
+    case parameter::ParameterReferenceErrorCode::NONE:
+        return {};
+    }
+    throw std::runtime_error("unknown parameter reference diagnostic code");
+}
 
 HslValue color_to_hsl(ColorValue color)
 {
@@ -1517,6 +1738,76 @@ void ExtendedInterpreter::add_semantic_diagnostics(const std::vector<semantic::S
         m_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::SEMANTIC,
             diagnostic.location, diagnostic.entry_name, diagnostic.message});
     }
+}
+
+bool PreparedParameterSet::ok() const
+{
+    return diagnostics.empty();
+}
+
+PreparedParameterSet prepare_parameter_interpreters(
+    const parameter::ParameterReferenceSet &references, ExtendedInterpreterOptions options)
+{
+    PreparedParameterSet result;
+    for (const parameter::ParameterReferenceDiagnostic &diagnostic : references.diagnostics)
+    {
+        result.diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::REFERENCE,
+            diagnostic.location, {}, parameter_reference_message(diagnostic)});
+    }
+    if (!result.diagnostics.empty())
+    {
+        return result;
+    }
+
+    for (const parameter::ParameterResolvedReference &resolved : references.resolved)
+    {
+        ExtendedInterpreterOptions interpreter_options{options};
+        interpreter_options.parser.entry_kind = resolved.entry_kind;
+        if (interpreter_options.parser.source_filename.empty())
+        {
+            interpreter_options.parser.source_filename = resolved.reference.filename;
+        }
+
+        ExtendedInterpreter interpreter{resolved.file_entry, interpreter_options};
+        for (const ExtendedInterpreterDiagnostic &diagnostic : interpreter.diagnostics())
+        {
+            result.diagnostics.push_back(diagnostic);
+        }
+        if (!interpreter.ok())
+        {
+            continue;
+        }
+
+        const RuntimeParameterMetadata metadata{
+            resolved.ast ? collect_runtime_parameter_metadata(*resolved.ast) : RuntimeParameterMetadata{}};
+        for (const parameter::Parameter &parameter : resolved.reference.parameters)
+        {
+            if (starts_with(parameter.key, "p_") && parameter.key.find('.') == std::string::npos)
+            {
+                const std::string name{
+                    forwarded_runtime_parameter_name(metadata, std::string_view{parameter.key}.substr(2))};
+                const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
+                if (info != nullptr)
+                {
+                    interpreter.set_value("@" + name, parse_saved_parameter_value(info->type, parameter.value));
+                }
+                continue;
+            }
+            if (starts_with(parameter.key, "f_"))
+            {
+                interpreter.set_value("@" + parameter.key.substr(2), Value{parameter.value});
+                continue;
+            }
+            if (starts_with(parameter.key, "p_"))
+            {
+                interpreter.set_value("@" + parameter.key.substr(2), Value{parameter.value});
+            }
+        }
+
+        result.formulas.push_back(PreparedParameterFormula{
+            resolved.reference.site, resolved.reference.filename, resolved.reference.entry, std::move(interpreter)});
+    }
+    return result;
 }
 
 } // namespace formula
