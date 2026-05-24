@@ -1288,6 +1288,30 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownRetainedBaseClass)
     EXPECT_EQ("unknown base class: Filter", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsRetainedClassInheritanceCycle)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("Texture texture", options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass texture;
+    texture.reference.class_name = "Texture";
+    texture.base_class = "Filter";
+    RetainedFormulaClass filter;
+    filter.reference.class_name = "Filter";
+    filter.base_class = "Texture";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&texture);
+    context.retained_classes.push_back(&filter);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INHERITANCE_CYCLE, diagnostics.front().code);
+    EXPECT_EQ("Texture", diagnostics.front().entry_name);
+    EXPECT_EQ("inheritance cycle: Texture", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsScalarNewType)
 {
     parser::Options options;

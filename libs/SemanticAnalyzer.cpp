@@ -331,6 +331,21 @@ bool same_identifier(std::string_view lhs, std::string_view rhs)
     return true;
 }
 
+std::string normalized_identifier(std::string_view value)
+{
+    std::string result;
+    result.reserve(value.size());
+    for (char ch : value)
+    {
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            ch = static_cast<char>(ch - 'A' + 'a');
+        }
+        result.push_back(ch);
+    }
+    return result;
+}
+
 bool has_retained_class(const ParameterSetSemanticContext &context, std::string_view class_name)
 {
     for (const RetainedFormulaClass *klass : context.retained_classes)
@@ -353,6 +368,18 @@ bool has_retained_class(const FormulaSemanticContext &context, std::string_view 
         }
     }
     return false;
+}
+
+const std::string *find_retained_class_base(const FormulaSemanticContext &context, std::string_view class_name)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass && same_identifier(klass->reference.class_name, class_name))
+        {
+            return &klass->base_class;
+        }
+    }
+    return nullptr;
 }
 
 bool starts_with(std::string_view value, std::string_view prefix)
@@ -760,6 +787,53 @@ void check_retained_class_bases(std::vector<SemanticDiagnostic> &diagnostics, co
         diagnostic.entry_name = klass->reference.class_name;
         diagnostic.message = "unknown base class: " + klass->base_class;
         diagnostics.push_back(std::move(diagnostic));
+    }
+}
+
+void check_retained_class_cycles(std::vector<SemanticDiagnostic> &diagnostics, const FormulaSemanticContext &context)
+{
+    std::unordered_set<std::string> reported_cycles;
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (!klass)
+        {
+            continue;
+        }
+        std::vector<std::string> path;
+        std::string current{klass->reference.class_name};
+        while (const std::string *base = find_retained_class_base(context, current))
+        {
+            if (base->empty())
+            {
+                break;
+            }
+            if (std::find_if(path.begin(), path.end(),
+                    [base](const std::string &item) { return same_identifier(item, *base); }) != path.end() ||
+                same_identifier(klass->reference.class_name, *base))
+            {
+                std::vector<std::string> cycle_names{path};
+                cycle_names.push_back(current);
+                cycle_names.push_back(*base);
+                const bool already_reported{
+                    std::any_of(cycle_names.begin(), cycle_names.end(), [&reported_cycles](const std::string &name)
+                        { return reported_cycles.find(normalized_identifier(name)) != reported_cycles.end(); })};
+                if (!already_reported)
+                {
+                    for (const std::string &name : cycle_names)
+                    {
+                        reported_cycles.insert(normalized_identifier(name));
+                    }
+                    SemanticDiagnostic diagnostic;
+                    diagnostic.code = SemanticDiagnosticCode::INHERITANCE_CYCLE;
+                    diagnostic.entry_name = klass->reference.class_name;
+                    diagnostic.message = "inheritance cycle: " + *base;
+                    diagnostics.push_back(std::move(diagnostic));
+                }
+                break;
+            }
+            path.push_back(current);
+            current = *base;
+        }
     }
 }
 
@@ -2052,6 +2126,7 @@ std::vector<SemanticDiagnostic> analyze_formula(
     const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
     std::vector<SemanticDiagnostic> diagnostics{FormulaSymbolCollector{builtins, context}.collect(formula)};
     check_retained_class_bases(diagnostics, builtins, context);
+    check_retained_class_cycles(diagnostics, context);
     return diagnostics;
 }
 

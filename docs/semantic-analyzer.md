@@ -688,7 +688,6 @@ Milestone 8: downstream integration.
   failures not knowable by semantic analysis.
 
 1. Add remaining class checks.
-   - Inheritance cycle.
    - Visibility.
    - Cast validity.
 
@@ -736,7 +735,6 @@ Add tests for:
 Keep tests aligned with the implementation milestones:
 
 1. Classes and builtin objects.
-   - Inheritance cycle.
    - Visibility violation.
    - Cast validity.
 
