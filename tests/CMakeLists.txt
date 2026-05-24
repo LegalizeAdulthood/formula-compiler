@@ -37,6 +37,7 @@ add_custom_command(
 add_executable("test-formula"
     "ExpressionParam.h" "ExpressionParam.cpp"
     "node-builders.h"
+    "ExtendedRuntime-test.cpp"
     "FileEntry-test.cpp"
     "FormulaEntry-test.cpp"
     "${TEST_DATA_H}"

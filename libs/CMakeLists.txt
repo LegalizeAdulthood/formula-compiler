@@ -9,6 +9,7 @@ add_library(formula
     include/formula/Compiler.h Compiler.cpp
     include/formula/Complex.h Complex.cpp
     include/formula/FileEntry.h FileEntry.cpp
+    include/formula/ExtendedRuntime.h ExtendedRuntime.cpp
     include/formula/Formula.h Formula.cpp
     include/formula/FormulaEntry.h FormulaEntry.cpp
     functions.h functions.cpp

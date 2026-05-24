@@ -172,29 +172,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Runtime value model.
-   - Add `Value`, `ArrayValue`, `ColorValue`, and `ImageValue` storage
-     types for the extended interpreter.
-   - Add helpers for value type names, equality, truthiness, numeric
-     promotion, assignment conversion, default construction, and
-     formatting.
-   - Keep this independent from the existing `Complex` interpreter state.
-   - Tests: default values, numeric conversions, invalid conversions,
-     truthiness, color non-conversion, and formatted runtime messages.
-
-2. Runtime frame and lvalue model.
-   - Add an extended runtime state object with formula scope, local scope
-     stack, function-call frames, parameter values, predefined values, and
-     runtime messages.
-   - Add an lvalue handle that can refer to scalar variables, array
-     elements, by-reference arguments, and writable predefined symbols.
-   - Preserve source spelling for user variables while using semantic
-     lookup rules for builtins and predefined symbols.
-   - Tests: set/get variable values, local shadowing, missing value
-     defaults, lvalue assignment, and assignment through by-reference
-     handles.
-
-3. `ExtendedInterpreter` facade shell.
+1. `ExtendedInterpreter` facade shell.
    - Add the public C++17 facade header and implementation.
    - Constructor stores the `FileEntry`, options, parsed AST, loaded file
      graph, reference metadata, semantic diagnostics, and runtime state.
@@ -205,7 +183,7 @@ workflow before being considered complete.
    - Tests: parse failure blocks execution, missing reference blocks
      execution, semantic failure blocks execution, empty valid section runs.
 
-4. Section identity and dispatch.
+2. Section identity and dispatch.
    - Extend the public section enum or add an extended section enum for
      `global`, `init`, `loop`, `bailout`, `perturbinit`, `perturbloop`,
      `final`, and `transform`.
@@ -216,7 +194,7 @@ workflow before being considered complete.
    - Tests: fractal, coloring, transformation, and class section lookup;
      invalid section for entry kind; no-op missing section.
 
-5. Literal and basic expression evaluation.
+3. Literal and basic expression evaluation.
    - Interpret numeric, bool, string, color, and typed literals.
    - Interpret identifiers, parameter references, predefined-symbol
      references, parenthesized expressions, unary operators, binary
@@ -226,7 +204,7 @@ workflow before being considered complete.
      short-circuit through a documented runtime note until user functions
      can create observable side effects, and invalid assignment targets.
 
-6. Declarations and scalar scope.
+4. Declarations and scalar scope.
    - Execute typed scalar declarations with default values and optional
      initializer conversion.
    - Support untyped assignment to existing variables while keeping the
@@ -236,7 +214,7 @@ workflow before being considered complete.
    - Tests: scalar declarations, initializer conversion, invalid runtime
      conversion, block shadowing, and formula-scope persistence.
 
-7. Statement execution.
+5. Statement execution.
    - Execute statement sequences, `if`, `elseif`, `else`, `while`,
      `repeat/until`, and top-level `return`.
    - Add a configurable hard loop guard with a default of 1000000
@@ -246,7 +224,7 @@ workflow before being considered complete.
    - Tests: nested blocks, branch selection, loop execution, repeat
      executes once, loop guard failure, and top-level return value.
 
-8. Function execution.
+6. Function execution.
    - Collect user function declarations before section execution.
    - Execute functions with typed return values, local frames, recursion,
      argument conversion, `const` arguments, and by-reference arguments.
@@ -256,7 +234,7 @@ workflow before being considered complete.
      missing return backstop, by-reference mutation, and const mutation
      rejection.
 
-9. Static arrays.
+7. Static arrays.
    - Allocate static arrays from declaration dimensions.
    - Flatten multidimensional indexes deterministically.
    - Support element reads/writes and whole-array copy when element type
@@ -265,7 +243,7 @@ workflow before being considered complete.
    - Tests: scalar element access, multidimensional flattening, bounds
      failure, element assignment conversion, and valid/invalid array copy.
 
-10. Dynamic arrays.
+8. Dynamic arrays.
     - Allocate dynamic arrays with length zero.
     - Implement `setLength(array, n)` and `length(array)`.
     - Resize with default initialization for new elements.
@@ -275,7 +253,7 @@ workflow before being considered complete.
       scalar argument rejection backstop, static array rejection backstop,
       and dynamic copy rejection.
 
-11. Builtin functions and color operations.
+9. Builtin functions and color operations.
     - Move existing math builtins behind value-aware dispatch.
     - Add procedural UF builtins: `rgb`, `rgba`, `hsl`, `hsla`, `red`,
       `green`, `blue`, `alpha`, `hue`, `sat`, `lum`, `random`, `atan2`,
@@ -285,7 +263,7 @@ workflow before being considered complete.
     - Tests: math builtins, color construction/extraction, random seed
       policy, print messages, arity backstops, and invalid argument types.
 
-12. Parameters and predefined symbols.
+10. Parameters and predefined symbols.
     - Initialize `@` parameters from default metadata and host overrides.
     - Initialize documented predefined symbols from host environment state.
     - Allow writes only to semantically writable predefined symbols as a
@@ -294,7 +272,7 @@ workflow before being considered complete.
       `#z`, `#index`, `#color`, `#solid`, read-only write rejection, and
       transform writes to `#pixel` and `#solid`.
 
-13. Section result rules.
+11. Section result rules.
     - Apply section-specific result conversion during interpretation.
     - `bailout` returns truthiness.
     - `final` returns a color or numeric result for the caller.
@@ -305,7 +283,7 @@ workflow before being considered complete.
     - Tests: bailout true/false, final color, final numeric value,
       transform mutation, and invalid result conversion backstops.
 
-14. Unsupported object/class runtime boundary.
+12. Unsupported object/class runtime boundary.
     - Keep class declarations, imports, and semantic validation as current
       pre-runtime work.
     - At runtime, reject unsupported object construction, casts, field
@@ -316,7 +294,7 @@ workflow before being considered complete.
     - Tests: unsupported `new`, casts, member access, method calls, and
       plug-in object use fail clearly without crashing.
 
-15. Builtin `Image` runtime.
+13. Builtin `Image` runtime.
     - Add host-bindable `ImageValue` handles.
     - Initialize `Image` parameters to empty image handles when no host
       image is supplied.
@@ -326,7 +304,7 @@ workflow before being considered complete.
     - Tests: empty default image, host-bound image, supported fields,
       supported methods, arity/type backstops, and unknown member backstop.
 
-16. Parameter-set binding bridge.
+14. Parameter-set binding bridge.
     - Add helper code that constructs one `ExtendedInterpreter` per
       referenced formula in a resolved extended parameter set.
     - Bind saved fractal, coloring, transform, function, plug-in, and image
@@ -338,7 +316,7 @@ workflow before being considered complete.
       targets, plug-in nested values, image parameters, and diagnostics
       blocking preparation.
 
-17. Regression and compatibility pass.
+15. Regression and compatibility pass.
     - Ensure existing BASIC parser, interpreter, and compiler tests keep
       using the current `Formula` interface.
     - Add explicit tests proving extended interpreter changes do not alter
