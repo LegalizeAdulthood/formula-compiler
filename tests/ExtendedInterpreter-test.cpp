@@ -566,9 +566,16 @@ TEST(TestExtendedInterpreter, pluginParameterBindingReportsMissingClass)
     std::unordered_map<std::string, std::string> files{
         {"main.ufm",
             "Formula {\n"
+            "import \"base.ulb\"\n"
             "default:\n"
-            "Plugin param filter\n"
+            "Base param filter\n"
+            "default=Base\n"
             "endparam\n"
+            "}\n"},
+        {"base.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
             "}\n"},
     };
     ExtendedInterpreterOptions interpreter_options{options()};
@@ -582,8 +589,10 @@ TEST(TestExtendedInterpreter, pluginParameterBindingReportsMissingClass)
         }
         return found->second;
     };
-    ExtendedInterpreter interpreter{formula_entry("default:\n"
-                                                  "Plugin param filter\n"
+    ExtendedInterpreter interpreter{formula_entry("import \"base.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Base\n"
                                                   "endparam\n"),
         interpreter_options};
 
@@ -601,12 +610,19 @@ TEST(TestExtendedInterpreter, pluginParameterBindingReportsParseError)
     std::unordered_map<std::string, std::string> files{
         {"main.ufm",
             "Formula {\n"
+            "import \"base.ulb\"\n"
             "default:\n"
-            "Plugin param filter\n"
+            "Base param filter\n"
+            "default=Base\n"
             "endparam\n"
             "}\n"},
+        {"base.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
         {"broken.ulb",
-            "class Plugin {\n"
+            "class Base {\n"
             "public:\n"
             "if 1\n"
             "}\n"},
@@ -617,13 +633,15 @@ TEST(TestExtendedInterpreter, pluginParameterBindingReportsParseError)
     {
         return files.at(std::string{filename});
     };
-    ExtendedInterpreter interpreter{formula_entry("default:\n"
-                                                  "Plugin param filter\n"
+    ExtendedInterpreter interpreter{formula_entry("import \"base.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Base\n"
                                                   "endparam\n"),
         interpreter_options};
 
     ASSERT_TRUE(interpreter.ok());
-    interpreter.set_plugin_parameter("filter", "broken.ulb:Plugin");
+    interpreter.set_plugin_parameter("filter", "broken.ulb:Base");
 
     ASSERT_FALSE(interpreter.ok());
     ASSERT_EQ(1U, interpreter.diagnostics().size());
