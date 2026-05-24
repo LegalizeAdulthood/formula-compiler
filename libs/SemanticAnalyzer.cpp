@@ -717,6 +717,11 @@ bool is_scalar_parameter_type(std::string_view type)
         type == "string";
 }
 
+bool is_plugin_parameter_type(std::string_view type)
+{
+    return type == "Plugin" || type == "FormulaClass";
+}
+
 const parameter::Parameter *find_reference_parameter(
     const parameter::ParameterReference &reference, std::string_view key)
 {
@@ -890,6 +895,25 @@ void report_invalid_parameter_binding(std::vector<SemanticDiagnostic> &diagnosti
     diagnostics.push_back(std::move(diagnostic));
 }
 
+const RetainedFormulaClass *validate_plugin_selector(std::vector<SemanticDiagnostic> &diagnostics,
+    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
+    const parameter::Parameter &selector_parameter)
+{
+    const std::optional<EntrySelector> selector{parse_entry_selector(selector_parameter.value)};
+    if (!selector)
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, selector_parameter, "invalid plug-in target");
+        return nullptr;
+    }
+    const RetainedFormulaClass *klass{find_retained_class(context, *selector)};
+    if (klass == nullptr || !klass->ast)
+    {
+        report_invalid_parameter_binding(diagnostics, resolved, selector_parameter, "missing plug-in class");
+        return nullptr;
+    }
+    return klass;
+}
+
 void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
     const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
     const parameter::Parameter &parameter, const ParameterMetadata::Param &plugin_param)
@@ -910,16 +934,9 @@ void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
     {
         return;
     }
-    const std::optional<EntrySelector> selector{parse_entry_selector(selector_parameter->value)};
-    if (!selector)
+    const RetainedFormulaClass *klass{validate_plugin_selector(diagnostics, context, resolved, *selector_parameter)};
+    if (klass == nullptr)
     {
-        report_invalid_parameter_binding(diagnostics, resolved, *selector_parameter, "invalid plug-in target");
-        return;
-    }
-    const RetainedFormulaClass *klass{find_retained_class(context, *selector)};
-    if (klass == nullptr || !klass->ast)
-    {
-        report_invalid_parameter_binding(diagnostics, resolved, *selector_parameter, "missing plug-in class");
         return;
     }
     const ParameterMetadata plugin_metadata{collect_parameter_metadata(*klass->ast)};
@@ -965,6 +982,10 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
                 if (!parameter_value_matches_type(*param, parameter.value))
                 {
                     report_invalid_parameter_binding(diagnostics, resolved, parameter, "type mismatch");
+                }
+                if (is_plugin_parameter_type(param->type))
+                {
+                    validate_plugin_selector(diagnostics, context, resolved, parameter);
                 }
             }
             else if (const ParameterMetadata::Param *plugin_param{
