@@ -213,7 +213,7 @@ bool operator!=(const EnumValue &lhs, const EnumValue &rhs)
 bool operator==(const PluginValue &lhs, const PluginValue &rhs)
 {
     return lhs.filename == rhs.filename && lhs.class_name == rhs.class_name && lhs.base_class == rhs.base_class &&
-        lhs.ast == rhs.ast && lhs.nested_values == rhs.nested_values &&
+        lhs.ast == rhs.ast && lhs.nested_values == rhs.nested_values && lhs.object_fields == rhs.object_fields &&
         lhs.object_initialized == rhs.object_initialized;
 }
 

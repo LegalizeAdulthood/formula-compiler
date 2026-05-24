@@ -195,19 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Construct plug-in instances.
-    - Implement `new @pluginParam` for resolved plug-in parameters.
-    - Allocate object state from the retained class AST: public/protected/
-      private fields, default values, nested plug-in/image parameters, and
-      function parameter bindings.
-    - Apply nested saved parameter bindings before constructors run.
-    - Keep user constructors unsupported until the method-dispatch slice if
-      needed, but return a clear diagnostic/runtime error rather than a raw
-      unsupported node.
-    - Tests: `new @pluginParam` returns an object with initialized fields,
-      missing plug-in binding fails clearly, and nested defaults are applied.
-
-2. User class field access and assignment.
+1. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -218,7 +206,7 @@ workflow before being considered complete.
       access remains a semantic error, null access fails clearly, and
       assignment through fields works.
 
-3. User class method dispatch.
+2. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -227,14 +215,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-4. Static class methods and constants.
+3. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-5. User constructors and casts.
+4. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

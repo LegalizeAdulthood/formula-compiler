@@ -108,6 +108,7 @@ struct PluginValue
     std::string base_class;
     std::shared_ptr<const ast::FormulaSections> ast;
     std::vector<std::pair<std::string, Value>> nested_values;
+    std::vector<std::pair<std::string, Value>> object_fields;
     bool object_initialized{};
 };
 

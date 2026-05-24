@@ -585,6 +585,7 @@ std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &param
 
 Value parse_saved_parameter_value(std::string_view type, std::string_view value);
 std::optional<ValueKind> parameter_value_kind(std::string_view type);
+ValueKind value_kind_for_type(std::string_view type);
 
 std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
 {
@@ -652,6 +653,103 @@ bool plugin_has_nested_runtime_parameter(const PluginValue &plugin, std::string_
     }
     const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*plugin.ast)};
     return find_runtime_parameter(metadata, name) != nullptr;
+}
+
+std::optional<int> literal_int(const ast::Expr &expr)
+{
+    if (!expr)
+    {
+        return std::nullopt;
+    }
+    const auto *literal = dynamic_cast<const ast::LiteralNode *>(expr.get());
+    if (literal == nullptr)
+    {
+        return std::nullopt;
+    }
+    if (const auto *value = std::get_if<int>(&literal->value()))
+    {
+        return *value;
+    }
+    return std::nullopt;
+}
+
+Value default_field_value(const ast::DeclarationNode &node)
+{
+    if (node.is_array())
+    {
+        ArrayValue array;
+        array.element_kind = value_kind_for_type(node.type());
+        if (node.is_dynamic_array())
+        {
+            array.dynamic = true;
+            array.dimensions = {0};
+        }
+        else
+        {
+            array.dimensions.reserve(node.dimensions().size());
+            for (const ast::Expr &dimension : node.dimensions())
+            {
+                array.dimensions.push_back(literal_int(dimension).value_or(0));
+            }
+            const int count{std::accumulate(
+                array.dimensions.begin(), array.dimensions.end(), 1, [](int left, int right) { return left * right; })};
+            array.elements.assign(static_cast<std::size_t>(count), default_value(array.element_kind));
+        }
+        return make_array_value(std::move(array));
+    }
+    if (const std::optional<ValueKind> kind{parameter_value_kind(node.type())})
+    {
+        return default_value(*kind);
+    }
+    return Value{};
+}
+
+class ObjectFieldCollector : public ast::NullVisitor
+{
+public:
+    std::vector<std::pair<std::string, Value>> collect(const ast::FormulaSections &ast)
+    {
+        collect(ast.public_members);
+        collect(ast.protected_members);
+        collect(ast.private_members);
+        return std::move(m_fields);
+    }
+
+    void visit(const ast::DeclarationNode &node) override
+    {
+        m_fields.push_back({node.name(), default_field_value(node)});
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            collect(statement);
+        }
+    }
+
+private:
+    void collect(const ast::Expr &node)
+    {
+        if (node)
+        {
+            node->visit(*this);
+        }
+    }
+
+    std::vector<std::pair<std::string, Value>> m_fields;
+};
+
+Value make_object_value(const PluginValue &plugin)
+{
+    if (!plugin.ast)
+    {
+        throw std::runtime_error("missing plug-in object state");
+    }
+    PluginValue object{plugin};
+    object.object_initialized = true;
+    object.object_fields = ObjectFieldCollector{}.collect(*plugin.ast);
+    return make_plugin_value(std::move(object));
 }
 
 bool runtime_parameter_is_plugin(
@@ -1447,11 +1545,21 @@ public:
             m_result = m_state.parameter_value(node.type());
             if (m_result.kind() == ValueKind::PLUGIN)
             {
-                throw std::runtime_error("plug-in object state is not supported by the extended interpreter");
+                const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
+                if (!plugin)
+                {
+                    throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
+                }
+                m_result = make_object_value(*plugin);
+                return;
             }
             if (m_result.kind() == ValueKind::EMPTY)
             {
                 m_result = default_value(ValueKind::IMAGE);
+            }
+            else if (m_result.kind() == ValueKind::STRING)
+            {
+                throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
             }
             return;
         }
@@ -1461,11 +1569,21 @@ public:
             m_result = m_state.parameter_value(node.type());
             if (m_result.kind() == ValueKind::PLUGIN)
             {
-                throw std::runtime_error("plug-in object state is not supported by the extended interpreter");
+                const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
+                if (!plugin)
+                {
+                    throw std::runtime_error("missing plug-in binding: " + node.type());
+                }
+                m_result = make_object_value(*plugin);
+                return;
             }
             if (m_result.kind() == ValueKind::EMPTY)
             {
                 m_result = default_value(ValueKind::IMAGE);
+            }
+            else if (m_result.kind() == ValueKind::STRING)
+            {
+                throw std::runtime_error("missing plug-in binding: " + node.type());
             }
             return;
         }
