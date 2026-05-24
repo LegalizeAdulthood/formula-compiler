@@ -10,6 +10,7 @@
 #include <formula/ParseOptions.h>
 #include <formula/SemanticAnalyzer.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -41,6 +42,7 @@ struct ExtendedInterpreterOptions
 {
     parser::Options parser;
     const semantic::BuiltinRegistry *builtins{};
+    std::size_t max_loop_iterations{1000000};
 };
 
 class ExtendedInterpreter

@@ -271,4 +271,76 @@ TEST(TestExtendedInterpreter, declarationInitializerConversionBackstopRejectsInv
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, interpretsIfElseIfElseStatements)
+{
+    EXPECT_EQ(Value{2},
+        interpret_init("int value=0\n"
+                       "if false\n"
+                       "value=1\n"
+                       "elseif true\n"
+                       "value=2\n"
+                       "else\n"
+                       "value=3\n"
+                       "endif\n"
+                       "value"));
+}
+
+TEST(TestExtendedInterpreter, interpretsWhileStatements)
+{
+    EXPECT_EQ(Value{3},
+        interpret_init("int count=0\n"
+                       "while count<3\n"
+                       "count=count+1\n"
+                       "endwhile\n"
+                       "count"));
+}
+
+TEST(TestExtendedInterpreter, interpretsRepeatUntilStatements)
+{
+    EXPECT_EQ(Value{1},
+        interpret_init("int count=0\n"
+                       "repeat\n"
+                       "count=count+1\n"
+                       "until true\n"
+                       "count"));
+}
+
+TEST(TestExtendedInterpreter, topLevelReturnStopsSectionExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int value=1\n"
+                                                  "return 3\n"
+                                                  "value=4"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{3}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{1}, interpreter.value("value"));
+}
+
+TEST(TestExtendedInterpreter, nestedStatementBlocksHaveLocalScope)
+{
+    EXPECT_EQ(Value{1},
+        interpret_init("int value=1\n"
+                       "if true\n"
+                       "int value=2\n"
+                       "endif\n"
+                       "value"));
+}
+
+TEST(TestExtendedInterpreter, loopGuardRejectsRunawayLoops)
+{
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.max_loop_iterations = 2;
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "while true\n"
+                                                  "endwhile"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 } // namespace formula::test

@@ -1413,7 +1413,7 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidReturnConversion)
     EXPECT_EQ("invalid return: string to int", diagnostics.front().message);
 }
 
-TEST(TestSemanticAnalyzer, formulaAnalysisReportsReturnOutsideFunction)
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsReturnOutsideFunction)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
@@ -1423,9 +1423,7 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsReturnOutsideFunction)
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
 
-    ASSERT_EQ(1U, diagnostics.size());
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_RETURN, diagnostics.front().code);
-    EXPECT_EQ("invalid return outside function", diagnostics.front().message);
+    EXPECT_TRUE(diagnostics.empty());
 }
 
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsMissingFunctionReturn)

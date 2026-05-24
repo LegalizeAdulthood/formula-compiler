@@ -223,8 +223,9 @@ ValueKind value_kind_for_type(std::string_view type)
 class ExpressionInterpreter : public ast::NullVisitor
 {
 public:
-    explicit ExpressionInterpreter(ExtendedRuntimeState &state) :
-        m_state(state)
+    ExpressionInterpreter(ExtendedRuntimeState &state, std::size_t max_loop_iterations) :
+        m_state(state),
+        m_max_loop_iterations(max_loop_iterations)
     {
     }
 
@@ -311,9 +312,20 @@ public:
         m_result = m_state.value(node.name());
     }
 
-    void visit(const ast::IfStatementNode &) override
+    void visit(const ast::IfStatementNode &node) override
     {
-        unsupported_runtime_node("IfStatementNode");
+        if (is_truthy(interpret(node.condition())))
+        {
+            if (node.has_then_block())
+            {
+                m_result = interpret_block(node.then_block());
+            }
+            return;
+        }
+        if (node.has_else_block())
+        {
+            m_result = interpret_block(node.else_block());
+        }
     }
 
     void visit(const ast::IndexNode &) override
@@ -367,14 +379,24 @@ public:
         m_result = m_state.parameter_value(node.name());
     }
 
-    void visit(const ast::RepeatUntilNode &) override
+    void visit(const ast::RepeatUntilNode &node) override
     {
-        unsupported_runtime_node("RepeatUntilNode");
+        std::size_t iterations{};
+        do
+        {
+            check_loop_iterations(++iterations);
+            m_result = interpret_block(node.body());
+            if (m_returning)
+            {
+                return;
+            }
+        } while (!is_truthy(interpret(node.condition())));
     }
 
-    void visit(const ast::ReturnNode &) override
+    void visit(const ast::ReturnNode &node) override
     {
-        unsupported_runtime_node("ReturnNode");
+        m_result = node.expression() ? interpret(node.expression()) : Value{};
+        m_returning = true;
     }
 
     void visit(const ast::SettingNode &) override
@@ -388,6 +410,10 @@ public:
         for (const ast::Expr &statement : node.statements())
         {
             m_result = interpret(statement);
+            if (m_returning)
+            {
+                return;
+            }
         }
     }
 
@@ -416,12 +442,45 @@ public:
         }
     }
 
-    void visit(const ast::WhileNode &) override
+    void visit(const ast::WhileNode &node) override
     {
-        unsupported_runtime_node("WhileNode");
+        std::size_t iterations{};
+        while (is_truthy(interpret(node.condition())))
+        {
+            check_loop_iterations(++iterations);
+            m_result = interpret_block(node.body());
+            if (m_returning)
+            {
+                return;
+            }
+        }
     }
 
 private:
+    Value interpret_block(const ast::Expr &node)
+    {
+        m_state.push_local_scope();
+        try
+        {
+            Value result{interpret(node)};
+            m_state.pop_local_scope();
+            return result;
+        }
+        catch (...)
+        {
+            m_state.pop_local_scope();
+            throw;
+        }
+    }
+
+    void check_loop_iterations(std::size_t iterations) const
+    {
+        if (iterations > m_max_loop_iterations)
+        {
+            throw std::runtime_error("loop iteration limit exceeded");
+        }
+    }
+
     RuntimeLValue lvalue(const ast::Expr &node)
     {
         if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.get()); identifier)
@@ -440,7 +499,9 @@ private:
     }
 
     ExtendedRuntimeState &m_state;
+    std::size_t m_max_loop_iterations{};
     Value m_result;
+    bool m_returning{};
 };
 
 const ast::Expr &section_expr(const ast::FormulaSections &formula, Section section)
@@ -560,7 +621,7 @@ Value ExtendedInterpreter::interpret(Section section)
     {
         return {};
     }
-    return ExpressionInterpreter{m_state}.interpret(section_expr(*m_ast, section));
+    return ExpressionInterpreter{m_state, m_options.max_loop_iterations}.interpret(section_expr(*m_ast, section));
 }
 
 void ExtendedInterpreter::parse()

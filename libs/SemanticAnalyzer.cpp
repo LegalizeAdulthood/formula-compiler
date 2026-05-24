@@ -1366,10 +1366,6 @@ public:
     {
         if (m_function_return_types.empty())
         {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
-            diagnostic.message = "invalid return outside function";
-            m_diagnostics.push_back(std::move(diagnostic));
             collect(node.expression());
             return;
         }
