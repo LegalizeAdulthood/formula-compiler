@@ -635,6 +635,53 @@ std::optional<ValueKind> parameter_value_kind(std::string_view type)
     return std::nullopt;
 }
 
+Value convert_parameter_default(const Value &value, std::string_view type)
+{
+    if (type.empty())
+    {
+        return value.kind() == ValueKind::EMPTY ? default_value(ValueKind::COMPLEX) : value;
+    }
+    if (const std::optional<ValueKind> kind{parameter_value_kind(type)})
+    {
+        return convert_value(value, *kind);
+    }
+    return value;
+}
+
+Value implicit_parameter_default(std::string_view type)
+{
+    if (type.empty())
+    {
+        return default_value(ValueKind::COMPLEX);
+    }
+    if (const std::optional<ValueKind> kind{parameter_value_kind(type)})
+    {
+        return default_value(*kind);
+    }
+    return Value{std::string{type}};
+}
+
+std::optional<std::string> function_name_value(const ast::SettingNode::ValueType &value)
+{
+    if (const auto *expr = std::get_if<ast::Expr>(&value))
+    {
+        if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr->get());
+            call != nullptr && !call->has_target() && call->args().empty())
+        {
+            return call->name();
+        }
+    }
+    if (const auto *name = std::get_if<ast::EnumName>(&value))
+    {
+        return name->name;
+    }
+    if (const auto *name = std::get_if<std::string>(&value))
+    {
+        return *name;
+    }
+    return std::nullopt;
+}
+
 Value value_from_setting(const ast::SettingNode::ValueType &value)
 {
     switch (value.index())
@@ -1454,17 +1501,40 @@ public:
     {
         m_current_parameter = &node;
         collect(node.block());
-        if (node.type() == "Image" && !m_state.has_parameter_value(node.name()))
+        if (!m_state.has_parameter_value(node.name()))
         {
-            m_state.set_parameter_value(node.name(), default_value(ValueKind::IMAGE));
+            m_state.set_parameter_value(node.name(), implicit_parameter_default(node.type()));
         }
         m_current_parameter = nullptr;
     }
 
+    void visit(const ast::FunctionBlockNode &node) override
+    {
+        m_current_function = &node;
+        collect(node.block());
+        if (!m_state.has_parameter_value(node.name()))
+        {
+            m_state.set_parameter_value(
+                node.name(), Value{std::string{node.type() == "color" ? "mergenormal" : "sin"}});
+        }
+        m_current_function = nullptr;
+    }
+
     void visit(const ast::SettingNode &node) override
     {
-        if (m_current_parameter == nullptr || node.key() != "default" ||
-            m_state.has_parameter_value(m_current_parameter->name()))
+        if (node.key() != "default")
+        {
+            return;
+        }
+        if (m_current_function != nullptr && !m_state.has_parameter_value(m_current_function->name()))
+        {
+            if (const std::optional<std::string> name{function_name_value(node.value())})
+            {
+                m_state.set_parameter_value(m_current_function->name(), Value{*name});
+            }
+            return;
+        }
+        if (m_current_parameter == nullptr || m_state.has_parameter_value(m_current_parameter->name()))
         {
             return;
         }
@@ -1478,7 +1548,7 @@ public:
             value = value_from_setting(node.value());
         }
         m_state.set_parameter_value(
-            m_current_parameter->name(), convert_value(value, value_kind_for_type(m_current_parameter->type())));
+            m_current_parameter->name(), convert_parameter_default(value, m_current_parameter->type()));
     }
 
     void visit(const ast::StatementSeqNode &node) override
@@ -1494,6 +1564,7 @@ private:
     FunctionMap m_functions;
     std::size_t m_max_loop_iterations{};
     const ast::ParamBlockNode *m_current_parameter{};
+    const ast::FunctionBlockNode *m_current_function{};
 };
 
 const ast::Expr &section_expr(const ast::FormulaSections &formula, Section section)

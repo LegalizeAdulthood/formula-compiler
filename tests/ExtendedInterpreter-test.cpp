@@ -277,6 +277,50 @@ TEST(TestExtendedInterpreter, initializesParametersFromDefaults)
     EXPECT_EQ(Value{2.5}, interpreter.value("@power"));
 }
 
+TEST(TestExtendedInterpreter, initializesOmittedParameterDefaults)
+{
+    ExtendedInterpreter interpreter{formula_entry("default:\n"
+                                                  "complex param seed\n"
+                                                  "endparam\n"
+                                                  "bool param enabled\n"
+                                                  "endparam\n"
+                                                  "int param count\n"
+                                                  "endparam\n"
+                                                  "float param power\n"
+                                                  "endparam\n"
+                                                  "color param tint\n"
+                                                  "endparam\n"
+                                                  "string param label\n"
+                                                  "endparam\n"
+                                                  "Image param source\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ((Value{Complex{0.0, 0.0}}), interpreter.value("@seed"));
+    EXPECT_EQ(Value{false}, interpreter.value("@enabled"));
+    EXPECT_EQ(Value{0}, interpreter.value("@count"));
+    EXPECT_EQ(Value{0.0}, interpreter.value("@power"));
+    EXPECT_EQ((Value{ColorValue{0.0, 0.0, 0.0, 0.0}}), interpreter.value("@tint"));
+    EXPECT_EQ(Value{std::string{}}, interpreter.value("@label"));
+    EXPECT_EQ(false, std::get<Value::ImagePtr>(interpreter.value("@source").storage()) == nullptr);
+}
+
+TEST(TestExtendedInterpreter, initializesFunctionParameterDefaults)
+{
+    ExtendedInterpreter interpreter{formula_entry("default:\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"
+                                                  "color func merge\n"
+                                                  "default=mergesoftlight()\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{std::string{"sin"}}, interpreter.value("@fn1"));
+    EXPECT_EQ(Value{std::string{"mergesoftlight"}}, interpreter.value("@merge"));
+}
+
 TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"
