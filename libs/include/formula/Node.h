@@ -711,6 +711,7 @@ struct EnumName
 struct SwitchParam
 {
     std::string src;
+    bool predefined{};
 };
 
 class SettingNode : public Node

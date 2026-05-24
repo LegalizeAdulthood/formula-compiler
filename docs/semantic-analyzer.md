@@ -688,7 +688,6 @@ Milestone 8: downstream integration.
   failures not knowable by semantic analysis.
 
 1. Add remaining section-specific formula validation.
-   - Switch case value compatibility.
    - Formula-kind-specific section availability not already enforced by the
      parser.
 
@@ -731,7 +730,6 @@ Add tests for:
 Keep tests aligned with the implementation milestones:
 
 1. Extended formula statements and sections.
-   - Bad switch case value.
    - Formula-kind-specific section availability not already enforced by the
      parser.
 

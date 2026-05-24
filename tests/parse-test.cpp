@@ -1940,7 +1940,7 @@ TEST(TestParse, switchMultipleParameters)
     ASSERT_TRUE(section);
     EXPECT_EQ("statement_seq:3 {\n"
               "setting:type=\"Julia\"\n"
-              "setting:seed=pixel\n"
+              "setting:seed=#pixel\n"
               "setting:bailout=bailout\n"
               "}\n",
         to_string(section));

@@ -334,8 +334,15 @@ void NodeFormatter::visit(const ast::SettingNode &node)
         m_str << '}';
         break;
     case 8:
-        m_str << std::get<8>(node.value()).src;
+    {
+        const ast::SwitchParam &value{std::get<8>(node.value())};
+        if (value.predefined)
+        {
+            m_str << '#';
+        }
+        m_str << value.src;
         break;
+    }
     default:
         throw std::runtime_error("ValueType variant index out of range");
     }

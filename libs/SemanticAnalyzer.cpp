@@ -1244,6 +1244,10 @@ public:
 
     void visit(const ast::SettingNode &node) override
     {
+        if (m_section == "switch")
+        {
+            validate_switch_setting(node);
+        }
         if (const auto *expr = std::get_if<ast::Expr>(&node.value()); expr != nullptr)
         {
             constant_expression_type(*expr);
@@ -2041,6 +2045,20 @@ private:
             diagnostic.message = "invalid predefined symbol: #" + node.name() + " in constant expression";
             m_diagnostics.push_back(std::move(diagnostic));
         }
+    }
+
+    void validate_switch_setting(const ast::SettingNode &node)
+    {
+        const auto *param = std::get_if<ast::SwitchParam>(&node.value());
+        if (!param || !param->predefined || param->src == "pixel")
+        {
+            return;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+        diagnostic.section_name = m_section;
+        diagnostic.message = "invalid switch parameter: " + node.key() + "=#" + param->src;
+        m_diagnostics.push_back(std::move(diagnostic));
     }
 
     bool is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const

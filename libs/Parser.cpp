@@ -1354,6 +1354,7 @@ bool FormulaParser::switch_section()
         {
             // dest_param = builtin
             std::string value;
+            bool predefined{};
             if (const auto it = std::find(BUILTIN_VARS.begin(), BUILTIN_VARS.end(), m_curr.type);
                 it != BUILTIN_VARS.end())
             {
@@ -1372,10 +1373,11 @@ bool FormulaParser::switch_section()
             }
             else
             {
+                predefined = check(TokenType::CONSTANT_IDENTIFIER);
                 value = str();
             }
             advance();
-            settings.push_back(std::make_shared<SettingNode>(name, SwitchParam{value}));
+            settings.push_back(std::make_shared<SettingNode>(name, SwitchParam{value, predefined}));
         }
 
         if (!check(TokenType::TERMINATOR))
