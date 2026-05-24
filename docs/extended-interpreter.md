@@ -174,15 +174,6 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Regression and compatibility pass.
-    - Ensure existing BASIC parser, interpreter, and compiler tests keep
-      using the current `Formula` interface.
-    - Add explicit tests proving extended interpreter changes do not alter
-      BASIC unknown-variable, builtin-call, section, and compiler behavior.
-    - Confirm unsupported extended compiler behavior remains unchanged.
-    - Tests: existing workflow plus focused compatibility tests for BASIC
-      formula execution and BASIC compilation.
-
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and
   invalid conversions.

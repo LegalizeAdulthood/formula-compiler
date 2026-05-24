@@ -241,6 +241,45 @@ TEST(TestCompiledFormulaRun, identity)
     ASSERT_EQ(4.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, basicUnknownVariableCompilesAsZero)
+{
+    const FormulaPtr formula{create_formula("missing + 1", Options{})};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, basicCompileSectionDispatchIsUnchanged)
+{
+    const FormulaPtr formula{create_formula("z=pixel:z=z+1,|z|<4", Options{})};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value("pixel", {2.0, 0.0});
+    ASSERT_TRUE(formula->compile());
+
+    EXPECT_EQ(2.0, formula->run(Section::INITIALIZE).re);
+    EXPECT_EQ(3.0, formula->run(Section::ITERATE).re);
+    EXPECT_EQ(0.0, formula->run(Section::BAILOUT).re);
+}
+
+TEST(TestCompiledFormulaRun, extendedCompilerStillRejectsUnsupportedNodes)
+{
+    Options options;
+    options.dialect = Dialect::EXTENDED;
+    const FormulaPtr formula{create_formula("init:\nint value", options)};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
+
+    EXPECT_FALSE(formula->compile());
+}
+
 TEST(TestCompiledFormulaRun, assignmentStatementsIterate)
 {
     const FormulaPtr formula{create_formula("q=3\n"

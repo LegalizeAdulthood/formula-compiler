@@ -97,6 +97,39 @@ TEST(TestFormulaInterpreter, getValueUnknown)
     EXPECT_EQ(0.0, a.im);
 }
 
+TEST(TestFormulaInterpreter, basicUnknownVariableInterpretsAsZero)
+{
+    const FormulaPtr formula{create_formula("missing + 1", Options{})};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, basicBuiltinArityStillFailsParse)
+{
+    const FormulaPtr formula{create_formula("sin(1,2,3)", Options{})};
+
+    EXPECT_FALSE(formula);
+}
+
+TEST(TestFormulaInterpreter, basicFormulaSectionDispatchIsUnchanged)
+{
+    const FormulaPtr formula{create_formula("z=pixel:z=z+1,|z|<4", Options{})};
+    ASSERT_TRUE(formula);
+    EXPECT_TRUE(formula->get_section(Section::INITIALIZE));
+    EXPECT_TRUE(formula->get_section(Section::ITERATE));
+    EXPECT_TRUE(formula->get_section(Section::BAILOUT));
+
+    formula->set_value("pixel", {2.0, 0.0});
+    EXPECT_EQ(2.0, formula->interpret(Section::INITIALIZE).re);
+    EXPECT_EQ(3.0, formula->interpret(Section::ITERATE).re);
+    EXPECT_EQ(0.0, formula->interpret(Section::BAILOUT).re);
+}
+
 TEST(TestFormulaInterpreter, assignment)
 {
     const FormulaPtr formula{create_formula("z=4+2", Options{})};
