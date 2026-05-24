@@ -476,6 +476,21 @@ const FormulaClassReference *find_runtime_class_reference(
     return nullptr;
 }
 
+const RetainedFormulaClass *find_or_retain_runtime_class(FormulaFileSet &files, const RuntimeEntrySelector &selector)
+{
+    if (const RetainedFormulaClass *klass{find_retained_runtime_class(files.retained_classes, selector)})
+    {
+        return klass;
+    }
+    if (const FormulaClassReference *reference{find_runtime_class_reference(files, selector)})
+    {
+        retain_formula_class(files, *reference);
+        retain_resolved_imported_classes(files);
+        return find_retained_runtime_class(files.retained_classes, selector);
+    }
+    return nullptr;
+}
+
 const std::string *find_runtime_class_base(
     const std::vector<RetainedFormulaClass> &classes, std::string_view class_name)
 {
@@ -528,16 +543,6 @@ std::vector<const RetainedFormulaClass *> retained_class_ptrs(const std::vector<
     return result;
 }
 
-Value make_plugin_parameter_value(const RetainedFormulaClass &klass)
-{
-    PluginValue value;
-    value.filename = klass.reference.filename;
-    value.class_name = klass.reference.class_name;
-    value.base_class = klass.base_class;
-    value.ast = klass.ast;
-    return make_plugin_value(std::move(value));
-}
-
 std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &parameter, const Value &value)
 {
     if (parameter.enum_values.empty())
@@ -579,6 +584,7 @@ std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &param
 }
 
 Value parse_saved_parameter_value(std::string_view type, std::string_view value);
+std::optional<ValueKind> parameter_value_kind(std::string_view type);
 
 std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
 {
@@ -646,6 +652,46 @@ bool plugin_has_nested_runtime_parameter(const PluginValue &plugin, std::string_
     }
     const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*plugin.ast)};
     return find_runtime_parameter(metadata, name) != nullptr;
+}
+
+bool runtime_parameter_is_plugin(
+    const std::vector<RetainedFormulaClass> &classes, const RuntimeParameterInfo &parameter)
+{
+    return !parameter_value_kind(parameter.type).has_value() &&
+        find_retained_runtime_class(classes, RuntimeEntrySelector{{}, parameter.type}) != nullptr;
+}
+
+Value make_plugin_parameter_value(const RetainedFormulaClass &klass, FormulaFileSet &files)
+{
+    PluginValue value;
+    value.filename = klass.reference.filename;
+    value.class_name = klass.reference.class_name;
+    value.base_class = klass.base_class;
+    value.ast = klass.ast;
+
+    if (klass.ast)
+    {
+        const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*klass.ast)};
+        for (const RuntimeParameterInfo &parameter : metadata.params)
+        {
+            if (parameter_value_kind(parameter.type).has_value())
+            {
+                continue;
+            }
+            const std::string selector{parameter.default_selector.value_or(parameter.type)};
+            const std::optional<RuntimeEntrySelector> parsed{parse_runtime_entry_selector(selector)};
+            if (!parsed)
+            {
+                continue;
+            }
+            if (const RetainedFormulaClass *nested{find_or_retain_runtime_class(files, *parsed)})
+            {
+                value.nested_values.push_back({parameter.name, make_plugin_parameter_value(*nested, files)});
+            }
+        }
+    }
+
+    return make_plugin_value(std::move(value));
 }
 
 semantic::SemanticTypeKind semantic_type_kind(std::string_view type)
@@ -2343,19 +2389,70 @@ void ExtendedInterpreter::set_plugin_parameter(std::string_view name, std::strin
             return;
         }
     }
-    set_parameter(name, make_plugin_parameter_value(*klass));
+    set_parameter(name, make_plugin_parameter_value(*klass, *files));
 }
 
 void ExtendedInterpreter::set_plugin_parameter_value(
     std::string_view plugin_name, std::string_view nested_name, Value value)
 {
-    clear_binding_diagnostics(std::string{plugin_name} + "." + std::string{nested_name});
+    const std::string diagnostic_name{std::string{plugin_name} + "." + std::string{nested_name}};
+    clear_binding_diagnostics(diagnostic_name);
     const Value current{m_state.parameter_value(plugin_name)};
     if (current.kind() == ValueKind::PLUGIN)
     {
         const Value::PluginPtr plugin{std::get<Value::PluginPtr>(current.storage())};
         PluginValue updated{plugin ? *plugin : PluginValue{}};
         const std::string key{nested_name};
+        if (plugin && plugin->ast)
+        {
+            const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*plugin->ast)};
+            if (const RuntimeParameterInfo *parameter{find_runtime_parameter(metadata, nested_name)};
+                parameter != nullptr && !parameter_value_kind(parameter->type).has_value() &&
+                value.kind() == ValueKind::STRING)
+            {
+                (void) find_or_retain_runtime_class(m_files, RuntimeEntrySelector{{}, parameter->type});
+                const std::string selector{std::get<std::string>(value.storage())};
+                const std::optional<RuntimeEntrySelector> parsed{parse_runtime_entry_selector(selector)};
+                if (!parsed)
+                {
+                    add_binding_diagnostic(diagnostic_name, "invalid plug-in target: " + selector);
+                    return;
+                }
+                const RetainedFormulaClass *klass{find_or_retain_runtime_class(m_files, *parsed)};
+                FormulaFileSet selector_files;
+                FormulaFileSet *files{&m_files};
+                if (klass == nullptr && m_options.parser.file_importer && !parsed->filename.empty())
+                {
+                    selector_files = load_formula_file_tree(parsed->filename, m_options.parser.file_importer);
+                    files = &selector_files;
+                    if (!files->diagnostics.empty())
+                    {
+                        add_binding_diagnostic(
+                            diagnostic_name, reference_diagnostic_message(files->diagnostics.front()));
+                        return;
+                    }
+                    klass = find_or_retain_runtime_class(*files, *parsed);
+                    if (!files->diagnostics.empty())
+                    {
+                        add_binding_diagnostic(
+                            diagnostic_name, reference_diagnostic_message(files->diagnostics.back()));
+                        return;
+                    }
+                }
+                if (klass == nullptr)
+                {
+                    add_binding_diagnostic(diagnostic_name, "missing plug-in class: " + selector);
+                    return;
+                }
+                if (!runtime_class_matches_parameter_type(
+                        files->retained_classes, klass->reference.class_name, parameter->type))
+                {
+                    add_binding_diagnostic(diagnostic_name, "invalid plug-in target: " + selector);
+                    return;
+                }
+                value = make_plugin_parameter_value(*klass, *files);
+            }
+        }
         const auto found{std::find_if(updated.nested_values.begin(), updated.nested_values.end(),
             [&key](const auto &nested) { return nested.first == key; })};
         if (found == updated.nested_values.end())
@@ -2508,7 +2605,7 @@ void ExtendedInterpreter::initialize_runtime_state()
         }
         if (const RetainedFormulaClass *klass{find_retained_runtime_class(m_files.retained_classes, *parsed)})
         {
-            m_state.set_parameter_value(parameter.name, make_plugin_parameter_value(*klass));
+            m_state.set_parameter_value(parameter.name, make_plugin_parameter_value(*klass, m_files));
         }
     }
 }
@@ -2638,7 +2735,7 @@ PreparedParameterSet prepare_parameter_interpreters(
                     continue;
                 }
                 std::string_view nested_name{path.substr(dot + 1)};
-                if (starts_with(nested_name, "p_"))
+                if (starts_with(nested_name, "p_") || starts_with(nested_name, "f_"))
                 {
                     nested_name.remove_prefix(2);
                 }

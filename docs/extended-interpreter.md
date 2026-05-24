@@ -195,17 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Nested plug-in binding defaults.
-    - When a selected class has plug-in parameters of its own, create nested
-      plug-in binding slots from its `default:` metadata.
-    - Apply nested saved values from `set_plugin_parameter_value` and
-      translated parameter-set `p_plugin.p_x=value` assignments to those slots.
-    - Leave unresolved nested selectors as diagnostics before interpretation.
-    - Tests: nested plug-in selector binds to the child parameter, nested
-      scalar/image/function saved values are applied to the selected class,
-      and missing nested selectors produce diagnostics.
-
-2. Construct plug-in instances.
+1. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -217,7 +207,7 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-3. User class field access and assignment.
+2. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -228,7 +218,7 @@ workflow before being considered complete.
       access remains a semantic error, null access fails clearly, and
       assignment through fields works.
 
-4. User class method dispatch.
+3. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -237,14 +227,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-5. Static class methods and constants.
+4. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-6. User constructors and casts.
+5. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
