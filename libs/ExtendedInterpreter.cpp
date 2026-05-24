@@ -242,6 +242,8 @@ struct RuntimeParameterInfo
     std::string type;
     std::string name;
     std::vector<std::string> enum_values;
+    std::optional<std::string> default_selector;
+    bool is_plugin{};
 };
 
 struct RuntimeParameterForward
@@ -268,12 +270,12 @@ public:
 
     void visit(const ast::FunctionBlockNode &node) override
     {
-        m_metadata.functions.push_back({node.type(), node.name(), {}});
+        m_metadata.functions.push_back({node.type(), node.name(), {}, {}, false});
     }
 
     void visit(const ast::ParamBlockNode &node) override
     {
-        RuntimeParameterInfo param{node.type(), node.name(), {}};
+        RuntimeParameterInfo param{node.type(), node.name(), {}, {}, false};
         m_current_param = &param;
         visit_node(node.block());
         m_current_param = nullptr;
@@ -282,6 +284,14 @@ public:
 
     void visit(const ast::SettingNode &node) override
     {
+        if (node.key() == "default" && m_current_param != nullptr)
+        {
+            if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
+            {
+                m_current_param->default_selector = selector->name;
+            }
+            return;
+        }
         if (node.key() == "enum" && m_current_param != nullptr)
         {
             if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
@@ -379,6 +389,13 @@ const RuntimeParameterInfo *find_runtime_function(const RuntimeParameterMetadata
     return nullptr;
 }
 
+bool is_runtime_plugin_parameter(const std::vector<semantic::FormulaParameterInfo> &parameters, std::string_view name)
+{
+    const auto found = std::find_if(parameters.begin(), parameters.end(),
+        [name](const semantic::FormulaParameterInfo &parameter) { return parameter.name == name; });
+    return found != parameters.end() && found->is_plugin;
+}
+
 std::optional<int> parse_enum_index(std::string_view value)
 {
     int result{};
@@ -390,6 +407,126 @@ std::optional<int> parse_enum_index(std::string_view value)
         return result;
     }
     return std::nullopt;
+}
+
+struct RuntimeEntrySelector
+{
+    std::string filename;
+    std::string class_name;
+};
+
+std::optional<RuntimeEntrySelector> parse_runtime_entry_selector(std::string_view value)
+{
+    const std::size_t separator{value.find(':')};
+    if (separator == std::string_view::npos)
+    {
+        if (value.empty())
+        {
+            return std::nullopt;
+        }
+        return RuntimeEntrySelector{{}, std::string{value}};
+    }
+    if (separator == 0 || separator + 1 == value.size())
+    {
+        return std::nullopt;
+    }
+    return RuntimeEntrySelector{std::string{value.substr(0, separator)}, std::string{value.substr(separator + 1)}};
+}
+
+const RetainedFormulaClass *find_retained_runtime_class(
+    const std::vector<RetainedFormulaClass> &classes, const RuntimeEntrySelector &selector)
+{
+    for (const RetainedFormulaClass &klass : classes)
+    {
+        if (!klass.ast || !same_identifier(klass.reference.class_name, selector.class_name))
+        {
+            continue;
+        }
+        if (selector.filename.empty() || klass.reference.filename == selector.filename)
+        {
+            return &klass;
+        }
+    }
+    return nullptr;
+}
+
+const FormulaClassReference *find_runtime_class_reference(
+    const FormulaFileSet &files, const RuntimeEntrySelector &selector)
+{
+    for (const FormulaClassReference &klass : files.class_index)
+    {
+        if (!same_identifier(klass.class_name, selector.class_name))
+        {
+            continue;
+        }
+        if (selector.filename.empty() || klass.filename == selector.filename)
+        {
+            return &klass;
+        }
+    }
+    return nullptr;
+}
+
+const std::string *find_runtime_class_base(
+    const std::vector<RetainedFormulaClass> &classes, std::string_view class_name)
+{
+    for (const RetainedFormulaClass &klass : classes)
+    {
+        if (same_identifier(klass.reference.class_name, class_name))
+        {
+            return &klass.base_class;
+        }
+    }
+    return nullptr;
+}
+
+bool runtime_class_matches_parameter_type(
+    const std::vector<RetainedFormulaClass> &classes, std::string_view class_name, std::string_view parameter_type)
+{
+    if (same_identifier(class_name, parameter_type))
+    {
+        return true;
+    }
+
+    std::vector<std::string> seen;
+    std::string current{class_name};
+    while (const std::string *base = find_runtime_class_base(classes, current))
+    {
+        if (base->empty() ||
+            std::find_if(seen.begin(), seen.end(),
+                [base](const std::string &item) { return same_identifier(item, *base); }) != seen.end())
+        {
+            return false;
+        }
+        if (same_identifier(*base, parameter_type))
+        {
+            return true;
+        }
+        seen.push_back(*base);
+        current = *base;
+    }
+    return false;
+}
+
+std::vector<const RetainedFormulaClass *> retained_class_ptrs(const std::vector<RetainedFormulaClass> &classes)
+{
+    std::vector<const RetainedFormulaClass *> result;
+    result.reserve(classes.size());
+    for (const RetainedFormulaClass &klass : classes)
+    {
+        result.push_back(&klass);
+    }
+    return result;
+}
+
+Value make_plugin_parameter_value(const RetainedFormulaClass &klass)
+{
+    PluginValue value;
+    value.filename = klass.reference.filename;
+    value.class_name = klass.reference.class_name;
+    value.base_class = klass.base_class;
+    value.ast = klass.ast;
+    return make_plugin_value(std::move(value));
 }
 
 std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &parameter, const Value &value)
@@ -1195,6 +1332,10 @@ public:
         {
             check_arity(node.type(), node.args().size(), 0U);
             m_result = m_state.parameter_value(node.type());
+            if (m_result.kind() == ValueKind::PLUGIN)
+            {
+                throw std::runtime_error("plug-in object state is not supported by the extended interpreter");
+            }
             if (m_result.kind() == ValueKind::EMPTY)
             {
                 m_result = default_value(ValueKind::IMAGE);
@@ -1205,6 +1346,10 @@ public:
         {
             check_arity(node.type(), node.args().size(), 0U);
             m_result = m_state.parameter_value(node.type());
+            if (m_result.kind() == ValueKind::PLUGIN)
+            {
+                throw std::runtime_error("plug-in object state is not supported by the extended interpreter");
+            }
             if (m_result.kind() == ValueKind::EMPTY)
             {
                 m_result = default_value(ValueKind::IMAGE);
@@ -1740,7 +1885,7 @@ public:
             if (!m_current_enum_values.empty())
             {
                 value = *make_enum_parameter_value(
-                    RuntimeParameterInfo{node.type(), node.name(), m_current_enum_values}, value);
+                    RuntimeParameterInfo{node.type(), node.name(), m_current_enum_values, {}, false}, value);
             }
             m_state.set_parameter_value(node.name(), std::move(value));
         }
@@ -1797,8 +1942,8 @@ public:
         value = convert_parameter_default(value, m_current_parameter->type());
         if (!m_current_enum_values.empty())
         {
-            value = *make_enum_parameter_value(
-                RuntimeParameterInfo{m_current_parameter->type(), m_current_parameter->name(), m_current_enum_values},
+            value = *make_enum_parameter_value(RuntimeParameterInfo{m_current_parameter->type(),
+                                                   m_current_parameter->name(), m_current_enum_values, {}, false},
                 value);
         }
         m_state.set_parameter_value(m_current_parameter->name(), std::move(value));
@@ -2022,7 +2167,82 @@ void ExtendedInterpreter::set_function_parameter(std::string_view name, std::str
 
 void ExtendedInterpreter::set_plugin_parameter(std::string_view name, std::string_view selector)
 {
-    set_parameter(name, Value{std::string{selector}});
+    clear_binding_diagnostics(name);
+    const auto parameter = std::find_if(m_parameters.begin(), m_parameters.end(),
+        [name](const semantic::FormulaParameterInfo &info) { return info.name == name; });
+    if (!m_ast || parameter == m_parameters.end() || !parameter->is_plugin)
+    {
+        set_parameter(name, Value{std::string{selector}});
+        return;
+    }
+    const std::optional<RuntimeEntrySelector> parsed{parse_runtime_entry_selector(selector)};
+    if (!parsed)
+    {
+        add_binding_diagnostic(name, "invalid plug-in target: " + std::string{selector});
+        return;
+    }
+    const RetainedFormulaClass *klass{};
+    FormulaFileSet selector_files;
+    FormulaFileSet *files{&m_files};
+    if (const FormulaClassReference *reference{find_runtime_class_reference(*files, *parsed)})
+    {
+        const std::size_t diagnostics_size{files->diagnostics.size()};
+        retain_formula_class(*files, *reference);
+        retain_resolved_imported_classes(*files);
+        if (files->diagnostics.size() != diagnostics_size)
+        {
+            add_binding_diagnostic(name, reference_diagnostic_message(files->diagnostics.back()));
+            return;
+        }
+        klass = find_retained_runtime_class(files->retained_classes, *parsed);
+    }
+    else if (m_options.parser.file_importer && !parsed->filename.empty())
+    {
+        selector_files = load_formula_file_tree(parsed->filename, m_options.parser.file_importer);
+        files = &selector_files;
+        if (!files->diagnostics.empty())
+        {
+            add_binding_diagnostic(name, reference_diagnostic_message(files->diagnostics.front()));
+            return;
+        }
+        const FormulaClassReference *reference{find_runtime_class_reference(*files, *parsed)};
+        if (reference != nullptr)
+        {
+            retain_formula_class(*files, *reference);
+            retain_resolved_imported_classes(*files);
+            if (!files->diagnostics.empty())
+            {
+                add_binding_diagnostic(name, reference_diagnostic_message(files->diagnostics.back()));
+                return;
+            }
+            klass = find_retained_runtime_class(files->retained_classes, *parsed);
+        }
+    }
+    if (klass == nullptr)
+    {
+        add_binding_diagnostic(name, "missing plug-in class: " + std::string{selector});
+        return;
+    }
+    if (!runtime_class_matches_parameter_type(files->retained_classes, klass->reference.class_name, parameter->type))
+    {
+        add_binding_diagnostic(name, "invalid plug-in target: " + std::string{selector});
+        return;
+    }
+    semantic::FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::CLASS;
+    context.source_name = klass->reference.filename;
+    context.retained_classes = retained_class_ptrs(files->retained_classes);
+    context.builtins = m_options.builtins;
+    const std::vector<semantic::SemanticDiagnostic> diagnostics{semantic::analyze_formula(*klass->ast, context)};
+    for (const semantic::SemanticDiagnostic &diagnostic : diagnostics)
+    {
+        if (diagnostic.severity == semantic::SemanticDiagnosticSeverity::ERROR)
+        {
+            add_binding_diagnostic(name, diagnostic.message);
+            return;
+        }
+    }
+    set_parameter(name, make_plugin_parameter_value(*klass));
 }
 
 void ExtendedInterpreter::set_plugin_parameter_value(
@@ -2147,6 +2367,29 @@ void ExtendedInterpreter::initialize_runtime_state()
     }
     FunctionMap functions{collect_function_declarations(*m_ast)};
     ParameterDefaultCollector{m_state, functions, m_options.max_loop_iterations}.collect(m_ast->defaults);
+    const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*m_ast)};
+    for (const RuntimeParameterInfo &parameter : metadata.params)
+    {
+        if (!is_runtime_plugin_parameter(m_parameters, parameter.name))
+        {
+            continue;
+        }
+        std::string selector{parameter.default_selector.value_or(parameter.type)};
+        const Value current{m_state.parameter_value(parameter.name)};
+        if (current.kind() == ValueKind::STRING)
+        {
+            selector = std::get<std::string>(current.storage());
+        }
+        const std::optional<RuntimeEntrySelector> parsed{parse_runtime_entry_selector(selector)};
+        if (!parsed)
+        {
+            continue;
+        }
+        if (const RetainedFormulaClass *klass{find_retained_runtime_class(m_files.retained_classes, *parsed)})
+        {
+            m_state.set_parameter_value(parameter.name, make_plugin_parameter_value(*klass));
+        }
+    }
 }
 
 void ExtendedInterpreter::add_parse_diagnostics(const parser::Parser &parser)

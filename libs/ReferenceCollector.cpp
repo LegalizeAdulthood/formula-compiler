@@ -54,6 +54,13 @@ public:
         return m_references;
     }
 
+    void collect_parameter_names(const ast::Expr &expr)
+    {
+        m_collecting_parameter_names = true;
+        visit_expr(expr);
+        m_collecting_parameter_names = false;
+    }
+
     void visit(const ast::AssignmentNode &node) override
     {
         visit_expr(node.target());
@@ -138,7 +145,10 @@ public:
 
     void visit(const ast::NewNode &node) override
     {
-        add_reference(FormulaReferenceKind::NEW_OBJECT, node.type());
+        if ((node.type().empty() || node.type().front() != '@') && !is_parameter_reference(node.type()))
+        {
+            add_reference(FormulaReferenceKind::NEW_OBJECT, node.type());
+        }
         for (const ast::Expr &arg : node.args())
         {
             visit_expr(arg);
@@ -147,6 +157,7 @@ public:
 
     void visit(const ast::ParamBlockNode &node) override
     {
+        m_parameter_names.push_back(node.name());
         add_reference(FormulaReferenceKind::PARAM_BLOCK, node.type());
         visit_expr(node.block());
     }
@@ -199,10 +210,15 @@ public:
 private:
     void add_reference(FormulaReferenceKind kind, std::string_view type)
     {
-        if (is_class_reference(type))
+        if (!m_collecting_parameter_names && is_class_reference(type))
         {
             m_references.push_back(FormulaReference{kind, std::string{type}, {}});
         }
+    }
+
+    bool is_parameter_reference(std::string_view name) const
+    {
+        return std::find(m_parameter_names.begin(), m_parameter_names.end(), name) != m_parameter_names.end();
     }
 
     void visit_expr(const ast::Expr &expr)
@@ -214,6 +230,8 @@ private:
     }
 
     std::vector<FormulaReference> m_references;
+    std::vector<std::string> m_parameter_names;
+    bool m_collecting_parameter_names{};
 };
 
 void collect_section_references(ReferenceCollector &collector, const ast::FormulaSections &ast)
@@ -431,6 +449,7 @@ void add_resolved_reference(FormulaFileSet &files, FormulaResolvedReference refe
 std::vector<FormulaReference> collect_formula_references(const ast::FormulaSections &ast)
 {
     ReferenceCollector collector;
+    collector.collect_parameter_names(ast.defaults);
     collect_section_references(collector, ast);
     return collector.references();
 }

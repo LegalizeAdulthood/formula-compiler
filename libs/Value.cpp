@@ -127,6 +127,11 @@ Value::Value(EnumPtr value) :
 {
 }
 
+Value::Value(PluginPtr value) :
+    m_storage(std::move(value))
+{
+}
+
 ValueKind Value::kind() const
 {
     switch (m_storage.index())
@@ -151,6 +156,8 @@ ValueKind Value::kind() const
         return ValueKind::IMAGE;
     case 9:
         return ValueKind::ENUM;
+    case 10:
+        return ValueKind::PLUGIN;
     default:
         throw std::runtime_error("value variant index out of range");
     }
@@ -203,6 +210,18 @@ bool operator!=(const EnumValue &lhs, const EnumValue &rhs)
     return !(lhs == rhs);
 }
 
+bool operator==(const PluginValue &lhs, const PluginValue &rhs)
+{
+    return lhs.filename == rhs.filename && lhs.class_name == rhs.class_name && lhs.base_class == rhs.base_class &&
+        lhs.ast == rhs.ast && lhs.nested_values == rhs.nested_values &&
+        lhs.object_initialized == rhs.object_initialized;
+}
+
+bool operator!=(const PluginValue &lhs, const PluginValue &rhs)
+{
+    return !(lhs == rhs);
+}
+
 bool operator==(const Value &lhs, const Value &rhs)
 {
     if (lhs.kind() != rhs.kind())
@@ -231,6 +250,8 @@ bool operator==(const Value &lhs, const Value &rhs)
         return ptr_equal(std::get<Value::ImagePtr>(lhs.storage()), std::get<Value::ImagePtr>(rhs.storage()));
     case ValueKind::ENUM:
         return ptr_equal(std::get<Value::EnumPtr>(lhs.storage()), std::get<Value::EnumPtr>(rhs.storage()));
+    case ValueKind::PLUGIN:
+        return ptr_equal(std::get<Value::PluginPtr>(lhs.storage()), std::get<Value::PluginPtr>(rhs.storage()));
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -264,6 +285,8 @@ std::string_view type_name(ValueKind kind)
         return "image";
     case ValueKind::ENUM:
         return "enum";
+    case ValueKind::PLUGIN:
+        return "plugin";
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -312,6 +335,8 @@ Value default_value(ValueKind kind)
         return make_image_value(ImageValue{});
     case ValueKind::ENUM:
         return make_enum_value(EnumValue{});
+    case ValueKind::PLUGIN:
+        return make_plugin_value(PluginValue{});
     }
     throw std::runtime_error("unknown value kind");
 }
@@ -329,6 +354,11 @@ Value make_image_value(ImageValue value)
 Value make_enum_value(EnumValue value)
 {
     return Value{std::make_shared<EnumValue>(std::move(value))};
+}
+
+Value make_plugin_value(PluginValue value)
+{
+    return Value{std::make_shared<PluginValue>(std::move(value))};
 }
 
 Value convert_value(const Value &value, ValueKind target)
@@ -444,6 +474,21 @@ std::string format_value(const Value &value)
     {
         const Value::EnumPtr enum_value{std::get<Value::EnumPtr>(value.storage())};
         out << "enum(" << (!enum_value ? 0 : enum_value->index) << ')';
+        break;
+    }
+    case ValueKind::PLUGIN:
+    {
+        const Value::PluginPtr plugin{std::get<Value::PluginPtr>(value.storage())};
+        out << "plugin(";
+        if (plugin)
+        {
+            if (!plugin->filename.empty())
+            {
+                out << plugin->filename << ':';
+            }
+            out << plugin->class_name;
+        }
+        out << ')';
         break;
     }
     }

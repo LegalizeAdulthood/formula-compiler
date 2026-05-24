@@ -2426,9 +2426,14 @@ private:
 
     std::string parameter_type_name(const std::string &name) const
     {
+        std::string_view parameter_name{name};
+        if (!parameter_name.empty() && parameter_name.front() == '@')
+        {
+            parameter_name.remove_prefix(1);
+        }
         for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
         {
-            if (param.name == name)
+            if (param.name == parameter_name)
             {
                 return param.type;
             }

@@ -472,6 +472,256 @@ TEST(TestExtendedInterpreter, invalidEnumParameterBindingBlocksExecution)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, initializesPluginParameterDefaultAsRuntimeValue)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    const Value value{interpreter.value("@filter")};
+    ASSERT_EQ(ValueKind::PLUGIN, value.kind());
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(value.storage())};
+    ASSERT_TRUE(plugin);
+    EXPECT_EQ("plugin.ulb", plugin->filename);
+    EXPECT_EQ("Plugin", plugin->class_name);
+    EXPECT_FALSE(plugin->object_initialized);
+}
+
+TEST(TestExtendedInterpreter, hostPluginParameterOverrideReplacesRuntimeValue)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "default:\n"
+            "Base param filter\n"
+            "default=Default\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "class Default(Base) {\n"
+            "public:\n"
+            "int first\n"
+            "}\n"
+            "class Other(Base) {\n"
+            "public:\n"
+            "int second\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Default\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    ASSERT_EQ(ValueKind::PLUGIN, interpreter.value("@filter").kind());
+
+    interpreter.set_plugin_parameter("filter", "plugin.ulb:Other");
+
+    ASSERT_TRUE(interpreter.ok());
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(interpreter.value("@filter").storage())};
+    ASSERT_TRUE(plugin);
+    EXPECT_EQ("Other", plugin->class_name);
+}
+
+TEST(TestExtendedInterpreter, pluginParameterBindingReportsMissingClass)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename) -> std::optional<std::string>
+    {
+        const auto found{files.find(std::string{filename})};
+        if (found == files.end())
+        {
+            return std::nullopt;
+        }
+        return found->second;
+    };
+    ExtendedInterpreter interpreter{formula_entry("default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_plugin_parameter("filter", "missing.ulb:Plugin");
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_EQ("missing import: missing.ulb", interpreter.diagnostics()[0].message);
+}
+
+TEST(TestExtendedInterpreter, pluginParameterBindingReportsParseError)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"broken.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "if 1\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_plugin_parameter("filter", "broken.ulb:Plugin");
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_EQ("parse error: broken.ulb", interpreter.diagnostics()[0].message);
+}
+
+TEST(TestExtendedInterpreter, pluginParameterBindingReportsKindMismatch)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "default:\n"
+            "Base param filter\n"
+            "default=Base\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"
+            "class Other {\n"
+            "public:\n"
+            "int second\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Base\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_plugin_parameter("filter", "plugin.ulb:Other");
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_EQ("invalid plug-in target: plugin.ulb:Other", interpreter.diagnostics()[0].message);
+}
+
+TEST(TestExtendedInterpreter, pluginObjectConstructionReportsMissingObjectState)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "new @filter\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "new @filter\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) interpreter.interpret(Section::INITIALIZE);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_STREQ("plug-in object state is not supported by the extended interpreter", error.what());
+                throw;
+            }
+        },
+        std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"

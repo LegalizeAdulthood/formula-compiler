@@ -111,7 +111,8 @@
     `fn1`..`fn4` compatibility calls and `@name(...)` custom calls. Enum
     parameters preserve selected label and numeric index, and hosts can bind
     them by label or valid index. Plug-in defaults are validated by semantic
-    analysis and implemented by later plug-in slices.
+    analysis and stored as selected class runtime handles with empty object
+    state.
   - Missing defaults are not runtime errors. Invalid defaults are parser,
     resolver, or semantic diagnostics before execution.
   - Plug-in selector resolution is eager by design. Defaults are diagnosed
@@ -194,19 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Plug-in runtime value shell.
-    - Add a runtime `PluginValue` or equivalent handle that stores the
-      selected class reference, retained class AST pointer, nested saved
-      parameter bindings, and optional initialized object state.
-    - Do not model an omitted plug-in value as unresolved. Every plug-in
-      parameter has an effective selected class from its explicit default or
-      base class.
-    - Keep object state empty until `new @pluginParam` is implemented.
-    - Tests: effective plug-in defaults create `PluginValue`, host overrides
-      replace selected class, and runtime messages describe missing object
-      state clearly.
-
-2. Resolve standalone plug-in selectors.
+1. Resolve standalone plug-in selectors.
     - `set_plugin_parameter(name, selector)` accepts the same selector text
       used by parameter sets, such as `File.ulb:Class`.
     - The interpreter resolves selector strings through its configured
@@ -222,7 +211,7 @@ workflow before being considered complete.
       entry, parse error, kind mismatch, and nested parameter mismatch become
       diagnostics.
 
-3. Translate parameter-set bindings.
+2. Translate parameter-set bindings.
     - Replace the current string preservation for `p_plugin=File.ulb:Class`
       and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
     - Treat `p_` and `f_` only as parser/bridge input syntax. Translate them
@@ -235,7 +224,7 @@ workflow before being considered complete.
       values as resolved runtime objects; separate layers get separate
       object state.
 
-4. Parameter forwards.
+3. Parameter forwards.
     - Apply parameter forwards when translating old saved parameter names from
       parameter sets into current parameter bindings.
     - Do not expose forward syntax through the standalone interpreter API.
@@ -244,7 +233,7 @@ workflow before being considered complete.
       conflicting forwards remain diagnostics, and direct current-name binding
       bypasses forwards.
 
-5. Non-selectable plug-in binding.
+4. Non-selectable plug-in binding.
     - Treat `selectable=false` as a UI/binding flattening rule: standalone
       clients bind the visible child parameter names directly, while
       parameter-set translation maps saved child values into the non-selectable
@@ -254,7 +243,7 @@ workflow before being considered complete.
       class, direct child bindings update nested parameters, and parameter-set
       saved values translate correctly.
 
-6. Nested plug-in binding defaults.
+5. Nested plug-in binding defaults.
     - When a selected class has plug-in parameters of its own, create nested
       plug-in binding slots from its `default:` metadata.
     - Apply nested saved values from `set_plugin_parameter_value` and
@@ -264,7 +253,7 @@ workflow before being considered complete.
       scalar/image/function saved values are applied to the selected class,
       and missing nested selectors produce diagnostics.
 
-7. Construct plug-in instances.
+6. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -276,7 +265,7 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-8. User class field access and assignment.
+7. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -287,7 +276,7 @@ workflow before being considered complete.
       access remains a semantic error, null access fails clearly, and
       assignment through fields works.
 
-9. User class method dispatch.
+8. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -296,14 +285,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-10. Static class methods and constants.
+9. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-11. User constructors and casts.
+10. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
