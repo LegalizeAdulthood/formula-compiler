@@ -181,37 +181,55 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Plug-in binding data model.
+1. Clean parameter binding API.
+    - Add interpreter facade methods for binding formula parameters by source
+      parameter name, without `@`, `p_`, or `f_` prefixes.
+    - Keep `@name` as formula-language syntax only. Keep `p_` and `f_` as
+      extended parameter-set file-format prefixes only.
+    - Suggested surface:
+
+      ```cpp
+      void set_parameter(std::string_view name, Value value);
+      void set_function_parameter(std::string_view name, std::string_view target);
+      void set_plugin_parameter(std::string_view name, std::string_view selector);
+      void set_plugin_parameter_value(
+          std::string_view plugin_name, std::string_view nested_name, Value value);
+      ```
+
+    - Tests: scalar, image, function, and plug-in parameter APIs bind by raw
+      parameter name; prefixed names are not required by the facade.
+
+2. Plug-in runtime value shell.
     - Add a runtime `PluginValue` or equivalent handle that stores the
       selected class reference, retained class AST pointer, nested saved
-      parameter bindings, and initialized object state.
-    - Add public host APIs for binding a plug-in parameter outside a
-      parameter set. The API should accept the parameter name, resolved
-      selected class entry, retained class AST/reference metadata, and
-      nested saved values.
+      parameter bindings, and optional initialized object state.
+    - Add default empty/null plug-in values for unbound plug-in parameters.
+    - Keep object state empty until `new @pluginParam` is implemented.
+    - Tests: default plug-in parameters are empty, host-provided descriptors
+      convert to `PluginValue`, and runtime messages describe missing object
+      state clearly.
+
+3. Resolve standalone plug-in selectors.
+    - `set_plugin_parameter(name, selector)` accepts the same selector text
+      used by parameter sets, such as `File.ulb:Class`.
+    - The interpreter resolves selector strings through its configured
+      importer/resolver options. The client does not pass `FormulaClassReference`,
+      retained AST pointers, or semantic analyzer internals.
     - Use `ExtendedInterpreter::parameters()` to let hosts discover which
       formula parameters are plug-in parameters before supplying those
       bindings.
-    - Keep string-only saved plug-in values as compatibility input, but
-      convert them to resolved plug-in bindings before interpretation.
-    - Tests: host-bound plug-in selector is visible as a runtime object,
-      unbound plug-in parameters remain empty, and invalid unresolved
-      string selectors still fail before runtime use.
-
-2. Resolve plug-in bindings for standalone formulas.
-    - Extend `ExtendedInterpreterOptions` with a resolver or binding source
-      for plug-in parameter selections.
-    - During interpreter construction, resolve any host-supplied
-      `File.ulb:Class` selector the same way parameter-set references do.
     - Retain referenced class ASTs and run the same semantic checks against
       the selected class and nested saved values.
-    - Tests: standalone formula with `Plugin param p` and `new @p` can be
-      prepared from a host selector; missing entry, parse error, kind
-      mismatch, and nested parameter mismatch become diagnostics.
+    - Tests: standalone formula with `Plugin param p` and `new @p` can resolve
+      a host selector; repeated binding replaces the old selector; missing
+      entry, parse error, kind mismatch, and nested parameter mismatch become
+      diagnostics.
 
-3. Bind plug-ins from resolved parameter sets.
+4. Translate parameter-set bindings.
     - Replace the current string preservation for `p_plugin=File.ulb:Class`
       and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
+    - Treat `p_` and `f_` only as parser/bridge input syntax. Translate them
+      into the clean interpreter APIs before runtime state is populated.
     - Reuse the parameter-set reference resolver data so the bridge does not
       reparse entries that are already resolved and retained.
     - Preserve layer/transform site metadata and support independent plugin
@@ -220,7 +238,17 @@ workflow before being considered complete.
       values as resolved runtime objects; separate layers get separate
       object state.
 
-4. Construct plug-in instances.
+5. Nested plug-in binding defaults.
+    - When a selected class has plug-in parameters of its own, create nested
+      plug-in binding slots from its `default:` metadata.
+    - Apply nested saved values from `set_plugin_parameter_value` and
+      translated parameter-set `p_plugin.p_x=value` assignments to those slots.
+    - Leave unresolved nested selectors as diagnostics before interpretation.
+    - Tests: nested plug-in selector binds to the child parameter, nested
+      scalar/image/function saved values are applied to the selected class,
+      and missing nested selectors produce diagnostics.
+
+6. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -232,7 +260,7 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-5. User class field access and assignment.
+7. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -240,7 +268,7 @@ workflow before being considered complete.
     - Tests: field read/write, copied object references, private member
       access remains a semantic error, and assignment through fields works.
 
-6. User class method dispatch.
+8. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -249,7 +277,7 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-7. User constructors and casts.
+9. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Implement casts between object references according to the retained
