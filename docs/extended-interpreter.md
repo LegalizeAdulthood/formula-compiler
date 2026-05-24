@@ -195,20 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill FormulaEntry tests for retained class metadata.
-    - Add tests that `retain_formula_class` stores `base_class` for retained
-      classes with same-file bases and explicit imported bases.
-    - Add tests that `retain_formula_class` does not duplicate entries when
-      the same class is retained through declaration, `new`, and class-member
-      references.
-    - Add tests that `CLASS_MEMBER` references resolve through import order in
-      the same way declaration and `new` references do.
-    - Add tests that retained class AST parse diagnostics include the class
-      file and parse location for static-member-only references.
-    - Add tests that missing imports used only by class-member references
-      produce the same import diagnostics as declaration references.
-
-2. Backfill ExtendedRuntime tests for plug-in and object values.
+1. Backfill ExtendedRuntime tests for plug-in and object values.
     - Add tests that formula, parameter, and predefined storage preserve
       shared plug-in/object handles and stored metadata.
     - Add tests that formula and parameter lvalues can replace plug-in values
@@ -221,7 +208,7 @@ workflow before being considered complete.
       and does not alter formula-scope or predefined values with the same
       source spelling.
 
-3. User constructors and casts.
+2. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

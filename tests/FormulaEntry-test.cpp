@@ -1213,7 +1213,80 @@ TEST(TestFormulaEntry, retainResolvedImportedClassesRetainsSameFileBaseClass)
 
     ASSERT_EQ(2U, result.retained_classes.size());
     EXPECT_EQ("Derived", result.retained_classes[0].reference.class_name);
+    EXPECT_EQ("Base", result.retained_classes[0].base_class);
     EXPECT_EQ("Base", result.retained_classes[1].reference.class_name);
+    EXPECT_TRUE(result.retained_classes[1].base_class.empty());
+}
+
+TEST(TestFormulaEntry, retainResolvedImportedClassesStoresExplicitImportedBaseClass)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Derived.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Derived(base.ulb:Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+        {"base.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int answer\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+
+    ASSERT_EQ(2U, result.retained_classes.size());
+    EXPECT_EQ("Derived", result.retained_classes[0].reference.class_name);
+    EXPECT_EQ("Base", result.retained_classes[0].base_class);
+    EXPECT_EQ("Base", result.retained_classes[1].reference.class_name);
+    EXPECT_TRUE(result.retained_classes[1].base_class.empty());
+}
+
+TEST(TestFormulaEntry, retainResolvedImportedClassesDoesNotDuplicateReferenceKinds)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "global:\n"
+            "Texture tex = new Texture()\n"
+            "Texture.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int answer\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+    retain_resolved_imported_classes(result);
+
+    ASSERT_EQ(1U, result.retained_classes.size());
+    EXPECT_EQ("Texture", result.retained_classes[0].reference.class_name);
+    ASSERT_TRUE(result.retained_classes[0].ast);
+    EXPECT_TRUE(result.retained_classes[0].ast->public_members);
 }
 
 TEST(TestFormulaEntry, retainResolvedImportedClassesIsRepeatable)
@@ -1279,6 +1352,67 @@ TEST(TestFormulaEntry, unresolvedClassMemberReferenceReportsDiagnostic)
     EXPECT_EQ("Missing", result.diagnostics[0].detail);
 }
 
+TEST(TestFormulaEntry, unresolvedClassMemberReferenceKeepsLocationFilename)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "global:\n"
+            "Missing.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[0].code);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].filename);
+    EXPECT_EQ("main.ufm", result.diagnostics[0].location.filename);
+    EXPECT_EQ("Missing", result.diagnostics[0].detail);
+}
+
+TEST(TestFormulaEntry, missingClassMemberImportReportsDiagnostic)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"missing.ulb\"\n"
+            "global:\n"
+            "Missing.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree("main.ufm",
+        [&files](std::string_view filename) -> std::optional<std::string>
+        {
+            const auto found = files.find(std::string{filename});
+            if (found == files.end())
+            {
+                return {};
+            }
+            return found->second;
+        })};
+
+    ASSERT_EQ(1U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::MISSING_IMPORT, result.diagnostics[0].code);
+    EXPECT_EQ("missing.ulb", result.diagnostics[0].filename);
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(2U, result.diagnostics.size());
+    EXPECT_EQ(FormulaFileDiagnosticCode::UNRESOLVED_CLASS, result.diagnostics[1].code);
+    EXPECT_EQ("Missing", result.diagnostics[1].detail);
+}
+
 TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
 {
     std::unordered_map<std::string, std::string> files{
@@ -1311,6 +1445,42 @@ TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirst)
     resolve_formula_file_references(result);
 
     ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ("second.ulb", result.resolved_references[0].klass.filename);
+}
+
+TEST(TestFormulaEntry, referenceResolverUsesLastExplicitImportFirstForClassMembers)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"first.ulb\"\n"
+            "import \"second.ulb\"\n"
+            "global:\n"
+            "Texture.answer\n"
+            "loop:\n"
+            "z = pixel\n"
+            "}\n"},
+        {"first.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+        {"second.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int answer\n"
+            "}\n"},
+    };
+
+    auto result{load_formula_file_tree(
+        "main.ufm", [&files](std::string_view filename) { return files.at(std::string{filename}); })};
+
+    ASSERT_TRUE(result.diagnostics.empty());
+    collect_formula_file_references(result);
+    resolve_formula_file_references(result);
+
+    ASSERT_EQ(1U, result.resolved_references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, result.resolved_references[0].reference.kind);
     EXPECT_EQ("second.ulb", result.resolved_references[0].klass.filename);
 }
 
