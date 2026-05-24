@@ -9,8 +9,14 @@
 #include <formula/ReferenceCollector.h>
 #include <formula/Visitor.h>
 
+#include "functions.h"
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <numeric>
+#include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -147,6 +153,112 @@ Value numeric_binary(const Value &lhs, const Value &rhs, const std::string &op)
         return Value{std::pow(left, right)};
     }
     throw std::runtime_error("invalid numeric operator: " + op);
+}
+
+ColorValue color_value(const Value &value)
+{
+    if (value.kind() != ValueKind::COLOR)
+    {
+        throw std::runtime_error("expected color value, got " + std::string{type_name(value)});
+    }
+    return std::get<ColorValue>(value.storage());
+}
+
+void check_arity(std::string_view name, std::size_t actual, std::size_t expected)
+{
+    if (actual != expected)
+    {
+        throw std::runtime_error("invalid call arity: " + std::string{name});
+    }
+}
+
+double hue_to_rgb(double p, double q, double hue)
+{
+    if (hue < 0.0)
+    {
+        hue += 1.0;
+    }
+    if (hue > 1.0)
+    {
+        hue -= 1.0;
+    }
+    if (hue < 1.0 / 6.0)
+    {
+        return p + (q - p) * 6.0 * hue;
+    }
+    if (hue < 0.5)
+    {
+        return q;
+    }
+    if (hue < 2.0 / 3.0)
+    {
+        return p + (q - p) * (2.0 / 3.0 - hue) * 6.0;
+    }
+    return p;
+}
+
+ColorValue hsl_to_color(double hue, double saturation, double luminance, double alpha)
+{
+    hue = std::fmod(hue, 6.0) / 6.0;
+    if (hue < 0.0)
+    {
+        hue += 1.0;
+    }
+    if (saturation == 0.0)
+    {
+        return {luminance, luminance, luminance, alpha};
+    }
+    const double q{luminance < 0.5 ? luminance * (1.0 + saturation) : luminance + saturation - luminance * saturation};
+    const double p{2.0 * luminance - q};
+    return {hue_to_rgb(p, q, hue + 1.0 / 3.0), hue_to_rgb(p, q, hue), hue_to_rgb(p, q, hue - 1.0 / 3.0), alpha};
+}
+
+struct HslValue
+{
+    double hue{};
+    double saturation{};
+    double luminance{};
+};
+
+HslValue color_to_hsl(ColorValue color)
+{
+    const double maximum{std::max({color.red, color.green, color.blue})};
+    const double minimum{std::min({color.red, color.green, color.blue})};
+    const double chroma{maximum - minimum};
+    const double luminance{(maximum + minimum) / 2.0};
+    if (chroma == 0.0)
+    {
+        return {0.0, 0.0, luminance};
+    }
+    double hue{};
+    if (maximum == color.red)
+    {
+        hue = std::fmod((color.green - color.blue) / chroma, 6.0);
+    }
+    else if (maximum == color.green)
+    {
+        hue = (color.blue - color.red) / chroma + 2.0;
+    }
+    else
+    {
+        hue = (color.red - color.green) / chroma + 4.0;
+    }
+    if (hue < 0.0)
+    {
+        hue += 6.0;
+    }
+    const double saturation{chroma / (1.0 - std::abs(2.0 * luminance - 1.0))};
+    return {hue, saturation, luminance};
+}
+
+int random_seed(int seed)
+{
+    const std::uint32_t next{static_cast<std::uint32_t>(seed) * 1103515245U + 12345U};
+    if (next <= 0x7fffffffU)
+    {
+        return static_cast<int>(next);
+    }
+    return -static_cast<int>((~next) + 1U);
 }
 
 Value compare_values(const Value &lhs, const Value &rhs, const std::string &op)
@@ -398,14 +510,9 @@ public:
         {
             unsupported_runtime_node("FunctionCallNode");
         }
-        if (node.name() == "setLength")
+        if (const auto builtin = call_builtin(node))
         {
-            m_result = call_set_length(node.args());
-            return;
-        }
-        if (node.name() == "length")
-        {
-            m_result = call_length(node.args());
+            m_result = *builtin;
             return;
         }
         const auto function = m_functions.find(node.name());
@@ -645,6 +752,104 @@ private:
             throw std::runtime_error("invalid dynamic array argument: length");
         }
         return Value{static_cast<int>(array->elements.size())};
+    }
+
+    std::optional<Value> call_builtin(const ast::FunctionCallNode &node)
+    {
+        const std::string &name{node.name()};
+        const std::vector<ast::Expr> &args{node.args()};
+        if (name == "setLength")
+        {
+            return call_set_length(args);
+        }
+        if (name == "length")
+        {
+            return call_length(args);
+        }
+        if (name == "print")
+        {
+            std::ostringstream out;
+            for (const ast::Expr &arg : args)
+            {
+                out << format_value(interpret(arg));
+            }
+            m_state.add_message(out.str());
+            return Value{};
+        }
+        if (name == "rgb" || name == "hsl")
+        {
+            check_arity(name, args.size(), 3U);
+            const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
+            const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
+            const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
+            return Value{
+                name == "rgb" ? ColorValue{first, second, third, 1.0} : hsl_to_color(first, second, third, 1.0)};
+        }
+        if (name == "rgba" || name == "hsla")
+        {
+            check_arity(name, args.size(), 4U);
+            const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
+            const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
+            const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
+            const double fourth{real_part(convert_value(interpret(args[3]), ValueKind::FLOAT))};
+            return Value{
+                name == "rgba" ? ColorValue{first, second, third, fourth} : hsl_to_color(first, second, third, fourth)};
+        }
+        if (name == "red" || name == "green" || name == "blue" || name == "alpha" || name == "hue" || name == "sat" ||
+            name == "lum")
+        {
+            check_arity(name, args.size(), 1U);
+            const ColorValue color{color_value(interpret(args.front()))};
+            if (name == "red")
+            {
+                return Value{color.red};
+            }
+            if (name == "green")
+            {
+                return Value{color.green};
+            }
+            if (name == "blue")
+            {
+                return Value{color.blue};
+            }
+            if (name == "alpha")
+            {
+                return Value{color.alpha};
+            }
+            const HslValue hsl{color_to_hsl(color)};
+            if (name == "hue")
+            {
+                return Value{hsl.hue};
+            }
+            if (name == "sat")
+            {
+                return Value{hsl.saturation};
+            }
+            return Value{hsl.luminance};
+        }
+        if (name == "random")
+        {
+            check_arity(name, args.size(), 1U);
+            return Value{random_seed(std::get<int>(convert_value(interpret(args.front()), ValueKind::INT).storage()))};
+        }
+        if (name == "atan2")
+        {
+            check_arity(name, args.size(), 1U);
+            const Complex value{complex_value(interpret(args.front()))};
+            return Value{std::atan2(value.im, value.re)};
+        }
+        if (name == "isNaN" || name == "isInf")
+        {
+            check_arity(name, args.size(), 1U);
+            const double value{real_part(convert_value(interpret(args.front()), ValueKind::FLOAT))};
+            return Value{name == "isNaN" ? std::isnan(value) : std::isinf(value)};
+        }
+        if (lookup_complex(name) != nullptr || lookup_real(name) != nullptr)
+        {
+            check_arity(name, args.size(), 1U);
+            return Value{evaluate(name, complex_value(interpret(args.front())))};
+        }
+        return std::nullopt;
     }
 
     RuntimeLValue array_lvalue(const ast::IndexNode &node)
@@ -890,6 +1095,11 @@ Value ExtendedInterpreter::value(std::string_view name) const
         return m_state.predefined_value(name);
     }
     return m_state.value(name);
+}
+
+const std::vector<std::string> &ExtendedInterpreter::messages() const
+{
+    return m_state.messages();
 }
 
 Value ExtendedInterpreter::interpret(Section section)

@@ -172,17 +172,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Builtin functions and color operations.
-    - Move existing math builtins behind value-aware dispatch.
-    - Add procedural UF builtins: `rgb`, `rgba`, `hsl`, `hsla`, `red`,
-      `green`, `blue`, `alpha`, `hue`, `sat`, `lum`, `random`, `atan2`,
-      `isNaN`, `isInf`, and `print`.
-    - Keep BASIC one-argument complex builtin behavior intact through the
-      existing interpreter path.
-    - Tests: math builtins, color construction/extraction, random seed
-      policy, print messages, arity backstops, and invalid argument types.
-
-2. Parameters and predefined symbols.
+1. Parameters and predefined symbols.
     - Initialize `@` parameters from default metadata and host overrides.
     - Initialize documented predefined symbols from host environment state.
     - Allow writes only to semantically writable predefined symbols as a
@@ -191,7 +181,7 @@ workflow before being considered complete.
       `#z`, `#index`, `#color`, `#solid`, read-only write rejection, and
       transform writes to `#pixel` and `#solid`.
 
-3. Section result rules.
+2. Section result rules.
     - Apply section-specific result conversion during interpretation.
     - `bailout` returns truthiness.
     - `final` returns a color or numeric result for the caller.
@@ -202,7 +192,7 @@ workflow before being considered complete.
     - Tests: bailout true/false, final color, final numeric value,
       transform mutation, and invalid result conversion backstops.
 
-4. Unsupported object/class runtime boundary.
+3. Unsupported object/class runtime boundary.
     - Keep class declarations, imports, and semantic validation as current
       pre-runtime work.
     - At runtime, reject unsupported object construction, casts, field
@@ -213,7 +203,7 @@ workflow before being considered complete.
     - Tests: unsupported `new`, casts, member access, method calls, and
       plug-in object use fail clearly without crashing.
 
-5. Builtin `Image` runtime.
+4. Builtin `Image` runtime.
     - Add host-bindable `ImageValue` handles.
     - Initialize `Image` parameters to empty image handles when no host
       image is supplied.
@@ -223,7 +213,7 @@ workflow before being considered complete.
     - Tests: empty default image, host-bound image, supported fields,
       supported methods, arity/type backstops, and unknown member backstop.
 
-6. Parameter-set binding bridge.
+5. Parameter-set binding bridge.
     - Add helper code that constructs one `ExtendedInterpreter` per
       referenced formula in a resolved extended parameter set.
     - Bind saved fractal, coloring, transform, function, plug-in, and image
@@ -235,7 +225,7 @@ workflow before being considered complete.
       targets, plug-in nested values, image parameters, and diagnostics
       blocking preparation.
 
-7. Regression and compatibility pass.
+6. Regression and compatibility pass.
     - Ensure existing BASIC parser, interpreter, and compiler tests keep
       using the current `Formula` interface.
     - Add explicit tests proving extended interpreter changes do not alter

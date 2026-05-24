@@ -146,13 +146,12 @@ TEST(TestExtendedInterpreter, classEntriesDoNotDispatchRuntimeSections)
     EXPECT_THROW(interpreter.interpret(Section::PER_IMAGE), std::runtime_error);
 }
 
-TEST(TestExtendedInterpreter, nonEmptyValidSectionReportsUnsupportedExecution)
+TEST(TestExtendedInterpreter, interpretsMathBuiltins)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nsin(1)"), options()};
-
-    ASSERT_TRUE(interpreter.ok());
-
-    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+    EXPECT_EQ((Value{Complex{4.0, 0.0}}), interpret_init("sqr(2)"));
+    EXPECT_EQ((Value{Complex{3.0, 0.0}}), interpret_init("real((3,4))"));
+    EXPECT_EQ(Value{std::atan2(4.0, 3.0)}, interpret_init("atan2((3,4))"));
+    EXPECT_EQ(Value{true}, interpret_init("isInf(1.0/0.0)"));
 }
 
 TEST(TestExtendedInterpreter, setAndGetRuntimeValues)
@@ -473,6 +472,57 @@ TEST(TestExtendedInterpreter, dynamicArraysStartEmpty)
     EXPECT_EQ(Value{0},
         interpret_init("int values[]\n"
                        "length(values)"));
+}
+
+TEST(TestExtendedInterpreter, interpretsColorConstructionAndExtraction)
+{
+    EXPECT_EQ((Value{ColorValue{0.1, 0.2, 0.3, 1.0}}), interpret_init("rgb(0.1,0.2,0.3)"));
+    EXPECT_EQ((Value{ColorValue{0.1, 0.2, 0.3, 0.4}}), interpret_init("rgba(0.1,0.2,0.3,0.4)"));
+    EXPECT_EQ(Value{0.2}, interpret_init("green(rgba(0.1,0.2,0.3,0.4))"));
+    EXPECT_EQ(Value{0.4}, interpret_init("alpha(rgba(0.1,0.2,0.3,0.4))"));
+}
+
+TEST(TestExtendedInterpreter, interpretsHslColorConstructionAndExtraction)
+{
+    EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpret_init("hsl(0,1,0.5)"));
+    EXPECT_EQ((Value{ColorValue{0.0, 1.0, 0.0, 0.25}}), interpret_init("hsla(2,1,0.5,0.25)"));
+    EXPECT_EQ(Value{2.0}, interpret_init("hue(hsl(2,1,0.5))"));
+    EXPECT_EQ(Value{1.0}, interpret_init("sat(hsl(2,1,0.5))"));
+    EXPECT_EQ(Value{0.5}, interpret_init("lum(hsl(2,1,0.5))"));
+}
+
+TEST(TestExtendedInterpreter, randomFunctionIsSeedDeterministic)
+{
+    const Value first{interpret_init("random(1234)")};
+
+    EXPECT_EQ(first, interpret_init("random(1234)"));
+    EXPECT_NE(first, interpret_init("random(random(1234))"));
+}
+
+TEST(TestExtendedInterpreter, printRecordsRuntimeMessages)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\nprint(\"value=\", 7, \" color=\", rgb(1,0,0))"), options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::INITIALIZE));
+    ASSERT_EQ(1U, interpreter.messages().size());
+    EXPECT_EQ("value=7 color=rgba(1,0,0,1)", interpreter.messages().front());
+}
+
+TEST(TestExtendedInterpreter, builtinArityErrorsBlockExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\nrgb(1,2)"), options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, builtinArgumentTypeErrorsBlockExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\nred(1)"), options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, dynamicArraySetLengthResizesUpAndDown)

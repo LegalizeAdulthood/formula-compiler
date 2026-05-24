@@ -174,6 +174,23 @@ BuiltinRegistry make_default_builtin_registry()
         {
             registry.functions.push_back(semantic_function(std::string{name}, *color_type, {color_type, color_type}));
         }
+        registry.functions.push_back(semantic_function("rgb", *color_type, {float_type, float_type, float_type}));
+        registry.functions.push_back(
+            semantic_function("rgba", *color_type, {float_type, float_type, float_type, float_type}));
+        registry.functions.push_back(semantic_function("hsl", *color_type, {float_type, float_type, float_type}));
+        registry.functions.push_back(
+            semantic_function("hsla", *color_type, {float_type, float_type, float_type, float_type}));
+        registry.functions.push_back(semantic_function("red", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("green", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("blue", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("alpha", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("hue", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("sat", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("lum", *float_type, {color_type}));
+        registry.functions.push_back(semantic_function("random", *int_type, {int_type}));
+        registry.functions.push_back(semantic_function("atan2", *float_type, {complex_type}));
+        registry.functions.push_back(semantic_function("isNaN", *bool_type, {float_type}));
+        registry.functions.push_back(semantic_function("isInf", *bool_type, {float_type}));
 
         const auto formula_entries = {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING,
             parser::EntryKind::TRANSFORMATION, parser::EntryKind::CLASS};
@@ -1275,6 +1292,14 @@ public:
         {
             checked_args = validate_array_builtin_call(node);
         }
+        else if (node.name() == "print")
+        {
+            checked_args = node.args().size();
+            for (const ast::Expr &arg : node.args())
+            {
+                expression_type(arg);
+            }
+        }
         else if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
         {
             validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
@@ -1936,6 +1961,10 @@ private:
                 return SemanticTypeKind::INT;
             }
             if (call->name() == "setLength")
+            {
+                return SemanticTypeKind::VOID;
+            }
+            if (call->name() == "print")
             {
                 return SemanticTypeKind::VOID;
             }

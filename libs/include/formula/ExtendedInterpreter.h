@@ -55,6 +55,7 @@ public:
 
     void set_value(std::string_view name, Value value);
     Value value(std::string_view name) const;
+    const std::vector<std::string> &messages() const;
 
     Value interpret(Section section);
 
