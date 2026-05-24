@@ -1,15 +1,15 @@
 # Extended Formula Interpreter: Procedural Runtime
 
 ## Summary
-- Target procedural UF6 runtime first: typed values, declarations,
+- Procedural UF6 runtime is implemented for typed values, declarations,
   arrays, params/constants, loops, returns, user functions, color values,
-  and `final`/`transform` sections.
+  builtin `Image`, and `final`/`transform` sections.
 - Defer user object/class execution: user `new`, member access, methods,
   inheritance, casts, and plug-in object instantiation remain
   unsupported, but imports are resolved before interpretation. The builtin
   `Image` object has runtime support.
 - Treat the existing `Formula` interface as the BASIC formula execution
-  surface. Extended execution needs a separate value-aware interpreter
+  surface. Extended execution uses a separate value-aware interpreter
   facade.
 - Semantics source: UF6 docs under `docs/uf6`, especially
   `variables.txt`, `types.txt`, `type-compatibility.txt`, `arrays.txt`,
@@ -44,15 +44,14 @@
   interpreter calls it during construction and exposes the result through
   `parameters()`.
 - The extended interpreter supports procedural runtime features and builtin
-  `Image`. The extended compiler does not exist yet. The current
-  interpreter/compiler remain BASIC-oriented and reject unsupported
-  extended AST nodes.
+  `Image`. The `Formula` interpreter/compiler remain BASIC-oriented, and
+  the extended compiler does not exist yet.
 
-## Interpreter Work
-- Add `formula::Value`: `monostate`, `bool`, `int`, `double`,
-  `Complex`, `Color`, `std::string`, `ArrayValue`, `ImageValue`.
-- Add a C++17 `ExtendedInterpreter` facade for interpreting one
-  extended formula entry:
+## Current API
+- `Value` supports `monostate`, `bool`, `int`, `double`, `Complex`,
+  `Color`, `std::string`, `ArrayValue`, and `ImageValue`.
+- `ExtendedInterpreter` is the C++17 facade for interpreting one extended
+  formula entry:
 
   ```cpp
   class ExtendedInterpreter
@@ -64,46 +63,29 @@
       bool ok() const;
       const std::vector<FormulaParameterInfo> &parameters() const;
 
-      void set_parameter(std::string_view name, Value value);
-      void set_function_parameter(std::string_view name, std::string_view target);
-      void set_plugin_parameter(std::string_view name, std::string_view selector);
-      void set_plugin_parameter_value(
-          std::string_view plugin_name, std::string_view nested_name, Value value);
-
       void set_value(std::string_view name, Value value);
       Value value(std::string_view name) const;
+      const std::vector<std::string> &messages() const;
 
       Value interpret(Section section);
   };
   ```
 
-  The constructor should run the cold pipeline for one entry: parse,
-  resolve referenced files/classes, analyze semantics, and collect parameter
-  metadata. After construction, the client queries `parameters()` to discover
-  settable scalar, image, function, and plug-in parameters, then binds runtime
-  parameter values through parameter-specific APIs. `set_value` is for
-  predefined symbols and formula/runtime state, not formula parameters.
-  `interpret` runs one section and fails if diagnostics contain errors. The
-  facade owns formula evaluation state, but not image rendering, pixel
-  scheduling, tiling, threading, or layer orchestration.
-- Add public value-aware APIs while preserving current `Complex`
-  wrappers:
-  - `Formula::set_value(std::string_view, Value)`
-  - `Formula::get_runtime_value(std::string_view) const`
-  - `Formula::interpret_value(Section)`
-  - Existing `set_value(..., Complex)`, `get_value`, `interpret` stay
-    compatible.
-- Extend `Section` with `FINAL` and `TRANSFORM`; wire `get_section` and
-  interpreter dispatch for coloring/transformation entries.
-- Reuse the existing import-loading and reference-resolution layer before
-  interpreter construction. Imported files are already parsed and indexed
-  enough to collect class declarations and import metadata. Referenced
-  imported class ASTs are retained and diagnosed by existing load and
-  semantic passes.
-- Change file import APIs to report missing files explicitly with
-  `std::optional<std::string>` instead of throwing for normal not-found
-  cases. This aligns formula import loading with `ParameterEntryResolver`,
-  which already returns `std::optional<FileEntry>`.
+  The constructor runs the cold pipeline for one entry: parse, resolve
+  referenced files/classes, analyze semantics, collect parameter metadata,
+  and initialize default runtime state. `interpret` runs one section and
+  fails if diagnostics contain errors. The facade owns formula evaluation
+  state, but not image rendering, pixel scheduling, tiling, threading, or
+  layer orchestration.
+- Parameter binding currently uses `set_value("@name", value)`. Clean
+  parameter-specific APIs are still planned so clients do not need `@`,
+  `p_`, or `f_` file-format syntax.
+- `Section` already includes `FINAL` and `TRANSFORM`; extended interpreter
+  dispatch supports coloring and transformation entries.
+- The existing import-loading and reference-resolution layer runs before
+  interpreter construction. Imported files are parsed and indexed enough to
+  collect class declarations and import metadata. Referenced imported class
+  ASTs are retained and diagnosed by existing load and semantic passes.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
@@ -116,17 +98,15 @@
   - Unknown scalar reads keep current compatibility: zero value.
 - Parameters:
   - Every formula parameter has an effective value before evaluation. Missing
-    host bindings use UF defaults: undeclared and untyped parameters are
-    complex `(0, 0)`, typed parameters use the declared type default, `Image`
-    parameters use an empty image, plug-in parameters use the explicit default
-    class or the base class, and function parameters use their documented
-    fallback function.
+    host bindings use UF defaults. Scalar and `Image` defaults are runtime
+    state today. Function and plug-in defaults are validated by semantic
+    analysis and implemented by later binding/plug-in slices.
   - Missing defaults are not runtime errors. Invalid defaults are parser,
     resolver, or semantic diagnostics before execution.
-  - Plug-in selector resolution is eager. Defaults are resolved during
-    construction, host overrides are resolved when bound, and parameter-set
-    selectors are resolved while preparing interpreters. `interpret` never
-    performs lazy selector resolution.
+  - Plug-in selector resolution is eager by design. Defaults are diagnosed
+    during construction/analysis, host overrides will be resolved when bound,
+    and parameter-set selectors are diagnosed while preparing interpreters.
+    `interpret` never performs lazy selector resolution.
 - Types:
   - Implement UF upward numeric conversion: `int -> float -> complex`.
   - Bool conversion to/from numeric works dynamically; color never
@@ -178,11 +158,10 @@
     represents either an empty image or host-supplied image data.
   - Initialize image parameters from formula parameter state, not by
     constructing imported class ASTs.
-  - Implement the documented image methods and properties from the UF6
-    image-parameter docs. Until each operation exists, member access and
-    calls on `Image` must throw clear unsupported-node or unsupported
-    member errors.
-  - Define host APIs for binding image parameter data before execution.
+  - The documented image methods and properties from the UF6 image-parameter
+    docs are implemented for the current image handle.
+  - Host code binds image parameter data with `set_value("@name", image)`
+    until clean parameter-specific APIs are added.
     The default image parameter value is empty.
 - Sections:
   - `global:` executes as `PER_IMAGE`; variables written there persist
