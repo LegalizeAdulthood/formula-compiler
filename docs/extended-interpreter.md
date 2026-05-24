@@ -195,7 +195,84 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. User constructors and casts.
+1. Backfill ReferenceCollector tests for static class references.
+    - Add tests for the uppercase-local heuristic that produces
+      `CLASS_MEMBER` references.
+    - Add tests for nested member targets such as `Outer.Inner.value` so the
+      retained-class behavior is explicit.
+    - Add tests for duplicate class-member references from multiple member
+      accesses to the same class, documenting whether duplicates are preserved
+      or removed.
+    - Add tests that class-member references are collected from targeted calls
+      and plain member expressions.
+    - Add a source-location test for `CLASS_MEMBER` references if source
+      locations become relevant to client diagnostics.
+
+2. Backfill Value tests for plug-in and object values.
+    - Add tests for `default_value(ValueKind::PLUGIN)` and
+      `make_plugin_value`.
+    - Add equality tests covering plug-in filename, class name, base class,
+      retained AST pointer, nested values, object fields, and initialized
+      object state.
+    - Add formatting tests for plug-in selector values and initialized object
+      values.
+    - Add conversion and truthiness rejection tests for plug-in values.
+    - Add tests that plug-in and object handles compare by pointed-to
+      contents, matching array, image, and enum value behavior.
+
+3. Backfill SemanticAnalyzer edge tests for static class members.
+    - Add tests for class-name static method arity errors.
+    - Add tests for class-name static method argument conversion errors.
+    - Add tests documenting that class-name member calls currently validate
+      member existence but do not distinguish static from instance methods.
+    - Add tests for class-name access to protected members.
+    - Add tests for inherited non-public member diagnostics through base
+      classes.
+    - Add tests for unknown class-name identifiers used without member access
+      so the no-unknown-symbol rule for retained classes is explicit.
+
+4. Backfill Parser tests for static class and plug-in syntax.
+    - Add formatter/parser tests that `Class.member` parses as member access
+      with the class identifier preserved as the target.
+    - Add formatter/parser tests that `Class.method(...)` parses as a
+      targeted function call with the class identifier preserved as the
+      target.
+    - Add formatter/parser tests for chained member access such as
+      `Outer.Inner.value` and targeted calls such as `Outer.Inner.value()`.
+    - Add parser tests that static function declarations preserve
+      `is_static`, return type, arguments, and trailing `const`.
+    - Add parser tests for `new @plugin(...)` and `new Class(...)` argument
+      lists, including arity shape preservation.
+    - Add parser failure tests for malformed member access and malformed
+      targeted calls.
+
+5. Backfill FormulaEntry tests for retained class metadata.
+    - Add tests that `retain_formula_class` stores `base_class` for retained
+      classes with same-file bases and explicit imported bases.
+    - Add tests that `retain_formula_class` does not duplicate entries when
+      the same class is retained through declaration, `new`, and class-member
+      references.
+    - Add tests that `CLASS_MEMBER` references resolve through import order in
+      the same way declaration and `new` references do.
+    - Add tests that retained class AST parse diagnostics include the class
+      file and parse location for static-member-only references.
+    - Add tests that missing imports used only by class-member references
+      produce the same import diagnostics as declaration references.
+
+6. Backfill ExtendedRuntime tests for plug-in and object values.
+    - Add tests that formula, parameter, and predefined storage preserve
+      shared plug-in/object handles and stored metadata.
+    - Add tests that formula and parameter lvalues can replace plug-in values
+      without changing unrelated runtime state.
+    - Add tests that read-only parameter and predefined lvalues reject plug-in
+      replacement while leaving the original handle intact.
+    - Add tests that missing parameter and predefined lookups still return
+      empty values when plug-in values exist elsewhere.
+    - Add tests that rebinding a plug-in parameter updates only that parameter
+      and does not alter formula-scope or predefined values with the same
+      source spelling.
+
+7. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
