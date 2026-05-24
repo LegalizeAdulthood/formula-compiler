@@ -1443,7 +1443,13 @@ public:
     void visit(const ast::FunctionCallNode &node) override
     {
         std::size_t checked_args{};
-        if (node.has_target())
+        if (std::optional<FunctionSignature> signature =
+                parameter_function_signature(function_parameter_name(node.name())))
+        {
+            validate_call_arity(node.name(), node.args().size(), signature->argument_types.size());
+            checked_args = validate_user_call_arguments(node, *signature);
+        }
+        else if (node.has_target())
         {
             checked_args = validate_member_call(node);
         }
@@ -2139,6 +2145,11 @@ private:
         if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
         {
             visit(*call);
+            if (const std::optional<FunctionSignature> signature =
+                    parameter_function_signature(function_parameter_name(call->name())))
+            {
+                return signature->return_type;
+            }
             if (call->has_target())
             {
                 const std::string receiver_type{expression_type_name(call->target())};
@@ -2373,6 +2384,42 @@ private:
             {
                 return type_kind(param.type);
             }
+        }
+        return std::nullopt;
+    }
+
+    std::string function_parameter_name(const std::string &name) const
+    {
+        if (!name.empty() && name.front() == '@')
+        {
+            return name.substr(1);
+        }
+        return name;
+    }
+
+    std::optional<FunctionSignature> parameter_function_signature(const std::string &name) const
+    {
+        for (const ParameterMetadata::Function &function : m_parameter_metadata.functions)
+        {
+            if (function.name != name)
+            {
+                continue;
+            }
+            FunctionSignature signature;
+            signature.return_type = type_kind(function.type.empty() ? "complex" : function.type);
+            if (signature.return_type == SemanticTypeKind::COLOR)
+            {
+                signature.argument_types.push_back(SemanticTypeKind::COLOR);
+                signature.argument_types.push_back(SemanticTypeKind::COLOR);
+                signature.by_ref_arguments.push_back(false);
+                signature.by_ref_arguments.push_back(false);
+            }
+            else
+            {
+                signature.argument_types.push_back(SemanticTypeKind::COMPLEX);
+                signature.by_ref_arguments.push_back(false);
+            }
+            return signature;
         }
         return std::nullopt;
     }

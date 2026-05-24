@@ -331,6 +331,11 @@ bool same_identifier(std::string_view left, std::string_view right)
     return true;
 }
 
+bool is_legacy_function_parameter_name(std::string_view name)
+{
+    return name == "fn1" || name == "fn2" || name == "fn3" || name == "fn4";
+}
+
 RuntimeParameterMetadata collect_runtime_parameter_metadata(const ast::FormulaSections &ast)
 {
     return RuntimeParameterMetadataCollector{}.collect(ast.defaults);
@@ -348,6 +353,18 @@ const RuntimeParameterInfo *find_runtime_parameter(const RuntimeParameterMetadat
     return nullptr;
 }
 
+const RuntimeParameterInfo *find_runtime_function(const RuntimeParameterMetadata &metadata, std::string_view name)
+{
+    for (const RuntimeParameterInfo &function : metadata.functions)
+    {
+        if (function.name == name)
+        {
+            return &function;
+        }
+    }
+    return nullptr;
+}
+
 std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
 {
     for (const RuntimeParameterForward &forward : metadata.forwards)
@@ -358,6 +375,91 @@ std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &met
         }
     }
     return std::string{name};
+}
+
+semantic::SemanticTypeKind semantic_type_kind(std::string_view type)
+{
+    if (type.empty() || type == "complex")
+    {
+        return semantic::SemanticTypeKind::COMPLEX;
+    }
+    if (type == "color")
+    {
+        return semantic::SemanticTypeKind::COLOR;
+    }
+    if (type == "bool")
+    {
+        return semantic::SemanticTypeKind::BOOL;
+    }
+    if (type == "int")
+    {
+        return semantic::SemanticTypeKind::INT;
+    }
+    if (type == "float")
+    {
+        return semantic::SemanticTypeKind::FLOAT;
+    }
+    return semantic::SemanticTypeKind::ERROR;
+}
+
+int parameter_conversion_rank(semantic::SemanticTypeKind type)
+{
+    switch (type)
+    {
+    case semantic::SemanticTypeKind::BOOL:
+        return 0;
+    case semantic::SemanticTypeKind::INT:
+        return 1;
+    case semantic::SemanticTypeKind::FLOAT:
+        return 2;
+    case semantic::SemanticTypeKind::COMPLEX:
+        return 3;
+    default:
+        return -1;
+    }
+}
+
+bool can_convert_parameter_type(semantic::SemanticTypeKind from, semantic::SemanticTypeKind to)
+{
+    if (from == semantic::SemanticTypeKind::ERROR || to == semantic::SemanticTypeKind::ERROR || from == to)
+    {
+        return true;
+    }
+    return parameter_conversion_rank(from) >= 0 && parameter_conversion_rank(to) >= 0 &&
+        parameter_conversion_rank(from) <= parameter_conversion_rank(to);
+}
+
+bool function_target_matches_type(const semantic::SemanticFunctionDescriptor &target, semantic::SemanticTypeKind type)
+{
+    if (!can_convert_parameter_type(target.return_type.kind, type))
+    {
+        return false;
+    }
+    if (type == semantic::SemanticTypeKind::COLOR)
+    {
+        return target.argument_types.size() == 2U &&
+            target.argument_types[0].kind == semantic::SemanticTypeKind::COLOR &&
+            target.argument_types[1].kind == semantic::SemanticTypeKind::COLOR;
+    }
+    return type == semantic::SemanticTypeKind::COMPLEX && target.argument_types.size() == 1U &&
+        can_convert_parameter_type(target.argument_types.front().kind, semantic::SemanticTypeKind::COMPLEX);
+}
+
+bool function_target_matches_type(const ast::FunctionDeclNode &target, semantic::SemanticTypeKind type)
+{
+    const semantic::SemanticTypeKind return_type{semantic_type_kind(target.return_type())};
+    if (!can_convert_parameter_type(return_type, type))
+    {
+        return false;
+    }
+    if (type == semantic::SemanticTypeKind::COLOR)
+    {
+        return target.args().size() == 2U &&
+            semantic_type_kind(target.args()[0].type) == semantic::SemanticTypeKind::COLOR &&
+            semantic_type_kind(target.args()[1].type) == semantic::SemanticTypeKind::COLOR;
+    }
+    return type == semantic::SemanticTypeKind::COMPLEX && target.args().size() == 1U &&
+        can_convert_parameter_type(semantic_type_kind(target.args().front().type), semantic::SemanticTypeKind::COMPLEX);
 }
 
 int parse_saved_int(std::string_view value)
@@ -889,7 +991,17 @@ public:
             }
             unsupported_runtime_node("FunctionCallNode");
         }
-        if (const auto builtin = call_builtin(node))
+        if (!node.name().empty() && node.name().front() == '@')
+        {
+            m_result = call_parameter_function(node.name().substr(1), node.args());
+            return;
+        }
+        if (is_legacy_function_parameter_name(node.name()) && m_state.has_parameter_value(node.name()))
+        {
+            m_result = call_parameter_function(node.name(), node.args());
+            return;
+        }
+        if (const auto builtin = call_builtin(node.name(), node.args()))
         {
             m_result = *builtin;
             return;
@@ -1159,10 +1271,8 @@ private:
         return Value{static_cast<int>(array->elements.size())};
     }
 
-    std::optional<Value> call_builtin(const ast::FunctionCallNode &node)
+    std::optional<Value> call_builtin(const std::string &name, const std::vector<ast::Expr> &args)
     {
-        const std::string &name{node.name()};
-        const std::vector<ast::Expr> &args{node.args()};
         if (name == "setLength")
         {
             return call_set_length(args);
@@ -1255,6 +1365,26 @@ private:
             return Value{evaluate(name, complex_value(interpret(args.front())))};
         }
         return std::nullopt;
+    }
+
+    Value call_parameter_function(std::string_view name, const std::vector<ast::Expr> &args)
+    {
+        const Value target{m_state.parameter_value(name)};
+        if (target.kind() != ValueKind::STRING)
+        {
+            throw std::runtime_error("invalid function parameter: " + std::string{name});
+        }
+        const std::string &target_name{std::get<std::string>(target.storage())};
+        if (const std::optional<Value> builtin{call_builtin(target_name, args)})
+        {
+            return *builtin;
+        }
+        const auto function = m_functions.find(target_name);
+        if (function == m_functions.end())
+        {
+            throw std::runtime_error("invalid function parameter target: " + target_name);
+        }
+        return call_function(*function->second, args);
     }
 
     std::optional<Value> call_member(const ast::FunctionCallNode &node)
@@ -1708,7 +1838,40 @@ void ExtendedInterpreter::set_parameter(std::string_view name, Value value)
 
 void ExtendedInterpreter::set_function_parameter(std::string_view name, std::string_view target)
 {
-    set_parameter(name, Value{std::string{target}});
+    clear_binding_diagnostics(name);
+    if (!m_ast)
+    {
+        add_binding_diagnostic(name, "invalid function target: " + std::string{target});
+        return;
+    }
+    const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*m_ast)};
+    const RuntimeParameterInfo *function{find_runtime_function(metadata, name)};
+    if (function == nullptr)
+    {
+        add_binding_diagnostic(name, "invalid function parameter: " + std::string{name});
+        return;
+    }
+
+    const semantic::SemanticTypeKind type{semantic_type_kind(function->type)};
+    const semantic::BuiltinRegistry &builtins{builtins_or_default(m_options.builtins)};
+    for (const semantic::SemanticFunctionDescriptor &builtin : builtins.functions)
+    {
+        if (same_identifier(builtin.name, target) && function_target_matches_type(builtin, type))
+        {
+            m_state.set_parameter_value(name, Value{builtin.name});
+            return;
+        }
+    }
+
+    const FunctionMap functions{collect_function_declarations(*m_ast)};
+    const auto user_function{functions.find(std::string{target})};
+    if (user_function != functions.end() && function_target_matches_type(*user_function->second, type))
+    {
+        m_state.set_parameter_value(name, Value{std::string{target}});
+        return;
+    }
+
+    add_binding_diagnostic(name, "invalid function target: " + std::string{target});
 }
 
 void ExtendedInterpreter::set_plugin_parameter(std::string_view name, std::string_view selector)

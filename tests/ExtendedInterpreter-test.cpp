@@ -321,6 +321,86 @@ TEST(TestExtendedInterpreter, initializesFunctionParameterDefaults)
     EXPECT_EQ(Value{std::string{"mergesoftlight"}}, interpreter.value("@merge"));
 }
 
+TEST(TestExtendedInterpreter, dispatchesDefaultFunctionParameter)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "fn1((1,0))\n"
+                                                  "default:\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ((Value{Complex{std::sin(1.0), 0.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, dispatchesHostFunctionParameter)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "fn1((2,0))\n"
+                                                  "default:\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_function_parameter("fn1", "sqr");
+
+    EXPECT_EQ((Value{Complex{4.0, 0.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, dispatchesUserFunctionParameter)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "fn1((2,0))\n"
+                                                  "complex func twice(complex value)\n"
+                                                  "return value+value\n"
+                                                  "endfunc\n"
+                                                  "default:\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_function_parameter("fn1", "twice");
+
+    EXPECT_EQ((Value{Complex{4.0, 0.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, invalidFunctionParameterBindingBlocksExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "fn1((2,0))\n"
+                                                  "default:\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_function_parameter("fn1", "missing");
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, dispatchesNamedFunctionParameter)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@myfunc((2,0))\n"
+                                                  "default:\n"
+                                                  "complex func myfunc\n"
+                                                  "default=sqr()\n"
+                                                  "endfunc\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ((Value{Complex{4.0, 0.0}}), interpreter.interpret(Section::INITIALIZE));
+}
+
 TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"
@@ -343,7 +423,9 @@ TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
                                                   "@source\n"
                                                   "default:\n"
                                                   "Image param source\n"
-                                                  "endparam\n"),
+                                                  "endparam\n"
+                                                  "complex func fn1\n"
+                                                  "endfunc\n"),
         options()};
     ImageValue image;
     image.width = 1;

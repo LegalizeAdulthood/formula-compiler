@@ -2823,6 +2823,11 @@ Expr FormulaParser::postfix()
                 left = std::make_shared<FunctionCallNode>(id->name(), std::move(args));
                 continue;
             }
+            if (const auto *parameter = dynamic_cast<const ParameterRefNode *>(left.get()); parameter)
+            {
+                left = std::make_shared<FunctionCallNode>('@' + parameter->name(), std::move(args));
+                continue;
+            }
             if (const auto *member = dynamic_cast<const MemberAccessNode *>(left.get()); member)
             {
                 left = std::make_shared<FunctionCallNode>(member->target(), member->member(), std::move(args));
