@@ -345,13 +345,10 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsUnknownSavedParameter)
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
 
-    ASSERT_EQ(2U, diagnostics.size());
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[0].code);
-    EXPECT_EQ("Mandelbrot", diagnostics[0].entry_name);
-    EXPECT_EQ("invalid parameter binding: p_missing", diagnostics[0].message);
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[1].code);
-    EXPECT_EQ("Mandelbrot", diagnostics[1].entry_name);
-    EXPECT_EQ("invalid parameter binding: p_power missing required value", diagnostics[1].message);
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
+    EXPECT_EQ("Mandelbrot", diagnostics.front().entry_name);
+    EXPECT_EQ("invalid parameter binding: p_missing", diagnostics.front().message);
 }
 
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsUnknownSavedFunction)
@@ -609,12 +606,22 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsSavedParameterTypes)
     EXPECT_TRUE(diagnostics.empty());
 }
 
-TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingRequiredParameter)
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsOmittedScalarParameterDefaults)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
     const LoadedFormula loaded{load_formula("default:\n"
+                                            "bool param enabled\n"
+                                            "endparam\n"
+                                            "int param count\n"
+                                            "endparam\n"
                                             "float param power\n"
+                                            "endparam\n"
+                                            "complex param seed\n"
+                                            "endparam\n"
+                                            "color param tint\n"
+                                            "endparam\n"
+                                            "param origin\n"
                                             "endparam\n",
         options)};
     ASSERT_TRUE(loaded.ast);
@@ -629,9 +636,7 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingRequiredParameter)
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
 
-    ASSERT_EQ(1U, diagnostics.size());
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
-    EXPECT_EQ("invalid parameter binding: p_power missing required value", diagnostics.front().message);
+    EXPECT_TRUE(diagnostics.empty());
 }
 
 TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsDefaultedParameter)
@@ -674,6 +679,29 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsDefaultedImageParameter)
     reference.filename = "Example.ucl";
     reference.entry = "Image";
     references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::COLORING});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsOmittedFunctionParameterDefault)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "complex func fn1\n"
+                                            "endfunc\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
     const ParameterSetSemanticContext context;
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
@@ -812,7 +840,43 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsNestedPluginParameterMisma
     EXPECT_EQ("invalid parameter binding: p_formulaClass.p_power type mismatch", diagnostics.front().message);
 }
 
-TEST(TestSemanticAnalyzer, parameterSetAnalysisRequiresPluginSelectorForNestedParameter)
+TEST(TestSemanticAnalyzer, parameterSetAnalysisUsesPluginDefaultForNestedParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "Plugin param formulaClass\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    parser::Options class_options;
+    class_options.dialect = Dialect::EXTENDED;
+    class_options.entry_kind = parser::EntryKind::CLASS;
+    const LoadedFormula plugin{load_formula("default:\n"
+                                            "float param power\n"
+                                            "endparam\n",
+        class_options)};
+    ASSERT_TRUE(plugin.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::FRACTAL_FORMULA;
+    reference.filename = "Example.ufm";
+    reference.entry = "Mandelbrot";
+    reference.parameters.push_back({"p_formulaClass.p_power", "2.0"});
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
+    RetainedFormulaClass retained;
+    retained.reference.class_name = "Plugin";
+    retained.ast = plugin.ast;
+    ParameterSetSemanticContext context;
+    context.retained_classes.push_back(&retained);
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
+TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsMissingPluginDefaultClassForNestedParameter)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
@@ -829,17 +893,15 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisRequiresPluginSelectorForNestedPa
     reference.entry = "Mandelbrot";
     reference.parameters.push_back({"p_formulaClass.p_power", "2.0"});
     references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::FRACTAL});
-    RetainedFormulaClass retained;
-    retained.reference.class_name = "Plugin";
-    retained.ast = std::make_shared<ast::FormulaSections>();
-    ParameterSetSemanticContext context;
-    context.retained_classes.push_back(&retained);
+    const ParameterSetSemanticContext context;
 
     const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
 
-    ASSERT_EQ(1U, diagnostics.size());
-    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics.front().code);
-    EXPECT_EQ("invalid parameter binding: p_formulaClass missing required value", diagnostics.front().message);
+    ASSERT_EQ(2U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INCOMPLETE_REFERENCE_GRAPH, diagnostics[0].code);
+    EXPECT_EQ("incomplete reference graph: missing retained class Plugin", diagnostics[0].message);
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_PARAMETER_BINDING, diagnostics[1].code);
+    EXPECT_EQ("invalid parameter binding: p_formulaClass missing plug-in class", diagnostics[1].message);
 }
 
 TEST(TestSemanticAnalyzer, parameterSetAnalysisReportsInvalidPluginSelector)

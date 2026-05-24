@@ -707,27 +707,6 @@ bool has_parameter_name(const ParameterMetadata &metadata, std::string_view name
     return false;
 }
 
-bool has_saved_parameter_for(const parameter::ParameterReference &reference, const ParameterMetadata &metadata,
-    const ParameterMetadata::Param &param)
-{
-    const std::string saved_name{"p_" + param.name};
-    for (const parameter::Parameter &parameter : reference.parameters)
-    {
-        if (parameter.key == saved_name)
-        {
-            return true;
-        }
-        for (const ParameterMetadata::Forward &forward : metadata.forwards)
-        {
-            if (parameter.key == "p_" + forward.old_name && forward.target_name == param.name)
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 bool parses_integer(std::string_view value)
 {
     int result{};
@@ -852,11 +831,6 @@ bool is_plugin_parameter_type(
     return false;
 }
 
-bool has_implicit_parameter_default(const ParameterMetadata::Param &param)
-{
-    return param.type == "Image";
-}
-
 const parameter::Parameter *find_reference_parameter(
     const parameter::ParameterReference &reference, std::string_view key)
 {
@@ -893,6 +867,18 @@ const RetainedFormulaClass *find_retained_class(
     {
         if (klass != nullptr && klass->reference.filename == selector.filename &&
             klass->reference.class_name == selector.entry && klass->ast)
+        {
+            return klass;
+        }
+    }
+    return nullptr;
+}
+
+const RetainedFormulaClass *find_retained_class(const ParameterSetSemanticContext &context, std::string_view class_name)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass != nullptr && same_identifier(klass->reference.class_name, class_name) && klass->ast)
         {
             return klass;
         }
@@ -1049,6 +1035,21 @@ const RetainedFormulaClass *validate_plugin_selector(std::vector<SemanticDiagnos
     return klass;
 }
 
+const RetainedFormulaClass *validate_default_plugin_selector(std::vector<SemanticDiagnostic> &diagnostics,
+    const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
+    const parameter::Parameter &parameter, const ParameterMetadata::Param &plugin_param)
+{
+    const RetainedFormulaClass *klass{find_retained_class(context, plugin_param.type)};
+    if (klass == nullptr || !klass->ast)
+    {
+        parameter::Parameter missing;
+        missing.key = plugin_parameter_name(parameter.key);
+        report_invalid_parameter_binding(diagnostics, resolved, missing, "missing plug-in class");
+        return nullptr;
+    }
+    return klass;
+}
+
 void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
     const ParameterSetSemanticContext &context, const parameter::ParameterResolvedReference &resolved,
     const parameter::Parameter &parameter, const ParameterMetadata::Param &plugin_param)
@@ -1065,11 +1066,9 @@ void validate_plugin_subparameter(std::vector<SemanticDiagnostic> &diagnostics,
         return;
     }
     const parameter::Parameter *selector_parameter{find_reference_parameter(resolved.reference, path->base_key)};
-    if (selector_parameter == nullptr)
-    {
-        return;
-    }
-    const RetainedFormulaClass *klass{validate_plugin_selector(diagnostics, context, resolved, *selector_parameter)};
+    const RetainedFormulaClass *klass{selector_parameter != nullptr
+            ? validate_plugin_selector(diagnostics, context, resolved, *selector_parameter)
+            : validate_default_plugin_selector(diagnostics, context, resolved, parameter, plugin_param)};
     if (klass == nullptr)
     {
         return;
@@ -1140,16 +1139,6 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
             {
                 report_invalid_parameter_binding(diagnostics, resolved, parameter, "invalid function target");
             }
-        }
-    }
-    for (const ParameterMetadata::Param &param : metadata.params)
-    {
-        if (!param.has_default && !has_implicit_parameter_default(param) &&
-            !has_saved_parameter_for(resolved.reference, metadata, param))
-        {
-            parameter::Parameter missing;
-            missing.key = "p_" + param.name;
-            report_invalid_parameter_binding(diagnostics, resolved, missing, "missing required value");
         }
     }
 }
