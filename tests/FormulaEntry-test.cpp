@@ -772,6 +772,73 @@ TEST(TestFormulaEntry, referenceCollectorFindsClassMethodAccess)
     EXPECT_EQ("Texture", references[0].class_name);
 }
 
+TEST(TestFormulaEntry, referenceCollectorUsesUppercaseClassMemberHeuristic)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "int Texture\n"
+                                               "Texture.value\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsNestedClassMemberTarget)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Outer.Inner.value\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(1U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Outer", references[0].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorFindsPlainAndTargetedClassMembers)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Texture.value\n"
+                                               "Texture.size()\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(2U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[1].kind);
+    EXPECT_EQ("Texture", references[1].class_name);
+}
+
+TEST(TestFormulaEntry, referenceCollectorPreservesDuplicateClassMemberReferences)
+{
+    ast::FormulaSectionsPtr ast{parse_extended("global:\n"
+                                               "Texture.value\n"
+                                               "Texture.value\n"
+                                               "loop:\n"
+                                               "z = pixel\n")};
+
+    ASSERT_TRUE(ast);
+    const std::vector<FormulaReference> references{collect_formula_references(*ast)};
+
+    ASSERT_EQ(2U, references.size());
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[0].kind);
+    EXPECT_EQ("Texture", references[0].class_name);
+    EXPECT_EQ(FormulaReferenceKind::CLASS_MEMBER, references[1].kind);
+    EXPECT_EQ("Texture", references[1].class_name);
+}
+
 TEST(TestFormulaEntry, referenceCollectorIgnoresLowercaseObjectMembers)
 {
     ast::FormulaSectionsPtr ast{parse_extended("global:\n"
