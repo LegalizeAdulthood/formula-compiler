@@ -988,6 +988,7 @@ public:
 
     std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
     {
+        validate_section_availability(formula);
         predeclare_functions(formula.per_image);
         predeclare_functions(formula.builtin);
         predeclare_functions(formula.initialize);
@@ -1298,6 +1299,37 @@ private:
         m_section = std::string{section};
         collect(expr);
         m_section = previous_section;
+    }
+
+    void validate_section_availability(const ast::FormulaSections &formula)
+    {
+        validate_section_allowed("global", formula.per_image,
+            {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING, parser::EntryKind::TRANSFORMATION});
+        validate_section_allowed("builtin", formula.builtin, {parser::EntryKind::FRACTAL});
+        validate_section_allowed("init", formula.initialize, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
+        validate_section_allowed("loop", formula.iterate, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
+        validate_section_allowed("bailout", formula.bailout, {parser::EntryKind::FRACTAL});
+        validate_section_allowed("perturbinit", formula.perturb_initialize, {parser::EntryKind::FRACTAL});
+        validate_section_allowed("perturbloop", formula.perturb_iterate, {parser::EntryKind::FRACTAL});
+        validate_section_allowed("final", formula.final, {parser::EntryKind::COLORING});
+        validate_section_allowed("transform", formula.transform, {parser::EntryKind::TRANSFORMATION});
+        validate_section_allowed("public", formula.public_members, {parser::EntryKind::CLASS});
+        validate_section_allowed("protected", formula.protected_members, {parser::EntryKind::CLASS});
+        validate_section_allowed("private", formula.private_members, {parser::EntryKind::CLASS});
+    }
+
+    void validate_section_allowed(
+        std::string_view section, const ast::Expr &expr, std::initializer_list<parser::EntryKind> entry_kinds)
+    {
+        if (!expr || std::find(entry_kinds.begin(), entry_kinds.end(), m_entry_kind) != entry_kinds.end())
+        {
+            return;
+        }
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION;
+        diagnostic.section_name = std::string{section};
+        diagnostic.message = "invalid section: " + std::string{section} + " for " + entry_kind_name(m_entry_kind);
+        m_diagnostics.push_back(std::move(diagnostic));
     }
 
     void collect_block(const ast::Expr &expr)

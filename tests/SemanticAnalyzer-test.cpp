@@ -1705,4 +1705,24 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidSwitchPredefinedSymbol)
     EXPECT_EQ("invalid switch parameter: seed=#z", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidSectionForEntryKind)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::COLORING;
+    const LoadedFormula loaded{load_formula("final:\n"
+                                            "1",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::FRACTAL;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_SECTION, diagnostics.front().code);
+    EXPECT_EQ("final", diagnostics.front().section_name);
+    EXPECT_EQ("invalid section: final for fractal", diagnostics.front().message);
+}
+
 } // namespace formula::test
