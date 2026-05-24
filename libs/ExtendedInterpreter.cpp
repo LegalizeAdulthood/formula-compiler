@@ -364,6 +364,11 @@ bool same_identifier(std::string_view left, std::string_view right)
     return true;
 }
 
+bool is_void_return(std::string_view type)
+{
+    return type.empty() || same_identifier(type, "void");
+}
+
 bool is_legacy_function_parameter_name(std::string_view name)
 {
     return name == "fn1" || name == "fn2" || name == "fn3" || name == "fn4";
@@ -1340,12 +1345,65 @@ FunctionMap collect_function_declarations(const ast::FormulaSections &formula)
     return functions;
 }
 
+const ast::FunctionDeclNode *find_class_method(const ast::FormulaSections &ast, std::string_view name);
+
+const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::string_view name)
+{
+    if (!node)
+    {
+        return nullptr;
+    }
+    if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(node.get()))
+    {
+        return same_identifier(function->name(), name) && !function->is_static() ? function : nullptr;
+    }
+    if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(node.get()))
+    {
+        for (const ast::Expr &statement : sequence->statements())
+        {
+            if (const ast::FunctionDeclNode *function{find_method_in_expr(statement, name)})
+            {
+                return function;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const ast::FunctionDeclNode *find_class_method(const ast::FormulaSections &ast, std::string_view name)
+{
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.public_members, name)})
+    {
+        return function;
+    }
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.protected_members, name)})
+    {
+        return function;
+    }
+    return find_method_in_expr(ast.private_members, name);
+}
+
+const RetainedFormulaClass *find_retained_class_by_name(
+    const std::vector<RetainedFormulaClass> &classes, std::string_view class_name)
+{
+    for (const RetainedFormulaClass &klass : classes)
+    {
+        if (same_identifier(klass.reference.class_name, class_name))
+        {
+            return &klass;
+        }
+    }
+    return nullptr;
+}
+
 class ExpressionInterpreter : public ast::NullVisitor
 {
 public:
-    ExpressionInterpreter(ExtendedRuntimeState &state, const FunctionMap &functions, std::size_t max_loop_iterations) :
+    ExpressionInterpreter(ExtendedRuntimeState &state, const FunctionMap &functions, const FormulaFileSet &files,
+        std::size_t max_loop_iterations) :
         m_state(state),
         m_functions(functions),
+        m_files(files),
         m_max_loop_iterations(max_loop_iterations)
     {
     }
@@ -1879,6 +1937,10 @@ private:
     std::optional<Value> call_member(const ast::FunctionCallNode &node)
     {
         Value target_value{interpret(node.target())};
+        if (target_value.kind() == ValueKind::PLUGIN)
+        {
+            return call_object_method(target_value, node);
+        }
         if (target_value.kind() != ValueKind::IMAGE)
         {
             return std::nullopt;
@@ -1951,6 +2013,46 @@ private:
         return std::nullopt;
     }
 
+    std::optional<Value> call_object_method(const Value &target_value, const ast::FunctionCallNode &node)
+    {
+        const Value::PluginPtr object{std::get<Value::PluginPtr>(target_value.storage())};
+        if (!object || !object->object_initialized)
+        {
+            throw std::runtime_error("null object reference");
+        }
+        const ast::FunctionDeclNode *method{};
+        if (object->ast)
+        {
+            method = find_class_method(*object->ast, node.name());
+        }
+        std::vector<std::string> seen;
+        std::string base{object->base_class};
+        while (method == nullptr && !base.empty())
+        {
+            if (std::find_if(seen.begin(), seen.end(),
+                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+            {
+                break;
+            }
+            seen.push_back(base);
+            const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
+            if (klass == nullptr)
+            {
+                break;
+            }
+            if (klass->ast)
+            {
+                method = find_class_method(*klass->ast, node.name());
+            }
+            base = klass->base_class;
+        }
+        if (method == nullptr)
+        {
+            return std::nullopt;
+        }
+        return call_method(target_value, *method, node.args());
+    }
+
     RuntimeLValue array_lvalue(const ast::IndexNode &node)
     {
         const Value array_value{interpret(node.target())};
@@ -1999,11 +2101,58 @@ private:
             Value result{m_returning ? m_result : body_result};
             m_state.pop_function_frame();
             frame_active = false;
-            if (!m_returning && !function.return_type().empty())
+            if (!m_returning && !is_void_return(function.return_type()))
             {
                 throw std::runtime_error("missing return: " + function.name());
             }
-            if (!function.return_type().empty())
+            if (!is_void_return(function.return_type()))
+            {
+                result = convert_value(result, value_kind_for_type(function.return_type()));
+            }
+            else
+            {
+                result = {};
+            }
+            m_returning = caller_returning;
+            m_result = caller_returning ? caller_result : result;
+            return result;
+        }
+        catch (...)
+        {
+            if (frame_active)
+            {
+                m_state.pop_function_frame();
+            }
+            m_returning = caller_returning;
+            m_result = caller_result;
+            throw;
+        }
+    }
+
+    Value call_method(const Value &object, const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+    {
+        if (args.size() != function.args().size())
+        {
+            throw std::runtime_error("invalid call arity: " + function.name());
+        }
+        const bool caller_returning{m_returning};
+        const Value caller_result{m_result};
+        bool frame_active{true};
+        m_returning = false;
+        m_state.push_function_frame();
+        try
+        {
+            m_state.declare_local_value("this", object);
+            bind_function_arguments(function, args);
+            const Value body_result{interpret(function.body())};
+            Value result{m_returning ? m_result : body_result};
+            m_state.pop_function_frame();
+            frame_active = false;
+            if (!m_returning && !is_void_return(function.return_type()))
+            {
+                throw std::runtime_error("missing return: " + function.name());
+            }
+            if (!is_void_return(function.return_type()))
             {
                 result = convert_value(result, value_kind_for_type(function.return_type()));
             }
@@ -2132,6 +2281,7 @@ private:
 
     ExtendedRuntimeState &m_state;
     FunctionMap m_functions;
+    const FormulaFileSet &m_files;
     std::size_t m_max_loop_iterations{};
     Value m_result;
     bool m_returning{};
@@ -2140,10 +2290,11 @@ private:
 class ParameterDefaultCollector : public ast::NullVisitor
 {
 public:
-    ParameterDefaultCollector(
-        ExtendedRuntimeState &state, const FunctionMap &functions, std::size_t max_loop_iterations) :
+    ParameterDefaultCollector(ExtendedRuntimeState &state, const FunctionMap &functions, const FormulaFileSet &files,
+        std::size_t max_loop_iterations) :
         m_state(state),
         m_functions(functions),
+        m_files(files),
         m_max_loop_iterations(max_loop_iterations)
     {
     }
@@ -2215,7 +2366,7 @@ public:
         Value value;
         if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
         {
-            value = ExpressionInterpreter{m_state, m_functions, m_max_loop_iterations}.interpret(*expr);
+            value = ExpressionInterpreter{m_state, m_functions, m_files, m_max_loop_iterations}.interpret(*expr);
         }
         else
         {
@@ -2242,6 +2393,7 @@ public:
 private:
     ExtendedRuntimeState &m_state;
     FunctionMap m_functions;
+    const FormulaFileSet &m_files;
     std::size_t m_max_loop_iterations{};
     const ast::ParamBlockNode *m_current_parameter{};
     const ast::FunctionBlockNode *m_current_function{};
@@ -2675,7 +2827,7 @@ Value ExtendedInterpreter::interpret(Section section)
         return {};
     }
     FunctionMap functions{collect_function_declarations(*m_ast)};
-    const Value result{ExpressionInterpreter{m_state, functions, m_options.max_loop_iterations}.interpret(
+    const Value result{ExpressionInterpreter{m_state, functions, m_files, m_options.max_loop_iterations}.interpret(
         section_expr(*m_ast, section))};
     return section_result(section, result);
 }
@@ -2753,7 +2905,7 @@ void ExtendedInterpreter::initialize_runtime_state()
         m_state.set_predefined_value(symbol.name, std::move(value), symbol.writable);
     }
     FunctionMap functions{collect_function_declarations(*m_ast)};
-    ParameterDefaultCollector{m_state, functions, m_options.max_loop_iterations}.collect(m_ast->defaults);
+    ParameterDefaultCollector{m_state, functions, m_files, m_options.max_loop_iterations}.collect(m_ast->defaults);
     const RuntimeParameterMetadata metadata{collect_runtime_parameter_metadata(*m_ast)};
     for (const RuntimeParameterInfo &parameter : metadata.params)
     {

@@ -1194,6 +1194,296 @@ TEST(TestExtendedInterpreter, pluginObjectFieldAccessRejectsNullReference)
         std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchCallsPublicMethod)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "(new @filter).getValue()\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "int func getValue()\n"
+            "return 7\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @filter).getValue()\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{7}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchUsesThis)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "Plugin plugin = new @filter\n"
+            "plugin.setValue(11)\n"
+            "plugin.value\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "void func setValue(int next)\n"
+            "this.value = next\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "Plugin plugin = new @filter\n"
+                                                  "plugin.setValue(11)\n"
+                                                  "plugin.value\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{11}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchFindsInheritedMethod)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "(new @filter).getValue()\n"
+            "default:\n"
+            "Base param filter\n"
+            "default=Plugin\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int func getValue()\n"
+            "return 13\n"
+            "endfunc\n"
+            "}\n"
+            "class Plugin(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @filter).getValue()\n"
+                                                  "default:\n"
+                                                  "Base param filter\n"
+                                                  "default=Plugin\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{13}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchRejectsNullReference)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "Plugin plugin\n"
+            "plugin.getValue()\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int func getValue()\n"
+            "return 1\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "Plugin plugin\n"
+                                                  "plugin.getValue()\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) interpreter.interpret(Section::INITIALIZE);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_STREQ("null object reference", error.what());
+                throw;
+            }
+        },
+        std::runtime_error);
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchConvertsReturnValue)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "(new @filter).getValue()\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "float func getValue()\n"
+            "return 2\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @filter).getValue()\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{2.0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchByRefArgumentsMutateCaller)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "int value=1\n"
+            "(new @filter).increment(value)\n"
+            "value\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "void func increment(int &target)\n"
+            "target=target+1\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "int value=1\n"
+                                                  "(new @filter).increment(value)\n"
+                                                  "value\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{2}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectMethodDispatchConstArguments)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "(new @filter).getValue(5)\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int func getValue(const int value)\n"
+            "return value\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @filter).getValue(5)\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{5}, interpreter.interpret(Section::INITIALIZE));
+}
+
 TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"
