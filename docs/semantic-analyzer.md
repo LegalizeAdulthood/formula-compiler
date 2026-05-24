@@ -23,47 +23,62 @@ support expands.
   and retained graph checks
 - diagnostic-free formula parameter metadata collection
 
-## Remaining Work
+## Implementation Slices
 
-1. Warning support.
-    - Add warning-producing checks only after callers have policy for display,
-      suppression, and test expectations.
-    - Keep current diagnostics as errors until then.
+1. Effective-default coverage audit.
+    - Add focused tests for omitted scalar, image, function, and plug-in
+      defaults.
+    - Verify invalid explicit and effective defaults are reported before
+      interpreter execution.
+    - Do not add runtime conversion or binding data.
 
-2. Semantic model API.
-    - Add a separate model only when interpreter or compiler work needs typed
-      expression data, resolved calls, member bindings, converted saved values,
-      or runtime binding data.
-    - Keep the parsed AST and parameter-set structures immutable.
-    - Do not backfill derived data into parser-owned objects.
+2. Function-parameter alignment.
+    - As interpreter function-parameter binding is implemented, compare runtime
+      target validation with semantic checks.
+    - Add any missing semantic checks for target shape, callable kind, and
+      global-section restrictions.
+    - Add analyzer tests for each semantic-only failure case.
 
-3. Interpreter integration checks.
-    - Keep interpreter construction rejecting semantic diagnostics before
-      execution.
-    - Keep post-construction parameter binding diagnostics in the interpreter,
-      not in the semantic analyzer.
-    - Revisit function parameter and plug-in default validation as interpreter
-      binding APIs are implemented, so semantic checks and runtime binding
-      agree.
+3. Plug-in-default alignment.
+    - As interpreter plug-in binding is implemented, compare runtime selector
+      validation with semantic checks.
+    - Add any missing semantic checks for omitted plug-in defaults, explicit
+      default selectors, selected-class compatibility, and retained class
+      graph completeness.
+    - Add analyzer tests for semantic failures that should block construction.
 
-4. Compiler integration checks.
+4. Parameter-set binding model decision.
+    - Wait until interpreter or compiler parameter-set execution needs derived
+      binding data.
+    - If needed, design a separate model that carries converted saved values,
+      resolved function targets, and resolved plug-in selections.
+    - Keep the existing diagnostic-only API and parsed parameter-set data
+      unchanged.
+
+5. Formula semantic model decision.
+    - Wait until interpreter or compiler execution needs typed expressions,
+      resolved calls, or member bindings from analysis.
+    - If needed, design a separate model beside the AST.
+    - Keep AST nodes source-preserving and unmodified.
+
+6. Interpreter integration regression.
+    - Keep construction rejecting semantic diagnostics before execution.
+    - Keep post-construction parameter binding diagnostics owned by the
+      interpreter.
+    - Add regression tests when new interpreter entry points consume semantic
+      analyzer output.
+
+7. Compiler integration regression.
     - Keep compiler entry points rejecting semantic diagnostics before code
       generation.
     - Keep compiler diagnostics focused on unsupported lowering or codegen
       failures after semantic analysis succeeds.
+    - Add regression tests when extended compiler entry points are introduced.
 
-5. Effective-default validation follow-up.
-    - Verify semantic checks cover omitted function defaults, omitted plug-in
-      defaults, and default class compatibility once interpreter default
-      resolution is implemented.
-    - Add semantic tests for any default case that currently only has runtime
-      coverage.
-
-6. Parameter-set model follow-up.
-    - If interpreter/compiler parameter-set execution needs converted saved
-      values or resolved function/plug-in bindings, add a model-returning API
-      beside the diagnostic-only API.
-    - Keep resolver diagnostics and parsed parameter-set data unchanged.
+8. Warning support.
+    - Add warning-producing checks only after callers have policy for display,
+      suppression, and test expectations.
+    - Keep current diagnostics as errors until then.
 
 ## Test Policy
 
