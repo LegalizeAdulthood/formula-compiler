@@ -46,6 +46,7 @@ struct ClassMemberDescriptor
 {
     std::string name;
     ClassMemberVisibility visibility{ClassMemberVisibility::PUBLIC};
+    std::optional<FunctionSignature> function;
 };
 
 struct ParameterMetadata
@@ -1874,8 +1875,7 @@ private:
         }
         if (is_class(receiver_type))
         {
-            validate_user_member_access(receiver_type, node.name());
-            return 0U;
+            return validate_user_member_call(receiver_type, node);
         }
         collect(node.target());
         return 0U;
@@ -2662,7 +2662,15 @@ private:
         }
         else if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
         {
-            members.push_back({function->name(), visibility});
+            FunctionSignature signature;
+            signature.return_type =
+                function->return_type().empty() ? SemanticTypeKind::VOID : type_kind(function->return_type());
+            for (const ast::FunctionArgument &arg : function->args())
+            {
+                signature.argument_types.push_back(type_kind(arg.type));
+                signature.by_ref_arguments.push_back(arg.is_by_ref);
+            }
+            members.push_back({function->name(), visibility, std::move(signature)});
         }
         else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
         {
@@ -2719,6 +2727,33 @@ private:
             diagnostic.message = "invalid member access: " + class_name + "." + member_name + " is not public";
             m_diagnostics.push_back(std::move(diagnostic));
         }
+    }
+
+    std::size_t validate_user_member_call(const std::string &class_name, const ast::FunctionCallNode &node)
+    {
+        std::unordered_set<std::string> seen;
+        const ClassMemberDescriptor *member{find_class_member(class_name, node.name(), seen)};
+        if (!member)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + class_name + "." + node.name();
+            m_diagnostics.push_back(std::move(diagnostic));
+            return 0U;
+        }
+        if (member->visibility != ClassMemberVisibility::PUBLIC)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + class_name + "." + node.name() + " is not public";
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+        if (!member->function)
+        {
+            return 0U;
+        }
+        validate_call_arity(node.name(), node.args().size(), member->function->argument_types.size());
+        return validate_user_call_arguments(node, *member->function);
     }
 
     bool is_read_only_symbol(const std::string &name) const
