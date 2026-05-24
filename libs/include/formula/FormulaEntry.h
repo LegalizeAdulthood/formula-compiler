@@ -151,6 +151,7 @@ enum class FormulaReferenceKind
     DECLARATION,
     FUNCTION_RETURN,
     FUNCTION_ARGUMENT,
+    CLASS_MEMBER,
     NEW_OBJECT,
     PARAM_BLOCK,
     PARAM_DEFAULT,

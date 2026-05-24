@@ -46,6 +46,11 @@ bool is_class_reference(std::string_view type)
     return !type.empty() && !is_builtin_type(type);
 }
 
+bool is_potential_class_identifier(std::string_view name)
+{
+    return !name.empty() && std::isupper(static_cast<unsigned char>(name.front())) != 0;
+}
+
 class ReferenceCollector : public ast::NullVisitor
 {
 public:
@@ -87,6 +92,7 @@ public:
     {
         if (node.has_target())
         {
+            add_member_reference(node.target());
             visit_expr(node.target());
         }
         for (const ast::Expr &arg : node.args())
@@ -140,6 +146,7 @@ public:
 
     void visit(const ast::MemberAccessNode &node) override
     {
+        add_member_reference(node.target());
         visit_expr(node.target());
     }
 
@@ -213,6 +220,15 @@ private:
         if (!m_collecting_parameter_names && is_class_reference(type))
         {
             m_references.push_back(FormulaReference{kind, std::string{type}, {}});
+        }
+    }
+
+    void add_member_reference(const ast::Expr &expr)
+    {
+        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get());
+            identifier && is_potential_class_identifier(identifier->name()))
+        {
+            add_reference(FormulaReferenceKind::CLASS_MEMBER, identifier->name());
         }
     }
 
@@ -639,10 +655,7 @@ void retain_resolved_imported_classes(FormulaFileSet &files)
                     resolve_class_reference(files, entry_references, reference))
             {
                 add_resolved_reference(files, FormulaResolvedReference{entry_references, reference, *klass});
-                if (klass->file_index != entry_references.file_index)
-                {
-                    retain_formula_class(files, *klass);
-                }
+                retain_formula_class(files, *klass);
             }
             else
             {

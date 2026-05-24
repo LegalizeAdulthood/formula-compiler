@@ -195,14 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Static class methods and constants.
-    - Implement `Class.method(...)` dispatch for static methods.
-    - Implement class constant lookup, including inherited constants.
-    - Tests: direct static method call, inherited static method lookup,
-      direct class constant, inherited class constant, and invalid static
-      member diagnostics/runtime backstops.
-
-2. User constructors and casts.
+1. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

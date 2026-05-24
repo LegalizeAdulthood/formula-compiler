@@ -1484,6 +1484,184 @@ TEST(TestExtendedInterpreter, pluginObjectMethodDispatchConstArguments)
     EXPECT_EQ(Value{5}, interpreter.interpret(Section::INITIALIZE));
 }
 
+TEST(TestExtendedInterpreter, staticClassMethodDispatchCallsMethod)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"utils.ulb\"\n"
+            "init:\n"
+            "Utils.min(7, 3)\n"
+            "}\n"},
+        {"utils.ulb",
+            "class Utils {\n"
+            "public:\n"
+            "static int func min(int a, int b)\n"
+            "if a < b\n"
+            "return a\n"
+            "else\n"
+            "return b\n"
+            "endif\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"utils.ulb\"\n"
+                                                  "init:\n"
+                                                  "Utils.min(7, 3)\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{3}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, staticClassMethodDispatchFindsInheritedMethod)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"utils.ulb\"\n"
+            "init:\n"
+            "Utils.answer()\n"
+            "}\n"},
+        {"utils.ulb",
+            "class Base {\n"
+            "public:\n"
+            "static int func answer()\n"
+            "return 42\n"
+            "endfunc\n"
+            "}\n"
+            "class Utils(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"utils.ulb\"\n"
+                                                  "init:\n"
+                                                  "Utils.answer()\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{42}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, staticClassMethodDispatchAllowsObjectTarget)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"utils.ulb\"\n"
+            "init:\n"
+            "Utils utils = new @filter\n"
+            "utils.answer()\n"
+            "default:\n"
+            "Utils param filter\n"
+            "default=Utils\n"
+            "endparam\n"
+            "}\n"},
+        {"utils.ulb",
+            "class Utils {\n"
+            "public:\n"
+            "static int func answer()\n"
+            "return 42\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"utils.ulb\"\n"
+                                                  "init:\n"
+                                                  "Utils utils = new @filter\n"
+                                                  "utils.answer()\n"
+                                                  "default:\n"
+                                                  "Utils param filter\n"
+                                                  "default=Utils\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{42}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, staticClassConstantReadsMemberDeclaration)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"utils.ulb\"\n"
+            "init:\n"
+            "Utils.answer\n"
+            "}\n"},
+        {"utils.ulb",
+            "class Utils {\n"
+            "public:\n"
+            "int answer=42\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"utils.ulb\"\n"
+                                                  "init:\n"
+                                                  "Utils.answer\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{42}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, staticClassConstantFindsInheritedDeclaration)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"utils.ulb\"\n"
+            "init:\n"
+            "Utils.answer\n"
+            "}\n"},
+        {"utils.ulb",
+            "class Base {\n"
+            "public:\n"
+            "int answer=42\n"
+            "}\n"
+            "class Utils(Base) {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"utils.ulb\"\n"
+                                                  "init:\n"
+                                                  "Utils.answer\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{42}, interpreter.interpret(Section::INITIALIZE));
+}
+
 TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"

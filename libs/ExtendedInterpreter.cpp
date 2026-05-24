@@ -1346,8 +1346,9 @@ FunctionMap collect_function_declarations(const ast::FormulaSections &formula)
 }
 
 const ast::FunctionDeclNode *find_class_method(const ast::FormulaSections &ast, std::string_view name);
+const ast::FunctionDeclNode *find_static_class_method(const ast::FormulaSections &ast, std::string_view name);
 
-const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::string_view name)
+const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::string_view name, bool is_static)
 {
     if (!node)
     {
@@ -1355,13 +1356,13 @@ const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::str
     }
     if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(node.get()))
     {
-        return same_identifier(function->name(), name) && !function->is_static() ? function : nullptr;
+        return same_identifier(function->name(), name) && function->is_static() == is_static ? function : nullptr;
     }
     if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(node.get()))
     {
         for (const ast::Expr &statement : sequence->statements())
         {
-            if (const ast::FunctionDeclNode *function{find_method_in_expr(statement, name)})
+            if (const ast::FunctionDeclNode *function{find_method_in_expr(statement, name, is_static)})
             {
                 return function;
             }
@@ -1372,15 +1373,64 @@ const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::str
 
 const ast::FunctionDeclNode *find_class_method(const ast::FormulaSections &ast, std::string_view name)
 {
-    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.public_members, name)})
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.public_members, name, false)})
     {
         return function;
     }
-    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.protected_members, name)})
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.protected_members, name, false)})
     {
         return function;
     }
-    return find_method_in_expr(ast.private_members, name);
+    return find_method_in_expr(ast.private_members, name, false);
+}
+
+const ast::FunctionDeclNode *find_static_class_method(const ast::FormulaSections &ast, std::string_view name)
+{
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.public_members, name, true)})
+    {
+        return function;
+    }
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.protected_members, name, true)})
+    {
+        return function;
+    }
+    return find_method_in_expr(ast.private_members, name, true);
+}
+
+const ast::DeclarationNode *find_declaration_in_expr(const ast::Expr &node, std::string_view name)
+{
+    if (!node)
+    {
+        return nullptr;
+    }
+    if (const auto *declaration = dynamic_cast<const ast::DeclarationNode *>(node.get()))
+    {
+        return same_identifier(declaration->name(), name) ? declaration : nullptr;
+    }
+    if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(node.get()))
+    {
+        for (const ast::Expr &statement : sequence->statements())
+        {
+            if (const ast::DeclarationNode *declaration{find_declaration_in_expr(statement, name)})
+            {
+                return declaration;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const ast::DeclarationNode *find_class_declaration_in_ast(const ast::FormulaSections &ast, std::string_view name)
+{
+    if (const ast::DeclarationNode *declaration{find_declaration_in_expr(ast.public_members, name)})
+    {
+        return declaration;
+    }
+    if (const ast::DeclarationNode *declaration{find_declaration_in_expr(ast.protected_members, name)})
+    {
+        return declaration;
+    }
+    return find_declaration_in_expr(ast.private_members, name);
 }
 
 const RetainedFormulaClass *find_retained_class_by_name(
@@ -1391,6 +1441,19 @@ const RetainedFormulaClass *find_retained_class_by_name(
         if (same_identifier(klass.reference.class_name, class_name))
         {
             return &klass;
+        }
+    }
+    return nullptr;
+}
+
+const std::string *class_name_from_identifier(const ast::Expr &expr)
+{
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+    {
+        const std::string &name{identifier->name()};
+        if (!name.empty() && std::isupper(static_cast<unsigned char>(name.front())) != 0)
+        {
+            return &name;
         }
     }
     return nullptr;
@@ -1503,6 +1566,11 @@ public:
     {
         if (node.has_target())
         {
+            if (const auto result = call_static_member(node))
+            {
+                m_result = *result;
+                return;
+            }
             if (const auto result = call_member(node))
             {
                 m_result = *result;
@@ -1597,6 +1665,11 @@ public:
 
     void visit(const ast::MemberAccessNode &node) override
     {
+        if (const auto result = class_constant_value(node))
+        {
+            m_result = *result;
+            return;
+        }
         m_result = member_lvalue(node).get();
     }
 
@@ -2048,9 +2121,157 @@ private:
         }
         if (method == nullptr)
         {
-            return std::nullopt;
+            const ast::FunctionDeclNode *static_method{find_static_method(*object, node.name())};
+            if (static_method == nullptr)
+            {
+                return std::nullopt;
+            }
+            return call_function(*static_method, node.args());
         }
         return call_method(target_value, *method, node.args());
+    }
+
+    const ast::FunctionDeclNode *find_static_method(const PluginValue &object, std::string_view name) const
+    {
+        const ast::FunctionDeclNode *method{};
+        if (object.ast)
+        {
+            method = find_static_class_method(*object.ast, name);
+        }
+        std::vector<std::string> seen;
+        std::string base{object.base_class};
+        while (method == nullptr && !base.empty())
+        {
+            if (std::find_if(seen.begin(), seen.end(),
+                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+            {
+                break;
+            }
+            seen.push_back(base);
+            const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
+            if (klass == nullptr)
+            {
+                break;
+            }
+            if (klass->ast)
+            {
+                method = find_static_class_method(*klass->ast, name);
+            }
+            base = klass->base_class;
+        }
+        return method;
+    }
+
+    std::optional<Value> call_static_member(const ast::FunctionCallNode &node)
+    {
+        const std::string *class_name{class_name_from_identifier(node.target())};
+        if (class_name == nullptr)
+        {
+            return std::nullopt;
+        }
+        const ast::FunctionDeclNode *method{find_static_method(*class_name, node.name())};
+        if (method == nullptr)
+        {
+            return std::nullopt;
+        }
+        return call_function(*method, node.args());
+    }
+
+    const ast::FunctionDeclNode *find_static_method(std::string_view class_name, std::string_view name) const
+    {
+        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
+        if (klass == nullptr)
+        {
+            return nullptr;
+        }
+        const ast::FunctionDeclNode *method{};
+        if (klass->ast)
+        {
+            method = find_static_class_method(*klass->ast, name);
+        }
+        std::vector<std::string> seen;
+        std::string base{klass->base_class};
+        while (method == nullptr && !base.empty())
+        {
+            if (std::find_if(seen.begin(), seen.end(),
+                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+            {
+                break;
+            }
+            seen.push_back(base);
+            klass = find_retained_class_by_name(m_files.retained_classes, base);
+            if (klass == nullptr)
+            {
+                break;
+            }
+            if (klass->ast)
+            {
+                method = find_static_class_method(*klass->ast, name);
+            }
+            base = klass->base_class;
+        }
+        return method;
+    }
+
+    std::optional<Value> class_constant_value(const ast::MemberAccessNode &node)
+    {
+        const std::string *class_name{class_name_from_identifier(node.target())};
+        if (class_name == nullptr)
+        {
+            return std::nullopt;
+        }
+        const ast::DeclarationNode *declaration{find_class_declaration(*class_name, node.member())};
+        if (declaration == nullptr)
+        {
+            return std::nullopt;
+        }
+        if (declaration->is_array())
+        {
+            return declaration->is_dynamic_array() ? make_dynamic_array(*declaration) : make_static_array(*declaration);
+        }
+        if (const std::optional<ValueKind> kind{parameter_value_kind(declaration->type())})
+        {
+            return declaration->initializer() ? convert_value(interpret(declaration->initializer()), *kind)
+                                              : default_value(*kind);
+        }
+        return declaration->initializer() ? interpret(declaration->initializer())
+                                          : make_plugin_value(PluginValue{{}, std::string{declaration->type()}});
+    }
+
+    const ast::DeclarationNode *find_class_declaration(std::string_view class_name, std::string_view name) const
+    {
+        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
+        if (klass == nullptr)
+        {
+            return nullptr;
+        }
+        const ast::DeclarationNode *declaration{};
+        if (klass->ast)
+        {
+            declaration = find_class_declaration_in_ast(*klass->ast, name);
+        }
+        std::vector<std::string> seen;
+        std::string base{klass->base_class};
+        while (declaration == nullptr && !base.empty())
+        {
+            if (std::find_if(seen.begin(), seen.end(),
+                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+            {
+                break;
+            }
+            seen.push_back(base);
+            klass = find_retained_class_by_name(m_files.retained_classes, base);
+            if (klass == nullptr)
+            {
+                break;
+            }
+            if (klass->ast)
+            {
+                declaration = find_class_declaration_in_ast(*klass->ast, name);
+            }
+            base = klass->base_class;
+        }
+        return declaration;
     }
 
     RuntimeLValue array_lvalue(const ast::IndexNode &node)

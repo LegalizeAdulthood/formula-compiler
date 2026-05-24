@@ -1496,7 +1496,7 @@ public:
 
     void visit(const ast::IdentifierNode &node) override
     {
-        if (!is_declared(node.name()) && !is_builtin_variable(node.name()))
+        if (!is_declared(node.name()) && !is_builtin_variable(node.name()) && !is_class(node.name()))
         {
             report_unknown_symbol(node.name());
         }
@@ -2319,6 +2319,10 @@ private:
     {
         if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
         {
+            if (is_class(identifier->name()))
+            {
+                return identifier->name();
+            }
             return symbol_type_name(identifier->name());
         }
         if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
