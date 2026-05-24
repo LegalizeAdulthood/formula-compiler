@@ -687,10 +687,7 @@ Milestone 8: downstream integration.
 - Keep runtime and codegen diagnostics limited to unsupported or dynamic
   failures not knowable by semantic analysis.
 
-1. Finish extended parameter-set binding validation.
-   - Remaining builtin object parameter edge cases.
-
-2. Integrate interpreter and compiler entry points so unsupported or invalid
+1. Integrate interpreter and compiler entry points so unsupported or invalid
    semantic inputs are rejected before execution/code generation.
 
 ## Tests
@@ -723,10 +720,7 @@ Add tests for:
 
 Keep tests aligned with the implementation milestones:
 
-1. Extended parameter-set bindings.
-   - Remaining builtin object parameter edge cases.
-
-2. Downstream integration.
+1. Downstream integration.
    - Interpreter rejects semantic errors before execution.
    - Compiler rejects semantic errors before code generation.
    - Interpreter still reports runtime-only failures.

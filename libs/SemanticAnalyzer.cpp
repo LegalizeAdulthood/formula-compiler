@@ -812,6 +812,11 @@ bool is_plugin_parameter_type(std::string_view type)
     return type == "Plugin" || type == "FormulaClass";
 }
 
+bool has_implicit_parameter_default(const ParameterMetadata::Param &param)
+{
+    return param.type == "Image";
+}
+
 const parameter::Parameter *find_reference_parameter(
     const parameter::ParameterReference &reference, std::string_view key)
 {
@@ -1099,7 +1104,8 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
     }
     for (const ParameterMetadata::Param &param : metadata.params)
     {
-        if (!param.has_default && !has_saved_parameter_for(resolved.reference, metadata, param))
+        if (!param.has_default && !has_implicit_parameter_default(param) &&
+            !has_saved_parameter_for(resolved.reference, metadata, param))
         {
             parameter::Parameter missing;
             missing.key = "p_" + param.name;

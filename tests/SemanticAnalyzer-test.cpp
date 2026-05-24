@@ -604,6 +604,29 @@ TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsDefaultedParameter)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsDefaultedImageParameter)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "Image param source\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const parameter::ExtendedParameterEntry parameters;
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterReference reference;
+    reference.site.kind = parameter::ParameterReferenceKind::OUTSIDE_COLORING;
+    reference.filename = "Example.ucl";
+    reference.entry = "Image";
+    references.resolved.push_back({reference, {}, loaded.ast, parser::EntryKind::COLORING});
+    const ParameterSetSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_parameter_set(parameters, references, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisAcceptsForwardedRequiredParameter)
 {
     parser::Options options;
