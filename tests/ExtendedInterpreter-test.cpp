@@ -983,6 +983,103 @@ TEST(TestExtendedInterpreter, preparesLayerSpecificPluginParameterBindings)
     EXPECT_EQ(Value{std::string{"3.0"}}, second_plugin->nested_values[0].second);
 }
 
+TEST(TestExtendedInterpreter, preparesForwardedParameterSetBindings)
+{
+    const std::string body{"import \"plugin.ulb\"\n"
+                           "init:\n"
+                           "1\n"
+                           "default:\n"
+                           "Plugin param plugin\n"
+                           "endparam\n"
+                           "param oldpower = plugin.power\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"formula.ufm",
+            "Mandelbrot {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "1\n"
+            "default:\n"
+            "Plugin param plugin\n"
+            "endparam\n"
+            "param oldpower = plugin.power\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    parameter::ParameterReferenceSet references;
+    references.resolved.push_back(resolved_parameter_reference("formula.ufm", "Mandelbrot", body,
+        parser::EntryKind::FRACTAL, {{"p_plugin", "plugin.ulb:Plugin"}, {"p_oldpower", "2.0"}}));
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, interpreter_options)};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(1U, prepared.formulas.size());
+    const Value::PluginPtr plugin{
+        std::get<Value::PluginPtr>(prepared.formulas[0].interpreter.value("@plugin").storage())};
+    ASSERT_TRUE(plugin);
+    ASSERT_EQ(1U, plugin->nested_values.size());
+    EXPECT_EQ("power", plugin->nested_values[0].first);
+    EXPECT_EQ(Value{std::string{"2.0"}}, plugin->nested_values[0].second);
+}
+
+TEST(TestExtendedInterpreter, directParameterSetBindingBypassesForward)
+{
+    const std::string body{"import \"plugin.ulb\"\n"
+                           "init:\n"
+                           "@oldpower\n"
+                           "default:\n"
+                           "Plugin param plugin\n"
+                           "endparam\n"
+                           "float param oldpower\n"
+                           "endparam\n"
+                           "param oldpower = plugin.power\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"formula.ufm",
+            "Mandelbrot {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "@oldpower\n"
+            "default:\n"
+            "Plugin param plugin\n"
+            "endparam\n"
+            "float param oldpower\n"
+            "endparam\n"
+            "param oldpower = plugin.power\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    parameter::ParameterReferenceSet references;
+    references.resolved.push_back(resolved_parameter_reference("formula.ufm", "Mandelbrot", body,
+        parser::EntryKind::FRACTAL, {{"p_plugin", "plugin.ulb:Plugin"}, {"p_oldpower", "2.0"}}));
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, interpreter_options)};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(1U, prepared.formulas.size());
+    EXPECT_EQ(Value{2.0}, prepared.formulas[0].interpreter.interpret(Section::INITIALIZE));
+    const Value::PluginPtr plugin{
+        std::get<Value::PluginPtr>(prepared.formulas[0].interpreter.value("@plugin").storage())};
+    ASSERT_TRUE(plugin);
+    EXPECT_TRUE(plugin->nested_values.empty());
+}
+
 TEST(TestExtendedInterpreter, prepareParameterSetInterpretersBlocksDiagnostics)
 {
     parameter::ParameterReferenceSet references;

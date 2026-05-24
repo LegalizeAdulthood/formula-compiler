@@ -249,7 +249,7 @@ struct RuntimeParameterInfo
 struct RuntimeParameterForward
 {
     std::string old_name;
-    std::string target_name;
+    std::vector<std::string> target_path;
 };
 
 struct RuntimeParameterMetadata
@@ -307,7 +307,7 @@ public:
         if (const auto *values = std::get_if<std::vector<std::string>>(&node.value());
             values != nullptr && values->size() >= 2U)
         {
-            m_metadata.forwards.push_back({values->front(), (*values)[1]});
+            m_metadata.forwards.push_back({values->front(), {std::next(values->begin()), values->end()}});
         }
     }
 
@@ -569,16 +569,64 @@ std::optional<Value> make_enum_parameter_value(const RuntimeParameterInfo &param
         EnumValue{index, parameter.enum_values[static_cast<std::size_t>(index)], parameter.enum_values});
 }
 
+Value parse_saved_parameter_value(std::string_view type, std::string_view value);
+
 std::string forwarded_runtime_parameter_name(const RuntimeParameterMetadata &metadata, std::string_view name)
 {
+    if (find_runtime_parameter(metadata, name) != nullptr)
+    {
+        return std::string{name};
+    }
     for (const RuntimeParameterForward &forward : metadata.forwards)
     {
-        if (forward.old_name == name)
+        if (forward.old_name == name && !forward.target_path.empty())
         {
-            return forward.target_name;
+            std::string target{forward.target_path.front()};
+            for (auto part = std::next(forward.target_path.begin()); part != forward.target_path.end(); ++part)
+            {
+                target += ".";
+                target += *part;
+            }
+            return target;
         }
     }
     return std::string{name};
+}
+
+bool bind_forwarded_runtime_parameter(ExtendedInterpreter &interpreter, const RuntimeParameterMetadata &metadata,
+    const std::string &name, const parameter::Parameter &parameter)
+{
+    const std::size_t dot{name.find('.')};
+    if (dot != std::string::npos)
+    {
+        const std::string plugin{name.substr(0, dot)};
+        std::string nested{name.substr(dot + 1)};
+        if (starts_with(nested, "p_"))
+        {
+            nested.erase(0, 2);
+        }
+        interpreter.set_plugin_parameter_value(plugin, nested, Value{parameter.value});
+        return true;
+    }
+
+    const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
+    if (info == nullptr)
+    {
+        return false;
+    }
+    if (is_runtime_plugin_parameter(interpreter.parameters(), name))
+    {
+        interpreter.set_plugin_parameter(name, parameter.value);
+        return true;
+    }
+
+    Value value{parse_saved_parameter_value(info->type, parameter.value)};
+    if (const std::optional<Value> enum_value{make_enum_parameter_value(*info, value)})
+    {
+        value = *enum_value;
+    }
+    interpreter.set_parameter(name, std::move(value));
+    return true;
 }
 
 semantic::SemanticTypeKind semantic_type_kind(std::string_view type)
@@ -2515,23 +2563,7 @@ PreparedParameterSet prepare_parameter_interpreters(
             {
                 const std::string name{
                     forwarded_runtime_parameter_name(metadata, std::string_view{parameter.key}.substr(2))};
-                const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
-                if (info != nullptr)
-                {
-                    if (is_runtime_plugin_parameter(interpreter.parameters(), name))
-                    {
-                        interpreter.set_plugin_parameter(name, parameter.value);
-                    }
-                    else
-                    {
-                        Value value{parse_saved_parameter_value(info->type, parameter.value)};
-                        if (const std::optional<Value> enum_value{make_enum_parameter_value(*info, value)})
-                        {
-                            value = *enum_value;
-                        }
-                        interpreter.set_parameter(name, std::move(value));
-                    }
-                }
+                (void) bind_forwarded_runtime_parameter(interpreter, metadata, name, parameter);
                 continue;
             }
             if (starts_with(parameter.key, "f_"))
