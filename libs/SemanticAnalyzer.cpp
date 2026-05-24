@@ -705,10 +705,6 @@ bool has_saved_parameter_for(const parameter::ParameterReference &reference, con
                 return true;
             }
         }
-        if (plugin_parameter_name(parameter.key) == saved_name)
-        {
-            return true;
-        }
     }
     return false;
 }
