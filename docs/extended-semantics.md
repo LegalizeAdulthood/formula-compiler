@@ -1,333 +1,168 @@
-# Extended Formula Semantic Analysis Plan
+# Extended Formula Semantic Analysis
 
 ## Summary
 
-Add a `SemanticAnalyzer` pass between parse/load and
-interpreter/compiler execution. The parser remains responsible only for
-syntax and AST shape. Semantic analysis validates names, types, callable
-signatures, member access, object/class use, section rules that require
-type knowledge, and builtin class behavior.
+Extended semantic analysis now exists as a diagnostic-only pass after parsing
+and, for parameter sets, after reference resolution.
 
-The analyzer consumes:
+The analyzer validates extended-language meaning that the parser cannot know
+from syntax alone: names, types, calls, members, class use, builtin use,
+predefined-symbol rules that depend on context, formula kind compatibility,
+parameter bindings, plug-in bindings, and complete retained reference graphs.
 
-- the main parsed AST
-- parsed default metadata
-- entry kind
-- resolved import metadata
-- retained imported class ASTs
-- host-provided builtin type and function descriptors
-
-The analyzer produces:
-
-- semantic diagnostics
-- symbol tables
-- typed AST or typed IR annotations
-- resolved function/member/class references
-- parameter metadata
-- section result type expectations
-
-## Non-Goals
-
-- Do not move grammar checks out of the parser.
-- Do not execute formulas.
-- Do not generate machine code.
-- Do not require imported ASTs that were not referenced by the main AST.
-- Do not type-check unreachable imported classes unless they are
-  retained.
-
-## Responsibilities
-
-- Resolve identifiers:
-  - locals
-  - formula variables
-  - function parameters
-  - functions
-  - parameters referenced with `@`
-  - constants referenced with `#`
-  - fields and methods
-- Resolve types:
-  - builtin scalar types
-  - builtin object types such as `Image`
-  - imported classes
-  - current-file classes
-  - array element types
-- Validate expressions:
-  - operator operand types
-  - assignment target validity
-  - assignment conversion
-  - array indexing and rank
-  - function calls
-  - method calls
-  - member access
-  - casts
-  - `new`
-- Validate statements:
-  - declaration types and initializers
-  - return placement and return type
-  - loop conditions
-  - by-reference argument lvalues
-  - const parameter assignment rejection
-  - global read-only rules outside `global:`
-- Validate metadata:
-  - default settings per entry kind
-  - parameter block settings per parameter type
-  - function blocks in `default:`
-  - headings in `default:`
-  - switch target and parameter mappings when target metadata is
-    available
-- Validate imports:
-  - unresolved classes
-  - retained class metadata consistency
-  - class inheritance references
-  - duplicate or ambiguous lookup where UF rules require diagnostics
+The analyzer does not execute formulas, generate code, mutate parsed ASTs, or
+produce a typed semantic model. Downstream interpreter and compiler integration
+is still future work.
 
 ## Pipeline
 
-1. Build builtin descriptors.
-   - Register builtin scalar types.
-   - Register builtin classes such as `Image`.
-   - Register builtin functions and operators.
-   - Register predefined constants such as `#pixel`, `#z`, `#index`,
-     `#color`, and `#solid`.
+```text
+parse -> resolve references -> analyze semantics -> interpret or compile
+```
 
-2. Build entry symbol tables.
-   - Collect declarations from formula sections.
-   - Collect user functions before checking calls.
-   - Collect default parameter blocks and defaults.
-   - Collect class fields, methods, constructors, and static members.
+Stage ownership:
 
-3. Build import/class environment.
-   - Read resolved references and retained imported ASTs from load
-     metadata.
-   - Build class descriptors for retained imported classes.
-   - Add current-file class descriptors.
-   - Add builtin class descriptors outside the import graph.
+- Parser: malformed text, invalid token sequences, invalid section order,
+  invalid section cardinality, and impossible AST shapes.
+- Resolver: files, entries, imported classes, and retained referenced entities.
+- Semantic analyzer: valid syntax and resolved references that still have
+  invalid meaning.
+- Interpreter/compiler: runtime behavior and unsupported execution or lowering.
 
-4. Analyze default metadata.
-   - Validate default settings by entry kind.
-   - Validate parameter blocks and function blocks.
-   - Validate heading blocks.
-   - Build typed parameter metadata for execution.
+BASIC formulas and BASIC parameter sets are outside this pass. BASIC formulas
+are statically validated by the parser, and unknown BASIC variables remain
+runtime-zero variables. BASIC parameter sets are flat parser-owned data.
 
-5. Analyze class descriptors.
-   - Resolve base classes.
-   - Validate inheritance cycles.
-   - Validate field and method declarations.
-   - Validate visibility and override rules.
-   - Compute object layout metadata for later runtime/compiler use.
+## Public Entry Points
 
-6. Analyze sections.
-   - Analyze `global`, `init`, `loop`, `bailout`, `perturbinit`,
-     `perturbloop`, `final`, and `transform`.
-   - Apply section-specific expected result types.
-   - Enforce global variable read-only rules outside `global:`.
+The current public surface is diagnostic-only:
 
-7. Analyze expressions and statements.
-   - Walk each AST node.
-   - Produce typed results and resolved references.
-   - Emit diagnostics for invalid constructs.
+```cpp
+std::vector<SemanticDiagnostic> analyze_formula(
+    const ast::FormulaSections &formula,
+    const FormulaSemanticContext &context);
 
-8. Emit analyzer result.
-   - Return diagnostics.
-   - Return symbol tables and typed annotations.
-   - Return metadata needed by interpreter and compiler.
+std::vector<SemanticDiagnostic> analyze_parameter_set(
+    const parameter::ExtendedParameterEntry &parameters,
+    const parameter::ParameterReferenceSet &references,
+    const ParameterSetSemanticContext &context);
+```
 
-## Type Model
-
-- `void`
-- `bool`
-- `int`
-- `float`
-- `complex`
-- `color`
-- `string`
-- arrays
-- class/object references
-- builtin object references
-- unknown/error type
-
-The analyzer should use an error type after diagnostics so one invalid
-expression does not cascade into many duplicate errors.
-
-## Conversion Rules
-
-- Numeric promotions:
-  - `bool -> int -> float -> complex`
-- Assignment converts to the declared target type when allowed.
-- Function arguments convert to parameter types when allowed.
-- Return values convert to declared return types when allowed.
-- `color` does not convert to numeric values automatically.
-- `string` only converts where UF semantics explicitly allow it.
-- Object references convert through inheritance where valid.
-- Invalid conversions produce semantic diagnostics.
-
-## Function Calls
-
-- Resolve user functions before builtin functions.
-- Validate arity.
-- Validate argument conversions.
-- Validate `const` and `&` parameters.
-- Reject non-lvalue arguments passed by reference.
-- Support recursion by building declarations before bodies are checked.
-- Detect duplicate function signatures when UF rules disallow them.
-- Keep unresolved functions as semantic diagnostics, not syntax errors.
-
-## Member Access And Methods
-
-- Resolve receiver type first.
-- For class receivers:
-  - find fields
-  - find methods
-  - apply visibility rules
-  - validate method arity and argument types
-- For builtin class receivers:
-  - use builtin descriptors
-  - validate documented members and methods
-  - reject unknown members with semantic diagnostics
-- For non-object receivers:
-  - reject field and method access.
-
-## Builtin Image Class
-
-`Image` is a builtin class/type. It is not parsed from an imported file
-and must not be resolved through the import graph.
-
-Semantic analyzer work:
-
-- Add a builtin `Image` descriptor.
-- Treat `Image param name` as builtin image parameter metadata.
-- Do not emit unresolved-class diagnostics for `Image`.
-- Validate documented `Image` methods and fields against the UF6 image
-  parameter docs.
-- Validate method arity and return types.
-- Mark unsupported documented methods as unsupported semantic
-  diagnostics until implemented.
-- Reject unknown `Image` fields and methods as semantic diagnostics.
-- Expose typed image metadata to interpreter and compiler.
-
-## Parameters
-
-- Parse metadata becomes typed parameter descriptors.
-- Validate parameter block settings by parameter type.
-- Validate defaults against parameter type.
-- Validate `min`, `max`, `enum`, `visible`, `enabled`, `expanded`,
-  `exponential`, and `selectable`.
-- Validate plug-in parameter class types through resolved class metadata.
-- Validate builtin image parameters through the builtin `Image`
-  descriptor.
-- Treat parameter reads as typed immutable values unless UF rules allow
-  writes.
-
-## Constants
-
-- Validate predefined constants by entry kind and section.
-- Examples:
-  - `#pixel`
-  - `#z`
-  - `#index`
-  - `#color`
-  - `#solid`
-- Reject writes to read-only constants.
-- Allow writes only where UF semantics permit them, such as transform
-  updates to `#pixel` and `#solid`.
-
-## Sections
-
-- Fractal:
-  - `bailout` must produce a truthy value.
-  - `switch` metadata is validated against available target metadata
-    where possible.
-- Coloring:
-  - `final` must produce a valid coloring result.
-  - unlabelled coloring entries are treated as `final` by parser/load
-    setup, then checked here.
-- Transformation:
-  - `transform` may mutate `#pixel` and `#solid`.
-  - return values are ignored or rejected according to final semantics.
-- Class:
-  - visibility sections define member visibility.
-  - `default:` provides class parameter metadata when used as a plug-in.
+The context supplies entry kind, retained imported classes, and builtin
+descriptors. The default builtin registry is used when no registry is supplied.
 
 ## Diagnostics
 
-Diagnostics should include:
+The implemented diagnostic codes cover:
 
-- code
-- message
-- source location
-- entry name
-- section name
-- function or class context where available
+- Unknown symbols and types.
+- Duplicate symbols.
+- Invalid type conversions.
+- Invalid assignment targets.
+- Invalid call targets, arity, and argument types.
+- Invalid member access.
+- Invalid array access.
+- Invalid returns.
+- Invalid section results and invalid section use.
+- Invalid parameter bindings.
+- Invalid formula kind usage.
+- Invalid builtin usage.
+- Incomplete retained reference graphs.
+- Inheritance cycles.
+- Unsupported semantic features.
 
-Initial diagnostic families:
+Diagnostics are errors only for now.
 
-- unknown identifier
-- unknown function
-- unknown type
-- unknown member
-- invalid call arity
-- invalid argument type
-- invalid assignment target
-- invalid conversion
-- invalid return value
-- invalid section result
-- invalid parameter default
-- invalid parameter setting
-- invalid constant write
-- unresolved class
-- unsupported semantic feature
+## Builtin Registry
 
-## Interpreter Use
+The builtin registry currently describes scalar types, builtin functions,
+predefined symbols, and builtin classes.
 
-The interpreter should receive analyzed metadata and typed annotations.
-It should not rediscover symbol tables independently.
+`Image` is a builtin class. It is not resolved from the import graph and is
+valid as a formula type and parameter type without a defining file. The analyzer
+checks its constructor, documented methods, documented fields, method arity, and
+argument types.
 
-- Use typed parameter defaults.
-- Use resolved functions and members.
-- Use builtin `Image` descriptors and image runtime handles.
-- Throw only for runtime failures, not for static semantic errors that
-  the analyzer can detect.
+## Formula Analysis
 
-## Compiler Use
+Formula semantic analysis currently checks:
 
-The compiler should consume the same analyzer result.
+- Duplicate declarations in formula, function, and class scopes.
+- Unknown types, including retained imported class base types.
+- Retained class graph completeness.
+- Inheritance cycles.
+- Unknown variables, parameters, functions, classes, and members.
+- Builtin and user function call arity.
+- Argument conversions.
+- Assignment conversions.
+- Assignment target validity not already rejected by the parser.
+- Return placement and return value compatibility.
+- `const` argument mutation.
+- By-reference argument targets.
+- Static and dynamic array access.
+- `setLength` and `length` usage for dynamic arrays.
+- Member access, method calls, constructors, casts, and `new`.
+- Visibility and class/builtin member lookup.
+- Section-specific result rules.
+- Predefined-symbol section and formula-kind availability.
+- Predefined-symbol constant-context availability.
 
-- Lower typed annotations to compiler IR.
-- Use resolved symbol slots and member descriptors.
-- Use builtin `Image` descriptors for helper calls and image handles.
-- Refuse compilation when semantic diagnostics contain errors.
-- Keep compile diagnostics for codegen failures and unsupported lowering,
-  not for semantic errors already found by the analyzer.
+The parser already rejects unknown predefined-symbol names and assignments to
+globally read-only predefined symbols.
 
-## Tests
+## Parameter Set Analysis
 
-- Unknown identifier/function/member diagnostics.
-- Invalid call arity and argument type diagnostics.
-- Invalid assignment target and conversion diagnostics.
-- Return type diagnostics.
-- Section result diagnostics.
-- Parameter default and setting diagnostics.
-- `Image param` does not resolve through imports.
-- Unknown `Image` method and field diagnostics.
-- Supported `Image` method signature validation.
-- Plug-in parameter class resolution through retained imports.
-- Global read-only diagnostics.
-- Constant write diagnostics.
-- Interpreter and compiler both reject formulas with semantic errors
-  before execution/codegen.
+Parameter-set semantic analysis assumes the extended parameter set has already
+been parsed and reference resolution has already been attempted.
 
-## Implementation Slices
+It currently checks:
 
-1. Analyzer result and diagnostic types.
-2. Builtin type/function/class descriptor registry.
-3. Symbol table construction for entries and sections.
-4. Type model and conversion checker.
-5. Expression analyzer for identifiers, calls, operators, and assignment.
-6. Statement analyzer for declarations, control flow, and returns.
-7. Default metadata analyzer for settings, params, funcs, and headings.
-8. Import/class descriptor integration.
-9. Builtin `Image` descriptor and param metadata.
-10. Member/method analyzer for classes and builtin classes.
-11. Section-specific semantic checks.
-12. Interpreter integration.
-13. Compiler integration.
+- Fractal reference kind.
+- Layer coloring reference kind.
+- Layer transform reference kind.
+- Resolver diagnostics as incomplete reference graph diagnostics.
+- Complete retained import graphs for referenced formulas and classes.
+- Saved parameter names against referenced formula defaults.
+- Saved value type compatibility.
+- Enum labels and numeric enum indexes.
+- Function parameter targets and target shape.
+- Plug-in selectors.
+- Missing retained plug-in classes.
+- Nested plug-in assignments against selected class defaults.
+- Required forwarded plug-in parameters.
+- Builtin object parameters, including `Image`.
+
+`Image` parameters have an implicit empty default and do not require a saved
+parameter assignment.
+
+Section cardinality and ordering are parser responsibilities. Invalid
+parameter-set layer structure should not reach semantic analysis.
+
+## Non-Goals
+
+The current analyzer does not:
+
+- Analyze BASIC formulas.
+- Analyze BASIC parameter sets.
+- Load or resolve imports.
+- Mutate parsed AST or parameter-set data.
+- Return symbol tables or typed AST annotations.
+- Convert saved parameter values into runtime values.
+- Integrate with the interpreter.
+- Integrate with the compiler.
+
+When downstream stages need resolved symbols, member bindings, expression
+types, or converted parameter values, add a separate semantic model beside the
+parsed data. Do not write derived data back into the parsed AST.
+
+## Remaining Work
+
+Remaining semantic work is tracked in `semantic-analyzer.md`.
+
+Key deferred areas:
+
+- Complete any remaining formula semantic checks listed there.
+- Complete any remaining parameter-set binding checks listed there.
+- Add a semantic model only when interpreter or compiler work needs one.
+- Integrate the extended interpreter after extended runtime support exists.
+- Integrate the extended compiler after extended lowering support exists.
