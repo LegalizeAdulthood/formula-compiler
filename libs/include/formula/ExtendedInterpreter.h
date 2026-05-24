@@ -58,6 +58,10 @@ public:
     const std::vector<semantic::FormulaParameterInfo> &parameters() const;
 
     void set_value(std::string_view name, Value value);
+    void set_parameter(std::string_view name, Value value);
+    void set_function_parameter(std::string_view name, std::string_view target);
+    void set_plugin_parameter(std::string_view name, std::string_view selector);
+    void set_plugin_parameter_value(std::string_view plugin_name, std::string_view nested_name, Value value);
     Value value(std::string_view name) const;
     const std::vector<std::string> &messages() const;
 

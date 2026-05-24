@@ -288,9 +288,34 @@ TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
         options()};
 
     ASSERT_TRUE(interpreter.ok());
-    interpreter.set_value("@power", Value{4.0});
+    interpreter.set_parameter("power", Value{4.0});
 
     EXPECT_EQ(Value{4.0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@source\n"
+                                                  "default:\n"
+                                                  "Image param source\n"
+                                                  "endparam\n"),
+        options()};
+    ImageValue image;
+    image.width = 1;
+    image.height = 1;
+    image.pixels.push_back(ColorValue{0.25, 0.5, 0.75, 1.0});
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_parameter("source", make_image_value(image));
+    interpreter.set_function_parameter("fn1", "sin");
+    interpreter.set_plugin_parameter("bailout", "Plugin.ulb:Default");
+    interpreter.set_plugin_parameter_value("bailout", "power", Value{2.5});
+
+    EXPECT_EQ(make_image_value(image), interpreter.value("@source"));
+    EXPECT_EQ(Value{std::string{"sin"}}, interpreter.value("@fn1"));
+    EXPECT_EQ(Value{std::string{"Plugin.ulb:Default"}}, interpreter.value("@bailout"));
+    EXPECT_EQ(Value{2.5}, interpreter.value("@bailout.power"));
 }
 
 TEST(TestExtendedInterpreter, badParameterBindingBlocksExecutionUntilRebound)
@@ -412,7 +437,7 @@ TEST(TestExtendedInterpreter, preparesImageFunctionAndPluginParameterBindings)
     ASSERT_TRUE(prepared.ok());
     ASSERT_EQ(1U, prepared.formulas.size());
     EXPECT_EQ(Value{std::string{"sin"}}, prepared.formulas[0].interpreter.value("@fn1"));
-    EXPECT_EQ(Value{std::string{"2.0"}}, prepared.formulas[0].interpreter.value("@plugin.p_power"));
+    EXPECT_EQ(Value{std::string{"2.0"}}, prepared.formulas[0].interpreter.value("@plugin.power"));
     EXPECT_EQ(false, std::get<Value::ImagePtr>(prepared.formulas[0].interpreter.value("@source").storage())->empty);
 }
 

@@ -64,6 +64,11 @@
       const std::vector<FormulaParameterInfo> &parameters() const;
 
       void set_value(std::string_view name, Value value);
+      void set_parameter(std::string_view name, Value value);
+      void set_function_parameter(std::string_view name, std::string_view target);
+      void set_plugin_parameter(std::string_view name, std::string_view selector);
+      void set_plugin_parameter_value(
+          std::string_view plugin_name, std::string_view nested_name, Value value);
       Value value(std::string_view name) const;
       const std::vector<std::string> &messages() const;
 
@@ -77,9 +82,9 @@
   fails if diagnostics contain errors. The facade owns formula evaluation
   state, but not image rendering, pixel scheduling, tiling, threading, or
   layer orchestration.
-- Parameter binding currently uses `set_value("@name", value)`. Clean
-  parameter-specific APIs are still planned so clients do not need `@`,
-  `p_`, or `f_` file-format syntax.
+- Parameter binding uses clean parameter-specific APIs by source parameter
+  name. `@name` remains formula-language syntax; `p_` and `f_` remain
+  extended parameter-set file-format prefixes.
 - `Section` already includes `FINAL` and `TRANSFORM`; extended interpreter
   dispatch supports coloring and transformation entries.
 - The existing import-loading and reference-resolution layer runs before
@@ -163,8 +168,7 @@
     constructing imported class ASTs.
   - The documented image methods and properties from the UF6 image-parameter
     docs are implemented for the current image handle.
-  - Host code binds image parameter data with `set_value("@name", image)`
-    until clean parameter-specific APIs are added.
+  - Host code binds image parameter data with `set_parameter("name", image)`.
     The default image parameter value is empty.
 - Sections:
   - `global:` executes as `PER_IMAGE`; variables written there persist
@@ -187,25 +191,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Clean parameter binding API.
-    - Add interpreter facade methods for binding formula parameters by source
-      parameter name, without `@`, `p_`, or `f_` prefixes.
-    - Keep `@name` as formula-language syntax only. Keep `p_` and `f_` as
-      extended parameter-set file-format prefixes only.
-    - Suggested surface:
-
-      ```cpp
-      void set_parameter(std::string_view name, Value value);
-      void set_function_parameter(std::string_view name, std::string_view target);
-      void set_plugin_parameter(std::string_view name, std::string_view selector);
-      void set_plugin_parameter_value(
-          std::string_view plugin_name, std::string_view nested_name, Value value);
-      ```
-
-    - Tests: scalar, image, function, and plug-in parameter APIs bind by raw
-      parameter name; prefixed names are not required by the facade.
-
-2. Effective parameter defaults.
+1. Effective parameter defaults.
     - Initialize every parameter with its effective default before evaluation.
     - Use documented defaults for omitted parameter values: complex `(0, 0)`,
       type defaults for typed blocks, empty `Image`, base-class plug-in
@@ -216,7 +202,7 @@ workflow before being considered complete.
       without host bindings; invalid default classes or function targets are
       construction diagnostics.
 
-3. Function parameter binding and dispatch.
+2. Function parameter binding and dispatch.
     - Implement `set_function_parameter` for raw parameter names.
     - Validate function targets at binding time and record binding diagnostics.
     - Compare binding-time target validation with parameter-set analysis so
@@ -231,7 +217,7 @@ workflow before being considered complete.
       restriction enforcement, and analyzer-only failure coverage for any
       construction-time cases discovered while implementing the interpreter.
 
-4. Enum parameter runtime values.
+3. Enum parameter runtime values.
     - Represent enum parameters as values that preserve selected label and
       numeric index.
     - Accept host binding by label or valid index.
@@ -239,7 +225,7 @@ workflow before being considered complete.
     - Tests: default enum selection, label binding, index binding, invalid
       label/index diagnostics, and string comparison.
 
-5. Plug-in runtime value shell.
+4. Plug-in runtime value shell.
     - Add a runtime `PluginValue` or equivalent handle that stores the
       selected class reference, retained class AST pointer, nested saved
       parameter bindings, and optional initialized object state.
@@ -251,7 +237,7 @@ workflow before being considered complete.
       replace selected class, and runtime messages describe missing object
       state clearly.
 
-6. Resolve standalone plug-in selectors.
+5. Resolve standalone plug-in selectors.
     - `set_plugin_parameter(name, selector)` accepts the same selector text
       used by parameter sets, such as `File.ulb:Class`.
     - The interpreter resolves selector strings through its configured
@@ -267,7 +253,7 @@ workflow before being considered complete.
       entry, parse error, kind mismatch, and nested parameter mismatch become
       diagnostics.
 
-7. Translate parameter-set bindings.
+6. Translate parameter-set bindings.
     - Replace the current string preservation for `p_plugin=File.ulb:Class`
       and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
     - Treat `p_` and `f_` only as parser/bridge input syntax. Translate them
@@ -280,7 +266,7 @@ workflow before being considered complete.
       values as resolved runtime objects; separate layers get separate
       object state.
 
-8. Parameter forwards.
+7. Parameter forwards.
     - Apply parameter forwards when translating old saved parameter names from
       parameter sets into current parameter bindings.
     - Do not expose forward syntax through the standalone interpreter API.
@@ -289,7 +275,7 @@ workflow before being considered complete.
       conflicting forwards remain diagnostics, and direct current-name binding
       bypasses forwards.
 
-9. Non-selectable plug-in binding.
+8. Non-selectable plug-in binding.
     - Treat `selectable=false` as a UI/binding flattening rule: standalone
       clients bind the visible child parameter names directly, while
       parameter-set translation maps saved child values into the non-selectable
@@ -299,7 +285,7 @@ workflow before being considered complete.
       class, direct child bindings update nested parameters, and parameter-set
       saved values translate correctly.
 
-10. Nested plug-in binding defaults.
+9. Nested plug-in binding defaults.
     - When a selected class has plug-in parameters of its own, create nested
       plug-in binding slots from its `default:` metadata.
     - Apply nested saved values from `set_plugin_parameter_value` and
@@ -309,7 +295,7 @@ workflow before being considered complete.
       scalar/image/function saved values are applied to the selected class,
       and missing nested selectors produce diagnostics.
 
-11. Construct plug-in instances.
+10. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -321,7 +307,7 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-12. User class field access and assignment.
+11. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -332,7 +318,7 @@ workflow before being considered complete.
       access remains a semantic error, null access fails clearly, and
       assignment through fields works.
 
-13. User class method dispatch.
+12. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -341,14 +327,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-14. Static class methods and constants.
+13. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-15. User constructors and casts.
+14. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

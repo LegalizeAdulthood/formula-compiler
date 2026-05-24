@@ -1630,6 +1630,27 @@ void ExtendedInterpreter::set_value(std::string_view name, Value value)
     m_state.set_formula_value(name, std::move(value));
 }
 
+void ExtendedInterpreter::set_parameter(std::string_view name, Value value)
+{
+    set_value("@" + std::string{name}, std::move(value));
+}
+
+void ExtendedInterpreter::set_function_parameter(std::string_view name, std::string_view target)
+{
+    set_parameter(name, Value{std::string{target}});
+}
+
+void ExtendedInterpreter::set_plugin_parameter(std::string_view name, std::string_view selector)
+{
+    set_parameter(name, Value{std::string{selector}});
+}
+
+void ExtendedInterpreter::set_plugin_parameter_value(
+    std::string_view plugin_name, std::string_view nested_name, Value value)
+{
+    set_parameter(std::string{plugin_name} + "." + std::string{nested_name}, std::move(value));
+}
+
 Value ExtendedInterpreter::value(std::string_view name) const
 {
     if (!name.empty() && name.front() == '@')
@@ -1854,18 +1875,31 @@ PreparedParameterSet prepare_parameter_interpreters(
                 const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
                 if (info != nullptr)
                 {
-                    interpreter.set_value("@" + name, parse_saved_parameter_value(info->type, parameter.value));
+                    interpreter.set_parameter(name, parse_saved_parameter_value(info->type, parameter.value));
                 }
                 continue;
             }
             if (starts_with(parameter.key, "f_"))
             {
-                interpreter.set_value("@" + parameter.key.substr(2), Value{parameter.value});
+                interpreter.set_function_parameter(std::string_view{parameter.key}.substr(2), parameter.value);
                 continue;
             }
             if (starts_with(parameter.key, "p_"))
             {
-                interpreter.set_value("@" + parameter.key.substr(2), Value{parameter.value});
+                std::string_view path{parameter.key};
+                path.remove_prefix(2);
+                const std::size_t dot{path.find('.')};
+                if (dot == std::string_view::npos)
+                {
+                    interpreter.set_plugin_parameter(path, parameter.value);
+                    continue;
+                }
+                std::string_view nested_name{path.substr(dot + 1)};
+                if (starts_with(nested_name, "p_"))
+                {
+                    nested_name.remove_prefix(2);
+                }
+                interpreter.set_plugin_parameter_value(path.substr(0, dot), nested_name, Value{parameter.value});
             }
         }
 
