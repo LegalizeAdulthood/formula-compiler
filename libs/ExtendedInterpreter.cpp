@@ -187,6 +187,39 @@ Value compare_values(const Value &lhs, const Value &rhs, const std::string &op)
     throw std::runtime_error("invalid comparison operator: " + op);
 }
 
+ValueKind value_kind_for_type(std::string_view type)
+{
+    if (type == "bool")
+    {
+        return ValueKind::BOOL;
+    }
+    if (type == "int")
+    {
+        return ValueKind::INT;
+    }
+    if (type == "float")
+    {
+        return ValueKind::FLOAT;
+    }
+    if (type == "complex")
+    {
+        return ValueKind::COMPLEX;
+    }
+    if (type == "color")
+    {
+        return ValueKind::COLOR;
+    }
+    if (type == "string")
+    {
+        return ValueKind::STRING;
+    }
+    if (type == "Image")
+    {
+        return ValueKind::IMAGE;
+    }
+    throw std::runtime_error("unsupported declaration type: " + std::string{type});
+}
+
 class ExpressionInterpreter : public ast::NullVisitor
 {
 public:
@@ -241,9 +274,16 @@ public:
         m_result = m_state.predefined_value(node.name());
     }
 
-    void visit(const ast::DeclarationNode &) override
+    void visit(const ast::DeclarationNode &node) override
     {
-        unsupported_runtime_node("DeclarationNode");
+        if (node.is_array())
+        {
+            unsupported_runtime_node("DeclarationNode");
+        }
+        const ValueKind kind{value_kind_for_type(node.type())};
+        Value value{node.initializer() ? convert_value(interpret(node.initializer()), kind) : default_value(kind)};
+        m_state.declare_local_value(node.name(), value);
+        m_result = std::move(value);
     }
 
     void visit(const ast::FunctionBlockNode &) override

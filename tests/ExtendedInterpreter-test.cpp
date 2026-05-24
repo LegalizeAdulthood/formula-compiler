@@ -232,4 +232,43 @@ TEST(TestExtendedInterpreter, interpretsAssignmentToWritablePredefinedSymbol)
     EXPECT_EQ((Value{Complex{1.0, 2.0}}), interpreter.value("#pixel"));
 }
 
+TEST(TestExtendedInterpreter, interpretsScalarDeclarations)
+{
+    EXPECT_EQ(Value{0}, interpret_init("int count"));
+    EXPECT_EQ(Value{2.0}, interpret_init("float power=2"));
+    EXPECT_EQ((Value{Complex{3.0, 0.0}}), interpret_init("complex seed=3"));
+    EXPECT_EQ(Value{std::string{}}, interpret_init("string label"));
+}
+
+TEST(TestExtendedInterpreter, declaredScalarsPersistInFormulaScope)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "int count=1\n"
+                                                  "loop:\n"
+                                                  "count=count+1\n"
+                                                  "count"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{1}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{2}, interpreter.interpret(Section::ITERATE));
+    EXPECT_EQ(Value{2}, interpreter.value("count"));
+}
+
+TEST(TestExtendedInterpreter, declarationInitializerConversionBackstopRejectsInvalidRuntimeValue)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "float power=@power\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@power", Value{std::string{"bad"}});
+
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 } // namespace formula::test
