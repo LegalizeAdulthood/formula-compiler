@@ -293,6 +293,55 @@ TEST(TestExtendedInterpreter, hostParameterOverridesDefaultValue)
     EXPECT_EQ(Value{4.0}, interpreter.interpret(Section::INITIALIZE));
 }
 
+TEST(TestExtendedInterpreter, badParameterBindingBlocksExecutionUntilRebound)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@power\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@power", Value{std::string{"bad"}});
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+
+    interpreter.set_value("@power", Value{3.5});
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_TRUE(interpreter.diagnostics().empty());
+    EXPECT_EQ(Value{3.5}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, rebindingParameterLeavesUnrelatedBindingDiagnostics)
+{
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "@power+@count\n"
+                                                  "default:\n"
+                                                  "float param power\n"
+                                                  "endparam\n"
+                                                  "int param count\n"
+                                                  "endparam\n"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+    interpreter.set_value("@power", Value{std::string{"bad"}});
+    interpreter.set_value("@count", Value{std::string{"bad"}});
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(2U, interpreter.diagnostics().size());
+
+    interpreter.set_value("@power", Value{3.5});
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::BINDING, interpreter.diagnostics()[0].kind);
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, preparesParameterSetInterpretersWithSavedValues)
 {
     parameter::ParameterReferenceSet references;

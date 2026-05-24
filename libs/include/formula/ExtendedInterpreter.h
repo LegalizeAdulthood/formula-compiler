@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace formula
@@ -29,6 +30,7 @@ enum class ExtendedInterpreterDiagnosticKind
     PARSE,
     REFERENCE,
     SEMANTIC,
+    BINDING,
 };
 
 struct ExtendedInterpreterDiagnostic
@@ -69,11 +71,16 @@ private:
     void add_parse_diagnostics(const parser::Parser &parser);
     void add_reference_diagnostics();
     void add_semantic_diagnostics(const std::vector<semantic::SemanticDiagnostic> &diagnostics);
+    void add_binding_diagnostic(std::string_view name, std::string message);
+    void clear_binding_diagnostics(std::string_view name);
+    void rebuild_diagnostics();
 
     FileEntry m_entry;
     ExtendedInterpreterOptions m_options;
     ast::FormulaSectionsPtr m_ast;
     FormulaFileSet m_files;
+    std::vector<ExtendedInterpreterDiagnostic> m_construction_diagnostics;
+    std::vector<std::pair<std::string, ExtendedInterpreterDiagnostic>> m_binding_diagnostics;
     std::vector<ExtendedInterpreterDiagnostic> m_diagnostics;
     std::vector<semantic::FormulaParameterInfo> m_parameters;
     ExtendedRuntimeState m_state;

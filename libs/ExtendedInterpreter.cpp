@@ -625,6 +625,16 @@ ValueKind value_kind_for_type(semantic::SemanticTypeKind type)
     }
 }
 
+std::optional<ValueKind> parameter_value_kind(std::string_view type)
+{
+    if (type == "bool" || type == "int" || type == "float" || type == "complex" || type == "color" ||
+        type == "string" || type == "Image")
+    {
+        return value_kind_for_type(type);
+    }
+    return std::nullopt;
+}
+
 Value value_from_setting(const ast::SettingNode::ValueType &value)
 {
     switch (value.index())
@@ -1573,7 +1583,7 @@ const std::vector<ExtendedInterpreterDiagnostic> &ExtendedInterpreter::diagnosti
 
 bool ExtendedInterpreter::ok() const
 {
-    return m_diagnostics.empty();
+    return m_construction_diagnostics.empty() && m_binding_diagnostics.empty();
 }
 
 const std::vector<semantic::FormulaParameterInfo> &ExtendedInterpreter::parameters() const
@@ -1586,6 +1596,26 @@ void ExtendedInterpreter::set_value(std::string_view name, Value value)
     const semantic::BuiltinRegistry &builtins{builtins_or_default(m_options.builtins)};
     if (!name.empty() && name.front() == '@')
     {
+        std::string_view parameter_name{name};
+        parameter_name.remove_prefix(1);
+        clear_binding_diagnostics(parameter_name);
+        if (const auto found = std::find_if(m_parameters.begin(), m_parameters.end(),
+                [parameter_name](const auto &parameter) { return parameter.name == parameter_name; });
+            found != m_parameters.end())
+        {
+            if (const std::optional<ValueKind> kind{parameter_value_kind(found->type)})
+            {
+                try
+                {
+                    value = convert_value(value, *kind);
+                }
+                catch (const std::runtime_error &error)
+                {
+                    add_binding_diagnostic(parameter_name, error.what());
+                    return;
+                }
+            }
+        }
         m_state.set_parameter_value(name, std::move(value));
         return;
     }
@@ -1647,6 +1677,7 @@ void ExtendedInterpreter::parse()
     const parser::ParserPtr parser{parser::create_parser(m_entry.body, m_options.parser)};
     m_ast = parser->parse();
     add_parse_diagnostics(*parser);
+    rebuild_diagnostics();
 }
 
 void ExtendedInterpreter::resolve_references()
@@ -1659,11 +1690,12 @@ void ExtendedInterpreter::resolve_references()
     resolve_root_formula_file_references(m_files);
     retain_resolved_imported_classes(m_files);
     add_reference_diagnostics();
+    rebuild_diagnostics();
 }
 
 void ExtendedInterpreter::analyze()
 {
-    if (!m_ast || !m_diagnostics.empty())
+    if (!m_ast || !m_construction_diagnostics.empty())
     {
         return;
     }
@@ -1681,11 +1713,12 @@ void ExtendedInterpreter::analyze()
     m_parameters = semantic::collect_formula_parameters(*m_ast, context);
     add_semantic_diagnostics(semantic::analyze_formula(*m_ast, context));
     initialize_runtime_state();
+    rebuild_diagnostics();
 }
 
 void ExtendedInterpreter::initialize_runtime_state()
 {
-    if (!m_ast || !m_diagnostics.empty())
+    if (!m_ast || !m_construction_diagnostics.empty())
     {
         return;
     }
@@ -1719,7 +1752,7 @@ void ExtendedInterpreter::add_parse_diagnostics(const parser::Parser &parser)
 {
     for (const parser::Diagnostic &diagnostic : parser.get_errors())
     {
-        m_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::PARSE,
+        m_construction_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::PARSE,
             diagnostic.position, m_options.parser.source_filename, parser::to_string(diagnostic.code)});
     }
 }
@@ -1728,7 +1761,7 @@ void ExtendedInterpreter::add_reference_diagnostics()
 {
     for (const FormulaFileDiagnostic &diagnostic : m_files.diagnostics)
     {
-        m_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::REFERENCE,
+        m_construction_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::REFERENCE,
             diagnostic.location, diagnostic.filename, reference_diagnostic_message(diagnostic)});
     }
 }
@@ -1741,8 +1774,34 @@ void ExtendedInterpreter::add_semantic_diagnostics(const std::vector<semantic::S
         {
             continue;
         }
-        m_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::SEMANTIC,
+        m_construction_diagnostics.push_back(ExtendedInterpreterDiagnostic{ExtendedInterpreterDiagnosticKind::SEMANTIC,
             diagnostic.location, diagnostic.entry_name, diagnostic.message});
+    }
+}
+
+void ExtendedInterpreter::add_binding_diagnostic(std::string_view name, std::string message)
+{
+    m_binding_diagnostics.push_back({std::string{name},
+        ExtendedInterpreterDiagnostic{
+            ExtendedInterpreterDiagnosticKind::BINDING, {}, m_entry.name, std::move(message)}});
+    rebuild_diagnostics();
+}
+
+void ExtendedInterpreter::clear_binding_diagnostics(std::string_view name)
+{
+    const std::string key{name};
+    m_binding_diagnostics.erase(std::remove_if(m_binding_diagnostics.begin(), m_binding_diagnostics.end(),
+                                    [&key](const auto &diagnostic) { return diagnostic.first == key; }),
+        m_binding_diagnostics.end());
+    rebuild_diagnostics();
+}
+
+void ExtendedInterpreter::rebuild_diagnostics()
+{
+    m_diagnostics = m_construction_diagnostics;
+    for (const auto &diagnostic : m_binding_diagnostics)
+    {
+        m_diagnostics.push_back(diagnostic.second);
     }
 }
 
