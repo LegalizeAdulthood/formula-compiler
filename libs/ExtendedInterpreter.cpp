@@ -1414,8 +1414,19 @@ public:
             m_result = value;
             return;
         }
-        const ValueKind kind{value_kind_for_type(node.type())};
-        Value value{node.initializer() ? convert_value(interpret(node.initializer()), kind) : default_value(kind)};
+        Value value;
+        if (const std::optional<ValueKind> kind{parameter_value_kind(node.type())})
+        {
+            value = node.initializer() ? convert_value(interpret(node.initializer()), *kind) : default_value(*kind);
+        }
+        else if (node.initializer())
+        {
+            value = interpret(node.initializer());
+        }
+        else
+        {
+            value = make_plugin_value(PluginValue{{}, std::string{node.type()}});
+        }
         m_state.declare_local_value(node.name(), value);
         m_result = std::move(value);
     }
@@ -1526,9 +1537,9 @@ public:
         }
     }
 
-    void visit(const ast::MemberAccessNode &) override
+    void visit(const ast::MemberAccessNode &node) override
     {
-        unsupported_runtime_node("MemberAccessNode");
+        m_result = member_lvalue(node).get();
     }
 
     void visit(const ast::NewNode &node) override
@@ -2076,7 +2087,47 @@ private:
         {
             return array_lvalue(*index);
         }
+        if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(node.get()); member)
+        {
+            return member_lvalue(*member);
+        }
         throw std::runtime_error("invalid assignment target");
+    }
+
+    RuntimeLValue member_lvalue(const ast::MemberAccessNode &node)
+    {
+        const Value target{interpret(node.target())};
+        if (target.kind() != ValueKind::PLUGIN)
+        {
+            throw std::runtime_error("expected object value");
+        }
+        const Value::PluginPtr object{std::get<Value::PluginPtr>(target.storage())};
+        if (!object || !object->object_initialized)
+        {
+            throw std::runtime_error("null object reference");
+        }
+        const std::string member{node.member()};
+        return RuntimeLValue{[object, member]()
+            {
+                const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
+                    [&member](const auto &field) { return field.first == member; })};
+                if (found == object->object_fields.end())
+                {
+                    throw std::runtime_error("unknown object field: " + member);
+                }
+                return found->second;
+            },
+            [object, member](Value value)
+            {
+                const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
+                    [&member](const auto &field) { return field.first == member; })};
+                if (found == object->object_fields.end())
+                {
+                    throw std::runtime_error("unknown object field: " + member);
+                }
+                found->second = std::move(value);
+            },
+            true};
     }
 
     ExtendedRuntimeState &m_state;

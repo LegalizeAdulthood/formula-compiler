@@ -1074,6 +1074,126 @@ TEST(TestExtendedInterpreter, pluginObjectConstructionReportsMissingBinding)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, pluginObjectFieldAccessReadsFields)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "(new @filter).value\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @filter).value\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectFieldAccessWritesFields)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "Plugin plugin = new @filter\n"
+            "plugin.value = 7\n"
+            "plugin.value\n"
+            "default:\n"
+            "Plugin param filter\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "Plugin plugin = new @filter\n"
+                                                  "plugin.value = 7\n"
+                                                  "plugin.value\n"
+                                                  "default:\n"
+                                                  "Plugin param filter\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{7}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectFieldAccessRejectsNullReference)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "Plugin plugin\n"
+            "plugin.value\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"plugin.ulb\"\n"
+                                                  "init:\n"
+                                                  "Plugin plugin\n"
+                                                  "plugin.value\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) interpreter.interpret(Section::INITIALIZE);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_STREQ("null object reference", error.what());
+                throw;
+            }
+        },
+        std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, cleanParameterApisBindByRawName)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"
@@ -1842,7 +1962,7 @@ TEST(TestExtendedInterpreter, imageMethodRuntimeBackstopsRejectBadCalls)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
-TEST(TestExtendedInterpreter, unsupportedObjectFieldAccessFailsClearly)
+TEST(TestExtendedInterpreter, builtinObjectFieldAccessFailsClearly)
 {
     semantic::BuiltinRegistry registry{semantic::default_builtin_registry()};
     const semantic::SemanticType *bool_type{registry.find_type("bool")};
@@ -1863,7 +1983,19 @@ TEST(TestExtendedInterpreter, unsupportedObjectFieldAccessFailsClearly)
                                                   "endparam\n"),
         interpreter_options};
 
-    expect_unsupported(interpreter, Section::INITIALIZE, "MemberAccessNode");
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) interpreter.interpret(Section::INITIALIZE);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_STREQ("expected object value", error.what());
+                throw;
+            }
+        },
+        std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, unsupportedClassCastFailsClearly)

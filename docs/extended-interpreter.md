@@ -195,18 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. User class field access and assignment.
-    - Implement lvalues for object fields, including visibility rules already
-      validated by semantic analysis.
-    - Allow member reads/writes on plug-in and user class instances.
-    - Preserve object identity for by-reference use and assignments.
-    - Define null-reference behavior for field and method access using clear
-      runtime errors.
-    - Tests: field read/write, copied object references, private member
-      access remains a semantic error, null access fails clearly, and
-      assignment through fields works.
-
-2. User class method dispatch.
+1. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -215,14 +204,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-3. Static class methods and constants.
+2. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-4. User constructors and casts.
+3. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,
