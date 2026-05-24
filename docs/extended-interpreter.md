@@ -7,15 +7,69 @@
 - Defer object/class execution: `new`, member access, methods,
   inheritance, casts, and plug-in object instantiation remain
   unsupported, but imports are resolved before interpretation.
+- Treat the existing `Formula` interface as the BASIC formula execution
+  surface. Extended execution needs a separate value-aware interpreter
+  facade.
 - Semantics source: UF6 docs under `docs/uf6`, especially
   `variables.txt`, `types.txt`, `type-compatibility.txt`, `arrays.txt`,
   `dynamic-arrays.txt`, `loops.txt`, `functions.txt`,
   `function-arguments.txt`, `parameters.txt`, `parameter-blocks.txt`,
   section docs, and `importing-classes.txt`.
 
-## Key Changes
+## Current Foundation
+- The extended parser already accepts the syntax needed by this plan:
+  typed declarations, arrays, dynamic array calls, statement blocks,
+  loops, returns, functions, function arguments, parameter references,
+  predefined-symbol references, literals, member access, calls, casts,
+  `new`, class syntax, imports, switch, perturb, `final`, `transform`,
+  visibility sections, and kind-specific section ordering.
+- The parser already rejects malformed syntax, invalid section order and
+  cardinality, invalid entry-kind section use, unknown predefined-symbol
+  names, and assignment to globally read-only predefined symbols.
+- The loader/reference layer already records import metadata, source
+  filenames, class references, entry references, resolved references,
+  import diagnostics, and retained imported class ASTs. Retention is lazy:
+  only referenced imported classes are kept.
+- The semantic analyzer already validates extended formulas and resolved
+  extended parameter sets. It checks names, types, duplicate symbols,
+  calls, conversions, returns, arrays, dynamic-array calls, class bases,
+  inheritance cycles, member access, `new`, casts, builtin `Image`, section
+  rules, predefined-symbol context, formula kind compatibility, saved
+  parameters, enums, function parameters, plug-in parameters, nested
+  plug-in assignments, and complete retained reference graphs.
+- The semantic analyzer is diagnostic-only. It does not mutate ASTs, create
+  a typed semantic model, execute formulas, or generate code.
+- Extended interpreter and extended compiler support do not exist yet. The
+  current interpreter/compiler remain BASIC-oriented and reject unsupported
+  extended AST nodes.
+
+## Interpreter Work
 - Add `formula::Value`: `monostate`, `bool`, `int`, `double`,
   `Complex`, `Color`, `std::string`, `ArrayValue`.
+- Add a C++17 `ExtendedInterpreter` facade for interpreting one
+  extended formula entry:
+
+  ```cpp
+  class ExtendedInterpreter
+  {
+  public:
+      ExtendedInterpreter(FileEntry entry, ExtendedInterpreterOptions options);
+
+      const std::vector<Diagnostic> &diagnostics() const;
+      bool ok() const;
+
+      void set_value(std::string_view name, Value value);
+      Value value(std::string_view name) const;
+
+      Value interpret(Section section);
+  };
+  ```
+
+  The constructor should run the cold pipeline for one entry: parse,
+  resolve referenced files/classes, and analyze semantics. `interpret`
+  runs one section and fails if diagnostics contain errors. The facade owns
+  formula evaluation state, but not image rendering, pixel scheduling,
+  tiling, threading, or layer orchestration.
 - Add public value-aware APIs while preserving current `Complex`
   wrappers:
   - `Formula::set_value(std::string_view, Value)`
@@ -25,10 +79,11 @@
     compatible.
 - Extend `Section` with `FINAL` and `TRANSFORM`; wire `get_section` and
   interpreter dispatch for coloring/transformation entries.
-- Add an import-loading pass before interpreter construction: call
-  `Options::file_importer` for imported file text, preprocess and parse
-  imported entries enough to collect class declarations and import
-  metadata. Retain and diagnose referenced imported class ASTs only.
+- Reuse the existing import-loading and reference-resolution layer before
+  interpreter construction. Imported files are already parsed and indexed
+  enough to collect class declarations and import metadata. Referenced
+  imported class ASTs are retained and diagnosed by existing load and
+  semantic passes.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
@@ -105,13 +160,192 @@
     `interpret_value`; `transform` mutates `#pixel`/`#solid`.
 - Imports:
   - `import "file"` is not interpreted as a runtime statement.
-  - Imported files are indexed before consistency/type checks. Only
-    referenced imported class ASTs are retained and diagnosed.
+  - Imported files are indexed before semantic checks. Only referenced
+    imported class ASTs are retained and diagnosed.
   - Import order is preserved for later class lookup: last imported file
     wins; an ancestor file in `class X(File.ufm:Base)` is treated as an
     implicit import before explicit imports.
   - Import edges, resolved class references, retained imported ASTs, and
     diagnostics are exposed as load metadata.
+
+## Implementation Slices
+Each slice should leave BASIC behavior unchanged and should run the project
+workflow before being considered complete.
+
+1. Runtime value model.
+   - Add `Value`, `ArrayValue`, `ColorValue`, and `ImageValue` storage
+     types for the extended interpreter.
+   - Add helpers for value type names, equality, truthiness, numeric
+     promotion, assignment conversion, default construction, and
+     formatting.
+   - Keep this independent from the existing `Complex` interpreter state.
+   - Tests: default values, numeric conversions, invalid conversions,
+     truthiness, color non-conversion, and formatted runtime messages.
+
+2. Runtime frame and lvalue model.
+   - Add an extended runtime state object with formula scope, local scope
+     stack, function-call frames, parameter values, predefined values, and
+     runtime messages.
+   - Add an lvalue handle that can refer to scalar variables, array
+     elements, by-reference arguments, and writable predefined symbols.
+   - Preserve source spelling for user variables while using semantic
+     lookup rules for builtins and predefined symbols.
+   - Tests: set/get variable values, local shadowing, missing value
+     defaults, lvalue assignment, and assignment through by-reference
+     handles.
+
+3. `ExtendedInterpreter` facade shell.
+   - Add the public C++17 facade header and implementation.
+   - Constructor stores the `FileEntry`, options, parsed AST, loaded file
+     graph, reference metadata, semantic diagnostics, and runtime state.
+   - `diagnostics()` returns the combined parse, resolution, and semantic
+     diagnostics as a vector reference.
+   - `ok()` returns false when any diagnostic is an error.
+   - `interpret` rejects execution when diagnostics contain errors.
+   - Tests: parse failure blocks execution, missing reference blocks
+     execution, semantic failure blocks execution, empty valid section runs.
+
+4. Section identity and dispatch.
+   - Extend the public section enum or add an extended section enum for
+     `global`, `init`, `loop`, `bailout`, `perturbinit`, `perturbloop`,
+     `final`, and `transform`.
+   - Map entry kind plus requested section to the correct AST field.
+   - Run `global` once before other sections when required by the caller
+     contract, or expose it as an explicit section if automatic execution
+     is not desired.
+   - Tests: fractal, coloring, transformation, and class section lookup;
+     invalid section for entry kind; no-op missing section.
+
+5. Literal and basic expression evaluation.
+   - Interpret numeric, bool, string, color, and typed literals.
+   - Interpret identifiers, parameter references, predefined-symbol
+     references, parenthesized expressions, unary operators, binary
+     arithmetic, comparisons, logical operators, power, and assignment.
+   - Preserve short-circuit behavior for logical operators.
+   - Tests: each literal type, promotion, comparison results,
+     short-circuit through a documented runtime note until user functions
+     can create observable side effects, and invalid assignment targets.
+
+6. Declarations and scalar scope.
+   - Execute typed scalar declarations with default values and optional
+     initializer conversion.
+   - Support untyped assignment to existing variables while keeping the
+     existing BASIC-compatible unknown scalar behavior only where it is
+     still valid.
+   - Maintain block-local lifetimes for nested statement blocks.
+   - Tests: scalar declarations, initializer conversion, invalid runtime
+     conversion, block shadowing, and formula-scope persistence.
+
+7. Statement execution.
+   - Execute statement sequences, `if`, `elseif`, `else`, `while`,
+     `repeat/until`, and top-level `return`.
+   - Add a configurable hard loop guard with a default of 1000000
+     iterations per loop.
+   - Represent section return as an internal control-flow result, not a
+     thrown public exception.
+   - Tests: nested blocks, branch selection, loop execution, repeat
+     executes once, loop guard failure, and top-level return value.
+
+8. Function execution.
+   - Collect user function declarations before section execution.
+   - Execute functions with typed return values, local frames, recursion,
+     argument conversion, `const` arguments, and by-reference arguments.
+   - Reject mutation through `const` parameters at runtime as a backstop to
+     semantic validation.
+   - Tests: forward calls, recursion, local variables, return conversion,
+     missing return backstop, by-reference mutation, and const mutation
+     rejection.
+
+9. Static arrays.
+   - Allocate static arrays from declaration dimensions.
+   - Flatten multidimensional indexes deterministically.
+   - Support element reads/writes and whole-array copy when element type
+     and dimensions match.
+   - Add bounds diagnostics as runtime errors.
+   - Tests: scalar element access, multidimensional flattening, bounds
+     failure, element assignment conversion, and valid/invalid array copy.
+
+10. Dynamic arrays.
+    - Allocate dynamic arrays with length zero.
+    - Implement `setLength(array, n)` and `length(array)`.
+    - Resize with default initialization for new elements.
+    - Reject whole-array assignment for dynamic arrays unless later docs
+      require a different rule.
+    - Tests: initial length, resizing up/down, initialized new values,
+      scalar argument rejection backstop, static array rejection backstop,
+      and dynamic copy rejection.
+
+11. Builtin functions and color operations.
+    - Move existing math builtins behind value-aware dispatch.
+    - Add procedural UF builtins: `rgb`, `rgba`, `hsl`, `hsla`, `red`,
+      `green`, `blue`, `alpha`, `hue`, `sat`, `lum`, `random`, `atan2`,
+      `isNaN`, `isInf`, and `print`.
+    - Keep BASIC one-argument complex builtin behavior intact through the
+      existing interpreter path.
+    - Tests: math builtins, color construction/extraction, random seed
+      policy, print messages, arity backstops, and invalid argument types.
+
+12. Parameters and predefined symbols.
+    - Initialize `@` parameters from default metadata and host overrides.
+    - Initialize documented predefined symbols from host environment state.
+    - Allow writes only to semantically writable predefined symbols as a
+      runtime backstop.
+    - Tests: default parameter values, host parameter overrides, `#pixel`,
+      `#z`, `#index`, `#color`, `#solid`, read-only write rejection, and
+      transform writes to `#pixel` and `#solid`.
+
+13. Section result rules.
+    - Apply section-specific result conversion during interpretation.
+    - `bailout` returns truthiness.
+    - `final` returns a color or numeric result for the caller.
+    - `transform` returns no meaningful value and communicates through
+      predefined-symbol mutation.
+    - Perturb sections follow fractal-style numeric behavior until later
+      compiler/runtime work needs a richer contract.
+    - Tests: bailout true/false, final color, final numeric value,
+      transform mutation, and invalid result conversion backstops.
+
+14. Unsupported object/class runtime boundary.
+    - Keep class declarations, imports, and semantic validation as current
+      pre-runtime work.
+    - At runtime, reject unsupported object construction, casts, field
+      access, method calls, inheritance behavior, and plug-in object
+      instantiation with clear unsupported-node messages.
+    - Allow only builtin object operations explicitly implemented by later
+      slices.
+    - Tests: unsupported `new`, casts, member access, method calls, and
+      plug-in object use fail clearly without crashing.
+
+15. Builtin `Image` runtime.
+    - Add host-bindable `ImageValue` handles.
+    - Initialize `Image` parameters to empty image handles when no host
+      image is supplied.
+    - Implement documented `Image` fields and methods from the UF6 image
+      parameter docs.
+    - Keep unsupported documented operations explicit until implemented.
+    - Tests: empty default image, host-bound image, supported fields,
+      supported methods, arity/type backstops, and unknown member backstop.
+
+16. Parameter-set binding bridge.
+    - Add helper code that constructs one `ExtendedInterpreter` per
+      referenced formula in a resolved extended parameter set.
+    - Bind saved fractal, coloring, transform, function, plug-in, and image
+      parameters into each interpreter runtime state after semantic
+      analysis succeeds.
+    - Do not add pixel orchestration here; return prepared interpreters or
+      formula-evaluation objects to the client.
+    - Tests: saved value binding, layer-specific values, function parameter
+      targets, plug-in nested values, image parameters, and diagnostics
+      blocking preparation.
+
+17. Regression and compatibility pass.
+    - Ensure existing BASIC parser, interpreter, and compiler tests keep
+      using the current `Formula` interface.
+    - Add explicit tests proving extended interpreter changes do not alter
+      BASIC unknown-variable, builtin-call, section, and compiler behavior.
+    - Confirm unsupported extended compiler behavior remains unchanged.
+    - Tests: existing workflow plus focused compatibility tests for BASIC
+      formula execution and BASIC compilation.
 
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and
@@ -135,13 +369,14 @@
 - Tests for import loading: chained imports, import order, missing file,
   public import metadata, referenced AST retention, and syntax errors in
   referenced imported classes.
+- Tests that `ExtendedInterpreter` refuses to run when parse, resolution, or
+  semantic diagnostics contain errors.
 - Regression: existing basic interpreter tests still pass unchanged.
 
 ## Assumptions
 - Scope is procedural first, per user choice.
-- `import` is handled by a pre-interpreter load/parse pass; imported
-  class bodies are retained and diagnosed only when referenced, and
-  object execution remains out of scope.
+- `import` handling, reference resolution, and retained imported class
+  diagnostics are reused from the existing loader and semantic analyzer.
 - Objects/classes remain unsupported in interpreter and throw clear
   runtime errors if evaluated.
 - Uninitialized array reads are deterministic zero/default in this
