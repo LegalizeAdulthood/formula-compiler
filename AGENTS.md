@@ -13,3 +13,5 @@
 - `next` means implement next slice and `msg`
 - Keep the copyright comment year range current when editing source files
 - New files get a copyright comment at the top like existing files
+- Cover all modifications with tests
+- Implementation classes only use inline methods for 1-line functions
