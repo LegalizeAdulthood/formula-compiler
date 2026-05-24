@@ -870,24 +870,117 @@ TEST(TestExtendedInterpreter, preparesLayerSpecificParameterSetInterpreters)
 
 TEST(TestExtendedInterpreter, preparesImageFunctionAndPluginParameterBindings)
 {
+    const std::string body{"import \"plugin.ulb\"\n"
+                           "init:\n"
+                           "1\n"
+                           "default:\n"
+                           "Image param source\n"
+                           "endparam\n"
+                           "complex func fn1\n"
+                           "endfunc\n"
+                           "Plugin param plugin\n"
+                           "endparam\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"formula.ufm",
+            "Mandelbrot {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "1\n"
+            "default:\n"
+            "Image param source\n"
+            "endparam\n"
+            "complex func fn1\n"
+            "endfunc\n"
+            "Plugin param plugin\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
     parameter::ParameterReferenceSet references;
-    references.resolved.push_back(resolved_parameter_reference("formula.ufm", "Mandelbrot",
-        "init:\n"
-        "1\n"
-        "default:\n"
-        "Image param source\n"
-        "endparam\n"
-        "complex func fn1\n"
-        "endfunc\n",
-        parser::EntryKind::FRACTAL, {{"p_source", "source.png"}, {"f_fn1", "sin"}, {"p_plugin.p_power", "2.0"}}));
+    references.resolved.push_back(
+        resolved_parameter_reference("formula.ufm", "Mandelbrot", body, parser::EntryKind::FRACTAL,
+            {{"p_source", "source.png"}, {"f_fn1", "sin"}, {"p_plugin", "plugin.ulb:Plugin"},
+                {"p_plugin.p_power", "2.0"}}));
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
 
-    PreparedParameterSet prepared{prepare_parameter_interpreters(references, options())};
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, interpreter_options)};
 
     ASSERT_TRUE(prepared.ok());
     ASSERT_EQ(1U, prepared.formulas.size());
     EXPECT_EQ(Value{std::string{"sin"}}, prepared.formulas[0].interpreter.value("@fn1"));
-    EXPECT_EQ(Value{std::string{"2.0"}}, prepared.formulas[0].interpreter.value("@plugin.power"));
+    const Value plugin_value{prepared.formulas[0].interpreter.value("@plugin")};
+    ASSERT_EQ(ValueKind::PLUGIN, plugin_value.kind());
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(plugin_value.storage())};
+    ASSERT_TRUE(plugin);
+    EXPECT_EQ("Plugin", plugin->class_name);
+    ASSERT_EQ(1U, plugin->nested_values.size());
+    EXPECT_EQ("power", plugin->nested_values[0].first);
+    EXPECT_EQ(Value{std::string{"2.0"}}, plugin->nested_values[0].second);
     EXPECT_EQ(false, std::get<Value::ImagePtr>(prepared.formulas[0].interpreter.value("@source").storage())->empty);
+}
+
+TEST(TestExtendedInterpreter, preparesLayerSpecificPluginParameterBindings)
+{
+    const std::string body{"import \"plugin.ulb\"\n"
+                           "init:\n"
+                           "1\n"
+                           "default:\n"
+                           "Plugin param plugin\n"
+                           "endparam\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"formula.ufm",
+            "Mandelbrot {\n"
+            "import \"plugin.ulb\"\n"
+            "init:\n"
+            "1\n"
+            "default:\n"
+            "Plugin param plugin\n"
+            "endparam\n"
+            "}\n"},
+        {"plugin.ulb",
+            "class Plugin {\n"
+            "public:\n"
+            "int value\n"
+            "}\n"},
+    };
+    parameter::ParameterReferenceSet references;
+    parameter::ParameterResolvedReference first{resolved_parameter_reference("formula.ufm", "Mandelbrot", body,
+        parser::EntryKind::FRACTAL, {{"p_plugin", "plugin.ulb:Plugin"}, {"p_plugin.p_power", "2.0"}})};
+    first.reference.site.layer_index = 0;
+    parameter::ParameterResolvedReference second{resolved_parameter_reference("formula.ufm", "Mandelbrot", body,
+        parser::EntryKind::FRACTAL, {{"p_plugin", "plugin.ulb:Plugin"}, {"p_plugin.p_power", "3.0"}})};
+    second.reference.site.layer_index = 1;
+    references.resolved.push_back(std::move(first));
+    references.resolved.push_back(std::move(second));
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+
+    PreparedParameterSet prepared{prepare_parameter_interpreters(references, interpreter_options)};
+
+    ASSERT_TRUE(prepared.ok());
+    ASSERT_EQ(2U, prepared.formulas.size());
+    const Value::PluginPtr first_plugin{
+        std::get<Value::PluginPtr>(prepared.formulas[0].interpreter.value("@plugin").storage())};
+    const Value::PluginPtr second_plugin{
+        std::get<Value::PluginPtr>(prepared.formulas[1].interpreter.value("@plugin").storage())};
+    ASSERT_TRUE(first_plugin);
+    ASSERT_TRUE(second_plugin);
+    EXPECT_NE(first_plugin, second_plugin);
+    ASSERT_EQ(1U, first_plugin->nested_values.size());
+    ASSERT_EQ(1U, second_plugin->nested_values.size());
+    EXPECT_EQ(Value{std::string{"2.0"}}, first_plugin->nested_values[0].second);
+    EXPECT_EQ(Value{std::string{"3.0"}}, second_plugin->nested_values[0].second);
 }
 
 TEST(TestExtendedInterpreter, prepareParameterSetInterpretersBlocksDiagnostics)

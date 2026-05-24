@@ -195,20 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Translate parameter-set bindings.
-    - Replace the current string preservation for `p_plugin=File.ulb:Class`
-      and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
-    - Treat `p_` and `f_` only as parser/bridge input syntax. Translate them
-      into the clean interpreter APIs before runtime state is populated.
-    - Reuse the parameter-set reference resolver data so the bridge does not
-      reparse entries that are already resolved and retained.
-    - Preserve layer/transform site metadata and support independent plugin
-      object instances per prepared formula.
-    - Tests: parameter-set bridge binds plug-in selectors and nested saved
-      values as resolved runtime objects; separate layers get separate
-      object state.
-
-2. Parameter forwards.
+1. Parameter forwards.
     - Apply parameter forwards when translating old saved parameter names from
       parameter sets into current parameter bindings.
     - Do not expose forward syntax through the standalone interpreter API.
@@ -217,7 +204,7 @@ workflow before being considered complete.
       conflicting forwards remain diagnostics, and direct current-name binding
       bypasses forwards.
 
-3. Non-selectable plug-in binding.
+2. Non-selectable plug-in binding.
     - Treat `selectable=false` as a UI/binding flattening rule: standalone
       clients bind the visible child parameter names directly, while
       parameter-set translation maps saved child values into the non-selectable
@@ -227,7 +214,7 @@ workflow before being considered complete.
       class, direct child bindings update nested parameters, and parameter-set
       saved values translate correctly.
 
-4. Nested plug-in binding defaults.
+3. Nested plug-in binding defaults.
     - When a selected class has plug-in parameters of its own, create nested
       plug-in binding slots from its `default:` metadata.
     - Apply nested saved values from `set_plugin_parameter_value` and
@@ -237,7 +224,7 @@ workflow before being considered complete.
       scalar/image/function saved values are applied to the selected class,
       and missing nested selectors produce diagnostics.
 
-5. Construct plug-in instances.
+4. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -249,7 +236,7 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-6. User class field access and assignment.
+5. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
@@ -260,7 +247,7 @@ workflow before being considered complete.
       access remains a semantic error, null access fails clearly, and
       assignment through fields works.
 
-7. User class method dispatch.
+6. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -269,14 +256,14 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-8. Static class methods and constants.
+7. Static class methods and constants.
     - Implement `Class.method(...)` dispatch for static methods.
     - Implement class constant lookup, including inherited constants.
     - Tests: direct static method call, inherited static method lookup,
       direct class constant, inherited class constant, and invalid static
       member diagnostics/runtime backstops.
 
-9. User constructors and casts.
+8. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

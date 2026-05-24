@@ -2248,6 +2248,26 @@ void ExtendedInterpreter::set_plugin_parameter(std::string_view name, std::strin
 void ExtendedInterpreter::set_plugin_parameter_value(
     std::string_view plugin_name, std::string_view nested_name, Value value)
 {
+    clear_binding_diagnostics(std::string{plugin_name} + "." + std::string{nested_name});
+    const Value current{m_state.parameter_value(plugin_name)};
+    if (current.kind() == ValueKind::PLUGIN)
+    {
+        const Value::PluginPtr plugin{std::get<Value::PluginPtr>(current.storage())};
+        PluginValue updated{plugin ? *plugin : PluginValue{}};
+        const std::string key{nested_name};
+        const auto found{std::find_if(updated.nested_values.begin(), updated.nested_values.end(),
+            [&key](const auto &nested) { return nested.first == key; })};
+        if (found == updated.nested_values.end())
+        {
+            updated.nested_values.push_back({key, std::move(value)});
+        }
+        else
+        {
+            found->second = std::move(value);
+        }
+        m_state.set_parameter_value(plugin_name, make_plugin_value(std::move(updated)));
+        return;
+    }
     set_parameter(std::string{plugin_name} + "." + std::string{nested_name}, std::move(value));
 }
 
@@ -2498,12 +2518,19 @@ PreparedParameterSet prepare_parameter_interpreters(
                 const RuntimeParameterInfo *info{find_runtime_parameter(metadata, name)};
                 if (info != nullptr)
                 {
-                    Value value{parse_saved_parameter_value(info->type, parameter.value)};
-                    if (const std::optional<Value> enum_value{make_enum_parameter_value(*info, value)})
+                    if (is_runtime_plugin_parameter(interpreter.parameters(), name))
                     {
-                        value = *enum_value;
+                        interpreter.set_plugin_parameter(name, parameter.value);
                     }
-                    interpreter.set_parameter(name, std::move(value));
+                    else
+                    {
+                        Value value{parse_saved_parameter_value(info->type, parameter.value)};
+                        if (const std::optional<Value> enum_value{make_enum_parameter_value(*info, value)})
+                        {
+                            value = *enum_value;
+                        }
+                        interpreter.set_parameter(name, std::move(value));
+                    }
                 }
                 continue;
             }
@@ -2529,6 +2556,14 @@ PreparedParameterSet prepare_parameter_interpreters(
                 }
                 interpreter.set_plugin_parameter_value(path.substr(0, dot), nested_name, Value{parameter.value});
             }
+        }
+        if (!interpreter.ok())
+        {
+            for (const ExtendedInterpreterDiagnostic &diagnostic : interpreter.diagnostics())
+            {
+                result.diagnostics.push_back(diagnostic);
+            }
+            continue;
         }
 
         result.formulas.push_back(PreparedParameterFormula{
