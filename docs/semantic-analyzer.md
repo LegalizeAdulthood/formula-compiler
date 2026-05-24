@@ -80,7 +80,7 @@ fractal formula belongs to semantic analysis.
 If a diagnostic could belong to two stages, choose the earliest stage that has
 all information needed to report it accurately.
 
-## Proposed Entry Points
+## Public Entry Points
 
 Use two global functions for extended inputs:
 
@@ -95,9 +95,24 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(
     const ParameterSetSemanticContext &context);
 ```
 
-Both functions return diagnostics only. A future overload may return a
-`SemanticModel` when downstream stages need resolved symbols, member bindings,
-or expression types.
+Both analysis functions return diagnostics only.
+
+Use a separate metadata query when a host needs to inspect formula parameters:
+
+```cpp
+std::vector<FormulaParameterInfo> collect_formula_parameters(
+    const FormulaSections &formula,
+    const FormulaSemanticContext &context);
+```
+
+This query returns parameter type, source name, explicit-default presence, and
+plug-in classification. It does not validate the formula and does not mutate
+the parsed AST. Plug-in classification uses builtin descriptors and retained
+class context so standalone formula hosts can discover which parameters need
+plug-in bindings.
+
+A future overload may return a `SemanticModel` when downstream stages need
+resolved symbols, member bindings, or expression types.
 
 ## Analyzer Inputs
 

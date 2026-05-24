@@ -35,7 +35,7 @@ runtime-zero variables. BASIC parameter sets are flat parser-owned data.
 
 ## Public Entry Points
 
-The current public surface is diagnostic-only:
+The current public analysis surface is diagnostic-only:
 
 ```cpp
 std::vector<SemanticDiagnostic> analyze_formula(
@@ -50,6 +50,21 @@ std::vector<SemanticDiagnostic> analyze_parameter_set(
 
 The context supplies entry kind, retained imported classes, and builtin
 descriptors. The default builtin registry is used when no registry is supplied.
+
+The semantic analyzer also exposes a diagnostic-free formula parameter metadata
+query:
+
+```cpp
+std::vector<FormulaParameterInfo> collect_formula_parameters(
+    const ast::FormulaSections &formula,
+    const FormulaSemanticContext &context);
+```
+
+This returns each `default:` parameter type, source name, whether it has an
+explicit default, and whether the parameter is a plug-in parameter. Plug-in
+classification uses builtin descriptors and retained class context, so clients
+can discover parameters that require host plug-in binding before constructing
+an extended interpreter.
 
 ## Diagnostics
 

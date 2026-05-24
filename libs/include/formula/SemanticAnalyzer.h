@@ -159,6 +159,17 @@ struct ParameterSetSemanticContext
     std::vector<const RetainedFormulaClass *> retained_classes;
 };
 
+struct FormulaParameterInfo
+{
+    std::string type;
+    std::string name;
+    bool has_default{};
+    bool is_plugin{};
+};
+
+std::vector<FormulaParameterInfo> collect_formula_parameters(
+    const ast::FormulaSections &formula, const FormulaSemanticContext &context);
+
 std::vector<SemanticDiagnostic> analyze_formula(
     const ast::FormulaSections &formula, const FormulaSemanticContext &context);
 

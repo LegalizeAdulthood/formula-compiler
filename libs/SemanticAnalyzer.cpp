@@ -831,6 +831,27 @@ bool is_plugin_parameter_type(std::string_view type)
     return type == "Plugin" || type == "FormulaClass";
 }
 
+bool is_plugin_parameter_type(
+    std::string_view type, const BuiltinRegistry &builtins, const FormulaSemanticContext &context)
+{
+    if (is_plugin_parameter_type(type))
+    {
+        return true;
+    }
+    if (type == "Image" || builtins.find_type(type) || builtins.find_class(type))
+    {
+        return false;
+    }
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass && klass->reference.class_name == type)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool has_implicit_parameter_default(const ParameterMetadata::Param &param)
 {
     return param.type == "Image";
@@ -2588,6 +2609,21 @@ std::vector<SemanticDiagnostic> analyze_formula(
     check_retained_class_bases(diagnostics, builtins, context);
     check_retained_class_cycles(diagnostics, context);
     return diagnostics;
+}
+
+std::vector<FormulaParameterInfo> collect_formula_parameters(
+    const ast::FormulaSections &formula, const FormulaSemanticContext &context)
+{
+    const BuiltinRegistry &builtins{context.builtins ? *context.builtins : default_builtin_registry()};
+    const ParameterMetadata metadata{collect_parameter_metadata(formula)};
+    std::vector<FormulaParameterInfo> result;
+    result.reserve(metadata.params.size());
+    for (const ParameterMetadata::Param &param : metadata.params)
+    {
+        result.push_back(FormulaParameterInfo{
+            param.type, param.name, param.has_default, is_plugin_parameter_type(param.type, builtins, context)});
+    }
+    return result;
 }
 
 std::vector<SemanticDiagnostic> analyze_parameter_set(const parameter::ExtendedParameterEntry &,

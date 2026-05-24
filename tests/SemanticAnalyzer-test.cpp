@@ -56,6 +56,60 @@ TEST(TestSemanticAnalyzer, formulaAnalysisDoesNotMutateParsedFormula)
     EXPECT_EQ(before, trim_ws(to_string(loaded.ast->bailout)));
 }
 
+TEST(TestSemanticAnalyzer, collectFormulaParametersReportsDefaultsAndPlugins)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "float param power\n"
+                                            "default=2.0\n"
+                                            "endparam\n"
+                                            "Plugin param bailout\n"
+                                            "endparam\n"
+                                            "Image param source\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<FormulaParameterInfo> parameters{collect_formula_parameters(*loaded.ast, context)};
+
+    ASSERT_EQ(3U, parameters.size());
+    EXPECT_EQ("float", parameters[0].type);
+    EXPECT_EQ("power", parameters[0].name);
+    EXPECT_TRUE(parameters[0].has_default);
+    EXPECT_FALSE(parameters[0].is_plugin);
+    EXPECT_EQ("Plugin", parameters[1].type);
+    EXPECT_EQ("bailout", parameters[1].name);
+    EXPECT_FALSE(parameters[1].has_default);
+    EXPECT_TRUE(parameters[1].is_plugin);
+    EXPECT_EQ("Image", parameters[2].type);
+    EXPECT_EQ("source", parameters[2].name);
+    EXPECT_FALSE(parameters[2].is_plugin);
+}
+
+TEST(TestSemanticAnalyzer, collectFormulaParametersReportsRetainedClassPlugins)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("default:\n"
+                                            "Trap param trap\n"
+                                            "endparam\n",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    RetainedFormulaClass trap;
+    trap.reference.class_name = "Trap";
+    FormulaSemanticContext context;
+    context.retained_classes.push_back(&trap);
+
+    const std::vector<FormulaParameterInfo> parameters{collect_formula_parameters(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, parameters.size());
+    EXPECT_EQ("Trap", parameters[0].type);
+    EXPECT_EQ("trap", parameters[0].name);
+    EXPECT_TRUE(parameters[0].is_plugin);
+}
+
 TEST(TestSemanticAnalyzer, parameterSetAnalysisDoesNotMutateParsedParameters)
 {
     parameter::ExtendedParameterEntry parameters;

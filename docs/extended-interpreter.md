@@ -40,6 +40,9 @@
   plug-in assignments, and complete retained reference graphs.
 - The semantic analyzer is diagnostic-only. It does not mutate ASTs, create
   a typed semantic model, execute formulas, or generate code.
+- The semantic analyzer exposes `collect_formula_parameters` so hosts can
+  discover formula parameters, defaults, and plug-in parameter sites before
+  binding values for standalone formula interpretation.
 - The extended interpreter supports procedural runtime features and builtin
   `Image`. The extended compiler does not exist yet. The current
   interpreter/compiler remain BASIC-oriented and reject unsupported
@@ -182,6 +185,8 @@ workflow before being considered complete.
       parameter set. The API should accept the parameter name, resolved
       selected class entry, retained class AST/reference metadata, and
       nested saved values.
+    - Use `collect_formula_parameters` to let hosts discover which formula
+      parameters are plug-in parameters before supplying those bindings.
     - Keep string-only saved plug-in values as compatibility input, but
       convert them to resolved plug-in bindings before interpretation.
     - Tests: host-bound plug-in selector is visible as a runtime object,
