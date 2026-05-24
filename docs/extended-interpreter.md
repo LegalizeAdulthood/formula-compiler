@@ -64,6 +64,12 @@
       bool ok() const;
       const std::vector<FormulaParameterInfo> &parameters() const;
 
+      void set_parameter(std::string_view name, Value value);
+      void set_function_parameter(std::string_view name, std::string_view target);
+      void set_plugin_parameter(std::string_view name, std::string_view selector);
+      void set_plugin_parameter_value(
+          std::string_view plugin_name, std::string_view nested_name, Value value);
+
       void set_value(std::string_view name, Value value);
       Value value(std::string_view name) const;
 
@@ -75,10 +81,11 @@
   resolve referenced files/classes, analyze semantics, and collect parameter
   metadata. After construction, the client queries `parameters()` to discover
   settable scalar, image, function, and plug-in parameters, then binds runtime
-  values with `set_value`. `interpret` runs one section and fails if
-  diagnostics contain errors. The facade owns formula evaluation state, but
-  not image rendering, pixel scheduling, tiling, threading, or layer
-  orchestration.
+  parameter values through parameter-specific APIs. `set_value` is for
+  predefined symbols and formula/runtime state, not formula parameters.
+  `interpret` runs one section and fails if diagnostics contain errors. The
+  facade owns formula evaluation state, but not image rendering, pixel
+  scheduling, tiling, threading, or layer orchestration.
 - Add public value-aware APIs while preserving current `Complex`
   wrappers:
   - `Formula::set_value(std::string_view, Value)`
@@ -93,6 +100,10 @@
   enough to collect class declarations and import metadata. Referenced
   imported class ASTs are retained and diagnosed by existing load and
   semantic passes.
+- Change file import APIs to report missing files explicitly with
+  `std::optional<std::string>` instead of throwing for normal not-found
+  cases. This aligns formula import loading with `ParameterEntryResolver`,
+  which already returns `std::optional<FileEntry>`.
 - Keep compiler/JIT unchanged; only interpreter gains extended behavior.
 
 ## Runtime Semantics
@@ -103,6 +114,19 @@
   - `#name` resolves predefined/environment symbols using the same
     normalized names as `set_value`.
   - Unknown scalar reads keep current compatibility: zero value.
+- Parameters:
+  - Every formula parameter has an effective value before evaluation. Missing
+    host bindings use UF defaults: undeclared and untyped parameters are
+    complex `(0, 0)`, typed parameters use the declared type default, `Image`
+    parameters use an empty image, plug-in parameters use the explicit default
+    class or the base class, and function parameters use their documented
+    fallback function.
+  - Missing defaults are not runtime errors. Invalid defaults are parser,
+    resolver, or semantic diagnostics before execution.
+  - Plug-in selector resolution is eager. Defaults are resolved during
+    construction, host overrides are resolved when bound, and parameter-set
+    selectors are resolved while preparing interpreters. `interpret` never
+    performs lazy selector resolution.
 - Types:
   - Implement UF upward numeric conversion: `int -> float -> complex`.
   - Bool conversion to/from numeric works dynamically; color never
@@ -181,7 +205,26 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Clean parameter binding API.
+1. Optional formula file importer.
+    - Change `FormulaFileImporter` and parser `file_importer` options from
+      `std::string(std::string_view)` to
+      `std::optional<std::string>(std::string_view)`.
+    - Treat `std::nullopt` as `MISSING_IMPORT`.
+    - Stop catching all exceptions as normal missing-file control flow.
+    - Update tests and call sites.
+
+2. Binding diagnostics lifecycle.
+    - Separate construction diagnostics from post-construction binding
+      diagnostics.
+    - Make `ok()` reflect both construction and binding diagnostics.
+    - Make `interpret` refuse to run while any error diagnostic exists.
+    - Successful rebinding of one parameter clears stale diagnostics for that
+      parameter without clearing unrelated construction or binding errors.
+    - Tests: bad binding makes `ok()` false, rebinding fixes that parameter,
+      unrelated diagnostics remain, and `interpret` refuses while binding
+      diagnostics exist.
+
+3. Clean parameter binding API.
     - Add interpreter facade methods for binding formula parameters by source
       parameter name, without `@`, `p_`, or `f_` prefixes.
     - Keep `@name` as formula-language syntax only. Keep `p_` and `f_` as
@@ -199,17 +242,48 @@ workflow before being considered complete.
     - Tests: scalar, image, function, and plug-in parameter APIs bind by raw
       parameter name; prefixed names are not required by the facade.
 
-2. Plug-in runtime value shell.
+4. Effective parameter defaults.
+    - Initialize every parameter with its effective default before evaluation.
+    - Use documented defaults for omitted parameter values: complex `(0, 0)`,
+      type defaults for typed blocks, empty `Image`, base-class plug-in
+      default, and documented fallback functions.
+    - Resolve default plug-in selectors eagerly during construction through
+      imports and retained class metadata.
+    - Tests: omitted scalar, image, function, and plug-in defaults are usable
+      without host bindings; invalid default classes or function targets are
+      construction diagnostics.
+
+5. Function parameter binding and dispatch.
+    - Implement `set_function_parameter` for raw parameter names.
+    - Validate function targets at binding time and record binding diagnostics.
+    - Dispatch calls through function parameters to builtin or user functions
+      as allowed by semantic rules.
+    - Preserve global-section `const` function restrictions.
+    - Tests: default fallback functions, host function override, invalid
+      target diagnostics, builtin target call, user target call, and global
+      restriction enforcement.
+
+6. Enum parameter runtime values.
+    - Represent enum parameters as values that preserve selected label and
+      numeric index.
+    - Accept host binding by label or valid index.
+    - Support documented comparisons of enum parameters to strings.
+    - Tests: default enum selection, label binding, index binding, invalid
+      label/index diagnostics, and string comparison.
+
+7. Plug-in runtime value shell.
     - Add a runtime `PluginValue` or equivalent handle that stores the
       selected class reference, retained class AST pointer, nested saved
       parameter bindings, and optional initialized object state.
-    - Add default empty/null plug-in values for unbound plug-in parameters.
+    - Do not model an omitted plug-in value as unresolved. Every plug-in
+      parameter has an effective selected class from its explicit default or
+      base class.
     - Keep object state empty until `new @pluginParam` is implemented.
-    - Tests: default plug-in parameters are empty, host-provided descriptors
-      convert to `PluginValue`, and runtime messages describe missing object
+    - Tests: effective plug-in defaults create `PluginValue`, host overrides
+      replace selected class, and runtime messages describe missing object
       state clearly.
 
-3. Resolve standalone plug-in selectors.
+8. Resolve standalone plug-in selectors.
     - `set_plugin_parameter(name, selector)` accepts the same selector text
       used by parameter sets, such as `File.ulb:Class`.
     - The interpreter resolves selector strings through its configured
@@ -225,7 +299,7 @@ workflow before being considered complete.
       entry, parse error, kind mismatch, and nested parameter mismatch become
       diagnostics.
 
-4. Translate parameter-set bindings.
+9. Translate parameter-set bindings.
     - Replace the current string preservation for `p_plugin=File.ulb:Class`
       and `p_plugin.p_x=value` with resolved `PluginValue` bindings.
     - Treat `p_` and `f_` only as parser/bridge input syntax. Translate them
@@ -238,7 +312,26 @@ workflow before being considered complete.
       values as resolved runtime objects; separate layers get separate
       object state.
 
-5. Nested plug-in binding defaults.
+10. Parameter forwards.
+    - Apply parameter forwards when translating old saved parameter names from
+      parameter sets into current parameter bindings.
+    - Do not expose forward syntax through the standalone interpreter API.
+      Standalone clients bind current parameter names directly.
+    - Tests: old saved scalar value forwards into nested plug-in parameter,
+      conflicting forwards remain diagnostics, and direct current-name binding
+      bypasses forwards.
+
+11. Non-selectable plug-in binding.
+    - Treat `selectable=false` as a UI/binding flattening rule: standalone
+      clients bind the visible child parameter names directly, while
+      parameter-set translation maps saved child values into the non-selectable
+      plug-in's nested parameters.
+    - Keep the runtime model as a plug-in object with nested parameters.
+    - Tests: non-selectable plug-in defaults instantiate the base/default
+      class, direct child bindings update nested parameters, and parameter-set
+      saved values translate correctly.
+
+12. Nested plug-in binding defaults.
     - When a selected class has plug-in parameters of its own, create nested
       plug-in binding slots from its `default:` metadata.
     - Apply nested saved values from `set_plugin_parameter_value` and
@@ -248,7 +341,7 @@ workflow before being considered complete.
       scalar/image/function saved values are applied to the selected class,
       and missing nested selectors produce diagnostics.
 
-6. Construct plug-in instances.
+13. Construct plug-in instances.
     - Implement `new @pluginParam` for resolved plug-in parameters.
     - Allocate object state from the retained class AST: public/protected/
       private fields, default values, nested plug-in/image parameters, and
@@ -260,15 +353,18 @@ workflow before being considered complete.
     - Tests: `new @pluginParam` returns an object with initialized fields,
       missing plug-in binding fails clearly, and nested defaults are applied.
 
-7. User class field access and assignment.
+14. User class field access and assignment.
     - Implement lvalues for object fields, including visibility rules already
       validated by semantic analysis.
     - Allow member reads/writes on plug-in and user class instances.
     - Preserve object identity for by-reference use and assignments.
+    - Define null-reference behavior for field and method access using clear
+      runtime errors.
     - Tests: field read/write, copied object references, private member
-      access remains a semantic error, and assignment through fields works.
+      access remains a semantic error, null access fails clearly, and
+      assignment through fields works.
 
-8. User class method dispatch.
+15. User class method dispatch.
     - Implement method calls on plug-in and user class instances, including
       `this`, local scope, return conversion, by-ref/const args, and access
       to object fields.
@@ -277,9 +373,19 @@ workflow before being considered complete.
     - Tests: public method call, inherited method call, method mutating
       object state, by-ref args, const args, and return conversion.
 
-9. User constructors and casts.
+16. Static class methods and constants.
+    - Implement `Class.method(...)` dispatch for static methods.
+    - Implement class constant lookup, including inherited constants.
+    - Tests: direct static method call, inherited static method lookup,
+      direct class constant, inherited class constant, and invalid static
+      member diagnostics/runtime backstops.
+
+17. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
+    - Enforce constructor inheritance rules validated by semantic analysis,
+      including matching derived/ancestor constructor arguments and explicit
+      ancestor constructor calls.
     - Implement casts between object references according to the retained
       class inheritance graph; failed casts return an empty/null reference.
     - Tests: constructor arguments initialize fields, base-to-derived casts,
@@ -290,6 +396,9 @@ workflow before being considered complete.
   invalid conversions.
 - Tests for `@param`, `#pixel/#z/#index/#color/#solid`, and default
   param initialization.
+- Tests for clean parameter binding APIs, binding diagnostics, effective
+  defaults, function parameters, enum parameters, plug-in selectors, parameter
+  forwards, and non-selectable plug-ins.
 - Tests for `while`, `repeat/until`, loop guard, top-level and function
   `return`.
 - Tests for user functions: declaration after call, recursion, local
@@ -312,8 +421,8 @@ workflow before being considered complete.
 - Scope is procedural first, per user choice.
 - `import` handling, reference resolution, and retained imported class
   diagnostics are reused from the existing loader and semantic analyzer.
-- Objects/classes remain unsupported in interpreter and throw clear
-  runtime errors if evaluated.
+- Objects/classes remain unsupported until their implementation slices land;
+  until then, evaluated object/class nodes throw clear runtime errors.
 - Uninitialized array reads are deterministic zero/default in this
   interpreter, despite UF describing static array contents as
   indeterminate.

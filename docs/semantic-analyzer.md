@@ -129,6 +129,14 @@ It also checks whether saved values bind to real parameters, whether those
 values have compatible types, whether formula kinds are used in valid layer
 positions, and whether nested plug-in assignments match the selected class.
 
+Every formula parameter has an effective value before interpretation. Omitted
+defaults do not create undefined runtime parameters: untyped and undeclared
+parameters default to complex `(0, 0)`, typed parameters use type defaults,
+`Image` parameters use an empty image, plug-in parameters use their explicit
+default class or base class, and function parameters use documented fallback
+functions. Semantic analysis owns validation of effective defaults that depend
+on names, imports, function targets, or class compatibility.
+
 ## Diagnostics
 
 Add a semantic diagnostic type separate from parser diagnostics. Parser

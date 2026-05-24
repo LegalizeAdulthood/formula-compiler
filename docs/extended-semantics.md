@@ -150,6 +150,11 @@ It currently checks:
 `Image` parameters have an implicit empty default and do not require a saved
 parameter assignment.
 
+All formula parameters have effective defaults before runtime. Omitted scalar,
+image, plug-in, and function defaults are not interpreter-time undefined
+values. Any failure to resolve or validate an effective default is reported by
+the resolver or semantic analyzer before interpretation.
+
 Section cardinality and ordering are parser responsibilities. Invalid
 parameter-set layer structure should not reach semantic analysis.
 
