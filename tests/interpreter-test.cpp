@@ -167,7 +167,7 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaInterpreter, RuntimeInputs,
         RuntimeInputParam{"magxmag", {2.0, 3.0}}, RuntimeInputParam{"rotskew", {45.0, 0.25}},
         RuntimeInputParam{"ismand", {0.0, 0.0}}));
 
-TEST(TestFormulaInterpreter, DISABLED_ismandDefaultsToTrue)
+TEST(TestFormulaInterpreter, ismandDefaultsToTrue)
 {
     const FormulaPtr formula{create_formula("ismand", Options{})};
     ASSERT_TRUE(formula) << "formula should have parsed";
@@ -176,6 +176,28 @@ TEST(TestFormulaInterpreter, DISABLED_ismandDefaultsToTrue)
     const Complex result{formula->interpret(Section::BAILOUT)};
 
     EXPECT_EQ((Complex{1.0, 0.0}), result);
+}
+
+TEST(TestFormulaInterpreter, lastsqrDefaultsToZero)
+{
+    const FormulaPtr formula{create_formula("lastsqr", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{0.0, 0.0}), result);
+}
+
+TEST(TestFormulaInterpreter, randDefaultsToZeroUntilRandomStateIsImplemented)
+{
+    const FormulaPtr formula{create_formula("rand", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{0.0, 0.0}), result);
 }
 
 TEST(TestFormulaInterpreter, assignment)

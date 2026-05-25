@@ -69,6 +69,9 @@ ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
 {
     m_state.symbols["e"] = {std::exp(1.0), 0.0};
     m_state.symbols["pi"] = {std::atan2(0.0, -1.0), 0.0};
+    m_state.symbols["ismand"] = {1.0, 0.0};
+    m_state.symbols["lastsqr"] = {0.0, 0.0};
+    m_state.symbols["rand"] = {0.0, 0.0};
     m_state.symbols["_result"] = {0.0, 0.0};
 }
 

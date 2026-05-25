@@ -30,6 +30,9 @@ and predefined variables.
 - `cosxx(x + iy)` returns `cos(x) cosh(y) + i sin(x) sinh(y)`.
 - `sqr()` updates `lastsqr` with the argument modulus squared before
   returning the square.
+- `ismand` defaults to true, represented as `(1, 0)`.
+- `lastsqr` defaults to `(0, 0)`.
+- `rand` defaults to `(0, 0)` until per-formula random state is implemented.
 
 ## Gaps
 
@@ -48,8 +51,8 @@ the range `[0, 1)`. It should change each iteration. `srand()` should seed the
 random sequence.
 
 The current implementation seeds the C library RNG in `srand()`, but `rand`
-is only a normal symbol value. It is not generated, advanced, or tied to the
-seeded state.
+is only an initialized symbol value. It is not generated, advanced, or tied to
+the seeded state.
 
 The interpreter should use per-formula random state, not global C RNG state.
 
@@ -71,8 +74,8 @@ The existing `set_value` API can bind these values, but the interpreter does
 not make the runtime contract explicit. The plan should document and test the
 client-supplied values that must be present for complete image rendering.
 
-`ismand` has a documented default of true. The interpreter should initialize it
-to `(1, 0)` unless the client overrides it.
+`ismand` has a documented default of true and is initialized unless the client
+overrides it.
 
 ## Non-Gaps
 
@@ -84,28 +87,9 @@ to `(1, 0)` unless the client overrides it.
 - Parser diagnostics already cover unknown functions, bad builtin arity, and
   invalid assignment targets.
 
-## Test Status
-
-Interpreter tests now cover client-supplied predefined values through the
-existing `set_value` binding API.
-
-Disabled tests record the currently missing runtime semantics for:
-
-- `ismand` defaulting to true
-
-Enable those tests as each implementation slice closes the corresponding gap.
-
 ## Implementation Slices
 
-### 1. Initialize Documented Defaults
-
-- Initialize `ismand` to `(1, 0)`.
-- Initialize `lastsqr` to `(0, 0)`.
-- Decide whether initial `rand` is zero, client-supplied, or generated at
-  formula construction. Record that decision in this document before code.
-- Enable the disabled `ismand` interpreter test.
-
-### 2. Add Runtime Function Selectors
+### 1. Add Runtime Function Selectors
 
 - Add per-formula selector storage for `fn1`, `fn2`, `fn3`, and `fn4`.
 - Add a client API to bind each selector by BASIC builtin function name.
@@ -113,7 +97,7 @@ Enable those tests as each implementation slice closes the corresponding gap.
 - Keep default selector behavior as identity for backward compatibility.
 - Add tests for selected functions and invalid selector names.
 
-### 3. Add Per-Formula Random State
+### 2. Add Per-Formula Random State
 
 - Replace `srand()` global C RNG seeding with per-formula seed state.
 - Make `srand(seed)` reset that state and return the documented BASIC value
@@ -122,14 +106,14 @@ Enable those tests as each implementation slice closes the corresponding gap.
 - Advance `rand` once per iteration section execution.
 - Add deterministic tests that seed with `srand()` and verify repeatability.
 
-### 4. Document Runtime Input Contract
+### 3. Document Runtime Input Contract
 
 - Document which predefined variables are supplied by the client.
 - Keep `set_value` as the binding mechanism for complex predefined values.
 - Keep the existing round-trip tests for client-supplied predefined values
   passing.
 
-### 5. Keep JIT And GLSL In Sync
+### 4. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.

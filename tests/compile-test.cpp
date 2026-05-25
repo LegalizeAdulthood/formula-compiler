@@ -269,6 +269,19 @@ TEST(TestCompiledFormulaRun, basicCompileSectionDispatchIsUnchanged)
     EXPECT_EQ(0.0, formula->run(Section::BAILOUT).re);
 }
 
+TEST(TestCompiledFormulaRun, documentedRuntimeDefaultsCompile)
+{
+    const FormulaPtr formula{create_formula("ismand + lastsqr + rand", Options{})};
+    ASSERT_TRUE(formula);
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ(1.0, result.re);
+    EXPECT_EQ(0.0, result.im);
+}
+
 TEST(TestCompiledFormulaRun, extendedCompilerStillRejectsUnsupportedNodes)
 {
     Options options;
