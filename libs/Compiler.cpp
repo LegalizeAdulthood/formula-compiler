@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <random>
 #include <vector>
 
 #define ASMJIT_STORE(expr_)                       \
@@ -415,6 +416,47 @@ static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &sta
     return {};
 }
 
+static void seed_random(void *random, const void *seed_arg, void *rand_symbol)
+{
+    auto *generator{static_cast<std::mt19937 *>(random)};
+    const auto *seed{static_cast<const Complex *>(seed_arg)};
+    auto *rand{static_cast<Complex *>(rand_symbol)};
+    if (generator != nullptr && seed != nullptr)
+    {
+        generator->seed(static_cast<std::mt19937::result_type>(seed->re));
+    }
+    if (rand != nullptr)
+    {
+        *rand = {};
+    }
+}
+
+static CompileError call_srand(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm result)
+{
+    asmjit::x86::Mem seed_slot = comp.newStack(sizeof(Complex), alignof(Complex));
+    ASMJIT_CHECK(comp.movlpd(seed_slot, result));
+    asmjit::x86::Mem seed_slot_high = seed_slot.cloneAdjusted(sizeof(double));
+    ASMJIT_CHECK(comp.movhpd(seed_slot_high, result));
+
+    Complex &rand{get_symbol_storage(state, "rand")};
+    asmjit::x86::Gp random_ptr = comp.newIntPtr();
+    asmjit::x86::Gp seed_ptr = comp.newIntPtr();
+    asmjit::x86::Gp rand_ptr = comp.newIntPtr();
+    ASMJIT_CHECK(comp.mov(random_ptr, asmjit::imm(reinterpret_cast<std::uintptr_t>(state.random))));
+    ASMJIT_CHECK(comp.lea(seed_ptr, seed_slot));
+    ASMJIT_CHECK(comp.mov(rand_ptr, asmjit::imm(reinterpret_cast<std::uintptr_t>(&rand))));
+
+    asmjit::InvokeNode *invoke_node;
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(seed_random))};
+    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void, void *, const void *, void *>()));
+    invoke_node->setArg(0, random_ptr);
+    invoke_node->setArg(1, seed_ptr);
+    invoke_node->setArg(2, rand_ptr);
+
+    ASMJIT_CHECK(comp.xorpd(result, result));
+    return {};
+}
+
 void Compiler::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
@@ -439,6 +481,14 @@ void Compiler::visit(const FunctionCallNode &node)
     if (name == "ident")
     {
         // identity does nothing
+        return;
+    }
+    if (name == "srand")
+    {
+        if (const CompileError err = call_srand(comp, state, m_result.back()); err)
+        {
+            m_err = err;
+        }
         return;
     }
     if (name == "sqr")

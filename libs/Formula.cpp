@@ -113,6 +113,7 @@ ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
     m_ast(std::move(ast)),
     m_random(0U)
 {
+    m_state.random = &m_random;
     m_state.symbols["e"] = {std::exp(1.0), 0.0};
     m_state.symbols["pi"] = {std::atan2(0.0, -1.0), 0.0};
     m_state.symbols["ismand"] = {1.0, 0.0};

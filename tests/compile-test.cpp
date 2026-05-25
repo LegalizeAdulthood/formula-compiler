@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <complex>
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -458,6 +459,57 @@ TEST(TestCompiledFormulaRun, clientSeedRepeatsRandomSequence)
     };
 
     EXPECT_EQ(first_iteration(), first_iteration());
+}
+
+TEST(TestCompiledFormulaRun, srandRepeatsRandomSequence)
+{
+    const auto first_iteration = []
+    {
+        const FormulaPtr formula{create_formula("init:\n"
+                                                "srand(1234)\n"
+                                                "loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->compile();
+        formula->run(Section::INITIALIZE);
+        return formula->run(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(), first_iteration());
+}
+
+TEST(TestCompiledFormulaRun, srandOverridesClientSeed)
+{
+    const auto first_iteration = [](const std::uint32_t client_seed)
+    {
+        const FormulaPtr formula{create_formula("init:\n"
+                                                "srand(1234)\n"
+                                                "loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->set_random_seed(client_seed);
+        formula->compile();
+        formula->run(Section::INITIALIZE);
+        return formula->run(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(5678), first_iteration(8765));
+}
+
+TEST(TestCompiledFormulaRun, srandReturnsZeroAndResetsRand)
+{
+    const FormulaPtr formula{create_formula("init:\n"
+                                            "srand(1234)\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
+    formula->set_value("rand", {1.0, 2.0});
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::INITIALIZE)};
+
+    EXPECT_EQ((Complex{0.0, 0.0}), result);
+    EXPECT_EQ((Complex{0.0, 0.0}), formula->get_value("rand"));
 }
 
 TEST(TestCompiledFormulaRun, settingClientSeedResetsRandUntilIteration)

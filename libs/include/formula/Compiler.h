@@ -13,6 +13,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string>
 
 #define ASMJIT_CHECK(expr_)                       \
@@ -53,6 +54,7 @@ struct EmitterState
     SymbolTable symbols;
     FunctionSelectors functions;
     DataSection data;
+    std::mt19937 *random{};
 };
 
 using CompileError = std::optional<asmjit::Error>;
