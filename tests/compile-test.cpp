@@ -241,9 +241,9 @@ TEST(TestCompiledFormulaRun, identity)
     ASSERT_EQ(4.0, result.im);
 }
 
-TEST(TestCompiledFormulaRun, functionSelectorUsesIdDefault)
+TEST(TestCompiledFormulaRun, functionSelectorsUseIdDefaults)
 {
-    const FormulaPtr formula{create_formula("fn1(pi/2)", Options{})};
+    const FormulaPtr formula{create_formula("fn1(pi/2) + fn2(2) + fn3(1) + fn4(1)", Options{})};
     ASSERT_TRUE(formula) << "Formula should have parsed";
     ASSERT_TRUE(formula->get_section(Section::BAILOUT));
     ASSERT_TRUE(formula->compile());
@@ -251,7 +251,10 @@ TEST(TestCompiledFormulaRun, functionSelectorUsesIdDefault)
     const Complex result{formula->run(Section::BAILOUT)};
 
     EXPECT_EQ("sin", formula->get_function("fn1"));
-    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ("sqr", formula->get_function("fn2"));
+    EXPECT_EQ("sinh", formula->get_function("fn3"));
+    EXPECT_EQ("cosh", formula->get_function("fn4"));
+    EXPECT_NEAR(1.0 + 4.0 + std::sinh(1.0) + std::cosh(1.0), result.re, 1e-8);
     EXPECT_EQ(0.0, result.im);
 }
 
