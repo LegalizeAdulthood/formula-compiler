@@ -112,7 +112,9 @@ TEST(TestExtendedInterpreter, missingReferenceBlocksExecution)
         return files.at(std::string{filename});
     };
 
-    ExtendedInterpreter interpreter{formula_entry("global:\nMissing missing"), interpreter_options};
+    ExtendedInterpreter interpreter{formula_entry("global:\n"
+                                                  "Missing missing"),
+        interpreter_options};
 
     ASSERT_FALSE(interpreter.ok());
     ASSERT_EQ(1U, interpreter.diagnostics().size());
@@ -122,7 +124,9 @@ TEST(TestExtendedInterpreter, missingReferenceBlocksExecution)
 
 TEST(TestExtendedInterpreter, semanticFailureBlocksExecution)
 {
-    ExtendedInterpreter interpreter{formula_entry("int value\nvalue=\"text\""), options()};
+    ExtendedInterpreter interpreter{formula_entry("int value\n"
+                                                  "value=\"text\""),
+        options()};
 
     ASSERT_FALSE(interpreter.ok());
     ASSERT_EQ(1U, interpreter.diagnostics().size());
@@ -204,7 +208,9 @@ TEST(TestExtendedInterpreter, invalidSectionForEntryKindThrows)
 
 TEST(TestExtendedInterpreter, classEntriesDoNotDispatchRuntimeSections)
 {
-    ExtendedInterpreter interpreter{formula_entry("public:\nint value\n"), options(parser::EntryKind::CLASS)};
+    ExtendedInterpreter interpreter{formula_entry("public:\n"
+                                                  "int value\n"),
+        options(parser::EntryKind::CLASS)};
 
     ASSERT_TRUE(interpreter.ok());
 
@@ -240,7 +246,9 @@ TEST(TestExtendedInterpreter, interpretsLiteralValues)
 
 TEST(TestExtendedInterpreter, interpretsPredefinedSymbolReferences)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "#pixel"),
+        options()};
     ASSERT_TRUE(interpreter.ok());
     interpreter.set_value("#pixel", Value{Complex{1.0, 2.0}});
 
@@ -2341,7 +2349,9 @@ TEST(TestExtendedInterpreter, initializesPredefinedSymbols)
 
 TEST(TestExtendedInterpreter, hostPredefinedValueOverridesDefaultValue)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "#pixel"),
+        options()};
 
     ASSERT_TRUE(interpreter.ok());
     interpreter.set_value("#pixel", Value{Complex{1.0, 2.0}});
@@ -2376,7 +2386,9 @@ TEST(TestExtendedInterpreter, interpretsLogicalExpressions)
 
 TEST(TestExtendedInterpreter, interpretsAssignmentToWritablePredefinedSymbol)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\n#pixel=(1,2)"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "#pixel=(1,2)"),
+        options()};
 
     ASSERT_TRUE(interpreter.ok());
 
@@ -2386,7 +2398,9 @@ TEST(TestExtendedInterpreter, interpretsAssignmentToWritablePredefinedSymbol)
 
 TEST(TestExtendedInterpreter, readOnlyPredefinedSymbolAssignmentIsRejected)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\n#pi=4"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "#pi=4"),
+        options()};
 
     ASSERT_FALSE(interpreter.ok());
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
@@ -2436,8 +2450,12 @@ TEST(TestExtendedInterpreter, coloringWritesDirectColor)
 
 TEST(TestExtendedInterpreter, bailoutSectionReturnsTruthiness)
 {
-    ExtendedInterpreter false_interpreter{formula_entry("bailout:\n0"), options()};
-    ExtendedInterpreter true_interpreter{formula_entry("bailout:\n(0,1)"), options()};
+    ExtendedInterpreter false_interpreter{formula_entry("bailout:\n"
+                                                        "0"),
+        options()};
+    ExtendedInterpreter true_interpreter{formula_entry("bailout:\n"
+                                                       "(0,1)"),
+        options()};
 
     ASSERT_TRUE(false_interpreter.ok());
     ASSERT_TRUE(true_interpreter.ok());
@@ -2448,7 +2466,9 @@ TEST(TestExtendedInterpreter, bailoutSectionReturnsTruthiness)
 
 TEST(TestExtendedInterpreter, finalSectionReturnsNumericValue)
 {
-    ExtendedInterpreter interpreter{formula_entry("final:\n0.25"), options(parser::EntryKind::COLORING)};
+    ExtendedInterpreter interpreter{formula_entry("final:\n"
+                                                  "0.25"),
+        options(parser::EntryKind::COLORING)};
 
     ASSERT_TRUE(interpreter.ok());
 
@@ -2640,7 +2660,9 @@ TEST(TestExtendedInterpreter, imageParametersDefaultToEmptyImages)
 
     ASSERT_TRUE(interpreter.ok());
     EXPECT_EQ(Value{true}, interpreter.interpret(Section::INITIALIZE));
-    EXPECT_EQ(Value{0}, interpret_init("Image image\nimage.getWidth()"));
+    EXPECT_EQ(Value{0},
+        interpret_init("Image image\n"
+                       "image.getWidth()"));
 }
 
 TEST(TestExtendedInterpreter, imageMethodsReadHostBoundImageData)
@@ -3074,7 +3096,8 @@ TEST(TestExtendedInterpreter, interpretsColorArithmetic)
 
 TEST(TestExtendedInterpreter, finalSectionReturnsColorArithmetic)
 {
-    ExtendedInterpreter interpreter{formula_entry("final:\nrgba(0.25,0.5,0.75,1) + rgba(0.5,0.25,0.125,0.5)"),
+    ExtendedInterpreter interpreter{formula_entry("final:\n"
+                                                  "rgba(0.25,0.5,0.75,1) + rgba(0.5,0.25,0.125,0.5)"),
         options(parser::EntryKind::COLORING)};
 
     ASSERT_TRUE(interpreter.ok());
@@ -3101,7 +3124,9 @@ TEST(TestExtendedInterpreter, randomFunctionIsSeedDeterministic)
 
 TEST(TestExtendedInterpreter, printRecordsRuntimeMessages)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nprint(\"value=\", 7, \" color=\", rgb(1,0,0))"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "print(\"value=\", 7, \" color=\", rgb(1,0,0))"),
+        options()};
 
     ASSERT_TRUE(interpreter.ok());
     EXPECT_EQ(Value{}, interpreter.interpret(Section::INITIALIZE));
@@ -3111,7 +3136,9 @@ TEST(TestExtendedInterpreter, printRecordsRuntimeMessages)
 
 TEST(TestExtendedInterpreter, builtinArityErrorsBlockExecution)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nrgb(1,2)"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "rgb(1,2)"),
+        options()};
 
     ASSERT_FALSE(interpreter.ok());
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
@@ -3119,7 +3146,9 @@ TEST(TestExtendedInterpreter, builtinArityErrorsBlockExecution)
 
 TEST(TestExtendedInterpreter, builtinArgumentTypeErrorsBlockExecution)
 {
-    ExtendedInterpreter interpreter{formula_entry("init:\nred(1)"), options()};
+    ExtendedInterpreter interpreter{formula_entry("init:\n"
+                                                  "red(1)"),
+        options()};
 
     ASSERT_FALSE(interpreter.ok());
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);

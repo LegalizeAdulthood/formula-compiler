@@ -2616,7 +2616,11 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsRejectedColorArithmetic)
         parser::Options options;
         options.dialect = Dialect::EXTENDED;
         options.entry_kind = parser::EntryKind::COLORING;
-        const std::string body{"final:\ncolor bad = " + test_case.expression + "\nbad"};
+        // clang-format off
+        const std::string body{"final:\n"
+                               "color bad = " + test_case.expression + "\n"
+                               "bad"};
+        // clang-format on
         const LoadedFormula loaded{load_formula(body, options)};
         ASSERT_TRUE(loaded.ast);
         FormulaSemanticContext context;
