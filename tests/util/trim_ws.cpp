@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "trim_ws.h"
+#include <formula/test/trim_ws.h>
 
 namespace formula::test
 {

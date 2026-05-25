@@ -4,10 +4,10 @@
 //
 #include <formula/semantics/Simplifier.h>
 
-#include "function-call.h"
-#include "node-builders.h"
-#include "NodeFormatter.h"
-#include "trim_ws.h"
+#include <formula/test/function-call.h>
+#include <formula/test/node-builders.h>
+#include <formula/test/NodeFormatter.h>
+#include <formula/test/trim_ws.h>
 
 #include <formula/core/Node.h>
 

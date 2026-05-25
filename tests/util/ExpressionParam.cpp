@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include "ExpressionParam.h"
+#include <formula/test/ExpressionParam.h>
 
 namespace formula::test
 {

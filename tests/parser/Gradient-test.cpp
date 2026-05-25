@@ -4,7 +4,7 @@
 //
 #include <formula/parser/Gradient.h>
 
-#include <test_data.h>
+#include <formula/test/test_data.h>
 
 #include <gtest/gtest.h>
 
@@ -20,7 +20,7 @@ namespace
 
 std::string read_test_data(const std::filesystem::path &filename)
 {
-    std::ifstream input{std::filesystem::path{std::string{TEST_DATA}} / filename};
+    std::ifstream input{std::filesystem::path{std::string{formula::test::TEST_DATA}} / filename};
     std::ostringstream text;
     text << input.rdbuf();
     return text.str();

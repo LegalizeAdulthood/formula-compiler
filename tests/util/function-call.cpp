@@ -2,7 +2,7 @@
 //
 // Copyright 2025-2026 Richard Thomson
 //
-#include "function-call.h"
+#include <formula/test/function-call.h>
 
 namespace formula::test
 {

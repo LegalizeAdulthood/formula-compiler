@@ -6,8 +6,8 @@
 
 #include <formula/parser/ParseOptions.h>
 
-#include "ExpressionParam.h"
-#include "function-call.h"
+#include <formula/test/ExpressionParam.h>
+#include <formula/test/function-call.h>
 
 #include <gtest/gtest.h>
 

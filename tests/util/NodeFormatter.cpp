@@ -2,7 +2,7 @@
 //
 // Copyright 2025-2026 Richard Thomson
 //
-#include "NodeFormatter.h"
+#include <formula/test/NodeFormatter.h>
 
 #include <formula/core/Node.h>
 

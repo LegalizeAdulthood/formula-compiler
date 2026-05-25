@@ -6,61 +6,34 @@ include(GoogleTest)
 
 find_package(GTest CONFIG REQUIRED)
 
-# Build the formula data generator tool
-add_executable(generate-formula-data "generate-formula-data.cpp" )
-target_link_libraries(generate-formula-data PUBLIC formula)
-target_folder(generate-formula-data "Tools")
-
-# Generate formula data from id.frm at build time
-set(ID_FRM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/id.frm")
-set(FORMULA_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/formula-data.h")
-set(FORMULA_DATA_CPP "${CMAKE_CURRENT_BINARY_DIR}/formula-data.cpp")
 set(TEST_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
-set(TEST_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/test_data.h")
 
-file(GENERATE
-    OUTPUT "${TEST_DATA_H}"
-    CONTENT "#pragma once\n\n#include <string_view>\n\nconstexpr std::string_view TEST_DATA = R\"data(${TEST_DATA_DIR})data\";\n")
+function(configure_formula_test_library target)
+    target_link_libraries("${target}" PUBLIC test-formula-util GTest::gtest)
+    target_folder("${target}" "Tests/Libraries")
+endfunction()
 
-add_custom_command(
-    OUTPUT "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
-    COMMAND generate-formula-data
-        "${ID_FRM_FILE}"
-        "${FORMULA_DATA_H}"
-        "${FORMULA_DATA_CPP}"
-    DEPENDS ${ID_FRM_FILE} generate-formula-data
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating formula-data.h and formula-data.cpp from id.frm"
-    VERBATIM
+add_subdirectory(compiler)
+add_subdirectory(core)
+add_subdirectory(interpreter)
+add_subdirectory(parser)
+add_subdirectory(facade)
+add_subdirectory(semantics)
+add_subdirectory(translator)
+add_subdirectory(util)
+
+add_executable("test-formula")
+target_link_libraries("test-formula" PRIVATE
+    test-formula-compiler
+    test-formula-core
+    test-formula-facade
+    test-formula-interpreter
+    test-formula-parser
+    test-formula-semantics
+    test-formula-translator
+    test-formula-util
+    GTest::gtest_main
 )
-
-add_executable("test-formula"
-    "ExpressionParam.h" "ExpressionParam.cpp"
-    "node-builders.h"
-    "ExtendedInterpreter-test.cpp"
-    "ExtendedRuntime-test.cpp"
-    "FileEntry-test.cpp"
-    "FormulaEntry-test.cpp"
-    "${TEST_DATA_H}"
-    "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"
-    "formula-data-test.cpp"
-    "Gradient-test.cpp"
-    "NodeFormatter.h" "NodeFormatter.cpp"
-    "Parameter-test.cpp"
-    "function-call.h" "function-call.cpp"
-    "compile-test.cpp"
-    "interpreter-test.cpp"
-    "lexer-test.cpp"
-    "parse-id-formulas-test.cpp"
-    "parse-test.cpp"
-    "Preprocessor-test.cpp"
-    "SemanticAnalyzer-test.cpp"
-    "simplifier-test.cpp"
-    "trim_ws.h" "trim_ws.cpp"
-    "Value-test.cpp"
-)
-target_include_directories("test-formula" PRIVATE . ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries("test-formula" PUBLIC formula GTest::gtest_main)
 target_folder("test-formula" "Tests")
 
 gtest_discover_tests("test-formula")

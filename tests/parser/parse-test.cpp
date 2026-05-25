@@ -7,9 +7,9 @@
 #include <formula/facade/Formula.h>
 #include <formula/parser/ParseOptions.h>
 
-#include "ExpressionParam.h"
-#include "NodeFormatter.h"
-#include "trim_ws.h"
+#include <formula/test/ExpressionParam.h>
+#include <formula/test/NodeFormatter.h>
+#include <formula/test/trim_ws.h>
 
 #include <gtest/gtest.h>
 
