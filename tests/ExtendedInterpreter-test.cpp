@@ -2848,6 +2848,25 @@ TEST(TestExtendedInterpreter, declaredScalarsPersistInFormulaScope)
     EXPECT_EQ(Value{2}, interpreter.value("count"));
 }
 
+TEST(TestExtendedInterpreter, globalSectionStateIsSharedWithLaterSections)
+{
+    ExtendedInterpreter interpreter{formula_entry("global:\n"
+                                                  "int count=1\n"
+                                                  "int values[2]\n"
+                                                  "count=count+1\n"
+                                                  "values[0]=count\n"
+                                                  "values[1]=5\n"
+                                                  "init:\n"
+                                                  "count+values[0]+values[1]"),
+        options()};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ(Value{5}, interpreter.interpret(Section::PER_IMAGE));
+    EXPECT_EQ(Value{9}, interpreter.interpret(Section::INITIALIZE));
+    EXPECT_EQ(Value{2}, interpreter.value("count"));
+}
+
 TEST(TestExtendedInterpreter, declarationInitializerConversionBackstopRejectsInvalidRuntimeValue)
 {
     ExtendedInterpreter interpreter{formula_entry("init:\n"

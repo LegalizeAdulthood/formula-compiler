@@ -51,19 +51,13 @@ Import metadata:
 
 ## Implementation Slices
 
-1. Add interpreter tests for global-section state sharing.
-   - Execute `global:` first, then another legal section.
-   - Assert values declared and assigned in `global:` are visible when the
-     later section runs.
-   - Cover scalar and array readback.
-
-2. Add interpreter or semantic tests for global-section write protection.
+1. Add interpreter or semantic tests for global-section write protection.
    - Prefer semantic analyzer coverage if writes are rejected before runtime.
    - Add interpreter coverage only if a valid AST can still reach the runtime
      write-protection path.
    - Assert writes outside `global:` fail clearly.
 
-3. Reconcile `docs/extended-interpreter.md` test list.
+2. Reconcile `docs/extended-interpreter.md` test list.
     - Keep `color arithmetic` and `global read-only behavior` until the
       slices above are implemented.
     - Remove or reword `public import metadata`; it is not a documented UF6
