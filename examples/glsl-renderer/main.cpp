@@ -25,6 +25,7 @@ namespace
 
 constexpr int IMAGE_WIDTH{16};
 constexpr int IMAGE_HEIGHT{16};
+constexpr int SKIP_EXIT_CODE{77};
 
 const char *DEFAULT_FORMULA{"init:\n"
                             "  z = pixel\n"
@@ -39,24 +40,30 @@ struct GlfwSession
     {
         if (glfwInit() != GLFW_TRUE)
         {
-            throw std::runtime_error{"failed to initialize GLFW"};
+            skipped = true;
+            return;
         }
     }
 
     ~GlfwSession()
     {
-        glfwTerminate();
+        if (!skipped)
+        {
+            glfwTerminate();
+        }
     }
 
     GlfwSession(const GlfwSession &) = delete;
     GlfwSession(GlfwSession &&) = delete;
     GlfwSession &operator=(const GlfwSession &) = delete;
     GlfwSession &operator=(GlfwSession &&) = delete;
+
+    bool skipped{};
 };
 
 struct GlfwWindow
 {
-    GlfwWindow()
+    explicit GlfwWindow(bool &skipped)
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -65,7 +72,8 @@ struct GlfwWindow
         window = glfwCreateWindow(IMAGE_WIDTH, IMAGE_HEIGHT, "GLSL Renderer", nullptr, nullptr);
         if (window == nullptr)
         {
-            throw std::runtime_error{"failed to create an OpenGL 4.5 context"};
+            skipped = true;
+            return;
         }
         glfwMakeContextCurrent(window);
     }
@@ -339,13 +347,24 @@ std::string emit_default_shader()
     return formula::codegen::emit_shader(*ast);
 }
 
-void render_shader(const std::string &shader_source)
+bool render_shader(const std::string &shader_source)
 {
     const GlfwSession session;
-    const GlfwWindow window;
+    if (session.skipped)
+    {
+        return false;
+    }
+
+    bool skipped{};
+    const GlfwWindow window{skipped};
+    if (skipped)
+    {
+        return false;
+    }
+
     if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0)
     {
-        throw std::runtime_error{"failed to load OpenGL entry points"};
+        return false;
     }
 
     const ShaderObject shader{compile_compute_shader(shader_source)};
@@ -368,6 +387,7 @@ void render_shader(const std::string &shader_source)
     (void) parameters;
     std::cout << "Rendered " << IMAGE_WIDTH << "x" << IMAGE_HEIGHT << " GLSL smoke image.\n";
     std::cout << "First pixel: " << pixels[0] << ", " << pixels[1] << ", " << pixels[2] << ", " << pixels[3] << "\n";
+    return true;
 }
 
 } // namespace
@@ -376,8 +396,7 @@ int main()
 {
     try
     {
-        render_shader(emit_default_shader());
-        return 0;
+        return render_shader(emit_default_shader()) ? 0 : SKIP_EXIT_CODE;
     }
     catch (const std::exception &error)
     {

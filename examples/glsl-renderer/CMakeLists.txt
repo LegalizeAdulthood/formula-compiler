@@ -15,3 +15,8 @@ target_link_libraries(glsl-renderer PRIVATE
     OpenGL::GL
 )
 target_folder(glsl-renderer "Examples")
+
+add_test(NAME glsl-renderer-smoke COMMAND glsl-renderer)
+set_tests_properties(glsl-renderer-smoke PROPERTIES
+    SKIP_RETURN_CODE 77
+)
