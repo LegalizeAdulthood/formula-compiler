@@ -51,26 +51,14 @@ Import metadata:
 
 ## Implementation Slices
 
-1. Add interpreter tests for color arithmetic values.
-   - Assert exact component results for:
-     - addition
-     - subtraction
-     - multiplication by float
-     - division by float
-   - Include alpha in every expected value.
-   - Include one `final:` section test that returns a color arithmetic
-     expression.
-   - If needed, implement a color arithmetic path separate from numeric
-     arithmetic.
-
-2. Add runtime backstop tests for invalid color arithmetic.
+1. Add runtime backstop tests for invalid color arithmetic.
    - Use parameter rebinding or another existing runtime-only path to make a
      semantically valid expression receive an invalid runtime value.
    - Assert a clear runtime exception.
    - Keep semantic rejection tests as the primary coverage; runtime tests only
      cover defensive backstops.
 
-3. Add semantic analyzer tests for reading global variables elsewhere.
+2. Add semantic analyzer tests for reading global variables elsewhere.
    - Declare scalar and array values in `global:`.
    - Read them from `init:`, `loop:`, `final:`, and `transform:` as allowed by
      entry kind.
@@ -78,12 +66,12 @@ Import metadata:
    - If needed, record declarations made in `global:` in the formula-level
      symbol table before other sections are checked.
 
-4. Add semantic analyzer tests for writing global variables in `global:`.
+3. Add semantic analyzer tests for writing global variables in `global:`.
    - Declare scalar and array values in `global:`.
    - Assign to the scalar and array element inside `global:`.
    - Assert no diagnostics.
 
-5. Add semantic analyzer tests rejecting writes to global variables outside
+4. Add semantic analyzer tests rejecting writes to global variables outside
    `global:`.
    - For fractal formulas, reject writes from `init:` and `loop:`.
    - For coloring formulas, reject writes from `init:`, `loop:`, and `final:`.
@@ -92,19 +80,19 @@ Import metadata:
    - If needed, mark symbols declared in `global:` as read-only when checking
      all non-global sections.
 
-6. Add interpreter tests for global-section state sharing.
+5. Add interpreter tests for global-section state sharing.
    - Execute `global:` first, then another legal section.
    - Assert values declared and assigned in `global:` are visible when the
      later section runs.
    - Cover scalar and array readback.
 
-7. Add interpreter or semantic tests for global-section write protection.
+6. Add interpreter or semantic tests for global-section write protection.
    - Prefer semantic analyzer coverage if writes are rejected before runtime.
    - Add interpreter coverage only if a valid AST can still reach the runtime
      write-protection path.
    - Assert writes outside `global:` fail clearly.
 
-8. Reconcile `docs/extended-interpreter.md` test list.
+7. Reconcile `docs/extended-interpreter.md` test list.
     - Keep `color arithmetic` and `global read-only behavior` until the
       slices above are implemented.
     - Remove or reword `public import metadata`; it is not a documented UF6

@@ -3062,6 +3062,26 @@ TEST(TestExtendedInterpreter, interpretsColorConstructionAndExtraction)
     EXPECT_EQ(Value{0.4}, interpret_init("alpha(rgba(0.1,0.2,0.3,0.4))"));
 }
 
+TEST(TestExtendedInterpreter, interpretsColorArithmetic)
+{
+    EXPECT_EQ((Value{ColorValue{0.75, 0.75, 0.875, 1.5}}),
+        interpret_init("rgba(0.25,0.5,0.75,1) + rgba(0.5,0.25,0.125,0.5)"));
+    EXPECT_EQ((Value{ColorValue{0.5, 0.375, -0.25, 0.5}}),
+        interpret_init("rgba(0.75,0.5,0.25,1) - rgba(0.25,0.125,0.5,0.5)"));
+    EXPECT_EQ((Value{ColorValue{0.5, 1.0, 1.5, 2.0}}), interpret_init("rgba(0.25,0.5,0.75,1) * 2"));
+    EXPECT_EQ((Value{ColorValue{0.25, 0.375, 0.5, 0.75}}), interpret_init("rgba(0.5,0.75,1,1.5) / 2"));
+}
+
+TEST(TestExtendedInterpreter, finalSectionReturnsColorArithmetic)
+{
+    ExtendedInterpreter interpreter{formula_entry("final:\nrgba(0.25,0.5,0.75,1) + rgba(0.5,0.25,0.125,0.5)"),
+        options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(interpreter.ok());
+
+    EXPECT_EQ((Value{ColorValue{0.75, 0.75, 0.875, 1.5}}), interpreter.interpret(Section::FINAL));
+}
+
 TEST(TestExtendedInterpreter, interpretsHslColorConstructionAndExtraction)
 {
     EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpret_init("hsl(0,1,0.5)"));

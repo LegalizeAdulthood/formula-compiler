@@ -158,6 +158,43 @@ Value numeric_binary(const Value &lhs, const Value &rhs, const std::string &op)
     throw std::runtime_error("invalid numeric operator: " + op);
 }
 
+ColorValue color_sum(ColorValue lhs, ColorValue rhs)
+{
+    return {lhs.red + rhs.red, lhs.green + rhs.green, lhs.blue + rhs.blue, lhs.alpha + rhs.alpha};
+}
+
+ColorValue color_difference(ColorValue lhs, ColorValue rhs)
+{
+    return {lhs.red - rhs.red, lhs.green - rhs.green, lhs.blue - rhs.blue, lhs.alpha - rhs.alpha};
+}
+
+ColorValue color_scale(ColorValue color, double scalar)
+{
+    return {color.red * scalar, color.green * scalar, color.blue * scalar, color.alpha * scalar};
+}
+
+std::optional<Value> color_binary(const Value &lhs, const Value &rhs, const std::string &op)
+{
+    if (lhs.kind() != ValueKind::COLOR && rhs.kind() != ValueKind::COLOR)
+    {
+        return std::nullopt;
+    }
+    if (op == "+" && lhs.kind() == ValueKind::COLOR && rhs.kind() == ValueKind::COLOR)
+    {
+        return Value{color_sum(std::get<ColorValue>(lhs.storage()), std::get<ColorValue>(rhs.storage()))};
+    }
+    if (op == "-" && lhs.kind() == ValueKind::COLOR && rhs.kind() == ValueKind::COLOR)
+    {
+        return Value{color_difference(std::get<ColorValue>(lhs.storage()), std::get<ColorValue>(rhs.storage()))};
+    }
+    if ((op == "*" || op == "/") && lhs.kind() == ValueKind::COLOR)
+    {
+        const double scalar{real_part(convert_value(rhs, ValueKind::FLOAT))};
+        return Value{color_scale(std::get<ColorValue>(lhs.storage()), op == "*" ? scalar : 1.0 / scalar)};
+    }
+    return std::nullopt;
+}
+
 ColorValue color_value(const Value &value)
 {
     if (value.kind() != ValueKind::COLOR)
@@ -1523,6 +1560,11 @@ public:
         if (op == "<" || op == "<=" || op == ">" || op == ">=" || op == "==" || op == "!=")
         {
             m_result = compare_values(left, right, op);
+            return;
+        }
+        if (const std::optional<Value> value{color_binary(left, right, op)})
+        {
+            m_result = *value;
             return;
         }
         m_result = numeric_binary(left, right, op);
