@@ -15,3 +15,4 @@ add_library(test-formula-util OBJECT
 )
 target_include_directories(test-formula-util PUBLIC include)
 target_link_libraries(test-formula-util PUBLIC formula::facade)
+target_folder(test-formula-util "Tests/Libraries")

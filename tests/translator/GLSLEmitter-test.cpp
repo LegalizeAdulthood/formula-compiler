@@ -54,27 +54,6 @@ void expect_complex_near(const Complex &expected, const Complex &actual)
     EXPECT_NEAR(expected.im, actual.im, 1.0e-12);
 }
 
-void validate_glsl_compute_shader(std::string_view name, std::string_view shader)
-{
-#ifdef FORMULA_GLSLANG_VALIDATOR
-    const std::filesystem::path path{std::filesystem::temp_directory_path() / (std::string{name} + ".comp")};
-    {
-        std::ofstream output{path};
-        ASSERT_TRUE(output);
-        output << shader;
-    }
-
-    const std::string command{"\"" FORMULA_GLSLANG_VALIDATOR "\" -S comp \"" + path.string() + "\""};
-    const int result{std::system(command.c_str())};
-    std::filesystem::remove(path);
-    EXPECT_EQ(0, result);
-#else
-    (void) name;
-    (void) shader;
-    GTEST_SKIP() << "glslangValidator not found";
-#endif
-}
-
 TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
 {
     const std::string shader{emit_basic_shader("init:\n"
@@ -685,6 +664,22 @@ TEST(TestGLSLEmitter, loweredFixturesMatchKnownInterpreterResults)
     }
 }
 
+#ifdef FORMULA_GLSLANG_VALIDATOR
+static void validate_glsl_compute_shader(std::string_view name, std::string_view shader)
+{
+    const std::filesystem::path path{std::filesystem::temp_directory_path() / (std::string{name} + ".comp")};
+    {
+        std::ofstream output{path};
+        ASSERT_TRUE(output);
+        output << shader;
+    }
+
+    const std::string command{"\"" FORMULA_GLSLANG_VALIDATOR "\" -S comp \"" + path.string() + "\""};
+    const int result{std::system(command.c_str())};
+    std::filesystem::remove(path);
+    EXPECT_EQ(0, result);
+}
+
 TEST(TestGLSLEmitter, validatesRepresentativeShadersWithGlslang)
 {
     struct ShaderFixture
@@ -718,6 +713,7 @@ TEST(TestGLSLEmitter, validatesRepresentativeShadersWithGlslang)
         validate_glsl_compute_shader(fixture.name, emit_basic_shader(fixture.body));
     }
 }
+#endif
 
 } // namespace
 
