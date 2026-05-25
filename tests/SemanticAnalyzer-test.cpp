@@ -2594,6 +2594,42 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsAllowedColorArithmetic)
     EXPECT_TRUE(diagnostics.empty());
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsRejectedColorArithmetic)
+{
+    struct Case
+    {
+        std::string expression;
+        std::string message;
+    };
+    const std::array<Case, 7> cases{{
+        {"2 * rgba(0.1,0.2,0.3,0.4)", "invalid color operator: int * color"},
+        {"rgba(0.1,0.2,0.3,0.4) + 2", "invalid color operator: color + int"},
+        {"rgba(0.1,0.2,0.3,0.4) - 2", "invalid color operator: color - int"},
+        {"rgba(0.1,0.2,0.3,0.4) * rgba(0.5,0.6,0.7,0.8)", "invalid color operator: color * color"},
+        {"rgba(0.1,0.2,0.3,0.4) / rgba(0.5,0.6,0.7,0.8)", "invalid color operator: color / color"},
+        {"rgba(0.1,0.2,0.3,0.4) % 2", "invalid color operator: color % int"},
+        {"rgba(0.1,0.2,0.3,0.4) ^ 2", "invalid color operator: color ^ int"},
+    }};
+
+    for (const Case &test_case : cases)
+    {
+        parser::Options options;
+        options.dialect = Dialect::EXTENDED;
+        options.entry_kind = parser::EntryKind::COLORING;
+        const std::string body{"final:\ncolor bad = " + test_case.expression + "\nbad"};
+        const LoadedFormula loaded{load_formula(body, options)};
+        ASSERT_TRUE(loaded.ast);
+        FormulaSemanticContext context;
+        context.entry_kind = parser::EntryKind::COLORING;
+
+        const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+        ASSERT_EQ(1U, diagnostics.size()) << test_case.expression;
+        EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
+        EXPECT_EQ(test_case.message, diagnostics.front().message);
+    }
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsColorFinalSectionResult)
 {
     parser::Options options;

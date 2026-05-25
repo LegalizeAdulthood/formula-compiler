@@ -2265,7 +2265,7 @@ private:
     }
 
     std::optional<SemanticTypeKind> color_binary_expression_type(
-        const std::string &op, SemanticTypeKind left, SemanticTypeKind right) const
+        const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
     {
         if (left != SemanticTypeKind::COLOR && right != SemanticTypeKind::COLOR)
         {
@@ -2279,7 +2279,16 @@ private:
         {
             return SemanticTypeKind::COLOR;
         }
+        report_invalid_color_operator(op, left, right);
         return SemanticTypeKind::ERROR;
+    }
+
+    void report_invalid_color_operator(const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+        diagnostic.message = "invalid color operator: " + type_name(left) + " " + op + " " + type_name(right);
+        m_diagnostics.push_back(std::move(diagnostic));
     }
 
     SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node)
