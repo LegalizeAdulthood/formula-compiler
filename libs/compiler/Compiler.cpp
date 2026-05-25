@@ -222,210 +222,85 @@ static CompileError call(asmjit::x86::Compiler &comp, RealFunction *fn, asmjit::
     return {};
 }
 
-#ifdef _WIN32
+static void call_complex_unary(std::uintptr_t function, const void *arg, void *result)
+{
+    auto *fn{reinterpret_cast<ComplexFunction *>(function)};
+    *static_cast<Complex *>(result) = fn(*static_cast<const Complex *>(arg));
+}
+
 static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
 {
-    // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
-    // Function signature: Complex* fn(Complex* return_slot, const Complex* arg)
-    // - RCX = pointer to return slot (caller allocates)
-    // - RDX = pointer to argument
-    // - Return value: RAX = RCX (pointer to return slot)
-
-    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-
-    // Allocate 16 bytes on stack for return value
-    asmjit::x86::Mem return_slot = comp.newStack(16, 16);
-
-    // Allocate 16 bytes on stack for argument
-    asmjit::x86::Mem arg_slot = comp.newStack(16, 16);
-
-    // Store result XMM register to argument slot (both low and high parts)
+    asmjit::x86::Mem result_slot = comp.newStack(sizeof(Complex), alignof(Complex));
+    asmjit::x86::Mem arg_slot = comp.newStack(sizeof(Complex), alignof(Complex));
     ASMJIT_CHECK(comp.movlpd(arg_slot, result));
-    asmjit::x86::Mem arg_slot_high = arg_slot.cloneAdjusted(8);
+    asmjit::x86::Mem arg_slot_high = arg_slot.cloneAdjusted(sizeof(double));
     ASMJIT_CHECK(comp.movhpd(arg_slot_high, result));
 
-    // Get addresses of the stack slots
-    asmjit::x86::Gp return_ptr = comp.newIntPtr();
-    asmjit::x86::Gp arg_ptr = comp.newIntPtr();
-    ASMJIT_CHECK(comp.lea(return_ptr, return_slot));
+    asmjit::x86::Gp function_ptr = comp.newUIntPtr();
+    asmjit::x86::Gp arg_ptr = comp.newUIntPtr();
+    asmjit::x86::Gp result_ptr = comp.newUIntPtr();
+    ASMJIT_CHECK(comp.mov(function_ptr, asmjit::imm(reinterpret_cast<std::uintptr_t>(fn))));
     ASMJIT_CHECK(comp.lea(arg_ptr, arg_slot));
+    ASMJIT_CHECK(comp.lea(result_ptr, result_slot));
 
-    // Create invoke node with signature: void* fn(void*, const void*)
     asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void *, void *, const void *>()));
-
-    // Set arguments: RCX = return_slot address, RDX = arg_slot address
-    invoke_node->setArg(0, return_ptr);
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(call_complex_unary))};
+    ASMJIT_CHECK(comp.invoke(
+        &invoke_node, target, asmjit::FuncSignature::build<void, std::uintptr_t, const void *, void *>()));
+    invoke_node->setArg(0, function_ptr);
     invoke_node->setArg(1, arg_ptr);
+    invoke_node->setArg(2, result_ptr);
 
-    // Load return value from return_slot back into result XMM register (both parts)
-    ASMJIT_CHECK(comp.movlpd(result, return_slot));
-    asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
-
+    ASMJIT_CHECK(comp.movlpd(result, result_slot));
+    asmjit::x86::Mem result_slot_high = result_slot.cloneAdjusted(sizeof(double));
+    ASMJIT_CHECK(comp.movhpd(result, result_slot_high));
     return {};
 }
-#else
-static CompileError call_unary(asmjit::x86::Compiler &comp, ComplexFunction *fn, asmjit::x86::Xmm result)
-{
-    // System V AMD64 ABI: Complex (16 bytes) passed by reference, returned by value in XMM registers
-    // Function signature: Complex fn(const Complex& arg)
-    // - Argument: RDI = pointer to Complex
-    // - Return: XMM0 = real part, XMM1 = imaginary part
-
-    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-
-    // Allocate 16 bytes on stack for argument
-    asmjit::x86::Mem arg_slot = comp.newStack(16, 16);
-
-    // Store result XMM register to argument slot (both low and high parts)
-    ASMJIT_CHECK(comp.movlpd(arg_slot, result));
-    asmjit::x86::Mem arg_slot_high = arg_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movhpd(arg_slot_high, result));
-
-    // Get address of the stack slot
-    asmjit::x86::Gp arg_ptr = comp.newIntPtr();
-    ASMJIT_CHECK(comp.lea(arg_ptr, arg_slot));
-
-    // Create invoke node with signature: (double, double) fn(uintptr_t)
-    // The function takes pointer to Complex, returns two doubles in XMM0, XMM1
-    asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<double, uintptr_t>()));
-
-    // Set argument: arg0 (RDI) = arg_ptr
-    invoke_node->setArg(0, arg_ptr);
-
-    // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
-    asmjit::x86::Xmm ret_real = comp.newXmmSd();
-    asmjit::x86::Xmm ret_imag = comp.newXmmSd();
-    invoke_node->setRet(0, ret_real);
-    invoke_node->setRet(1, ret_imag);
-
-    // Combine the two return values into result XMM register
-    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
-    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
-
-    return {};
-}
-#endif
 
 using ComplexBinOp = Complex(const Complex &lhs, const Complex &rhs);
 
-#ifdef _WIN32
+static void call_complex_binary(std::uintptr_t function, const void *left, const void *right, void *result)
+{
+    auto *fn{reinterpret_cast<ComplexBinOp *>(function)};
+    *static_cast<Complex *>(result) = fn(*static_cast<const Complex *>(left), *static_cast<const Complex *>(right));
+}
+
 static CompileError call_binary(
     asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
 {
-    // x64 MSVC ABI: Complex (16 bytes) is passed and returned by pointer
-    // Function signature: Complex* fn(Complex* return_slot, const Complex* left, const Complex* right)
-    // - RCX = pointer to return slot (caller allocates)
-    // - RDX = pointer to left argument
-    // - R8  = pointer to right argument
-    // - Return value: RAX = RCX (pointer to return slot)
-
-    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-
-    // Allocate 16 bytes on stack for return value
-    asmjit::x86::Mem return_slot = comp.newStack(16, 16);
-
-    // Allocate 16 bytes on stack for left argument
-    asmjit::x86::Mem left_slot = comp.newStack(16, 16);
-
-    // Allocate 16 bytes on stack for right argument
-    asmjit::x86::Mem right_slot = comp.newStack(16, 16);
-
-    // Store left XMM register (result) to left_slot
+    asmjit::x86::Mem result_slot = comp.newStack(sizeof(Complex), alignof(Complex));
+    asmjit::x86::Mem left_slot = comp.newStack(sizeof(Complex), alignof(Complex));
+    asmjit::x86::Mem right_slot = comp.newStack(sizeof(Complex), alignof(Complex));
     ASMJIT_CHECK(comp.movlpd(left_slot, result));
-    asmjit::x86::Mem left_slot_high = left_slot.cloneAdjusted(8);
+    asmjit::x86::Mem left_slot_high = left_slot.cloneAdjusted(sizeof(double));
     ASMJIT_CHECK(comp.movhpd(left_slot_high, result));
-
-    // Store right XMM register to right_slot
     ASMJIT_CHECK(comp.movlpd(right_slot, right));
-    asmjit::x86::Mem right_slot_high = right_slot.cloneAdjusted(8);
+    asmjit::x86::Mem right_slot_high = right_slot.cloneAdjusted(sizeof(double));
     ASMJIT_CHECK(comp.movhpd(right_slot_high, right));
 
-    // Get addresses of the stack slots
-    asmjit::x86::Gp return_ptr = comp.newIntPtr();
-    asmjit::x86::Gp left_ptr = comp.newIntPtr();
-    asmjit::x86::Gp right_ptr = comp.newIntPtr();
-    ASMJIT_CHECK(comp.lea(return_ptr, return_slot));
+    asmjit::x86::Gp function_ptr = comp.newUIntPtr();
+    asmjit::x86::Gp left_ptr = comp.newUIntPtr();
+    asmjit::x86::Gp right_ptr = comp.newUIntPtr();
+    asmjit::x86::Gp result_ptr = comp.newUIntPtr();
+    ASMJIT_CHECK(comp.mov(function_ptr, asmjit::imm(reinterpret_cast<std::uintptr_t>(fn))));
     ASMJIT_CHECK(comp.lea(left_ptr, left_slot));
     ASMJIT_CHECK(comp.lea(right_ptr, right_slot));
+    ASMJIT_CHECK(comp.lea(result_ptr, result_slot));
 
-    // Create invoke node with signature: void* fn(void*, const void*, const void*)
     asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(
-        comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<void *, void *, const void *, const void *>()));
-
-    // Set arguments: RCX = return_slot, RDX = left_slot, R8 = right_slot
-    invoke_node->setArg(0, return_ptr);
+    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(call_complex_binary))};
+    ASMJIT_CHECK(comp.invoke(
+        &invoke_node, target, asmjit::FuncSignature::build<void, std::uintptr_t, const void *, const void *, void *>()));
+    invoke_node->setArg(0, function_ptr);
     invoke_node->setArg(1, left_ptr);
     invoke_node->setArg(2, right_ptr);
+    invoke_node->setArg(3, result_ptr);
 
-    // Load return value from return_slot back into result XMM register
-    ASMJIT_CHECK(comp.movlpd(result, return_slot));
-    asmjit::x86::Mem return_slot_high = return_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movhpd(result, return_slot_high));
-
+    ASMJIT_CHECK(comp.movlpd(result, result_slot));
+    asmjit::x86::Mem result_slot_high = result_slot.cloneAdjusted(sizeof(double));
+    ASMJIT_CHECK(comp.movhpd(result, result_slot_high));
     return {};
 }
-#else
-// Linux version
-static CompileError call_binary(
-    asmjit::x86::Compiler &comp, ComplexBinOp *fn, asmjit::x86::Xmm result, asmjit::x86::Xmm right)
-{
-    // System V AMD64 ABI: Complex (16 bytes) passed by reference, returned in XMM registers
-    // Function signature: Complex fn(const Complex& left, const Complex& right)
-    // - Arguments: RDI = pointer to left, RSI = pointer to right
-    // - Return: XMM0 = real part, XMM1 = imaginary part
-
-    asmjit::Imm target{asmjit::imm(reinterpret_cast<void *>(fn))};
-
-    // Allocate 16 bytes on stack for left argument
-    asmjit::x86::Mem left_slot = comp.newStack(16, 16);
-
-    // Allocate 16 bytes on stack for right argument
-    asmjit::x86::Mem right_slot = comp.newStack(16, 16);
-
-    // Store left XMM register (result) to left_slot
-    ASMJIT_CHECK(comp.movlpd(left_slot, result));
-    asmjit::x86::Mem left_slot_high = left_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movhpd(left_slot_high, result));
-
-    // Store right XMM register to right_slot
-    ASMJIT_CHECK(comp.movlpd(right_slot, right));
-    asmjit::x86::Mem right_slot_high = right_slot.cloneAdjusted(8);
-    ASMJIT_CHECK(comp.movhpd(right_slot_high, right));
-
-    // Get addresses of the stack slots
-    asmjit::x86::Gp left_ptr = comp.newIntPtr();
-    asmjit::x86::Gp right_ptr = comp.newIntPtr();
-    ASMJIT_CHECK(comp.lea(left_ptr, left_slot));
-    ASMJIT_CHECK(comp.lea(right_ptr, right_slot));
-
-    // Create invoke node with signature that returns two doubles
-    asmjit::InvokeNode *invoke_node;
-    ASMJIT_CHECK(comp.invoke(&invoke_node, target, asmjit::FuncSignature::build<double, uintptr_t, uintptr_t>()));
-
-    // Set arguments: arg0 (RDI) = left_ptr, arg1 (RSI) = right_ptr
-    invoke_node->setArg(0, left_ptr);
-    invoke_node->setArg(1, right_ptr);
-
-    // Get return values: ret0 (XMM0) = real, ret1 (XMM1) = imaginary
-    asmjit::x86::Xmm ret_real = comp.newXmmSd();
-    asmjit::x86::Xmm ret_imag = comp.newXmmSd();
-    invoke_node->setRet(0, ret_real);
-    invoke_node->setRet(1, ret_imag);
-
-    // Manual intervention: Capture XMM1 (imaginary part) into ret_imag
-    ASMJIT_CHECK(comp.movapd(ret_imag, asmjit::x86::xmm1));
-
-    // Combine the two return values into result XMM register
-    ASMJIT_CHECK(comp.movsd(result, ret_real));    // result.low = ret_real
-    ASMJIT_CHECK(comp.unpcklpd(result, ret_imag)); // result.high = ret_imag
-
-    return {};
-}
-#endif
 
 static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm argument)
 {
