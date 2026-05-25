@@ -3105,6 +3105,49 @@ TEST(TestExtendedInterpreter, finalSectionReturnsColorArithmetic)
     EXPECT_EQ((Value{ColorValue{0.75, 0.75, 0.875, 1.5}}), interpreter.interpret(Section::FINAL));
 }
 
+TEST(TestExtendedInterpreter, invalidColorArithmeticFailsClearlyAtRuntime)
+{
+    ExtendedInterpreter lhs_interpreter{formula_entry("final:\n"
+                                                      "#color + rgba(0.5,0.25,0.125,0.5)"),
+        options(parser::EntryKind::COLORING)};
+    ExtendedInterpreter rhs_interpreter{formula_entry("final:\n"
+                                                      "rgba(0.5,0.25,0.125,0.5) / #index"),
+        options(parser::EntryKind::COLORING)};
+
+    ASSERT_TRUE(lhs_interpreter.ok());
+    ASSERT_TRUE(rhs_interpreter.ok());
+
+    lhs_interpreter.set_value("#color", Value{1});
+    rhs_interpreter.set_value("#index", Value{ColorValue{1.0, 1.0, 1.0, 1.0}});
+
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) lhs_interpreter.interpret(Section::FINAL);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_EQ("invalid color operator: int + color", std::string{error.what()});
+                throw;
+            }
+        },
+        std::runtime_error);
+    EXPECT_THROW(
+        {
+            try
+            {
+                (void) rhs_interpreter.interpret(Section::FINAL);
+            }
+            catch (const std::runtime_error &error)
+            {
+                EXPECT_EQ("invalid color operator: color / color", std::string{error.what()});
+                throw;
+            }
+        },
+        std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, interpretsHslColorConstructionAndExtraction)
 {
     EXPECT_EQ((Value{ColorValue{1.0, 0.0, 0.0, 1.0}}), interpret_init("hsl(0,1,0.5)"));

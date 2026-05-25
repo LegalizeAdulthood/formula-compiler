@@ -189,10 +189,16 @@ std::optional<Value> color_binary(const Value &lhs, const Value &rhs, const std:
     }
     if ((op == "*" || op == "/") && lhs.kind() == ValueKind::COLOR)
     {
+        if (!is_numeric(rhs.kind()))
+        {
+            throw std::runtime_error("invalid color operator: " + std::string{type_name(lhs)} + " " + op + " " +
+                std::string{type_name(rhs)});
+        }
         const double scalar{real_part(convert_value(rhs, ValueKind::FLOAT))};
         return Value{color_scale(std::get<ColorValue>(lhs.storage()), op == "*" ? scalar : 1.0 / scalar)};
     }
-    return std::nullopt;
+    throw std::runtime_error(
+        "invalid color operator: " + std::string{type_name(lhs)} + " " + op + " " + std::string{type_name(rhs)});
 }
 
 ColorValue color_value(const Value &value)
