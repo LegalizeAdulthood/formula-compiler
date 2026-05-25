@@ -82,9 +82,11 @@ Comparison:
 
 Logical operators:
 
-- Both operands must be evaluated.
+- Operands short-circuit left to right.
 - `&&` and `||` combine real-part truthiness.
 - Result is `vec2(1.0, 0.0)` or `vec2(0.0, 0.0)`.
+- Logical expressions lower to statement-level temporaries and branches so the
+  skipped operand is not evaluated.
 
 Modulus:
 

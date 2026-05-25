@@ -107,7 +107,7 @@ runtime behavior:
 These are not semantic-analysis requirements, but they must remain locked so
 parsed BASIC formulas execute according to `basic-formula.txt`:
 
-- Logical `&&` and `||` evaluate both operands.
+- Logical `&&` and `||` short-circuit left to right.
 - Power associativity is locked by parser, interpreter, and compiler tests.
 
 ## Non-Gaps
@@ -156,8 +156,8 @@ The parser should enforce the expression rules from `basic-formula.txt`:
 - Modulus bars form a parenthetic modulus-squared expression.
 - Nested modulus expressions require inner parentheses.
 
-Logical operators evaluate both operands. They should not be parsed or lowered
-as short-circuit operators for BASIC formulas.
+Logical operators short-circuit left to right. This intentionally differs from
+`docs/id.txt`; Iterated Dynamics will be updated to match this behavior.
 
 ## Parser Changes
 
@@ -274,8 +274,8 @@ for review and wait for approval.
    - Keep runtime errors for internal misuse only.
 
 7. Fix BASIC logical evaluation.
-   - Ensure interpreted `&&` and `||` evaluate both operands.
-   - Ensure compiled `&&` and `||` evaluate both operands.
+   - Ensure interpreted `&&` and `||` short-circuit left to right.
+   - Ensure compiled `&&` and `||` short-circuit left to right.
    - Preserve truthiness based on the real part of complex values.
 
 8. Lock BASIC precedence behavior.
@@ -296,7 +296,7 @@ Suggested implementation order:
 7. Backfill shared builtin arity validation onto extended builtin calls.
 8. Add case-insensitive matching tests.
 9. Normalize BASIC validation lookups while preserving source spelling.
-10. Add runtime tests for non-short-circuit logical evaluation.
+10. Add runtime tests for short-circuit logical evaluation.
 11. Fix interpreter and compiler logical evaluation.
 12. Add precedence and modulus regression tests.
 
@@ -325,10 +325,8 @@ Add parser tests for:
   builtin function names.
 - `q=3+(w=6)` fails in BASIC.
 - `z=q=6` parses in BASIC.
-- `1&&side_effect` evaluates both operands in BASIC once side-effect tests are
-  available.
-- `1||side_effect` evaluates both operands in BASIC once side-effect tests are
-  available.
+- `0&&srand(1)` skips the right operand in BASIC.
+- `1||srand(1)` skips the right operand in BASIC.
 
 Add interpreter/compiler regression tests showing that valid BASIC formulas no
 longer rely on runtime detection for unknown functions or bad arity.

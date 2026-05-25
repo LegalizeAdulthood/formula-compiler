@@ -551,8 +551,63 @@ void Compiler::visit(const UnaryOpNode &node)
 void Compiler::visit(const BinaryOpNode &node)
 {
     node.left()->visit(*this);
-    asmjit::x86::Xmm right{comp.newXmm()};
     const std::string &op{node.op()};
+    if (op == "&&")
+    {
+        asmjit::Label true_label = comp.newLabel();
+        asmjit::Label fail = comp.newLabel();
+        asmjit::Label end = comp.newLabel();
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        ASMJIT_STORE(comp.xorpd(zero, zero));
+        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero));
+        ASMJIT_STORE(comp.je(fail));
+        node.right()->visit(*this);
+        if (!success())
+        {
+            return;
+        }
+        ASMJIT_STORE(comp.xorpd(zero, zero));
+        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero));
+        ASMJIT_STORE(comp.jne(true_label));
+        ASMJIT_STORE(comp.bind(fail));
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.jmp(end));
+        ASMJIT_STORE(comp.bind(true_label));
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
+        ASMJIT_STORE(comp.bind(end));
+        return;
+    }
+    if (op == "||")
+    {
+        asmjit::Label true_label = comp.newLabel();
+        asmjit::Label fail = comp.newLabel();
+        asmjit::Label end = comp.newLabel();
+        asmjit::x86::Xmm zero{comp.newXmm()};
+        ASMJIT_STORE(comp.xorpd(zero, zero));
+        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero));
+        ASMJIT_STORE(comp.jne(true_label));
+        node.right()->visit(*this);
+        if (!success())
+        {
+            return;
+        }
+        ASMJIT_STORE(comp.xorpd(zero, zero));
+        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero));
+        ASMJIT_STORE(comp.jne(true_label));
+        ASMJIT_STORE(comp.bind(fail));
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.jmp(end));
+        ASMJIT_STORE(comp.bind(true_label));
+        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
+        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
+        ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
+        ASMJIT_STORE(comp.bind(end));
+        return;
+    }
+
+    asmjit::x86::Xmm right{comp.newXmm()};
     compile_operand(*node.right(), right);
     if (op == "+")
     {
@@ -708,49 +763,6 @@ void Compiler::visit(const BinaryOpNode &node)
         asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
         ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
 
-        ASMJIT_STORE(comp.bind(end));
-        return;
-    }
-    if (op == "&&")
-    {
-        asmjit::Label success = comp.newLabel();
-        asmjit::Label fail = comp.newLabel();
-        asmjit::Label end = comp.newLabel();
-        asmjit::x86::Xmm zero{comp.newXmm()};
-        ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
-        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        ASMJIT_STORE(comp.je(fail));                       // result.re == 0.0, false
-        ASMJIT_STORE(comp.ucomisd(right, zero));           // right.re <=> 0.0?
-        ASMJIT_STORE(comp.jne(success));                   // right.re != 0.0, both true
-        ASMJIT_STORE(comp.bind(fail));
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // false
-        ASMJIT_STORE(comp.jmp(end));
-        ASMJIT_STORE(comp.bind(success));
-        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
-        ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
-        ASMJIT_STORE(comp.bind(end));
-        return;
-    }
-    if (op == "||")
-    {
-        asmjit::Label success = comp.newLabel();
-        asmjit::Label fail = comp.newLabel();
-        asmjit::Label end = comp.newLabel();
-        asmjit::x86::Xmm zero{comp.newXmm()};
-
-        ASMJIT_STORE(comp.xorpd(zero, zero));              // zero = 0.0
-        ASMJIT_STORE(comp.ucomisd(m_result.back(), zero)); // result.re <=> 0.0?
-        ASMJIT_STORE(comp.jne(success));                   // result.re != 0.0, true
-        ASMJIT_STORE(comp.ucomisd(right, zero));           // right.re <=> 0.0?
-        ASMJIT_STORE(comp.jne(success));                   // right.re != 0.0, right is true
-        ASMJIT_STORE(comp.bind(fail));
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back())); // false
-        ASMJIT_STORE(comp.jmp(end));
-        ASMJIT_STORE(comp.bind(success));
-        asmjit::Label one = get_constant_label(comp, state.data.constants, {1.0, 0.0});
-        ASMJIT_STORE(comp.xorpd(m_result.back(), m_result.back()));
-        ASMJIT_STORE(comp.movsd(m_result.back(), asmjit::x86::ptr(one)));
         ASMJIT_STORE(comp.bind(end));
         return;
     }

@@ -206,6 +206,9 @@ private:
     // Code emission helpers
     void emit_expression(const ast::Expr &expr);
     void emit_statement(const ast::Expr &stmt);
+    std::string emit_expression_value(const ast::Expr &expr);
+    std::string emit_logical_expression(const ast::BinaryOpNode &node);
+    std::string emit_temp_name();
 
     // Type system helpers
     bool is_complex_type(const std::string &var_name) const;
@@ -222,6 +225,7 @@ private:
 
     // Indentation management
     int m_indent_level{0};
+    int m_temp_index{0};
     std::string indent() const;
 
     // Configuration
@@ -535,8 +539,6 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "vec2 c_ge(vec2 a, vec2 b) { return c_bool(a.x >= b.x); }\n";
     out << "vec2 c_eq(vec2 a, vec2 b) { return c_bool(a.x == b.x && a.y == b.y); }\n";
     out << "vec2 c_ne(vec2 a, vec2 b) { return c_bool(a.x != b.x || a.y != b.y); }\n\n";
-    out << "vec2 c_and(vec2 a, vec2 b) { return c_bool(a.x != 0.0 && b.x != 0.0); }\n";
-    out << "vec2 c_or(vec2 a, vec2 b) { return c_bool(a.x != 0.0 || b.x != 0.0); }\n\n";
 
     out << "float c_random_float(inout uint random_state) {\n";
     out << "    random_state = random_state * 1664525u + 1013904223u;\n";
@@ -701,10 +703,10 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Bailout test\n";
     if (formula.bailout)
     {
-        out << indent() << "bailout_value = ";
         clear_result();
-        emit_expression(formula.bailout);
-        out << m_output.str() << ";\n";
+        const std::string value = emit_expression_value(formula.bailout);
+        out << m_output.str();
+        out << indent() << "bailout_value = " << value << ";\n";
     }
     else
     {
@@ -741,7 +743,7 @@ void GLSLEmitter::emit_expression(const ast::Expr &expr)
 {
     if (expr)
     {
-        expr->visit(*this);
+        m_output << emit_expression_value(expr);
     }
 }
 
@@ -749,8 +751,166 @@ void GLSLEmitter::emit_statement(const ast::Expr &stmt)
 {
     if (stmt)
     {
-        stmt->visit(*this);
+        if (dynamic_cast<const ast::AssignmentNode *>(stmt.get()) || dynamic_cast<const ast::IfStatementNode *>(stmt.get())
+            || dynamic_cast<const ast::StatementSeqNode *>(stmt.get()))
+        {
+            stmt->visit(*this);
+            return;
+        }
+        m_output << indent() << emit_expression_value(stmt) << ";\n";
     }
+}
+
+std::string GLSLEmitter::emit_expression_value(const ast::Expr &expr)
+{
+    if (!expr)
+    {
+        return complex_literal(0.0, 0.0);
+    }
+
+    if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()); binary)
+    {
+        const std::string &op = binary->op();
+        if (op == "&&" || op == "||")
+        {
+            return emit_logical_expression(*binary);
+        }
+        if (op == "+" || op == "-" || op == "*" || op == "/" || op == "^")
+        {
+            const std::string function = op == "+" ? "c_add"
+                : op == "-"                       ? "c_sub"
+                : op == "*"                       ? "c_mul"
+                : op == "/"                       ? "c_div"
+                                                   : "c_pow";
+            const std::string left = emit_expression_value(binary->left());
+            const std::string right = emit_expression_value(binary->right());
+            return function + "(" + left + ", " + right + ")";
+        }
+        if (op == "<=" || op == "<" || op == ">=" || op == ">" || op == "==" || op == "!=")
+        {
+            const std::string function = op == "<" ? "c_lt"
+                : op == "<="                       ? "c_le"
+                : op == ">"                        ? "c_gt"
+                : op == ">="                       ? "c_ge"
+                : op == "=="                       ? "c_eq"
+                                                   : "c_ne";
+            const std::string left = emit_expression_value(binary->left());
+            const std::string right = emit_expression_value(binary->right());
+            return function + "(" + left + ", " + right + ")";
+        }
+    }
+
+    if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()); call)
+    {
+        std::string result = map_builtin_function(call->name()) + "(" + emit_expression_value(call->arg());
+        if (call->name() == "sqr" || is_function_selector(call->name()))
+        {
+            result += ", lastsqr_value";
+        }
+        if (call->name() == "srand" || is_function_selector(call->name()))
+        {
+            result += ", random_state, rand";
+        }
+        result += ")";
+        return result;
+    }
+
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()); identifier)
+    {
+        const std::string &name = identifier->name();
+        if (name == "lastsqr")
+        {
+            return "vec2(lastsqr_value, 0.0)";
+        }
+        if (name == "pi")
+        {
+            return "vec2(pi, 0.0)";
+        }
+        if (name == "e")
+        {
+            return "vec2(e, 0.0)";
+        }
+        if (name == "maxit")
+        {
+            return "vec2(float(maxit), 0.0)";
+        }
+        return name;
+    }
+
+    if (const auto *literal = dynamic_cast<const ast::LiteralNode *>(expr.get()); literal)
+    {
+        if (std::holds_alternative<Complex>(literal->value()))
+        {
+            const Complex c{std::get<Complex>(literal->value())};
+            return complex_literal(c.re, c.im);
+        }
+        if (std::holds_alternative<double>(literal->value()))
+        {
+            return complex_literal(std::get<double>(literal->value()), 0.0);
+        }
+        if (std::holds_alternative<int>(literal->value()))
+        {
+            return complex_literal(static_cast<double>(std::get<int>(literal->value())), 0.0);
+        }
+    }
+
+    if (const auto *unary = dynamic_cast<const ast::UnaryOpNode *>(expr.get()); unary)
+    {
+        if (unary->op() == '-')
+        {
+            return "c_neg(" + emit_expression_value(unary->operand()) + ")";
+        }
+        if (unary->op() == '+')
+        {
+            return emit_expression_value(unary->operand());
+        }
+        if (unary->op() == '|')
+        {
+            return "c_mod_sqr(" + emit_expression_value(unary->operand()) + ")";
+        }
+    }
+
+    std::ostringstream saved{std::move(m_output)};
+    m_output = std::ostringstream{};
+    expr->visit(*this);
+    std::string result{m_output.str()};
+    m_output = std::move(saved);
+    return result;
+}
+
+std::string GLSLEmitter::emit_logical_expression(const ast::BinaryOpNode &node)
+{
+    const std::string result = emit_temp_name();
+    m_output << indent() << "vec2 " << result << " = vec2(0.0, 0.0);\n";
+    const std::string left = emit_expression_value(node.left());
+    if (node.op() == "&&")
+    {
+        m_output << indent() << "if (c_truth(" << left << ")) {\n";
+        m_indent_level++;
+        const std::string right = emit_expression_value(node.right());
+        m_output << indent() << result << " = c_bool(c_truth(" << right << "));\n";
+        m_indent_level--;
+        m_output << indent() << "}\n";
+    }
+    else
+    {
+        m_output << indent() << "if (c_truth(" << left << ")) {\n";
+        m_indent_level++;
+        m_output << indent() << result << " = vec2(1.0, 0.0);\n";
+        m_indent_level--;
+        m_output << indent() << "} else {\n";
+        m_indent_level++;
+        const std::string right = emit_expression_value(node.right());
+        m_output << indent() << result << " = c_bool(c_truth(" << right << "));\n";
+        m_indent_level--;
+        m_output << indent() << "}\n";
+    }
+    return result;
+}
+
+std::string GLSLEmitter::emit_temp_name()
+{
+    return "_fc_tmp" + std::to_string(m_temp_index++);
 }
 
 bool GLSLEmitter::is_complex_type(const std::string &var_name) const
@@ -879,9 +1039,8 @@ void GLSLEmitter::visit(const ast::BinaryOpNode &node)
 
 void GLSLEmitter::visit(const ast::AssignmentNode &node)
 {
-    m_output << indent() << node.variable() << " = ";
-    node.expression()->visit(*this);
-    m_output << ";\n";
+    const std::string value = emit_expression_value(node.expression());
+    m_output << indent() << node.variable() << " = " << value << ";\n";
 
     // Track if this is a complex variable
     if (is_complex_type(node.variable()))
@@ -898,8 +1057,7 @@ void GLSLEmitter::visit(const ast::AssignmentNode &node)
 void GLSLEmitter::visit(const ast::FunctionCallNode &node)
 {
     std::string glsl_func = map_builtin_function(node.name());
-    m_output << glsl_func << "(";
-    node.arg()->visit(*this);
+    m_output << glsl_func << "(" << emit_expression_value(node.arg());
     if (node.name() == "sqr" || is_function_selector(node.name()))
     {
         m_output << ", lastsqr_value";
@@ -915,27 +1073,22 @@ void GLSLEmitter::visit(const ast::UnaryOpNode &node)
 {
     if (node.op() == '-')
     {
-        m_output << "c_neg(";
-        node.operand()->visit(*this);
-        m_output << ")";
+        m_output << "c_neg(" << emit_expression_value(node.operand()) << ")";
     }
     else if (node.op() == '+')
     {
-        node.operand()->visit(*this);
+        m_output << emit_expression_value(node.operand());
     }
     else if (node.op() == '|')
     {
-        m_output << "c_mod_sqr(";
-        node.operand()->visit(*this);
-        m_output << ")";
+        m_output << "c_mod_sqr(" << emit_expression_value(node.operand()) << ")";
     }
 }
 
 void GLSLEmitter::visit(const ast::IfStatementNode &node)
 {
-    m_output << indent() << "if (c_truth(";
-    node.condition()->visit(*this);
-    m_output << ")) {\n";
+    const std::string condition = emit_expression_value(node.condition());
+    m_output << indent() << "if (c_truth(" << condition << ")) {\n";
 
     if (node.has_then_block())
     {

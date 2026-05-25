@@ -320,36 +320,100 @@ TEST(TestFormulaInterpreter, chainedAssignment)
     EXPECT_EQ((formula::Complex{3.0, 0.0}), z2);
 }
 
-TEST(TestFormulaInterpreter, logicalAndEvaluatesRightOperandWhenLeftIsFalse)
+TEST(TestFormulaInterpreter, logicalAndSkipsRightOperandWhenLeftIsFalse)
 {
     ast::Dictionary symbols;
 
-    // Direct AST only: assignment is statement syntax, so parsed formulas cannot
-    // express a logical RHS side effect. Extended user functions can cover this
-    // once they can mutate globals in the interpreter.
     const Complex result{
         ast::interpret(ast::binary(ast::number(0.0), "&&", ast::assignment("side", ast::number(1.0))), symbols)};
 
     EXPECT_EQ(0.0, result.re);
     EXPECT_EQ(0.0, result.im);
-    ASSERT_NE(symbols.end(), symbols.find("side"));
-    EXPECT_EQ((Complex{1.0, 0.0}), symbols["side"]);
+    EXPECT_EQ(symbols.end(), symbols.find("side"));
 }
 
-TEST(TestFormulaInterpreter, logicalOrEvaluatesRightOperandWhenLeftIsTrue)
+TEST(TestFormulaInterpreter, logicalOrSkipsRightOperandWhenLeftIsTrue)
 {
     ast::Dictionary symbols;
 
-    // Direct AST only: assignment is statement syntax, so parsed formulas cannot
-    // express a logical RHS side effect. Extended user functions can cover this
-    // once they can mutate globals in the interpreter.
     const Complex result{
         ast::interpret(ast::binary(ast::number(1.0), "||", ast::assignment("side", ast::number(2.0))), symbols)};
 
     EXPECT_EQ(1.0, result.re);
     EXPECT_EQ(0.0, result.im);
-    ASSERT_NE(symbols.end(), symbols.find("side"));
-    EXPECT_EQ((Complex{2.0, 0.0}), symbols["side"]);
+    EXPECT_EQ(symbols.end(), symbols.find("side"));
+}
+
+TEST(TestFormulaInterpreter, logicalAndSkipsSrandWhenLeftIsFalse)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  0 && srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(control) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+}
+
+TEST(TestFormulaInterpreter, logicalOrSkipsSrandWhenLeftIsTrue)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  1 || srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(control) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+}
+
+TEST(TestFormulaInterpreter, logicalAndEvaluatesSrandWhenLeftIsTrue)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  1 && srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(control) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+    EXPECT_NE(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+}
+
+TEST(TestFormulaInterpreter, logicalOrEvaluatesSrandWhenLeftIsFalse)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  0 || srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(control) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+
+    EXPECT_EQ(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
+    EXPECT_NE(control->interpret(Section::ITERATE), formula->interpret(Section::ITERATE));
 }
 
 TEST(TestFormulaInterpreter, conjugate)

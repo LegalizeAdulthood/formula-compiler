@@ -14,8 +14,8 @@ correctness.
 ## Current Correct Behavior
 
 - Numeric, complex, and complex-literal expressions compile.
-- Basic arithmetic, power, comparisons, eager `&&` and `||`, unary negation,
-  and modulus squared compile.
+- Basic arithmetic, power, comparisons, short-circuit `&&` and `||`, unary
+  negation, and modulus squared compile.
 - Unknown variables compile as zero through zero-initialized runtime symbols.
 - Assignment statements update formula symbols.
 - `if`, `elseif`, and `else` compile.

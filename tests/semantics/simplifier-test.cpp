@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/semantics/Simplifier.h>
 
@@ -127,6 +127,13 @@ static BinaryOpTestParam s_binary_op_test_params[] = {
     {binary(number(12.0), '/', binary(number(1.0), '+', number(2.0))), "literal:4\n", "numberExpression"},
     {binary(number(0.0), "&&", identifier("x")), "literal:0\n", "shortCircuitAnd"},
     {binary(number(12.0), "||", identifier("x")), "literal:1\n", "shortCircuitOr"},
+    {binary(number(0.0), "&&", function_call("srand", number(1.0))), "literal:0\n", "shortCircuitAndSkipsSrand"},
+    {binary(number(1.0), "||", function_call("srand", number(1.0))), "literal:1\n", "shortCircuitOrSkipsSrand"},
+    {binary(identifier("x"), "&&", number(1.0)),
+        "binary_op:&&\n"
+        "identifier:x\n"
+        "literal:1\n",
+        "logicalAndWithNonliteralLeft"},
     {binary(number(3.0), "&&", number(4.0)), "literal:1\n", "logicalAnd"},
     {binary(number(0.0), "||", number(3.0)), "literal:1\n", "logicalOr"},
     {binary(number(0.0), "<", number(4.0)), "literal:1\n", "lessThan"},

@@ -255,7 +255,7 @@
   - predefined symbols
   - unary `-` and `!`
   - binary arithmetic and comparisons
-  - logical `&&` and `||` with eager operand evaluation
+  - logical `&&` and `||` with short-circuit operand evaluation
   - assignment statement stores
   - member access
   - array indexing
@@ -475,7 +475,7 @@
      assignment.
 
 8. Control flow.
-   - Compile if, while, repeat/until, eager logical evaluation, and loop
+   - Compile if, while, repeat/until, short-circuit logical evaluation, and loop
      guards.
 
 9. Section dispatch.

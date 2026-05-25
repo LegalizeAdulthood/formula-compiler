@@ -302,7 +302,7 @@ Initial unsupported diagnostics are acceptable for:
 
 - Lower statement sequences, typed declarations, assignment, `if`, `while`,
   `repeat/until`, and top-level `return`.
-- Emit eager logical evaluation where UF semantics require it.
+- Emit short-circuit logical evaluation.
 - Add loop guard support or a diagnostic when a loop cannot be guarded.
 - Test nested blocks, branches, loops, and return behavior.
 

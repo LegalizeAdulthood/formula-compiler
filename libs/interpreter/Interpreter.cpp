@@ -103,16 +103,24 @@ void Interpreter::visit(const BinaryOpNode &node)
     };
     if (op == "&&")
     {
-        const bool left{result().re != 0.0};
+        if (result().re == 0.0)
+        {
+            back() = bool_result(false);
+            return;
+        }
         node.right()->visit(*this);
-        back() = bool_result(left && result().re != 0.0);
+        back() = bool_result(result().re != 0.0);
         return;
     }
     if (op == "||")
     {
-        const bool left{result().re != 0.0};
+        if (result().re != 0.0)
+        {
+            back() = bool_result(true);
+            return;
+        }
         node.right()->visit(*this);
-        back() = bool_result(left || result().re != 0.0);
+        back() = bool_result(result().re != 0.0);
         return;
     }
 

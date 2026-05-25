@@ -476,16 +476,26 @@ TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
     expect_contains(shader, "    z = c_ne(z, p1);\n");
 }
 
-TEST(TestGLSLEmitter, emitsLogicalOperatorsThroughHelpers)
+TEST(TestGLSLEmitter, emitsLogicalOperatorsWithShortCircuitBranches)
 {
     const std::string shader{emit_basic_shader("init:\n"
                                                "  z = (z < p1) && (z != p2)\n"
                                                "  z = (z < p1) || (z != p2)\n")};
 
-    expect_contains(shader, "vec2 c_and(vec2 a, vec2 b) { return c_bool(a.x != 0.0 && b.x != 0.0); }\n");
-    expect_contains(shader, "vec2 c_or(vec2 a, vec2 b) { return c_bool(a.x != 0.0 || b.x != 0.0); }\n");
-    expect_contains(shader, "    z = c_and(c_lt(z, p1), c_ne(z, p2));\n");
-    expect_contains(shader, "    z = c_or(c_lt(z, p1), c_ne(z, p2));\n");
+    expect_contains(shader,
+        "    vec2 _fc_tmp0 = vec2(0.0, 0.0);\n"
+        "    if (c_truth(c_lt(z, p1))) {\n"
+        "        _fc_tmp0 = c_bool(c_truth(c_ne(z, p2)));\n"
+        "    }\n"
+        "    z = _fc_tmp0;\n");
+    expect_contains(shader,
+        "    vec2 _fc_tmp1 = vec2(0.0, 0.0);\n"
+        "    if (c_truth(c_lt(z, p1))) {\n"
+        "        _fc_tmp1 = vec2(1.0, 0.0);\n"
+        "    } else {\n"
+        "        _fc_tmp1 = c_bool(c_truth(c_ne(z, p2)));\n"
+        "    }\n"
+        "    z = _fc_tmp1;\n");
 }
 
 TEST(TestGLSLEmitter, emitsConditionalTruthiness)
@@ -618,7 +628,12 @@ TEST(TestGLSLEmitter, loweredFixturesMatchKnownInterpreterResults)
             Section::BAILOUT,
             {},
             {0.0, 0.0},
-            {"bailout_value = c_or(vec2(0.0, 1.0), vec2(0.0, 0.0));\n"},
+            {
+                "vec2 _fc_tmp0 = vec2(0.0, 0.0);\n",
+                "if (c_truth(vec2(0.0, 1.0))) {\n",
+                "_fc_tmp0 = c_bool(c_truth(vec2(0.0, 0.0)));\n",
+                "bailout_value = _fc_tmp",
+            },
         },
         {
             "bailout:\n"

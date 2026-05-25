@@ -793,11 +793,85 @@ TEST(TestCompiledFormulaRun, assignmentStatementsBailout)
     EXPECT_EQ(0.0, z.im);
 }
 
-// Non-short-circuit compiled logical evaluation is covered by implementation
-// and expression result tests only. Parsed formulas cannot express a logical
-// RHS side effect because assignment is statement syntax, not expression syntax.
-// Extended user functions can cover this once they can mutate globals in the
-// compiler.
+TEST(TestCompiledFormulaRun, logicalAndSkipsSrandWhenLeftIsFalse)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  0 && srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(control) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->compile());
+    ASSERT_TRUE(control->compile());
+
+    EXPECT_EQ(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+    EXPECT_EQ(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+}
+
+TEST(TestCompiledFormulaRun, logicalOrSkipsSrandWhenLeftIsTrue)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  1 || srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(control) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->compile());
+    ASSERT_TRUE(control->compile());
+
+    EXPECT_EQ(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+    EXPECT_EQ(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+}
+
+TEST(TestCompiledFormulaRun, logicalAndEvaluatesSrandWhenLeftIsTrue)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  1 && srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(control) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->compile());
+    ASSERT_TRUE(control->compile());
+
+    EXPECT_EQ((Complex{0.0, 0.0}), formula->run(Section::ITERATE));
+    EXPECT_NE(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+}
+
+TEST(TestCompiledFormulaRun, logicalOrEvaluatesSrandWhenLeftIsFalse)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "  0 || srand(1234)\n"
+                                            "  rand\n",
+        Options{})};
+    const FormulaPtr control{create_formula("loop:\n"
+                                            "  rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(control) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(control->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->compile());
+    ASSERT_TRUE(control->compile());
+
+    EXPECT_EQ((Complex{0.0, 0.0}), formula->run(Section::ITERATE));
+    EXPECT_NE(control->run(Section::ITERATE), formula->run(Section::ITERATE));
+}
 
 TEST(TestCompiledFormulaRun, formulaInitialize)
 {

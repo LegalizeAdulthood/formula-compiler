@@ -88,13 +88,13 @@ predefined symbols.
 No remaining extended formula parser implementation slices are planned in this
 file.
 
-## Known Runtime Divergence
+## Logical Operator Semantics
 
 `docs/uf6/conditionals.txt` explicitly documents short-circuit evaluation for
 `&&` and `||`: expressions are evaluated left-to-right and evaluation stops
-once the result is known. Current GLSL translator work emits helper calls for
-logical operators, which forces both operands to be evaluated. That divergence
-must be corrected in translator/runtime work, not parser work.
+once the result is known. BASIC and EXTENDED formulas both use this behavior.
+This intentionally differs from `docs/id.txt`; Iterated Dynamics will be
+updated to match the short-circuit behavior.
 
 Future parser work should be added here only when it is truly syntactic. If the
 work needs symbol tables, type information, imported class metadata, formula

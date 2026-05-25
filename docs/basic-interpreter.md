@@ -7,7 +7,8 @@ valid BASIC ASTs according to `basic-formula.txt` and should not be responsible
 for reporting malformed BASIC syntax.
 
 The interpreter is mostly correct for expression evaluation, assignment,
-section dispatch, unknown variables, truthiness, and eager logical operators.
+section dispatch, unknown variables, truthiness, and short-circuit logical
+operators.
 The remaining gaps are runtime-state semantics for selected builtin functions
 and predefined variables.
 
@@ -20,7 +21,7 @@ and predefined variables.
   rejected as assignment targets by the parser.
 - Assignment is a statement, not an expression.
 - Chained assignment statements store the same value in each target.
-- `&&` and `||` evaluate both operands.
+- `&&` and `||` short-circuit left to right.
 - Truthiness uses the real part of the complex value.
 - Ordering comparisons use real parts.
 - Equality comparisons use both real and imaginary parts.

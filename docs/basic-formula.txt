@@ -146,8 +146,10 @@ Unlike the C or similar languages, the assignment operator '=' can only
 be used as an isolated statement. It cannot be used in an expression. So
 the exression q=3+(w=6) is a syntax error. Multiple variables can be
 assigned the same value in an assignment statement, e.g. z=q=6. Also
-unlike C-like languages the logical operators && and || do not have any
-"short cut" behavior; both operands to the operators are evaluated.
+logical operators && and || use short-circuit behavior; operands are
+evaluated left to right and evaluation stops once the result is known.
+This intentionally differs from docs/id.txt. Iterated Dynamics will be
+updated to match the short-circuit behavior.
 
 Precedence may be overridden by use of parenthesis. Note the modulus
 squared operator |z| is also parenthetic and always sets the imaginary

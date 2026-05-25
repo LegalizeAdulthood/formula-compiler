@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/semantics/Simplifier.h>
 
@@ -81,7 +81,7 @@ void Simplifier::visit(const BinaryOpNode &node)
     }
 
     Expr rhs{visit_result(node.right())};
-    if (auto right = dynamic_cast<LiteralNode *>(rhs.get()))
+    if (auto right = dynamic_cast<LiteralNode *>(rhs.get()); left && right)
     {
         const double left_value = std::get<double>(left->value());
         const double right_value = std::get<double>(right->value());
