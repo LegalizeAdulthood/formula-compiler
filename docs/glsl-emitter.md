@@ -184,15 +184,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Correct Comparison Operators
-
-- Add helper functions for all comparisons.
-- Ordering helpers compare real parts only.
-- Equality helpers compare both components.
-- Return complex truth values.
-- Test `<`, `<=`, `>`, `>=`, `==`, and `!=`.
-
-### 2. Correct Logical Operators
+### 1. Correct Logical Operators
 
 - Emit logical operators through helper calls, not GLSL `&&` or `||`.
 - Force both operands to be evaluated before the helper call.
@@ -201,14 +193,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
   BASIC has no expression side effects.
 - Test generated code shape for eager evaluation.
 
-### 3. Correct Conditional Emission
+### 2. Correct Conditional Emission
 
 - Emit `if (c_truth(expr))`.
 - Ensure empty then/else branches preserve BASIC result behavior only where
   section result matters.
 - Test `if`, `elseif`, `else`, and nested blocks.
 
-### 4. Implement Complete BASIC Builtin Mapping
+### 3. Implement Complete BASIC Builtin Mapping
 
 - Emit helpers for all BASIC builtin functions listed in `basic-formula.txt`.
 - Correct `flip` to return `vec2(z.y, z.x)`.
@@ -216,7 +208,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Keep builtin function names normalized to lowercase in emitted helper calls.
 - Test every builtin at least for symbol mapping.
 
-### 5. Model `lastsqr`
+### 4. Model `lastsqr`
 
 - Emit `lastsqr` as `vec2(lastsqr_value, 0.0)` when read.
 - Store the scalar backing value separately.
@@ -224,14 +216,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
   square.
 - Test formulas that read `lastsqr` after `sqr`.
 
-### 6. Add Runtime-Selected `fn1` Through `fn4`
+### 5. Add Runtime-Selected `fn1` Through `fn4`
 
 - Add uniform selectors for `fn1`, `fn2`, `fn3`, and `fn4`.
 - Emit dispatch helpers that call the selected builtin.
 - Limit selectors to the BASIC runtime-selectable function set.
 - Test emitted dispatch for each selector token.
 
-### 7. Add Random Support
+### 6. Add Random Support
 
 - Add deterministic per-pixel random state.
 - Implement `rand` as current random value.
@@ -240,14 +232,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Define how client seed input enters the shader.
 - Test emitted state updates for `rand` and `srand`.
 
-### 8. Add Remaining Predefined Variables
+### 7. Add Remaining Predefined Variables
 
 - Emit or compute `scrnmax`, `scrnpix`, `whitesq`, `ismand`, `center`,
   `magxmag`, and `rotskew`.
 - Keep all predefined variables as `vec2`.
 - Test each predefined variable appears with correct initialization.
 
-### 9. Define Section Result And Output ABI
+### 8. Define Section Result And Output ABI
 
 - Decide the shader ABI for loop result, final `z`, iteration count, and
   bailout result.
@@ -255,14 +247,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Update `emit_shader` docs to describe what the shader writes.
 - Test the generated output block.
 
-### 10. Add GLSL Compile Validation
+### 9. Add GLSL Compile Validation
 
 - Add an optional test path that runs a GLSL validator when available.
 - Keep the test skipped if the validator is not installed.
 - Validate emitted shaders for representative BASIC formulas.
 - Include formulas with user variables, conditionals, builtins, and bailout.
 
-### 11. Add Interpreter Equivalence Fixtures
+### 10. Add Interpreter Equivalence Fixtures
 
 - Build a small corpus of BASIC formulas with known interpreter results.
 - For each formula, assert emitted GLSL contains the expected lowered
@@ -270,7 +262,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - If a GLSL execution harness becomes available, compare numeric results
   against interpreter output.
 
-### 12. Remove Example-Only Caveats
+### 11. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.

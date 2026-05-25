@@ -473,6 +473,14 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "vec2 c_trunc(vec2 z) { return trunc(z); }\n";
     out << "vec2 c_round(vec2 z) { return round(z); }\n\n";
 
+    out << "vec2 c_bool(bool value) { return value ? vec2(1.0, 0.0) : vec2(0.0, 0.0); }\n";
+    out << "vec2 c_lt(vec2 a, vec2 b) { return c_bool(a.x < b.x); }\n";
+    out << "vec2 c_le(vec2 a, vec2 b) { return c_bool(a.x <= b.x); }\n";
+    out << "vec2 c_gt(vec2 a, vec2 b) { return c_bool(a.x > b.x); }\n";
+    out << "vec2 c_ge(vec2 a, vec2 b) { return c_bool(a.x >= b.x); }\n";
+    out << "vec2 c_eq(vec2 a, vec2 b) { return c_bool(a.x == b.x && a.y == b.y); }\n";
+    out << "vec2 c_ne(vec2 a, vec2 b) { return c_bool(a.x != b.x || a.y != b.y); }\n\n";
+
     return out.str();
 }
 
@@ -698,10 +706,15 @@ void GLSLEmitter::visit(const ast::BinaryOpNode &node)
     }
     else if (op == "<=" || op == "<" || op == ">=" || op == ">" || op == "==" || op == "!=")
     {
-        // Comparison operations (scalar)
-        m_output << "(";
+        const std::string function = op == "<" ? "c_lt"
+            : op == "<="                       ? "c_le"
+            : op == ">"                        ? "c_gt"
+            : op == ">="                       ? "c_ge"
+            : op == "=="                       ? "c_eq"
+                                               : "c_ne";
+        m_output << function << "(";
         node.left()->visit(*this);
-        m_output << " " << op << " ";
+        m_output << ", ";
         node.right()->visit(*this);
         m_output << ")";
     }

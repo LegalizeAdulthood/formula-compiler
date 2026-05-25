@@ -215,6 +215,26 @@ TEST(TestGLSLEmitter, emitsAbsoluteBuiltinsWithBasicSemantics)
     expect_contains(shader, "    z = c_cabs(vec2(3.0, 4.0));\n");
 }
 
+TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = z < p1\n"
+                                               "  z = z <= p1\n"
+                                               "  z = z > p1\n"
+                                               "  z = z >= p1\n"
+                                               "  z = z == p1\n"
+                                               "  z = z != p1\n")};
+
+    expect_contains(shader, "vec2 c_lt(vec2 a, vec2 b) { return c_bool(a.x < b.x); }\n");
+    expect_contains(shader, "vec2 c_eq(vec2 a, vec2 b) { return c_bool(a.x == b.x && a.y == b.y); }\n");
+    expect_contains(shader, "    z = c_lt(z, p1);\n");
+    expect_contains(shader, "    z = c_le(z, p1);\n");
+    expect_contains(shader, "    z = c_gt(z, p1);\n");
+    expect_contains(shader, "    z = c_ge(z, p1);\n");
+    expect_contains(shader, "    z = c_eq(z, p1);\n");
+    expect_contains(shader, "    z = c_ne(z, p1);\n");
+}
+
 } // namespace
 
 } // namespace formula::test
