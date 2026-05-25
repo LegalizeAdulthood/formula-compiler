@@ -13,6 +13,9 @@
 
 #include <cmath>
 #include <complex>
+#include <ostream>
+#include <string>
+#include <string_view>
 
 using namespace formula::parser;
 using namespace testing;
@@ -53,11 +56,11 @@ TEST(TestCompiledFormulaRun, identifierComplex)
 
     const Complex result{formula->run(Section::BAILOUT)};
 
-    EXPECT_EQ(1.0, result.re);
-    EXPECT_EQ(2.0, result.im);
+    EXPECT_EQ(2.0, result.re);
+    EXPECT_EQ(4.0, result.im);
     const Complex z{formula->get_value("z")};
-    EXPECT_EQ(1.0, z.re);
-    EXPECT_EQ(2.0, z.im);
+    EXPECT_EQ(2.0, z.re);
+    EXPECT_EQ(4.0, z.im);
 }
 
 TEST(TestCompiledFormulaRun, addComplex)
@@ -408,6 +411,71 @@ TEST(TestCompiledFormulaRun, documentedRuntimeDefaultsCompile)
 
     EXPECT_EQ(1.0, result.re);
     EXPECT_EQ(0.0, result.im);
+}
+
+struct CompiledRuntimeInputParam
+{
+    std::string_view name;
+    Complex value;
+};
+
+inline void PrintTo(const CompiledRuntimeInputParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class CompiledRuntimeInputs : public TestWithParam<CompiledRuntimeInputParam>
+{
+};
+
+TEST_P(CompiledRuntimeInputs, clientSuppliedPredefinedValueIsReadAfterCompile)
+{
+    const CompiledRuntimeInputParam &param{GetParam()};
+    const FormulaPtr formula{create_formula(param.name, Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+    formula->set_value(param.name, param.value);
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ(param.value, result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestCompiledFormulaRun, CompiledRuntimeInputs,
+    Values(CompiledRuntimeInputParam{"p1", {1.0, 2.0}}, CompiledRuntimeInputParam{"p2", {3.0, 4.0}},
+        CompiledRuntimeInputParam{"p3", {5.0, 6.0}}, CompiledRuntimeInputParam{"p4", {7.0, 8.0}},
+        CompiledRuntimeInputParam{"p5", {9.0, 10.0}}, CompiledRuntimeInputParam{"pixel", {-1.0, -2.0}},
+        CompiledRuntimeInputParam{"maxit", {256.0, 0.0}}, CompiledRuntimeInputParam{"scrnmax", {320.0, 200.0}},
+        CompiledRuntimeInputParam{"scrnpix", {12.0, 34.0}}, CompiledRuntimeInputParam{"whitesq", {1.0, 0.0}},
+        CompiledRuntimeInputParam{"center", {-0.75, 0.1}}, CompiledRuntimeInputParam{"magxmag", {2.0, 3.0}},
+        CompiledRuntimeInputParam{"rotskew", {45.0, 0.25}}, CompiledRuntimeInputParam{"ismand", {0.0, 0.0}}),
+    [](const TestParamInfo<CompiledRuntimeInputParam> &info) { return std::string{info.param.name}; });
+
+TEST(TestCompiledFormulaRun, clientSuppliedRuntimeInputsCanBeCombinedAfterCompile)
+{
+    const FormulaPtr formula{
+        create_formula("p1+p2+p3+p4+p5+pixel+maxit+scrnmax+scrnpix+whitesq+center+magxmag+rotskew", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+    formula->set_value("p1", {1.0, 2.0});
+    formula->set_value("p2", {3.0, 4.0});
+    formula->set_value("p3", {5.0, 6.0});
+    formula->set_value("p4", {7.0, 8.0});
+    formula->set_value("p5", {9.0, 10.0});
+    formula->set_value("pixel", {-1.0, -2.0});
+    formula->set_value("maxit", {256.0, 0.0});
+    formula->set_value("scrnmax", {320.0, 200.0});
+    formula->set_value("scrnpix", {12.0, 34.0});
+    formula->set_value("whitesq", {1.0, 0.0});
+    formula->set_value("center", {-0.75, 0.1});
+    formula->set_value("magxmag", {2.0, 3.0});
+    formula->set_value("rotskew", {45.0, 0.25});
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{659.25, 265.35}), result);
 }
 
 TEST(TestCompiledFormulaRun, extendedCompilerStillRejectsUnsupportedNodes)

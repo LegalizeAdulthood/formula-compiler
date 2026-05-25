@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #define ASMJIT_STORE(expr_)                       \
@@ -46,17 +47,9 @@ static asmjit::Label get_constant_label(asmjit::x86::Compiler &comp, ConstantBin
     return label;
 }
 
-static asmjit::Label get_symbol_label(asmjit::x86::Compiler &comp, SymbolBindings &labels, const std::string &name)
+static Complex &get_symbol_storage(EmitterState &state, const std::string &name)
 {
-    if (const auto it = labels.find(name); it != labels.end())
-    {
-        return it->second.label;
-    }
-
-    // Create a new label for the symbol
-    asmjit::Label label = comp.newNamedLabel(name.c_str());
-    labels[name] = LabelBinding{label, false};
-    return label;
+    return state.symbols[name];
 }
 
 class Compiler : public NullVisitor
@@ -185,9 +178,9 @@ void Compiler::visit(const LiteralNode &node)
 
 void Compiler::visit(const IdentifierNode &node)
 {
-    asmjit::Label label{get_symbol_label(comp, state.data.symbols, node.name())};
-    ASMJIT_STORE(comp.movlpd(m_result.back(), asmjit::x86::ptr(label)));
-    ASMJIT_STORE(comp.movhpd(m_result.back(), asmjit::x86::ptr(label, sizeof(double))));
+    Complex &symbol{get_symbol_storage(state, node.name())};
+    ASMJIT_STORE(comp.movlpd(m_result.back(), asmjit::x86::ptr(std::uintptr_t(&symbol.re))));
+    ASMJIT_STORE(comp.movhpd(m_result.back(), asmjit::x86::ptr(std::uintptr_t(&symbol.im))));
 }
 
 static CompileError call(asmjit::x86::Compiler &comp, RealFunction *fn, asmjit::x86::Xmm result)
@@ -407,7 +400,7 @@ static CompileError call_binary(
 
 static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm argument)
 {
-    asmjit::Label label{get_symbol_label(comp, state.data.symbols, "lastsqr")};
+    Complex &lastsqr{get_symbol_storage(state, "lastsqr")};
     asmjit::x86::Xmm squared{comp.newXmm()};
     asmjit::x86::Xmm sum{comp.newXmm()};
     asmjit::x86::Xmm zero{comp.newXmm()};
@@ -416,9 +409,9 @@ static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &sta
     ASMJIT_CHECK(comp.movapd(sum, squared));
     ASMJIT_CHECK(comp.shufpd(sum, sum, 1));
     ASMJIT_CHECK(comp.addsd(sum, squared));
-    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(label), sum));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&lastsqr.re)), sum));
     ASMJIT_CHECK(comp.xorpd(zero, zero));
-    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(label, sizeof(double)), zero));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&lastsqr.im)), zero));
     return {};
 }
 
@@ -715,14 +708,14 @@ void Compiler::visit(const BinaryOpNode &node)
 
 void Compiler::visit(const AssignmentNode &node)
 {
-    asmjit::Label label = get_symbol_label(comp, state.data.symbols, node.variable());
+    Complex &symbol{get_symbol_storage(state, node.variable())};
     node.expression()->visit(*this);
     if (!success())
     {
         return;
     }
-    ASMJIT_STORE(comp.movsd(asmjit::x86::ptr(label), m_result.back()));
-    ASMJIT_STORE(comp.movhpd(asmjit::x86::ptr(label, sizeof(double)), m_result.back()));
+    ASMJIT_STORE(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&symbol.re)), m_result.back()));
+    ASMJIT_STORE(comp.movhpd(asmjit::x86::ptr(std::uintptr_t(&symbol.im)), m_result.back()));
 }
 
 void Compiler::visit(const StatementSeqNode &node)
