@@ -22,23 +22,12 @@ correctness.
 - BASIC function calls dispatch through the shared runtime function table.
 - `fn1`, `fn2`, `fn3`, and `fn4` use the same selector state as the
   interpreter and default to `sin`, `sqr`, `sinh`, and `cosh`.
+- Assignment statements store both real and imaginary components.
 - Runtime inputs bound before `compile()` are embedded in the compiled data
   section.
 - Unsupported extended AST nodes make compilation fail.
 
 ## Gaps
-
-### Assignment Stores Only Real Values
-
-`AssignmentNode` emits only the low lane to the target symbol. Assigning a
-complex value updates the real component but leaves the imaginary component at
-its old value or zero.
-
-### Compiled Results Are Incomplete For Some Sections
-
-The compiler returns `_result`, but symbol state is copied back only through
-recorded symbol bindings. Complex symbol updates are affected by the assignment
-imaginary-store gap.
 
 ### `sqr()` Does Not Update `lastsqr`
 
@@ -69,20 +58,13 @@ compiled data from a clean state or be rejected clearly.
 
 ## Implementation Slices
 
-### 1. Store Full Complex Assignments
-
-- Emit both real and imaginary lanes when assigning to a symbol.
-- Add compiled tests for assigning complex expressions and reading them back.
-- Add a section test where a complex assignment in `loop` is consumed by
-  `bailout`.
-
-### 2. Update `lastsqr` For Compiled `sqr()`
+### 1. Update `lastsqr` For Compiled `sqr()`
 
 - Detect selected or direct `sqr()` calls before invoking the runtime function.
 - Emit code that stores the argument modulus squared in `lastsqr`.
 - Add compiled tests matching interpreter `sqr` and selected-`sqr` behavior.
 
-### 3. Define Live Runtime Input Binding
+### 2. Define Live Runtime Input Binding
 
 - Decide whether compiled formulas support `set_value()` after `compile()`.
 - If supported, store compiled symbols in memory owned by `m_state.symbols` so
@@ -90,28 +72,28 @@ compiled data from a clean state or be rejected clearly.
 - If not supported, document and enforce the pre-compile binding contract.
 - Add tests for `pixel`, `p1` through `p5`, and the documented rendering inputs.
 
-### 4. Compile `rand` Advancement
+### 3. Compile `rand` Advancement
 
 - Move per-formula random state into a helper callable from generated code.
 - Advance `rand` before compiled iterate and perturb-iterate sections.
 - Keep startup `rand` as `(0, 0)` until the first iteration.
 - Add deterministic tests using `set_random_seed`.
 
-### 5. Compile `srand()`
+### 4. Compile `srand()`
 
 - Add a generated-call path that resets the per-formula random state and
   returns `(0, 0)`.
 - Verify that a formula-level `srand(seed)` overrides the client seed.
 - Add repeatability tests shared with interpreter expectations.
 
-### 6. Reset State On Recompile
+### 5. Reset State On Recompile
 
 - Clear compiled data bindings and function pointers before rebuilding code.
 - Preserve user-visible runtime state that should survive recompilation.
 - Add tests that compile, change function selectors or values, recompile, and
   verify the new compiled behavior.
 
-### 7. Expand Interpreter/Compiler Parity Fixtures
+### 6. Expand Interpreter/Compiler Parity Fixtures
 
 - Add paired tests for every BASIC runtime semantic in `basic-interpreter.md`.
 - Keep direct AST-only tests only for semantics that parsed BASIC formulas

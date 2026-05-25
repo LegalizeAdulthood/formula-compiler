@@ -180,6 +180,35 @@ TEST(TestCompiledFormulaRun, assignment)
     EXPECT_EQ(0.0, z.im);
 }
 
+TEST(TestCompiledFormulaRun, complexAssignmentStoresBothComponents)
+{
+    const FormulaPtr formula{create_formula("z=3+flip(4)", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{3.0, 4.0}), result);
+    EXPECT_EQ((Complex{3.0, 4.0}), formula->get_value("z"));
+}
+
+TEST(TestCompiledFormulaRun, complexAssignmentPersistsAcrossSections)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "z=3+flip(4)\n"
+                                            "bailout:\n"
+                                            "z\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    EXPECT_EQ((Complex{3.0, 4.0}), formula->run(Section::ITERATE));
+    EXPECT_EQ((Complex{3.0, 4.0}), formula->run(Section::BAILOUT));
+}
+
 TEST(TestCompiledFormulaRun, chainedAssignment)
 {
     const FormulaPtr formula{create_formula("z1=z2=3", Options{})};

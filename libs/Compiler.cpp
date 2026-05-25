@@ -697,6 +697,7 @@ void Compiler::visit(const AssignmentNode &node)
         return;
     }
     ASMJIT_STORE(comp.movsd(asmjit::x86::ptr(label), m_result.back()));
+    ASMJIT_STORE(comp.movhpd(asmjit::x86::ptr(label, sizeof(double)), m_result.back()));
 }
 
 void Compiler::visit(const StatementSeqNode &node)
