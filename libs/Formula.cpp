@@ -374,12 +374,14 @@ Complex ParsedFormula::run(Section part)
     case Section::INITIALIZE:
         return result(m_initialize);
     case Section::ITERATE:
+        advance_random();
         return result(m_iterate);
     case Section::BAILOUT:
         return result(m_bailout);
     case Section::PERTURB_INITIALIZE:
         return result(m_perturb_initialize);
     case Section::PERTURB_ITERATE:
+        advance_random();
         return result(m_perturb_iterate);
     }
     throw std::runtime_error("Invalid part for run");

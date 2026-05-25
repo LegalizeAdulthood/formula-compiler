@@ -28,16 +28,16 @@ correctness.
 - Runtime inputs and symbols are read from and written to formula-owned symbol
   storage, so `set_value()` calls after `compile()` are visible to compiled
   code.
+- `rand` advances before compiled iterate and perturb-iterate sections, starts
+  as `(0, 0)`, and uses the client-supplied seed from `set_random_seed()`.
 - Unsupported extended AST nodes make compilation fail.
 
 ## Gaps
 
-### `rand` And `srand()` Are Not Compiled
+### `srand()` Is Not Compiled
 
-The interpreter advances `rand` before each iterate and perturb-iterate section.
-It also lets `srand()` reset the per-formula random sequence. The compiler does
-not advance `rand`, does not support `srand()` as a per-formula seed reset, and
-cannot currently update random state from generated code.
+The interpreter lets `srand()` reset the per-formula random sequence. The
+compiler does not support `srand()` as a per-formula seed reset.
 
 ### Recompilation Does Not Reset Compiled Runtime State
 
@@ -47,28 +47,21 @@ compiled data from a clean state or be rejected clearly.
 
 ## Implementation Slices
 
-### 1. Compile `rand` Advancement
-
-- Move per-formula random state into a helper callable from generated code.
-- Advance `rand` before compiled iterate and perturb-iterate sections.
-- Keep startup `rand` as `(0, 0)` until the first iteration.
-- Add deterministic tests using `set_random_seed`.
-
-### 2. Compile `srand()`
+### 1. Compile `srand()`
 
 - Add a generated-call path that resets the per-formula random state and
   returns `(0, 0)`.
 - Verify that a formula-level `srand(seed)` overrides the client seed.
 - Add repeatability tests shared with interpreter expectations.
 
-### 3. Reset State On Recompile
+### 2. Reset State On Recompile
 
 - Clear compiled data bindings and function pointers before rebuilding code.
 - Preserve user-visible runtime state that should survive recompilation.
 - Add tests that compile, change function selectors or values, recompile, and
   verify the new compiled behavior.
 
-### 4. Expand Interpreter/Compiler Parity Fixtures
+### 3. Expand Interpreter/Compiler Parity Fixtures
 
 - Add paired tests for every BASIC runtime semantic in `basic-interpreter.md`.
 - Keep direct AST-only tests only for semantics that parsed BASIC formulas

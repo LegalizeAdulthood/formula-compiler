@@ -413,6 +413,68 @@ TEST(TestCompiledFormulaRun, documentedRuntimeDefaultsCompile)
     EXPECT_EQ(0.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, randDefaultsToZeroBeforeIteration)
+{
+    const FormulaPtr formula{create_formula("rand", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{0.0, 0.0}), result);
+}
+
+TEST(TestCompiledFormulaRun, randChangesEachIteration)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "z=rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    formula->set_random_seed(1234);
+    ASSERT_TRUE(formula->compile());
+
+    const Complex first{formula->run(Section::ITERATE)};
+    const Complex second{formula->run(Section::ITERATE)};
+
+    EXPECT_GE(first.re, 0.0);
+    EXPECT_LT(first.re, 1.0);
+    EXPECT_GE(first.im, 0.0);
+    EXPECT_LT(first.im, 1.0);
+    EXPECT_NE(first, second);
+}
+
+TEST(TestCompiledFormulaRun, clientSeedRepeatsRandomSequence)
+{
+    const auto first_iteration = []
+    {
+        const FormulaPtr formula{create_formula("loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->set_random_seed(5678);
+        formula->compile();
+        return formula->run(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(), first_iteration());
+}
+
+TEST(TestCompiledFormulaRun, settingClientSeedResetsRandUntilIteration)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    ASSERT_TRUE(formula->compile());
+    formula->run(Section::ITERATE);
+
+    formula->set_random_seed(5678);
+
+    EXPECT_EQ((Complex{0.0, 0.0}), formula->get_value("rand"));
+}
+
 struct CompiledRuntimeInputParam
 {
     std::string_view name;
