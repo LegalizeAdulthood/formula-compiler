@@ -161,14 +161,7 @@ std::set<std::string> collect_formula_symbols(const ast::FormulaSections &formul
     return collector.symbols();
 }
 
-/// This Visitor is an experimental implementation that emits a GLSL compute
-/// shader for a BASIC fractal formula.
-///
-/// The current output is debug/example shader text. It is not a
-/// production-correct BASIC backend.
-///
-/// It merely serves as an example for your own Visitor.
-///
+/// Emits a GLSL compute shader for a BASIC fractal formula.
 class GLSLEmitter : public ast::NullVisitor
 {
 public:

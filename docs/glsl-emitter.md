@@ -1,55 +1,46 @@
-# BASIC GLSL Emitter Correctness Plan
+# BASIC GLSL Emitter
 
 ## Summary
 
-The current GLSL emitter is example code. It should not be treated as a
-correct BASIC formula backend until it is rewritten around BASIC formula
-semantics, typed lowering, and shader-compilation tests.
+The GLSL emitter is a BASIC fractal formula source translator. It emits a
+GLSL 4.50 compute shader for parsed BASIC formulas and follows the same core
+numeric semantics as the BASIC interpreter and JIT for the supported surface.
 
-The goal of this plan is to make the GLSL emitter correct for BASIC fractal
-formulas only. Extended formulas, coloring formulas, transformations, user
-objects, typed declarations, arrays, and parameters are out of scope here.
+Extended formulas, coloring formulas, transformations, user objects, typed
+declarations, arrays, and parameter declarations are out of scope for this
+emitter.
 
-## Goals
+## Supported Surface
 
-- Preserve BASIC parser, interpreter, and JIT semantics.
-- Emit syntactically valid GLSL for every parsed BASIC formula supported by
-  the interpreter and JIT.
-- Match BASIC numeric behavior for complex values, truthiness, comparisons,
-  builtins, and predefined variables.
-- Reject unsupported shader-generation inputs with diagnostics instead of
-  emitting invalid or misleading shader code.
-- Add tests that compare GLSL-emitter semantics against existing BASIC
-  interpreter expectations wherever possible.
+- BASIC fractal sections: global, init, loop, and bailout.
+- Complex values represented as `vec2`.
+- User variables and unknown reads initialized to `(0, 0)`.
+- BASIC arithmetic, comparisons, logical operators, modulus, conditionals,
+  and bailout truthiness.
+- BASIC builtin functions, including `fn1` through `fn4` selectors.
+- BASIC predefined values exposed through the shader uniform block or derived
+  inside the shader.
+- Deterministic `rand` and `srand` state from a client-supplied seed.
+- Result output through `FormulaResult` records on storage binding 2.
+- Debug image output on image binding 0.
 
-## Non-Goals
+The translator is covered by snapshot tests, interpreter-equivalence fixtures,
+an optional `glslangValidator` shader compilation test, and the
+`glsl-renderer` OpenGL smoke test.
 
-- Do not support EXTENDED formula syntax in this emitter pass.
-- Do not implement direct-coloring or transformation shader generation.
-- Do not implement host GPU integration, pipeline creation, or image upload.
-- Do not optimize generated GLSL before correctness is covered.
-- Do not reuse this emitter for the extended JIT compiler plan.
+## Unsupported Surface
 
-## Current Gaps
-
-The current emitter has these BASIC correctness gaps:
-
-- User variables are assigned without declarations.
-- Scalar literals are emitted as scalar GLSL values even when complex `vec2`
-  values are required.
-- Arithmetic helpers are used blindly and can receive scalar operands.
-- `|z|` emits magnitude instead of modulus squared.
-- `abs(z)` emits magnitude instead of component-wise absolute value.
-- Comparisons emit raw GLSL operators against complex values.
-- `if` conditions emit expressions directly instead of BASIC real-part
-  truthiness.
-- Logical operators rely on GLSL short-circuit behavior, unlike BASIC.
-- Output coloring is a placeholder iteration gradient rather than a defined
-  client contract.
+- EXTENDED syntax and AST nodes.
+- Coloring formulas and transformations.
+- User-defined functions, methods, classes, objects, imports, and casts.
+- Typed declarations and arrays.
+- Parameter blocks as executable shader input definitions.
+- Host rendering orchestration beyond the smoke-test example.
+- Optimized GLSL output.
 
 ## Architecture
 
-Add a BASIC-only GLSL lowering layer before string emission.
+The emitter uses a BASIC-only lowering layer before string emission.
 
 The lowering layer should build a small typed model:
 
@@ -170,15 +161,6 @@ Prefer these manifest dependencies:
 
 Avoid SDL2, raylib, and freeglut for this test harness. They either add more
 abstraction than needed or are less suitable for modern OpenGL shader tests.
-
-## Implementation Slices
-
-### 1. Remove Example-Only Caveats
-
-- Once tests cover the supported BASIC surface, replace example caveats with
-  a precise supported/unsupported feature list.
-- Keep unsupported EXTENDED features explicit.
-- Ensure docs and header comments match actual behavior.
 
 ## Verification
 
