@@ -2703,6 +2703,32 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsGlobalReadsAcrossSections)
     }
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsGlobalWritesInGlobalSection)
+{
+    const std::array<parser::EntryKind, 3> entry_kinds{
+        parser::EntryKind::FRACTAL, parser::EntryKind::COLORING, parser::EntryKind::TRANSFORMATION};
+
+    for (const parser::EntryKind entry_kind : entry_kinds)
+    {
+        parser::Options options;
+        options.dialect = Dialect::EXTENDED;
+        options.entry_kind = entry_kind;
+        const LoadedFormula loaded{load_formula("global:\n"
+                                                "int seed=1\n"
+                                                "int values[2]\n"
+                                                "seed=seed+1\n"
+                                                "values[0]=seed",
+            options)};
+        ASSERT_TRUE(loaded.ast);
+        FormulaSemanticContext context;
+        context.entry_kind = entry_kind;
+
+        const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+        EXPECT_TRUE(diagnostics.empty());
+    }
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsColorFinalSectionResult)
 {
     parser::Options options;
