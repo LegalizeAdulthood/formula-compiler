@@ -229,27 +229,28 @@ CompileError update_symbols(
     asmjit::x86::Compiler &comp, SymbolTable &symbols, SymbolBindings &bindings, asmjit::x86::Xmm result)
 {
     asmjit::x86::Gp tmp{comp.newUIntPtr()};
+    asmjit::x86::Gp dest{comp.newUIntPtr()};
     {
         double *_result{&symbols["_result"].re};
-        auto dest = asmjit::x86::ptr(std::uintptr_t(_result));
+        ASMJIT_CHECK(comp.mov(dest, asmjit::imm(reinterpret_cast<std::uintptr_t>(_result))));
         ASMJIT_CHECK(comp.movq(tmp, result));
-        ASMJIT_CHECK(comp.mov(dest, tmp));
-        dest = asmjit::x86::ptr(std::uintptr_t(_result + 1));
+        ASMJIT_CHECK(comp.mov(asmjit::x86::ptr(dest), tmp));
+        ASMJIT_CHECK(comp.mov(dest, asmjit::imm(reinterpret_cast<std::uintptr_t>(_result + 1))));
         ASMJIT_CHECK(comp.shufpd(result, result, 1)); // result = result.yx
         ASMJIT_CHECK(comp.movq(tmp, result));
-        ASMJIT_CHECK(comp.mov(dest, tmp));
+        ASMJIT_CHECK(comp.mov(asmjit::x86::ptr(dest), tmp));
     }
     for (auto &[name, binding] : bindings)
     {
         auto src = asmjit::x86::ptr(binding.label);
         double *real{&symbols[name].re};
-        auto dest = asmjit::x86::ptr(std::uintptr_t(real));
+        ASMJIT_CHECK(comp.mov(dest, asmjit::imm(reinterpret_cast<std::uintptr_t>(real))));
         ASMJIT_CHECK(comp.mov(tmp, src));
-        ASMJIT_CHECK(comp.mov(dest, tmp));
+        ASMJIT_CHECK(comp.mov(asmjit::x86::ptr(dest), tmp));
         src = asmjit::x86::ptr(binding.label, sizeof(double));
-        dest = asmjit::x86::ptr(std::uintptr_t(real + 1));
+        ASMJIT_CHECK(comp.mov(dest, asmjit::imm(reinterpret_cast<std::uintptr_t>(real + 1))));
         ASMJIT_CHECK(comp.mov(tmp, src));
-        ASMJIT_CHECK(comp.mov(dest, tmp));
+        ASMJIT_CHECK(comp.mov(asmjit::x86::ptr(dest), tmp));
     }
     return {};
 }

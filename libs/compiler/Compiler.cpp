@@ -53,6 +53,32 @@ static Complex &get_symbol_storage(EmitterState &state, const std::string &name)
     return state.symbols[name];
 }
 
+static CompileError load_complex(asmjit::x86::Compiler &comp, asmjit::x86::Xmm result, const Complex &value)
+{
+    asmjit::x86::Gp address{comp.newUIntPtr()};
+    ASMJIT_CHECK(comp.mov(address, asmjit::imm(reinterpret_cast<std::uintptr_t>(&value))));
+    ASMJIT_CHECK(comp.movlpd(result, asmjit::x86::ptr(address)));
+    ASMJIT_CHECK(comp.movhpd(result, asmjit::x86::ptr(address, sizeof(double))));
+    return {};
+}
+
+static CompileError store_complex(asmjit::x86::Compiler &comp, Complex &dest, asmjit::x86::Xmm value)
+{
+    asmjit::x86::Gp address{comp.newUIntPtr()};
+    ASMJIT_CHECK(comp.mov(address, asmjit::imm(reinterpret_cast<std::uintptr_t>(&dest))));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(address), value));
+    ASMJIT_CHECK(comp.movhpd(asmjit::x86::ptr(address, sizeof(double)), value));
+    return {};
+}
+
+static CompileError store_double(asmjit::x86::Compiler &comp, double &dest, asmjit::x86::Xmm value)
+{
+    asmjit::x86::Gp address{comp.newUIntPtr()};
+    ASMJIT_CHECK(comp.mov(address, asmjit::imm(reinterpret_cast<std::uintptr_t>(&dest))));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(address), value));
+    return {};
+}
+
 class Compiler : public NullVisitor
 {
 public:
@@ -180,8 +206,10 @@ void Compiler::visit(const LiteralNode &node)
 void Compiler::visit(const IdentifierNode &node)
 {
     Complex &symbol{get_symbol_storage(state, node.name())};
-    ASMJIT_STORE(comp.movlpd(m_result.back(), asmjit::x86::ptr(std::uintptr_t(&symbol.re))));
-    ASMJIT_STORE(comp.movhpd(m_result.back(), asmjit::x86::ptr(std::uintptr_t(&symbol.im))));
+    if (const CompileError err = load_complex(comp, m_result.back(), symbol); err)
+    {
+        m_err = err;
+    }
 }
 
 static CompileError call(asmjit::x86::Compiler &comp, RealFunction *fn, asmjit::x86::Xmm result)
@@ -410,9 +438,15 @@ static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &sta
     ASMJIT_CHECK(comp.movapd(sum, squared));
     ASMJIT_CHECK(comp.shufpd(sum, sum, 1));
     ASMJIT_CHECK(comp.addsd(sum, squared));
-    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&lastsqr.re)), sum));
+    if (const CompileError err = store_double(comp, lastsqr.re, sum); err)
+    {
+        return err;
+    }
     ASMJIT_CHECK(comp.xorpd(zero, zero));
-    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&lastsqr.im)), zero));
+    if (const CompileError err = store_double(comp, lastsqr.im, zero); err)
+    {
+        return err;
+    }
     return {};
 }
 
@@ -776,8 +810,10 @@ void Compiler::visit(const AssignmentNode &node)
     {
         return;
     }
-    ASMJIT_STORE(comp.movsd(asmjit::x86::ptr(std::uintptr_t(&symbol.re)), m_result.back()));
-    ASMJIT_STORE(comp.movhpd(asmjit::x86::ptr(std::uintptr_t(&symbol.im)), m_result.back()));
+    if (const CompileError err = store_complex(comp, symbol, m_result.back()); err)
+    {
+        m_err = err;
+    }
 }
 
 void Compiler::visit(const StatementSeqNode &node)
