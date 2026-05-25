@@ -38,6 +38,9 @@ and predefined variables.
   returns `(0, 0)`.
 - The client owns the initial random seed. The runtime uses a stable seed of
   zero until the client calls `set_random_seed` or the formula calls `srand()`.
+- The client supplies rendering inputs with `set_value`: `p1`, `p2`, `p3`,
+  `p4`, `p5`, `pixel`, `maxit`, `scrnmax`, `scrnpix`, `whitesq`, `center`,
+  `magxmag`, `rotskew`, and optional `ismand` override.
 - `fn1`, `fn2`, `fn3`, and `fn4` default to `sin`, `sqr`, `sinh`, and `cosh`,
   matching the Id engine defaults. They can be bound by the client to supported
   BASIC builtin functions. Selector names and target names are matched
@@ -45,27 +48,8 @@ and predefined variables.
 
 ## Gaps
 
-### Predefined Runtime Inputs
-
-Some predefined variables are supplied by the rendering client:
-
-- `p1`, `p2`, `p3`, `p4`, `p5`
-- `pixel`
-- `maxit`
-- `scrnmax`
-- `scrnpix`
-- `whitesq`
-- `center`
-- `magxmag`
-- `rotskew`
-
-The existing `set_value` API can bind these values, but the interpreter does
-not make the runtime contract explicit. The plan should document and test the
-client-supplied values and random seed that must be present for complete,
-deterministically reproducible image rendering.
-
-`ismand` has a documented default of true and is initialized unless the client
-overrides it.
+No BASIC interpreter-only gaps remain. JIT and GLSL parity work is tracked
+below and in `glsl-emitter.md`.
 
 ## Non-Gaps
 
@@ -79,16 +63,7 @@ overrides it.
 
 ## Implementation Slices
 
-### 1. Document Runtime Input Contract
-
-- Document which predefined variables are supplied by the client.
-- Keep `set_value` as the binding mechanism for complex predefined values.
-- Keep `set_random_seed` as the binding mechanism for deterministic random
-  state.
-- Keep the existing round-trip tests for client-supplied predefined values
-  passing.
-
-### 2. Keep JIT And GLSL In Sync
+### 1. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.

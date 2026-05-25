@@ -167,6 +167,31 @@ INSTANTIATE_TEST_SUITE_P(TestFormulaInterpreter, RuntimeInputs,
         RuntimeInputParam{"magxmag", {2.0, 3.0}}, RuntimeInputParam{"rotskew", {45.0, 0.25}},
         RuntimeInputParam{"ismand", {0.0, 0.0}}));
 
+TEST(TestFormulaInterpreter, clientSuppliedRuntimeInputsCanBeCombined)
+{
+    const FormulaPtr formula{
+        create_formula("p1+p2+p3+p4+p5+pixel+maxit+scrnmax+scrnpix+whitesq+center+magxmag+rotskew", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value("p1", {1.0, 2.0});
+    formula->set_value("p2", {3.0, 4.0});
+    formula->set_value("p3", {5.0, 6.0});
+    formula->set_value("p4", {7.0, 8.0});
+    formula->set_value("p5", {9.0, 10.0});
+    formula->set_value("pixel", {-1.0, -2.0});
+    formula->set_value("maxit", {256.0, 0.0});
+    formula->set_value("scrnmax", {320.0, 200.0});
+    formula->set_value("scrnpix", {12.0, 34.0});
+    formula->set_value("whitesq", {1.0, 0.0});
+    formula->set_value("center", {-0.75, 0.1});
+    formula->set_value("magxmag", {2.0, 3.0});
+    formula->set_value("rotskew", {45.0, 0.25});
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{659.25, 265.35}), result);
+}
+
 TEST(TestFormulaInterpreter, ismandDefaultsToTrue)
 {
     const FormulaPtr formula{create_formula("ismand", Options{})};
