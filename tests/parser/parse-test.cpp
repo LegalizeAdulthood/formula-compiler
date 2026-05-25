@@ -445,16 +445,28 @@ TEST(TestFormulaParse, invalidIdentifier)
 }
 
 static MultiStatementParam s_multi_statements[]{
-    {"sequence", "3,4"}, //
-    {"statements", "3\n4\n"},
-    {"assignmentStatements", "z=3\nz=4\n"},
-    {"assignmentWithComments", "z=3; comment\nz=4; another comment\n"},
-    {"assignmentWithBlankLines", "z=3; comment\n\r\n\nz=4; another comment\n"},
-    {"commaSeparatedStatements", "3,4"},
-    {"commaSeparatedAssignmentStatements", "z=3,z=4"},
-    {"mixedNewlineAndCommaSeparators", "z=3,z=4\nz=5"},
-    {"commaWithSpaces", "3 , 4"},
-    {"compactIf", "if(1),1,elseif(2),2,else,0,endif"},
+    {"sequence", "3,4"},                               //
+    {"statements",                                     //
+        "3\n"                                          //
+        "4\n"},                                        //
+    {"assignmentStatements",                           //
+        "z=3\n"                                        //
+        "z=4\n"},                                      //
+    {"assignmentWithComments",                         //
+        "z=3; comment\n"                               //
+        "z=4; another comment\n"},                     //
+    {"assignmentWithBlankLines",                       //
+        "z=3; comment\n"                               //
+        "\r\n"                                         //
+        "\n"                                           //
+        "z=4; another comment\n"},                     //
+    {"commaSeparatedStatements", "3,4"},               //
+    {"commaSeparatedAssignmentStatements", "z=3,z=4"}, //
+    {"mixedNewlineAndCommaSeparators",                 //
+        "z=3,z=4\n"                                    //
+        "z=5"},                                        //
+    {"commaWithSpaces", "3 , 4"},                      //
+    {"compactIf", "if(1),1,elseif(2),2,else,0,endif"}, //
 };
 
 TEST_P(MultiStatements, parse)
@@ -786,73 +798,220 @@ static std::string s_reserved_words[]{
 INSTANTIATE_TEST_SUITE_P(TestFormulaParse, ReservedWords, ValuesIn(s_reserved_words));
 
 static ParseFailureParam s_parse_failures[]{
-    {"ifWithBadCondition", "if(:)\n", ErrorCode::EXPECTED_PRIMARY},                                      //
-    {"ifWithoutSeparator", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                            //
-    {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                                            //
-    {"ifElseWithoutSeparator", "if(1)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                  //
-    {"ifElseWithoutEndIf", "if(1)\nelse\n", ErrorCode::EXPECTED_ENDIF},                                  //
-    {"ifElseIfWithoutSeparator", "if(1)\nelseif(0)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},           //
-    {"ifElseIfWithoutEndIf", "if(1)\nelseif(0)\n", ErrorCode::EXPECTED_ENDIF},                           //
-    {"ifElseIfElseWithoutSeparator", "if(1)\nelseif(0)\nelse", ErrorCode::EXPECTED_STATEMENT_SEPARATOR}, //
-    {"ifElseIfElseWithoutEndIf", "if(1)\nelseif(0)\nelse\n", ErrorCode::EXPECTED_ENDIF},                 //
-    {"builtinNoTerminator", "builtin:", ErrorCode::EXPECTED_TERMINATOR},                                 //
-    {"builtinInvalidKey", "builtin:\n1", ErrorCode::EXPECTED_IDENTIFIER},                                //
-    {"builtinNoAssignment", "builtin:\ntype 0", ErrorCode::EXPECTED_ASSIGNMENT},                         //
-    {"builtinBadKey", "builtin:\ntipe=1", ErrorCode::BUILTIN_SECTION_INVALID_KEY},                       //
-    {"builtinBadType", "builtin:\ntype=0", ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                     //
-    {"builtinBadValue", "builtin:\ntype=1.0", ErrorCode::EXPECTED_INTEGER},                              //
-    {"builtinValueNoTerminator", "builtin:\ntype=1 switch:", ErrorCode::EXPECTED_TERMINATOR},            //
-    {"defaultNoTerminator", "default:", ErrorCode::EXPECTED_TERMINATOR},                                 //
-    {"defaultInvalidKey", "default:\n1", ErrorCode::EXPECTED_IDENTIFIER},                                //
-    {"defaultBadKey", "default:\ntipe=1", ErrorCode::DEFAULT_SECTION_INVALID_KEY},                       //
-    {"defaultMaxIterNoAssignment", "default:\nmaxiter 0", ErrorCode::EXPECTED_ASSIGNMENT},               //
-    {"defaultMaxIterNoValue", "default:\nmaxiter=", ErrorCode::EXPECTED_INTEGER},                        //
-    {"defaultMaxIterBadValue", "default:\nmaxiter=1.0", ErrorCode::EXPECTED_INTEGER},                    //
-    {"defaultMaxIterNoTerminator", "default:\nmaxiter=1", ErrorCode::EXPECTED_TERMINATOR},               //
-    {"defaultAngleNoAssignment", "default:\nangle 0", ErrorCode::EXPECTED_ASSIGNMENT},                   //
-    {"defaultAngleNoValue", "default:\nangle=", ErrorCode::EXPECTED_FLOATING_POINT},                     //
-    {"defaultAngleBadValue", "default:\nangle=enum", ErrorCode::EXPECTED_FLOATING_POINT},                //
-    {"defaultAngleNoTerminator", "default:\nangle=1", ErrorCode::EXPECTED_TERMINATOR},                   //
-    {"defaultCenterNoAssignment", "default:\ncenter 0", ErrorCode::EXPECTED_ASSIGNMENT},                 //
-    {"defaultCenterNoValue", "default:\ncenter=", ErrorCode::EXPECTED_OPEN_PAREN},                       //
-    {"defaultCenterBadValue", "default:\ncenter=enum", ErrorCode::EXPECTED_OPEN_PAREN},                  //
-    {"defaultCenterNoRealPart", "default:\ncenter=(", ErrorCode::EXPECTED_FLOATING_POINT},               //
-    {"defaultCenterNoComma", "default:\ncenter=(1.0", ErrorCode::EXPECTED_COMMA},                        //
-    {"defaultCenterNoImagPart", "default:\ncenter=(1.0,", ErrorCode::EXPECTED_FLOATING_POINT},           //
-    {"defaultCenterNoCloseParen", "default:\ncenter=(1.0,1.0", ErrorCode::EXPECTED_CLOSE_PAREN},         //
-    {"defaultCenterNoTerminator", "default:\ncenter=(1.0,1.0)", ErrorCode::EXPECTED_TERMINATOR},         //
-    {"defaultTitleNoAssignment", "default:\ntitle enum", ErrorCode::EXPECTED_ASSIGNMENT},                //
-    {"defaultTitleNoValue", "default:\ntitle=", ErrorCode::EXPECTED_STRING},                             //
-    {"defaultTitleBadValue", "default:\ntitle=enum", ErrorCode::EXPECTED_STRING},                        //
-    {"defaultMethodNoAssignment", "default:\nmethod", ErrorCode::EXPECTED_ASSIGNMENT},                   //
-    {"defaultMethodNoValue", "default:\nmethod=", ErrorCode::EXPECTED_IDENTIFIER},                       //
-    {"defaultMethodBadValue", "default:\nmethod=foo", ErrorCode::DEFAULT_SECTION_INVALID_METHOD},        //
-    {"defaultMethodNoTerminator", "default:\nmethod=guessing", ErrorCode::EXPECTED_TERMINATOR},          //
-    {"defaultPerturbNoAssignment", "default:\nperturb", ErrorCode::EXPECTED_ASSIGNMENT},                 //
-    {"defaultPerturbNoValue", "default:\nperturb=", ErrorCode::EXPECTED_PRIMARY},                        //
-    {"defaultPerturbBadValue", "default:\nperturb=if", ErrorCode::EXPECTED_PRIMARY},                     //
-    {"defaultPerturbNoTerminator", "default:\nperturb=true", ErrorCode::EXPECTED_TERMINATOR},            //
-    {"switchNoTerminator", "switch:", ErrorCode::EXPECTED_TERMINATOR},                                   //
-    {"switchInvalidKey", "switch:\n1", ErrorCode::EXPECTED_IDENTIFIER},                                  //
-    {"switchTypeNoAssignment", "switch:\ntype \"Julia\"", ErrorCode::EXPECTED_ASSIGNMENT},               //
-    {"switchTypeNoTerminator", "switch:\ntype=\"Julia\"", ErrorCode::EXPECTED_TERMINATOR},               //
-    {"switchTypeNoString", "switch:\ntype=3\n", ErrorCode::EXPECTED_STRING},                             //
-    {"switchParamInvalidValue", "switch:\nfoo=3\n", ErrorCode::EXPECTED_IDENTIFIER},                     //
-    {"switchParamNoTerminator", "switch:\nfoo=foo", ErrorCode::EXPECTED_TERMINATOR},                     //
-    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                                 //
-    {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                                    //
-    {"elseIfWithoutCloseParen", "if(1)\nelseif(1\nendif\n", ErrorCode::EXPECTED_CLOSE_PAREN},            //
-    {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_STATEMENT},                                      //
-    {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},                             //
-    {"complexLiteralWithoutComma", "(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},                            //
-    {"complexLiteralWithoutClosingParen", "(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},                      //
-    {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                                      //
-    {"assignmentAsExpression", "2+z=4", ErrorCode::EXPECTED_STATEMENT},                                  //
-    {"assignmentInParenthesizedExpression", "q=3+(w=6)", ErrorCode::EXPECTED_CLOSE_PAREN},               //
-    {"assignmentInModulus", "|w=6|", ErrorCode::EXPECTED_CLOSE_MODULUS},                                 //
-    {"nestedModulusWithoutParens", "||z||", ErrorCode::EXPECTED_PRIMARY},                                //
-    {"memberAccessWithoutMember", "Texture.", ErrorCode::EXPECTED_IDENTIFIER},                           //
-    {"targetedCallWithoutMember", "Texture.(1)", ErrorCode::EXPECTED_IDENTIFIER},                        //
+    {"ifWithBadCondition", "if(:)\n", ErrorCode::EXPECTED_PRIMARY},                        //
+    {"ifWithoutSeparator", "if(1)", ErrorCode::EXPECTED_STATEMENT_SEPARATOR},              //
+    {"ifWithoutEndIf", "if(1)\n", ErrorCode::EXPECTED_ENDIF},                              //
+    {"ifElseWithoutSeparator",                                                             //
+        "if(1)\n"                                                                          //
+        "else",                                                                            //
+        ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                                          //
+    {"ifElseWithoutEndIf",                                                                 //
+        "if(1)\n"                                                                          //
+        "else\n",                                                                          //
+        ErrorCode::EXPECTED_ENDIF},                                                        //
+    {"ifElseIfWithoutSeparator",                                                           //
+        "if(1)\n"                                                                          //
+        "elseif(0)",                                                                       //
+        ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                                          //
+    {"ifElseIfWithoutEndIf",                                                               //
+        "if(1)\n"                                                                          //
+        "elseif(0)\n",                                                                     //
+        ErrorCode::EXPECTED_ENDIF},                                                        //
+    {"ifElseIfElseWithoutSeparator",                                                       //
+        "if(1)\n"                                                                          //
+        "elseif(0)\n"                                                                      //
+        "else",                                                                            //
+        ErrorCode::EXPECTED_STATEMENT_SEPARATOR},                                          //
+    {"ifElseIfElseWithoutEndIf",                                                           //
+        "if(1)\n"                                                                          //
+        "elseif(0)\n"                                                                      //
+        "else\n",                                                                          //
+        ErrorCode::EXPECTED_ENDIF},                                                        //
+    {"builtinNoTerminator", "builtin:", ErrorCode::EXPECTED_TERMINATOR},                   //
+    {"builtinInvalidKey",                                                                  //
+        "builtin:\n"                                                                       //
+        "1",                                                                               //
+        ErrorCode::EXPECTED_IDENTIFIER},                                                   //
+    {"builtinNoAssignment",                                                                //
+        "builtin:\n"                                                                       //
+        "type 0",                                                                          //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"builtinBadKey",                                                                      //
+        "builtin:\n"                                                                       //
+        "tipe=1",                                                                          //
+        ErrorCode::BUILTIN_SECTION_INVALID_KEY},                                           //
+    {"builtinBadType",                                                                     //
+        "builtin:\n"                                                                       //
+        "type=0",                                                                          //
+        ErrorCode::BUILTIN_SECTION_INVALID_TYPE},                                          //
+    {"builtinBadValue",                                                                    //
+        "builtin:\n"                                                                       //
+        "type=1.0",                                                                        //
+        ErrorCode::EXPECTED_INTEGER},                                                      //
+    {"builtinValueNoTerminator",                                                           //
+        "builtin:\n"                                                                       //
+        "type=1 switch:",                                                                  //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"defaultNoTerminator", "default:", ErrorCode::EXPECTED_TERMINATOR},                   //
+    {"defaultInvalidKey",                                                                  //
+        "default:\n"                                                                       //
+        "1",                                                                               //
+        ErrorCode::EXPECTED_IDENTIFIER},                                                   //
+    {"defaultBadKey",                                                                      //
+        "default:\n"                                                                       //
+        "tipe=1",                                                                          //
+        ErrorCode::DEFAULT_SECTION_INVALID_KEY},                                           //
+    {"defaultMaxIterNoAssignment",                                                         //
+        "default:\n"                                                                       //
+        "maxiter 0",                                                                       //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultMaxIterNoValue",                                                              //
+        "default:\n"                                                                       //
+        "maxiter=",                                                                        //
+        ErrorCode::EXPECTED_INTEGER},                                                      //
+    {"defaultMaxIterBadValue",                                                             //
+        "default:\n"                                                                       //
+        "maxiter=1.0",                                                                     //
+        ErrorCode::EXPECTED_INTEGER},                                                      //
+    {"defaultMaxIterNoTerminator",                                                         //
+        "default:\n"                                                                       //
+        "maxiter=1",                                                                       //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"defaultAngleNoAssignment",                                                           //
+        "default:\n"                                                                       //
+        "angle 0",                                                                         //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultAngleNoValue",                                                                //
+        "default:\n"                                                                       //
+        "angle=",                                                                          //
+        ErrorCode::EXPECTED_FLOATING_POINT},                                               //
+    {"defaultAngleBadValue",                                                               //
+        "default:\n"                                                                       //
+        "angle=enum",                                                                      //
+        ErrorCode::EXPECTED_FLOATING_POINT},                                               //
+    {"defaultAngleNoTerminator",                                                           //
+        "default:\n"                                                                       //
+        "angle=1",                                                                         //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"defaultCenterNoAssignment",                                                          //
+        "default:\n"                                                                       //
+        "center 0",                                                                        //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultCenterNoValue",                                                               //
+        "default:\n"                                                                       //
+        "center=",                                                                         //
+        ErrorCode::EXPECTED_OPEN_PAREN},                                                   //
+    {"defaultCenterBadValue",                                                              //
+        "default:\n"                                                                       //
+        "center=enum",                                                                     //
+        ErrorCode::EXPECTED_OPEN_PAREN},                                                   //
+    {"defaultCenterNoRealPart",                                                            //
+        "default:\n"                                                                       //
+        "center=(",                                                                        //
+        ErrorCode::EXPECTED_FLOATING_POINT},                                               //
+    {"defaultCenterNoComma",                                                               //
+        "default:\n"                                                                       //
+        "center=(1.0",                                                                     //
+        ErrorCode::EXPECTED_COMMA},                                                        //
+    {"defaultCenterNoImagPart",                                                            //
+        "default:\n"                                                                       //
+        "center=(1.0,",                                                                    //
+        ErrorCode::EXPECTED_FLOATING_POINT},                                               //
+    {"defaultCenterNoCloseParen",                                                          //
+        "default:\n"                                                                       //
+        "center=(1.0,1.0",                                                                 //
+        ErrorCode::EXPECTED_CLOSE_PAREN},                                                  //
+    {"defaultCenterNoTerminator",                                                          //
+        "default:\n"                                                                       //
+        "center=(1.0,1.0)",                                                                //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"defaultTitleNoAssignment",                                                           //
+        "default:\n"                                                                       //
+        "title enum",                                                                      //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultTitleNoValue",                                                                //
+        "default:\n"                                                                       //
+        "title=",                                                                          //
+        ErrorCode::EXPECTED_STRING},                                                       //
+    {"defaultTitleBadValue",                                                               //
+        "default:\n"                                                                       //
+        "title=enum",                                                                      //
+        ErrorCode::EXPECTED_STRING},                                                       //
+    {"defaultMethodNoAssignment",                                                          //
+        "default:\n"                                                                       //
+        "method",                                                                          //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultMethodNoValue",                                                               //
+        "default:\n"                                                                       //
+        "method=",                                                                         //
+        ErrorCode::EXPECTED_IDENTIFIER},                                                   //
+    {"defaultMethodBadValue",                                                              //
+        "default:\n"                                                                       //
+        "method=foo",                                                                      //
+        ErrorCode::DEFAULT_SECTION_INVALID_METHOD},                                        //
+    {"defaultMethodNoTerminator",                                                          //
+        "default:\n"                                                                       //
+        "method=guessing",                                                                 //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"defaultPerturbNoAssignment",                                                         //
+        "default:\n"                                                                       //
+        "perturb",                                                                         //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"defaultPerturbNoValue",                                                              //
+        "default:\n"                                                                       //
+        "perturb=",                                                                        //
+        ErrorCode::EXPECTED_PRIMARY},                                                      //
+    {"defaultPerturbBadValue",                                                             //
+        "default:\n"                                                                       //
+        "perturb=if",                                                                      //
+        ErrorCode::EXPECTED_PRIMARY},                                                      //
+    {"defaultPerturbNoTerminator",                                                         //
+        "default:\n"                                                                       //
+        "perturb=true",                                                                    //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"switchNoTerminator", "switch:", ErrorCode::EXPECTED_TERMINATOR},                     //
+    {"switchInvalidKey",                                                                   //
+        "switch:\n"                                                                        //
+        "1",                                                                               //
+        ErrorCode::EXPECTED_IDENTIFIER},                                                   //
+    {"switchTypeNoAssignment",                                                             //
+        "switch:\n"                                                                        //
+        "type \"Julia\"",                                                                  //
+        ErrorCode::EXPECTED_ASSIGNMENT},                                                   //
+    {"switchTypeNoTerminator",                                                             //
+        "switch:\n"                                                                        //
+        "type=\"Julia\"",                                                                  //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"switchTypeNoString",                                                                 //
+        "switch:\n"                                                                        //
+        "type=3\n",                                                                        //
+        ErrorCode::EXPECTED_STRING},                                                       //
+    {"switchParamInvalidValue",                                                            //
+        "switch:\n"                                                                        //
+        "foo=3\n",                                                                         //
+        ErrorCode::EXPECTED_IDENTIFIER},                                                   //
+    {"switchParamNoTerminator",                                                            //
+        "switch:\n"                                                                        //
+        "foo=foo",                                                                         //
+        ErrorCode::EXPECTED_TERMINATOR},                                                   //
+    {"invalidToken", "1a", ErrorCode::EXPECTED_PRIMARY},                                   //
+    {"ifWithoutCloseParen", "if(1", ErrorCode::EXPECTED_CLOSE_PAREN},                      //
+    {"elseIfWithoutCloseParen",                                                            //
+        "if(1)\n"                                                                          //
+        "elseif(1\n"                                                                       //
+        "endif\n",                                                                         //
+        ErrorCode::EXPECTED_CLOSE_PAREN},                                                  //
+    {"exprAssignment", "1/c=pixel", ErrorCode::EXPECTED_STATEMENT},                        //
+    {"functionWithoutCloseParen", "sin(z", ErrorCode::EXPECTED_CLOSE_PAREN},               //
+    {"complexLiteralWithoutComma", "(6 4)", ErrorCode::EXPECTED_CLOSE_PAREN},              //
+    {"complexLiteralWithoutClosingParen", "(6,4", ErrorCode::EXPECTED_CLOSE_PAREN},        //
+    {"unbalancedModulus", "|4", ErrorCode::EXPECTED_CLOSE_MODULUS},                        //
+    {"assignmentAsExpression", "2+z=4", ErrorCode::EXPECTED_STATEMENT},                    //
+    {"assignmentInParenthesizedExpression", "q=3+(w=6)", ErrorCode::EXPECTED_CLOSE_PAREN}, //
+    {"assignmentInModulus", "|w=6|", ErrorCode::EXPECTED_CLOSE_MODULUS},                   //
+    {"nestedModulusWithoutParens", "||z||", ErrorCode::EXPECTED_PRIMARY},                  //
+    {"memberAccessWithoutMember", "Texture.", ErrorCode::EXPECTED_IDENTIFIER},             //
+    {"targetedCallWithoutMember", "Texture.(1)", ErrorCode::EXPECTED_IDENTIFIER},          //
 };
 
 TEST_P(ParseFailures, parse)

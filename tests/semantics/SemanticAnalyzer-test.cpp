@@ -1405,7 +1405,9 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsDuplicateLocalDeclarations)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
-    const LoadedFormula loaded{load_formula("int value\nint value", options)};
+    const LoadedFormula loaded{load_formula("int value\n"
+                                            "int value",
+        options)};
     ASSERT_TRUE(loaded.ast);
     const FormulaSemanticContext context;
 
@@ -1501,7 +1503,9 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsUnknownVariable)
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
-    const LoadedFormula loaded{load_formula("int value\nvalue=missing", options)};
+    const LoadedFormula loaded{load_formula("int value\n"
+                                            "value=missing",
+        options)};
     ASSERT_TRUE(loaded.ast);
     const FormulaSemanticContext context;
 
@@ -1516,7 +1520,9 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsDeclaredVariableAndBuiltinVaria
 {
     parser::Options options;
     options.dialect = Dialect::EXTENDED;
-    const LoadedFormula loaded{load_formula("complex value\nvalue=z", options)};
+    const LoadedFormula loaded{load_formula("complex value\n"
+                                            "value=z",
+        options)};
     ASSERT_TRUE(loaded.ast);
     const FormulaSemanticContext context;
 

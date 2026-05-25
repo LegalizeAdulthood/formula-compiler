@@ -79,7 +79,8 @@ TEST(TestLexer, whitespaceOnly)
 
 TEST(TestLexer, terminatorLF)
 {
-    Lexer lexer{"1\n2"};
+    Lexer lexer{"1\n"
+                "2"};
 
     Token tokens[3];
     for (Token &t : tokens)
@@ -94,7 +95,8 @@ TEST(TestLexer, terminatorLF)
 
 TEST(TestLexer, terminatorCRLF)
 {
-    Lexer lexer{"1\r\n2"};
+    Lexer lexer{"1\r\n"
+                "2"};
 
     Token tokens[3];
     for (Token &t : tokens)
@@ -128,7 +130,8 @@ TEST(TestLexer, peekDoesNotAdvance)
 
 TEST(TestLexer, lineContinuationWithLF)
 {
-    Lexer lexer{"1\\\n2"};
+    Lexer lexer{"1\\\n"
+                "2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -140,7 +143,8 @@ TEST(TestLexer, lineContinuationWithLF)
 
 TEST(TestLexer, lineContinuationWithCRLF)
 {
-    Lexer lexer{"1\\\r\n2"};
+    Lexer lexer{"1\\\r\n"
+                "2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -152,7 +156,9 @@ TEST(TestLexer, lineContinuationWithCRLF)
 
 TEST(TestLexer, lineContinuationMultiple)
 {
-    Lexer lexer{"1\\\n\\\n2"};
+    Lexer lexer{"1\\\n"
+                "\\\n"
+                "2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -164,7 +170,8 @@ TEST(TestLexer, lineContinuationMultiple)
 
 TEST(TestLexer, lineContinuationWithSpaces)
 {
-    Lexer lexer{"1 \\\n  2"};
+    Lexer lexer{"1 \\\n"
+                "  2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -177,7 +184,8 @@ TEST(TestLexer, lineContinuationWithSpaces)
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespace)
 {
-    Lexer lexer{"1\\ \n2"};
+    Lexer lexer{"1\\ \n"
+                "2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -194,7 +202,8 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespace)
 
 TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
 {
-    Lexer lexer{"1\\ \r\n2"};
+    Lexer lexer{"1\\ \r\n"
+                "2"};
 
     const Token token1{lexer.get_token()};
     const Token token2{lexer.get_token()};
@@ -211,7 +220,9 @@ TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
 
 TEST(TestLexer, multipleWarnings)
 {
-    Lexer lexer{"1\\ \n2\\ \n3\n"};
+    Lexer lexer{"1\\ \n"
+                "2\\ \n"
+                "3\n"};
 
     const Token token1{lexer.get_token()};
 
@@ -366,7 +377,8 @@ TEST(TestLexer, stringUnterminatedInvalid)
 
 TEST(TestLexer, stringWithNewlineInvalid)
 {
-    Lexer lexer{"\"line1\nline2\""};
+    Lexer lexer{"\"line1\n"
+                "line2\""};
 
     const Token token{lexer.get_token()};
 
@@ -587,8 +599,14 @@ static TextTokenParam s_params[]{
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
     {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
-    {"commentBefore", ";this is a comment\n1", TokenType::TERMINATOR, 19, 1}, //
-    {"continuation", "\\\n   1", TokenType::INTEGER, 4, 1},                   //
+    {"commentBefore",                                                         //
+        ";this is a comment\n"                                                //
+        "1",                                                                  //
+        TokenType::TERMINATOR, 19, 1},                                        //
+    {"continuation",                                                          //
+        "\\\n"                                                                //
+        "   1",                                                               //
+        TokenType::INTEGER, 4, 1},                                            //
     {"true", "true", TokenType::LIT_TRUE},                                    //
     {"false", "false", TokenType::LIT_FALSE},                                 //
     {"string", R"text("Some text.")text", TokenType::QUOTED_STRING},          //
@@ -606,7 +624,10 @@ static TextTokenParam s_params[]{
     {"publicSection", "public:", TokenType::PUBLIC, 1, 7},                    //
     {"protectedSection", "protected:", TokenType::PROTECTED, 1, 10},          //
     {"privateSection", "private:", TokenType::PRIVATE, 1, 8},                 //
-    {"tokenContinued", "re\\\n    al", TokenType::REAL},                      //
+    {"tokenContinued",                                                        //
+        "re\\\n"                                                              //
+        "    al",                                                             //
+        TokenType::REAL},                                                     //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

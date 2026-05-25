@@ -117,8 +117,17 @@ TEST_P(CompilerParity, matchesInterpreter)
 INSTANTIATE_TEST_SUITE_P(TestCompiledFormulaRun, CompilerParity,
     Values(CompilerParityParam{"unknown_variables", "missing+1", Section::BAILOUT},
         CompilerParityParam{"assignment", "z=4+flip(2)", Section::BAILOUT},
-        CompilerParityParam{"chained_assignment", "z1=z2=3\nz1+z2", Section::BAILOUT},
-        CompilerParityParam{"truthiness_uses_real_part", "if(0+flip(1))\n3\nelse\n4\nendif\n", Section::BAILOUT},
+        CompilerParityParam{"chained_assignment",
+            "z1=z2=3\n"
+            "z1+z2",
+            Section::BAILOUT},
+        CompilerParityParam{"truthiness_uses_real_part",
+            "if(0+flip(1))\n"
+            "3\n"
+            "else\n"
+            "4\n"
+            "endif\n",
+            Section::BAILOUT},
         CompilerParityParam{"ordering_uses_real_part", "(1+flip(9)) < (2-flip(9))", Section::BAILOUT},
         CompilerParityParam{"equality_uses_both_parts", "(1+flip(2))==(1+flip(3))", Section::BAILOUT},
         CompilerParityParam{"modulus_squared", "|3+flip(4)|", Section::BAILOUT},
@@ -129,7 +138,10 @@ INSTANTIATE_TEST_SUITE_P(TestCompiledFormulaRun, CompilerParity,
             "runtime_inputs", "p1+p2+pixel+maxit+scrnmax+scrnpix", Section::BAILOUT, setup_runtime_inputs},
         CompilerParityParam{"function_defaults", "fn1(pi/2)+fn2(2)+fn3(1)+fn4(1)", Section::BAILOUT},
         CompilerParityParam{"function_selector", "fn1(2)", Section::BAILOUT, setup_fn1_sqr},
-        CompilerParityParam{"client_seeded_rand", "loop:\nrand\n", Section::ITERATE, setup_random_seed},
+        CompilerParityParam{"client_seeded_rand",
+            "loop:\n"
+            "rand\n",
+            Section::ITERATE, setup_random_seed},
         CompilerParityParam{"formula_seeded_rand",
             "init:\n"
             "srand(1234)\n"
@@ -688,7 +700,9 @@ TEST(TestCompiledFormulaRun, extendedCompilerStillRejectsUnsupportedNodes)
 {
     Options options;
     options.dialect = Dialect::EXTENDED;
-    const FormulaPtr formula{create_formula("init:\nint value", options)};
+    const FormulaPtr formula{create_formula("init:\n"
+                                            "int value",
+        options)};
     ASSERT_TRUE(formula);
     ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
 

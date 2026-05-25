@@ -78,7 +78,10 @@ TEST(TestFileEntry, ignoresCloseBraceInQuotedStrings)
 
 TEST(TestFileEntry, recordsSourceRanges)
 {
-    std::istringstream input{"\nEntry {\nbody\n}"};
+    std::istringstream input{"\n"
+                             "Entry {\n"
+                             "body\n"
+                             "}"};
 
     const std::vector<FileEntry> entries{load_file_entries(input, "test.ufm")};
 
