@@ -40,7 +40,7 @@ class ParsedFormula : public Formula
 {
 public:
     explicit ParsedFormula(FormulaSectionsPtr ast);
-    ~ParsedFormula() override = default;
+    ~ParsedFormula() override;
 
     void set_value(std::string_view name, Complex value) override
     {
@@ -95,6 +95,7 @@ private:
     CompileError init_code_holder(asmjit::CodeHolder &code);
     CompileError compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label);
     void advance_random();
+    void reset_compiled_state();
 
     EmitterState m_state;
     FormulaSectionsPtr m_ast;
@@ -106,6 +107,7 @@ private:
     Function *m_perturb_initialize{};
     Function *m_perturb_iterate{};
     asmjit::JitRuntime m_runtime;
+    char *m_module{};
     asmjit::FileLogger m_logger{stdout};
 };
 
@@ -126,10 +128,34 @@ ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
     m_state.functions["fn4"] = "cosh";
 }
 
+ParsedFormula::~ParsedFormula()
+{
+    if (m_module != nullptr)
+    {
+        m_runtime.release(m_module);
+    }
+}
+
 void ParsedFormula::advance_random()
 {
     std::uniform_real_distribution<double> distribution{0.0, 1.0};
     m_state.symbols["rand"] = {distribution(m_random), distribution(m_random)};
+}
+
+void ParsedFormula::reset_compiled_state()
+{
+    if (m_module != nullptr)
+    {
+        m_runtime.release(m_module);
+        m_module = nullptr;
+    }
+    m_per_image = nullptr;
+    m_initialize = nullptr;
+    m_iterate = nullptr;
+    m_bailout = nullptr;
+    m_perturb_initialize = nullptr;
+    m_perturb_iterate = nullptr;
+    m_state.data = {};
 }
 
 const Expr &ParsedFormula::get_section(Section section) const
@@ -296,6 +322,7 @@ CompileError emit_data_section(asmjit::x86::Compiler &comp, EmitterState &state)
 
 bool ParsedFormula::compile()
 {
+    reset_compiled_state();
     asmjit::CodeHolder code;
     if (const CompileError err = init_code_holder(code); err)
     {
@@ -341,18 +368,17 @@ bool ParsedFormula::compile()
     }
     ASMJIT_CHECK(comp.finalize());
 
-    char *module{};
-    if (const asmjit::Error err = m_runtime.add(&module, &code); err || !module)
+    if (const asmjit::Error err = m_runtime.add(&m_module, &code); err || !m_module)
     {
         std::cerr << "Failed to add formula:\n" << asmjit::DebugUtils::errorAsString(err) << '\n';
         return false;
     }
-    m_per_image = function_cast<Function *>(code, module, per_image_label);
-    m_initialize = function_cast<Function *>(code, module, init_label);
-    m_iterate = function_cast<Function *>(code, module, iterate_label);
-    m_bailout = function_cast<Function *>(code, module, bailout_label);
-    m_perturb_initialize = function_cast<Function *>(code, module, perturb_init_label);
-    m_perturb_iterate = function_cast<Function *>(code, module, perturb_iterate_label);
+    m_per_image = function_cast<Function *>(code, m_module, per_image_label);
+    m_initialize = function_cast<Function *>(code, m_module, init_label);
+    m_iterate = function_cast<Function *>(code, m_module, iterate_label);
+    m_bailout = function_cast<Function *>(code, m_module, bailout_label);
+    m_perturb_initialize = function_cast<Function *>(code, m_module, perturb_init_label);
+    m_perturb_iterate = function_cast<Function *>(code, m_module, perturb_iterate_label);
 
     return true;
 }

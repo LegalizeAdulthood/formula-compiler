@@ -603,6 +603,54 @@ TEST(TestCompiledFormulaRun, extendedCompilerStillRejectsUnsupportedNodes)
     EXPECT_FALSE(formula->compile());
 }
 
+TEST(TestCompiledFormulaRun, recompileUsesUpdatedFunctionSelector)
+{
+    const FormulaPtr formula{create_formula("fn1(2)", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("fn1", "sin"));
+    ASSERT_TRUE(formula->compile());
+    EXPECT_NEAR(std::sin(2.0), formula->run(Section::BAILOUT).re, 1e-8);
+
+    ASSERT_TRUE(formula->set_function("fn1", "sqr"));
+    ASSERT_TRUE(formula->compile());
+
+    EXPECT_EQ((Complex{4.0, 0.0}), formula->run(Section::BAILOUT));
+}
+
+TEST(TestCompiledFormulaRun, recompilePreservesLiveSymbolStorage)
+{
+    const FormulaPtr formula{create_formula("z+1", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value("z", {1.0, 2.0});
+    ASSERT_TRUE(formula->compile());
+    EXPECT_EQ((Complex{2.0, 2.0}), formula->run(Section::BAILOUT));
+
+    formula->set_value("z", {3.0, 4.0});
+    ASSERT_TRUE(formula->compile());
+
+    EXPECT_EQ((Complex{4.0, 4.0}), formula->run(Section::BAILOUT));
+}
+
+TEST(TestCompiledFormulaRun, recompileUsesResetRandomSeed)
+{
+    const auto first_iteration = [](const std::uint32_t seed)
+    {
+        const FormulaPtr formula{create_formula("loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->set_random_seed(1);
+        formula->compile();
+        formula->run(Section::ITERATE);
+        formula->set_random_seed(seed);
+        formula->compile();
+        return formula->run(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(5678), first_iteration(5678));
+}
+
 TEST(TestCompiledFormulaRun, assignmentStatementsIterate)
 {
     const FormulaPtr formula{create_formula("q=3\n"

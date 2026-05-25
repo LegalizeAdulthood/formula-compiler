@@ -32,26 +32,13 @@ correctness.
   as `(0, 0)`, and uses the client-supplied seed from `set_random_seed()`.
 - Compiled `srand()` resets the per-formula random sequence, resets `rand` to
   `(0, 0)`, and returns `(0, 0)`.
+- Recompiling releases old generated code, clears compile-time label bindings,
+  and preserves formula-owned symbols, function selectors, and random state.
 - Unsupported extended AST nodes make compilation fail.
-
-## Gaps
-
-### Recompilation Does Not Reset Compiled Runtime State
-
-`compile()` reuses `m_state.data` and function pointers. Recompiling after
-changing selector state, symbol values, or random seed should either rebuild all
-compiled data from a clean state or be rejected clearly.
 
 ## Implementation Slices
 
-### 1. Reset State On Recompile
-
-- Clear compiled data bindings and function pointers before rebuilding code.
-- Preserve user-visible runtime state that should survive recompilation.
-- Add tests that compile, change function selectors or values, recompile, and
-  verify the new compiled behavior.
-
-### 2. Expand Interpreter/Compiler Parity Fixtures
+### 1. Expand Interpreter/Compiler Parity Fixtures
 
 - Add paired tests for every BASIC runtime semantic in `basic-interpreter.md`.
 - Keep direct AST-only tests only for semantics that parsed BASIC formulas
