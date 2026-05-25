@@ -301,6 +301,7 @@ std::string GLSLEmitter::emit_uniforms()
     out << "    uvec2 resolution; // Image resolution\n";
     out << "    uint maxit;       // Max iterations\n";
     out << "    float bailout;    // Bailout radius\n";
+    out << "    uint random_seed; // Client random seed\n";
     out << "    uint fn1_selector; // Default sin\n";
     out << "    uint fn2_selector; // Default sqr\n";
     out << "    uint fn3_selector; // Default sinh\n";
@@ -532,6 +533,15 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "vec2 c_and(vec2 a, vec2 b) { return c_bool(a.x != 0.0 && b.x != 0.0); }\n";
     out << "vec2 c_or(vec2 a, vec2 b) { return c_bool(a.x != 0.0 || b.x != 0.0); }\n\n";
 
+    out << "float c_random_float(inout uint random_state) {\n";
+    out << "    random_state = random_state * 1664525u + 1013904223u;\n";
+    out << "    return float(random_state & 0x00ffffffu) / 16777216.0;\n";
+    out << "}\n\n";
+
+    out << "vec2 c_next_rand(inout uint random_state) {\n";
+    out << "    return vec2(c_random_float(random_state), c_random_float(random_state));\n";
+    out << "}\n\n";
+
     return out.str();
 }
 
@@ -540,9 +550,13 @@ std::string GLSLEmitter::emit_builtin_functions()
     std::ostringstream out;
 
     out << "// Additional builtin functions\n";
-    out << "// srand random-state reset is not yet implemented\n";
-    out << "vec2 c_srand(vec2 z) { return vec2(0.0, 0.0); }\n\n";
-    out << "vec2 c_dispatch_function(uint selector, vec2 z, inout float lastsqr_value) {\n";
+    out << "vec2 c_srand(vec2 z, inout uint random_state, inout vec2 rand) {\n";
+    out << "    random_state = uint(z.x);\n";
+    out << "    rand = vec2(0.0, 0.0);\n";
+    out << "    return vec2(0.0, 0.0);\n";
+    out << "}\n\n";
+    out << "vec2 c_dispatch_function(uint selector, vec2 z, inout float lastsqr_value,\n";
+    out << "    inout uint random_state, inout vec2 rand) {\n";
     out << "    switch (selector) {\n";
     out << "    case FUNCTION_SIN: return c_sin(z);\n";
     out << "    case FUNCTION_COS: return c_cos(z);\n";
@@ -576,21 +590,21 @@ std::string GLSLEmitter::emit_builtin_functions()
     out << "    case FUNCTION_IDENT: return c_ident(z);\n";
     out << "    case FUNCTION_ONE: return c_one(z);\n";
     out << "    case FUNCTION_ZERO: return c_zero(z);\n";
-    out << "    case FUNCTION_SRAND: return c_srand(z);\n";
+    out << "    case FUNCTION_SRAND: return c_srand(z, random_state, rand);\n";
     out << "    }\n";
     out << "    return c_ident(z);\n";
     out << "}\n\n";
-    out << "vec2 c_fn1(vec2 z, inout float lastsqr_value) {\n";
-    out << "    return c_dispatch_function(fn1_selector, z, lastsqr_value);\n";
+    out << "vec2 c_fn1(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n";
+    out << "    return c_dispatch_function(fn1_selector, z, lastsqr_value, random_state, rand);\n";
     out << "}\n";
-    out << "vec2 c_fn2(vec2 z, inout float lastsqr_value) {\n";
-    out << "    return c_dispatch_function(fn2_selector, z, lastsqr_value);\n";
+    out << "vec2 c_fn2(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n";
+    out << "    return c_dispatch_function(fn2_selector, z, lastsqr_value, random_state, rand);\n";
     out << "}\n";
-    out << "vec2 c_fn3(vec2 z, inout float lastsqr_value) {\n";
-    out << "    return c_dispatch_function(fn3_selector, z, lastsqr_value);\n";
+    out << "vec2 c_fn3(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n";
+    out << "    return c_dispatch_function(fn3_selector, z, lastsqr_value, random_state, rand);\n";
     out << "}\n";
-    out << "vec2 c_fn4(vec2 z, inout float lastsqr_value) {\n";
-    out << "    return c_dispatch_function(fn4_selector, z, lastsqr_value);\n";
+    out << "vec2 c_fn4(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n";
+    out << "    return c_dispatch_function(fn4_selector, z, lastsqr_value, random_state, rand);\n";
     out << "}\n\n";
 
     return out.str();
@@ -623,6 +637,9 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Map pixel to complex plane\n";
     out << indent() << "vec2 uv = vec2(pixel_coords) / vec2(resolution);\n";
     out << indent() << "vec2 pixel = center + (uv * 2.0 - 1.0) * view_size;\n\n";
+    out << indent() << "// Random state\n";
+    out << indent() << "uint random_state = random_seed ^ uint(pixel_coords.x) ^ (uint(pixel_coords.y) << 16u);\n";
+    out << indent() << "vec2 rand = vec2(0.0, 0.0);\n\n";
 
     // Per-image initialization (GLOBAL section)
     if (formula.per_image)
@@ -658,6 +675,7 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Main iteration loop\n";
     out << indent() << "while (iter < maxit) {\n";
     m_indent_level++;
+    out << indent() << "rand = c_next_rand(random_state);\n\n";
 
     if (formula.iterate)
     {
@@ -851,6 +869,10 @@ void GLSLEmitter::visit(const ast::FunctionCallNode &node)
     if (node.name() == "sqr" || is_function_selector(node.name()))
     {
         m_output << ", lastsqr_value";
+    }
+    if (node.name() == "srand" || is_function_selector(node.name()))
+    {
+        m_output << ", random_state, rand";
     }
     m_output << ")";
 }

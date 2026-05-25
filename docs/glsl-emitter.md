@@ -47,7 +47,6 @@ The current emitter has these BASIC correctness gaps:
 - Several predefined variables are missing or have wrong types.
 - `pi`, `e`, and `maxit` are not represented as complex values.
 - `flip` emits `(-imag, real)` instead of `(imag, real)`.
-- `rand` and the `srand` random-state reset are not modeled.
 - `scrnmax`, `scrnpix`, `whitesq`, `ismand`, `center`, `magxmag`, and
   `rotskew` are not modeled.
 - Output coloring is a placeholder iteration gradient rather than a defined
@@ -182,22 +181,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Add Random Support
-
-- Add deterministic per-pixel random state.
-- Implement `rand` as current random value.
-- Implement `srand(seed)` to reset random state.
-- Define how client seed input enters the shader.
-- Test emitted state updates for `rand` and `srand`.
-
-### 2. Add Remaining Predefined Variables
+### 1. Add Remaining Predefined Variables
 
 - Emit or compute `scrnmax`, `scrnpix`, `whitesq`, `ismand`, `center`,
   `magxmag`, and `rotskew`.
 - Keep all predefined variables as `vec2`.
 - Test each predefined variable appears with correct initialization.
 
-### 3. Define Section Result And Output ABI
+### 2. Define Section Result And Output ABI
 
 - Decide the shader ABI for loop result, final `z`, iteration count, and
   bailout result.
@@ -205,14 +196,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Update `emit_shader` docs to describe what the shader writes.
 - Test the generated output block.
 
-### 4. Add GLSL Compile Validation
+### 3. Add GLSL Compile Validation
 
 - Add an optional test path that runs a GLSL validator when available.
 - Keep the test skipped if the validator is not installed.
 - Validate emitted shaders for representative BASIC formulas.
 - Include formulas with user variables, conditionals, builtins, and bailout.
 
-### 5. Add Interpreter Equivalence Fixtures
+### 4. Add Interpreter Equivalence Fixtures
 
 - Build a small corpus of BASIC formulas with known interpreter results.
 - For each formula, assert emitted GLSL contains the expected lowered
@@ -220,7 +211,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - If a GLSL execution harness becomes available, compare numeric results
   against interpreter output.
 
-### 6. Remove Example-Only Caveats
+### 5. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.

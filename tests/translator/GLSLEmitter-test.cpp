@@ -71,6 +71,7 @@ TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
         "    uint fn2_selector; // Default sqr\n"
         "    uint fn3_selector; // Default sinh\n"
         "    uint fn4_selector; // Default cosh\n");
+    expect_contains(shader, "    uint random_seed; // Client random seed\n");
     expect_contains(shader,
         "const uint FUNCTION_SIN = 0u;\n"
         "const uint FUNCTION_COS = 1u;\n"
@@ -88,11 +89,11 @@ TEST(TestGLSLEmitter, emitsHelperDeclarationSnapshot)
         "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
         "}\n");
     expect_contains(shader,
-        "vec2 c_fn1(vec2 z, inout float lastsqr_value) {\n"
-        "    return c_dispatch_function(fn1_selector, z, lastsqr_value);\n"
+        "vec2 c_fn1(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n"
+        "    return c_dispatch_function(fn1_selector, z, lastsqr_value, random_state, rand);\n"
         "}\n"
-        "vec2 c_fn2(vec2 z, inout float lastsqr_value) {\n"
-        "    return c_dispatch_function(fn2_selector, z, lastsqr_value);\n"
+        "vec2 c_fn2(vec2 z, inout float lastsqr_value, inout uint random_state, inout vec2 rand) {\n"
+        "    return c_dispatch_function(fn2_selector, z, lastsqr_value, random_state, rand);\n"
         "}\n");
 }
 
@@ -272,8 +273,8 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
     constexpr std::string_view functions[]{
         "sin", "cos", "sinh", "cosh", "cosxx", "tan", "cotan", "tanh", "cotanh",
         "log", "exp", "abs", "conj", "real", "imag", "flip",
-        "srand", "asin", "asinh", "acos", "acosh", "atan", "atanh", "sqrt",
-        "cabs", "floor", "ceil", "trunc", "round", "ident", "one", "zero",
+        "asin", "asinh", "acos", "acosh", "atan", "atanh", "sqrt", "cabs",
+        "floor", "ceil", "trunc", "round", "ident", "one", "zero",
     };
     // clang-format on
     for (const std::string_view function : functions)
@@ -281,10 +282,11 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
         expect_contains(shader, "    z = c_" + std::string{function} + "(p1);\n");
     }
     expect_contains(shader, "    z = c_sqr(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_srand(p1, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value, random_state, rand);\n");
 }
 
 TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
@@ -298,7 +300,7 @@ TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
     expect_contains(shader, "vec2 c_real(vec2 z) { return vec2(z.x, 0.0); }\n");
     expect_contains(shader, "vec2 c_imag(vec2 z) { return vec2(z.y, 0.0); }\n");
     expect_contains(shader, "vec2 c_recip(vec2 z) { return c_div(vec2(1.0, 0.0), z); }\n");
-    expect_contains(shader, "vec2 c_srand(vec2 z) { return vec2(0.0, 0.0); }\n");
+    expect_contains(shader, "vec2 c_srand(vec2 z, inout uint random_state, inout vec2 rand) {\n");
     expect_contains(shader,
         "vec2 c_flip(vec2 z) {\n"
         "    return vec2(z.y, z.x);\n"
@@ -337,18 +339,52 @@ TEST(TestGLSLEmitter, emitsFunctionSelectorDispatch)
                                                "  z = fn3(p1)\n"
                                                "  z = fn4(p1)\n")};
 
-    expect_contains(shader, "vec2 c_dispatch_function(uint selector, vec2 z, inout float lastsqr_value) {\n");
+    expect_contains(shader,
+        "vec2 c_dispatch_function(uint selector, vec2 z, inout float lastsqr_value,\n"
+        "    inout uint random_state, inout vec2 rand) {\n");
     expect_contains(shader, "    case FUNCTION_SIN: return c_sin(z);\n");
     expect_contains(shader, "    case FUNCTION_COS: return c_cos(z);\n");
     expect_contains(shader, "    case FUNCTION_SINH: return c_sinh(z);\n");
     expect_contains(shader, "    case FUNCTION_COSH: return c_cosh(z);\n");
     expect_contains(shader, "    case FUNCTION_SQR: return c_sqr(z, lastsqr_value);\n");
-    expect_contains(shader, "    case FUNCTION_SRAND: return c_srand(z);\n");
+    expect_contains(shader, "    case FUNCTION_SRAND: return c_srand(z, random_state, rand);\n");
     expect_contains(shader, "    return c_ident(z);\n");
-    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value);\n");
-    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value, random_state, rand);\n");
+    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value, random_state, rand);\n");
+}
+
+TEST(TestGLSLEmitter, emitsRandomStateAndSrandReset)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = srand(1234)\n"
+                                               "loop:\n"
+                                               "  z = rand\n")};
+
+    expect_contains(shader,
+        "float c_random_float(inout uint random_state) {\n"
+        "    random_state = random_state * 1664525u + 1013904223u;\n"
+        "    return float(random_state & 0x00ffffffu) / 16777216.0;\n"
+        "}\n");
+    expect_contains(shader,
+        "vec2 c_next_rand(inout uint random_state) {\n"
+        "    return vec2(c_random_float(random_state), c_random_float(random_state));\n"
+        "}\n");
+    expect_contains(shader,
+        "vec2 c_srand(vec2 z, inout uint random_state, inout vec2 rand) {\n"
+        "    random_state = uint(z.x);\n"
+        "    rand = vec2(0.0, 0.0);\n"
+        "    return vec2(0.0, 0.0);\n"
+        "}\n");
+    expect_contains(
+        shader, "    uint random_state = random_seed ^ uint(pixel_coords.x) ^ (uint(pixel_coords.y) << 16u);\n");
+    expect_contains(shader, "    vec2 rand = vec2(0.0, 0.0);\n");
+    expect_contains(shader, "    z = c_srand(vec2(1234.0, 0.0), random_state, rand);\n");
+    expect_contains(shader,
+        "    while (iter < maxit) {\n"
+        "        rand = c_next_rand(random_state);\n");
+    expect_contains(shader, "        z = rand;\n");
 }
 
 TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
