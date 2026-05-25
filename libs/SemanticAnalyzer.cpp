@@ -2134,6 +2134,10 @@ private:
             }
             return *type;
         }
+        if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
+        {
+            return index_expression_type(*index);
+        }
         if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
         {
             return binary_expression_type(*binary);
@@ -2289,6 +2293,35 @@ private:
         diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
         diagnostic.message = "invalid color operator: " + type_name(left) + " " + op + " " + type_name(right);
         m_diagnostics.push_back(std::move(diagnostic));
+    }
+
+    SemanticTypeKind index_expression_type(const ast::IndexNode &node)
+    {
+        for (const ast::Expr &index : node.indices())
+        {
+            validate_index_type(expression_type(index));
+        }
+        const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.target().get());
+        if (!identifier)
+        {
+            collect(node.target());
+            return SemanticTypeKind::ERROR;
+        }
+        if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
+        {
+            report_unknown_symbol(identifier->name());
+            return SemanticTypeKind::ERROR;
+        }
+        const ArraySymbol *array = array_symbol(identifier->name());
+        if (!array)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
+            diagnostic.message = "invalid array target: " + identifier->name();
+            m_diagnostics.push_back(std::move(diagnostic));
+            return SemanticTypeKind::ERROR;
+        }
+        return array->element_type;
     }
 
     SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node)

@@ -1742,6 +1742,23 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidArrayIndexType)
     EXPECT_EQ("invalid array index type: string", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidArrayElementConversion)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    const LoadedFormula loaded{load_formula("int values[1]\n"
+                                            "string text=values[0]",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    const FormulaSemanticContext context;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    ASSERT_EQ(1U, diagnostics.size());
+    EXPECT_EQ(SemanticDiagnosticCode::INVALID_TYPE_CONVERSION, diagnostics.front().code);
+    EXPECT_EQ("invalid conversion: int to string", diagnostics.front().message);
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidReturnConversion)
 {
     parser::Options options;
@@ -2631,6 +2648,58 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsRejectedColorArithmetic)
         ASSERT_EQ(1U, diagnostics.size()) << test_case.expression;
         EXPECT_EQ(SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE, diagnostics.front().code);
         EXPECT_EQ(test_case.message, diagnostics.front().message);
+    }
+}
+
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsGlobalReadsAcrossSections)
+{
+    struct Case
+    {
+        parser::EntryKind entry_kind;
+        const char *body;
+    };
+    const std::array<Case, 3> cases{{
+        {parser::EntryKind::FRACTAL,
+            "global:\n"
+            "int seed=1\n"
+            "int values[2]\n"
+            "init:\n"
+            "int start=seed+values[0]\n"
+            "loop:\n"
+            "int step=seed+values[1]\n"
+            "bailout:\n"
+            "seed+values[0]"},
+        {parser::EntryKind::COLORING,
+            "global:\n"
+            "float shade=0.5\n"
+            "float samples[1]\n"
+            "init:\n"
+            "float start=shade+samples[0]\n"
+            "loop:\n"
+            "float step=shade+samples[0]\n"
+            "final:\n"
+            "shade+samples[0]"},
+        {parser::EntryKind::TRANSFORMATION,
+            "global:\n"
+            "complex shift=(1,0)\n"
+            "complex offsets[1]\n"
+            "transform:\n"
+            "#pixel=#pixel+shift+offsets[0]"},
+    }};
+
+    for (const Case &test_case : cases)
+    {
+        parser::Options options;
+        options.dialect = Dialect::EXTENDED;
+        options.entry_kind = test_case.entry_kind;
+        const LoadedFormula loaded{load_formula(test_case.body, options)};
+        ASSERT_TRUE(loaded.ast);
+        FormulaSemanticContext context;
+        context.entry_kind = test_case.entry_kind;
+
+        const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+        EXPECT_TRUE(diagnostics.empty()) << test_case.body;
     }
 }
 
