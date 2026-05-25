@@ -444,8 +444,9 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "}\n\n";
 
     // Component extraction
-    out << "float c_real(vec2 z) { return z.x; }\n\n";
-    out << "float c_imag(vec2 z) { return z.y; }\n\n";
+    out << "vec2 c_real(vec2 z) { return vec2(z.x, 0.0); }\n";
+    out << "vec2 c_imag(vec2 z) { return vec2(z.y, 0.0); }\n";
+    out << "vec2 c_recip(vec2 z) { return c_div(vec2(1.0, 0.0), z); }\n\n";
 
     // Conjugate and flip
     out << "vec2 c_conj(vec2 z) {\n";
@@ -453,13 +454,12 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "}\n\n";
 
     out << "vec2 c_flip(vec2 z) {\n";
-    out << "    return vec2(-z.y, z.x);\n";
+    out << "    return vec2(z.y, z.x);\n";
     out << "}\n\n";
 
     // Special functions
     out << "vec2 c_cosxx(vec2 z) {\n";
-    out << "    // cosxx is cos(x)*cosh(y) (real part of complex cosine)\n";
-    out << "    return vec2(cos(z.x) * cosh(z.y), 0.0);\n";
+    out << "    return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));\n";
     out << "}\n\n";
 
     // Identity functions
@@ -493,10 +493,12 @@ std::string GLSLEmitter::emit_builtin_functions()
 
     out << "// Additional builtin functions\n";
     out << "// fn1, fn2, fn3, fn4 are user-configurable via uniforms (not yet implemented)\n";
+    out << "// srand random-state reset is not yet implemented\n";
     out << "vec2 c_fn1(vec2 z) { return c_ident(z); }\n";
     out << "vec2 c_fn2(vec2 z) { return c_ident(z); }\n";
     out << "vec2 c_fn3(vec2 z) { return c_ident(z); }\n";
     out << "vec2 c_fn4(vec2 z) { return c_ident(z); }\n\n";
+    out << "vec2 c_srand(vec2 z) { return vec2(0.0, 0.0); }\n\n";
 
     return out.str();
 }

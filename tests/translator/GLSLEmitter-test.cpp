@@ -215,6 +215,84 @@ TEST(TestGLSLEmitter, emitsAbsoluteBuiltinsWithBasicSemantics)
     expect_contains(shader, "    z = c_cabs(vec2(3.0, 4.0));\n");
 }
 
+TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = sin(p1)\n"
+                                               "  z = cos(p1)\n"
+                                               "  z = sinh(p1)\n"
+                                               "  z = cosh(p1)\n"
+                                               "  z = cosxx(p1)\n"
+                                               "  z = tan(p1)\n"
+                                               "  z = cotan(p1)\n"
+                                               "  z = tanh(p1)\n"
+                                               "  z = cotanh(p1)\n"
+                                               "  z = sqr(p1)\n"
+                                               "  z = log(p1)\n"
+                                               "  z = exp(p1)\n"
+                                               "  z = abs(p1)\n"
+                                               "  z = conj(p1)\n"
+                                               "  z = real(p1)\n"
+                                               "  z = imag(p1)\n"
+                                               "  z = flip(p1)\n"
+                                               "  z = fn1(p1)\n"
+                                               "  z = fn2(p1)\n"
+                                               "  z = fn3(p1)\n"
+                                               "  z = fn4(p1)\n"
+                                               "  z = srand(p1)\n"
+                                               "  z = asin(p1)\n"
+                                               "  z = asinh(p1)\n"
+                                               "  z = acos(p1)\n"
+                                               "  z = acosh(p1)\n"
+                                               "  z = atan(p1)\n"
+                                               "  z = atanh(p1)\n"
+                                               "  z = sqrt(p1)\n"
+                                               "  z = cabs(p1)\n"
+                                               "  z = floor(p1)\n"
+                                               "  z = ceil(p1)\n"
+                                               "  z = trunc(p1)\n"
+                                               "  z = round(p1)\n"
+                                               "  z = ident(p1)\n"
+                                               "  z = one(p1)\n"
+                                               "  z = zero(p1)\n")};
+
+    // clang-format off
+    constexpr std::string_view functions[]{
+        "sin", "cos", "sinh", "cosh", "cosxx", "tan", "cotan", "tanh", "cotanh",
+        "sqr", "log", "exp", "abs", "conj", "real", "imag", "flip",
+        "fn1", "fn2", "fn3", "fn4", "srand", "asin", "asinh", "acos", "acosh",
+        "atan", "atanh", "sqrt", "cabs", "floor", "ceil", "trunc", "round",
+        "ident", "one", "zero",
+    };
+    // clang-format on
+    for (const std::string_view function : functions)
+    {
+        expect_contains(shader, "    z = c_" + std::string{function} + "(p1);\n");
+    }
+}
+
+TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = flip(p1)\n"
+                                               "  z = cosxx(p1)\n"
+                                               "  z = real(p1)\n"
+                                               "  z = imag(p1)\n")};
+
+    expect_contains(shader, "vec2 c_real(vec2 z) { return vec2(z.x, 0.0); }\n");
+    expect_contains(shader, "vec2 c_imag(vec2 z) { return vec2(z.y, 0.0); }\n");
+    expect_contains(shader, "vec2 c_recip(vec2 z) { return c_div(vec2(1.0, 0.0), z); }\n");
+    expect_contains(shader, "vec2 c_srand(vec2 z) { return vec2(0.0, 0.0); }\n");
+    expect_contains(shader,
+        "vec2 c_flip(vec2 z) {\n"
+        "    return vec2(z.y, z.x);\n"
+        "}\n");
+    expect_contains(shader,
+        "vec2 c_cosxx(vec2 z) {\n"
+        "    return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));\n"
+        "}\n");
+}
+
 TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
 {
     const std::string shader{emit_basic_shader("init:\n"
