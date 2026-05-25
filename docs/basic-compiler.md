@@ -34,16 +34,14 @@ correctness.
   `(0, 0)`, and returns `(0, 0)`.
 - Recompiling releases old generated code, clears compile-time label bindings,
   and preserves formula-owned symbols, function selectors, and random state.
+- Shared parity fixtures compare interpreter and compiler behavior for the
+  documented BASIC runtime semantics that parsed formulas can express.
 - Unsupported extended AST nodes make compilation fail.
 
 ## Implementation Slices
 
-### 1. Expand Interpreter/Compiler Parity Fixtures
-
-- Add paired tests for every BASIC runtime semantic in `basic-interpreter.md`.
-- Keep direct AST-only tests only for semantics that parsed BASIC formulas
-  cannot express.
-- Leave GLSL-specific parity work in `glsl-emitter.md`.
+No BASIC compiler implementation slices remain. GLSL-specific parity work is
+tracked in `glsl-emitter.md`.
 
 ## Verification
 

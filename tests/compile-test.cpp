@@ -25,6 +25,7 @@ namespace formula::test
 {
 
 using CompileParam = ExpressionParam;
+using FormulaSetup = void (*)(const FormulaPtr &formula);
 
 class CompiledFormulaRunSuite : public TestWithParam<CompileParam>
 {
@@ -45,6 +46,97 @@ TEST_P(CompiledFormulaRunSuite, run)
 }
 
 INSTANTIATE_TEST_SUITE_P(TestCompiledFormula, CompiledFormulaRunSuite, ValuesIn(g_expression_params));
+
+void no_setup(const FormulaPtr &)
+{
+}
+
+void setup_runtime_inputs(const FormulaPtr &formula)
+{
+    formula->set_value("p1", {1.0, 2.0});
+    formula->set_value("p2", {3.0, 4.0});
+    formula->set_value("pixel", {-1.0, -2.0});
+    formula->set_value("maxit", {256.0, 0.0});
+    formula->set_value("scrnmax", {320.0, 200.0});
+    formula->set_value("scrnpix", {12.0, 34.0});
+}
+
+void setup_fn1_sqr(const FormulaPtr &formula)
+{
+    ASSERT_TRUE(formula->set_function("fn1", "sqr"));
+}
+
+void setup_random_seed(const FormulaPtr &formula)
+{
+    formula->set_random_seed(5678);
+}
+
+struct CompilerParityParam
+{
+    std::string_view name;
+    std::string_view text;
+    Section section;
+    FormulaSetup setup{no_setup};
+    Section before{Section::NONE};
+};
+
+inline void PrintTo(const CompilerParityParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class CompilerParity : public TestWithParam<CompilerParityParam>
+{
+};
+
+TEST_P(CompilerParity, matchesInterpreter)
+{
+    const CompilerParityParam &param{GetParam()};
+    const FormulaPtr interpreted{create_formula(param.text, Options{})};
+    ASSERT_TRUE(interpreted) << "Formula should have parsed";
+    const FormulaPtr compiled{create_formula(param.text, Options{})};
+    ASSERT_TRUE(compiled) << "Formula should have parsed";
+    ASSERT_TRUE(interpreted->get_section(param.section));
+    ASSERT_TRUE(compiled->get_section(param.section));
+    param.setup(interpreted);
+    param.setup(compiled);
+    ASSERT_TRUE(compiled->compile());
+    if (param.before != Section::NONE)
+    {
+        interpreted->interpret(param.before);
+        compiled->run(param.before);
+    }
+
+    const Complex expected{interpreted->interpret(param.section)};
+    const Complex actual{compiled->run(param.section)};
+
+    EXPECT_NEAR(expected.re, actual.re, 1e-8);
+    EXPECT_NEAR(expected.im, actual.im, 1e-8);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestCompiledFormulaRun, CompilerParity,
+    Values(CompilerParityParam{"unknown_variables", "missing+1", Section::BAILOUT},
+        CompilerParityParam{"assignment", "z=4+flip(2)", Section::BAILOUT},
+        CompilerParityParam{"chained_assignment", "z1=z2=3\nz1+z2", Section::BAILOUT},
+        CompilerParityParam{"truthiness_uses_real_part", "if(0+flip(1))\n3\nelse\n4\nendif\n", Section::BAILOUT},
+        CompilerParityParam{"ordering_uses_real_part", "(1+flip(9)) < (2-flip(9))", Section::BAILOUT},
+        CompilerParityParam{"equality_uses_both_parts", "(1+flip(2))==(1+flip(3))", Section::BAILOUT},
+        CompilerParityParam{"modulus_squared", "|3+flip(4)|", Section::BAILOUT},
+        CompilerParityParam{"complex_pair_function_arg", "sqr(3,4)", Section::BAILOUT},
+        CompilerParityParam{"cosxx_complex", "cosxx(1+flip(2))", Section::BAILOUT},
+        CompilerParityParam{"runtime_defaults", "ismand+lastsqr+rand", Section::BAILOUT},
+        CompilerParityParam{
+            "runtime_inputs", "p1+p2+pixel+maxit+scrnmax+scrnpix", Section::BAILOUT, setup_runtime_inputs},
+        CompilerParityParam{"function_defaults", "fn1(pi/2)+fn2(2)+fn3(1)+fn4(1)", Section::BAILOUT},
+        CompilerParityParam{"function_selector", "fn1(2)", Section::BAILOUT, setup_fn1_sqr},
+        CompilerParityParam{"client_seeded_rand", "loop:\nrand\n", Section::ITERATE, setup_random_seed},
+        CompilerParityParam{"formula_seeded_rand",
+            "init:\n"
+            "srand(1234)\n"
+            "loop:\n"
+            "rand\n",
+            Section::ITERATE, no_setup, Section::INITIALIZE}),
+    [](const TestParamInfo<CompilerParityParam> &info) { return std::string{info.param.name}; });
 
 TEST(TestCompiledFormulaRun, identifierComplex)
 {
