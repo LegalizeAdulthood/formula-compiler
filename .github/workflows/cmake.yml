@@ -42,7 +42,7 @@ jobs:
         ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh
         echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
         sudo dpkg-reconfigure man-db
-        sudo apt install mono-complete
+        sudo apt install mono-complete xinerama xcursor xorg libglu1-mesa pkg-config
 
     - name: Install Prerequisites macOS
       if: ${{matrix.os == 'macos-latest'}}
