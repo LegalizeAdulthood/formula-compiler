@@ -9,8 +9,12 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace formula::test
 {
@@ -40,6 +44,27 @@ std::string emit_basic_shader(std::string_view body)
 void expect_contains(std::string_view text, std::string_view snippet)
 {
     EXPECT_NE(text.find(snippet), std::string_view::npos) << snippet;
+}
+
+void validate_glsl_compute_shader(std::string_view name, std::string_view shader)
+{
+#ifdef FORMULA_GLSLANG_VALIDATOR
+    const std::filesystem::path path{std::filesystem::temp_directory_path() / (std::string{name} + ".comp")};
+    {
+        std::ofstream output{path};
+        ASSERT_TRUE(output);
+        output << shader;
+    }
+
+    const std::string command{"\"" FORMULA_GLSLANG_VALIDATOR "\" -S comp \"" + path.string() + "\""};
+    const int result{std::system(command.c_str())};
+    std::filesystem::remove(path);
+    EXPECT_EQ(0, result);
+#else
+    (void) name;
+    (void) shader;
+    GTEST_SKIP() << "glslangValidator not found";
+#endif
 }
 
 TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
@@ -529,6 +554,40 @@ TEST(TestGLSLEmitter, emitsFormulaResultOutput)
         "    formula_results[pixel_index].bailout = bailout_value;\n"
         "    formula_results[pixel_index].iter = iter;\n"
         "    formula_results[pixel_index].escaped = escaped;\n");
+}
+
+TEST(TestGLSLEmitter, validatesRepresentativeShadersWithGlslang)
+{
+    struct ShaderFixture
+    {
+        std::string name;
+        std::string body;
+    };
+    const std::vector<ShaderFixture> fixtures{
+        {"basic",
+            "init:\n"
+            "  c = pixel\n"
+            "loop:\n"
+            "  z = sqr(z) + c\n"
+            "bailout:\n"
+            "  |z| < 4\n"},
+        {"conditional",
+            "init:\n"
+            "  if pixel < p1\n"
+            "    z = fn1(pixel)\n"
+            "  else\n"
+            "    z = abs(pixel) + cabs(p2)\n"
+            "  endif\n"
+            "loop:\n"
+            "  z = z * p3 + rand\n"
+            "bailout:\n"
+            "  z != p4\n"},
+    };
+
+    for (const ShaderFixture &fixture : fixtures)
+    {
+        validate_glsl_compute_shader(fixture.name, emit_basic_shader(fixture.body));
+    }
 }
 
 } // namespace

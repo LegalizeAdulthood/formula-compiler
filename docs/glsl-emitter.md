@@ -173,14 +173,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Add GLSL Compile Validation
-
-- Add an optional test path that runs a GLSL validator when available.
-- Keep the test skipped if the validator is not installed.
-- Validate emitted shaders for representative BASIC formulas.
-- Include formulas with user variables, conditionals, builtins, and bailout.
-
-### 2. Add Interpreter Equivalence Fixtures
+### 1. Add Interpreter Equivalence Fixtures
 
 - Build a small corpus of BASIC formulas with known interpreter results.
 - For each formula, assert emitted GLSL contains the expected lowered
@@ -188,7 +181,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - If a GLSL execution harness becomes available, compare numeric results
   against interpreter output.
 
-### 3. Remove Example-Only Caveats
+### 2. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.
