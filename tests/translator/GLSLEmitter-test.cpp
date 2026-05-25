@@ -160,6 +160,31 @@ TEST(TestGLSLEmitter, emitsComplexLiteralAsComplexValue)
     expect_contains(shader, "    z = c_add(z, vec2(1.0, 2.0));\n");
 }
 
+TEST(TestGLSLEmitter, emitsArithmeticThroughComplexHelpers)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = (z + p1) - p2\n"
+                                               "  z = z * p3\n"
+                                               "  z = z / p4\n"
+                                               "  z = z ^ p5\n")};
+
+    expect_contains(shader, "    z = c_sub(c_add(z, p1), p2);\n");
+    expect_contains(shader, "    z = c_mul(z, p3);\n");
+    expect_contains(shader, "    z = c_div(z, p4);\n");
+    expect_contains(shader, "    z = c_pow(z, p5);\n");
+}
+
+TEST(TestGLSLEmitter, emitsUnaryArithmeticThroughComplexHelpers)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = -z\n"
+                                               "  z = +z\n")};
+
+    expect_contains(shader, "vec2 c_neg(vec2 z) { return vec2(-z.x, -z.y); }\n");
+    expect_contains(shader, "    z = c_neg(z);\n");
+    expect_contains(shader, "    z = z;\n");
+}
+
 } // namespace
 
 } // namespace formula::test

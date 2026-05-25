@@ -314,6 +314,7 @@ std::string GLSLEmitter::emit_complex_math_functions()
     // Basic arithmetic
     out << "vec2 c_add(vec2 a, vec2 b) { return a + b; }\n\n";
     out << "vec2 c_sub(vec2 a, vec2 b) { return a - b; }\n\n";
+    out << "vec2 c_neg(vec2 z) { return vec2(-z.x, -z.y); }\n\n";
 
     out << "vec2 c_mul(vec2 a, vec2 b) {\n";
     out << "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n";
@@ -741,15 +742,13 @@ void GLSLEmitter::visit(const ast::UnaryOpNode &node)
 {
     if (node.op() == '-')
     {
-        m_output << "(-";
+        m_output << "c_neg(";
         node.operand()->visit(*this);
         m_output << ")";
     }
     else if (node.op() == '+')
     {
-        m_output << "(+";
         node.operand()->visit(*this);
-        m_output << ")";
     }
     else if (node.op() == '|')
     {
