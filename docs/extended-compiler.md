@@ -7,6 +7,8 @@
 - Compile procedural semantics first, then object/class semantics.
 - Use the current parser, resolver, and diagnostic semantic analyzer as
   the compiler front end.
+- Lower EXTENDED formulas through a typed SSA IR instead of direct
+  AST-to-machine-code visitors.
 - Imports are load metadata. The compiler consumes resolved references and
   retained imported ASTs; it does not execute import directives.
 
@@ -26,6 +28,8 @@
 - Do not inline imported ASTs into the main entry AST.
 - Do not require GLSL/shader generation to advance with the JIT work.
 - Do not optimize aggressively until correctness and ABI shape are stable.
+- Do not commit the compiler to a single machine-code backend. AsmJit is the
+  first backend, but the IR should permit LLVM or TPDE backends later.
 
 ## Current Baseline
 - The compiler currently emits `Complex` expressions and assignments.
@@ -44,9 +48,8 @@
 ## Architecture
 - Run the existing resolver and diagnostic semantic analyzer before
   machine-code emission for EXTENDED inputs.
-- Lower AST to a typed compiler IR after semantic diagnostics pass. The
-  current analyzer validates meaning but does not mutate ASTs or return a
-  typed IR.
+- Lower AST to a typed SSA IR after semantic diagnostics pass. The current
+  analyzer validates meaning but does not mutate ASTs or return a typed IR.
 - Keep a shared semantic model with the interpreter:
   - value kinds
   - type conversions
@@ -57,11 +60,59 @@
 - Split JIT into clear phases:
   - load metadata validation
   - diagnostic semantic analysis
-  - typed IR build
+  - typed SSA IR build
+  - IR verification
   - layout planning
-  - code emission
+  - backend lowering
   - runtime binding
 - Keep BASIC fast path available while extended JIT matures.
+- Treat the SSA IR as the compiler contract. Backends consume IR, not parser
+  ASTs.
+- Implement AsmJit lowering first. Keep the IR backend-neutral enough for
+  possible LLVM or TPDE lowering later.
+
+## SSA IR
+- Use SSA values for expression temporaries and immutable results.
+- Use explicit memory operations for mutable language state:
+  - formula globals
+  - section locals
+  - function locals
+  - parameters
+  - by-reference arguments
+  - array elements
+  - object fields
+  - predefined mutable symbols
+- Represent control flow as basic blocks with explicit terminators:
+  - branch
+  - conditional branch
+  - return
+  - section exit
+  - trap
+- Prefer block arguments or phi nodes for values that merge across control
+  flow. Choose one representation and keep it consistent.
+- Model lvalues explicitly so assignment, by-reference calls, array indexing,
+  object fields, and writable predefined symbols share one lowering path.
+- Model runtime helper calls as typed IR calls with stable signatures.
+- Model user function calls separately from runtime helper calls so backends
+  can lower direct compiled calls, recursion, and by-reference arguments.
+- Keep section entry points as IR functions with known inputs and outputs.
+- Add an IR verifier before backend lowering:
+  - every SSA use is dominated by its definition
+  - block arguments or phi inputs match predecessor count and types
+  - lvalue loads/stores use compatible types
+  - terminators end every block
+  - helper calls match registered signatures
+  - section return values match section expectations
+- Keep source locations on IR instructions that can fail, trap, or produce
+  diagnostics.
+- Lower AST to IR once. Multiple backends may consume the same verified IR:
+  - AsmJit for the first native JIT backend
+  - LLVM as a future optimizing or cross-target backend
+  - TPDE as a future fast native backend if its C++ API and ABI fit
+  - an optional IR interpreter for compiler debugging and parity tests
+- Keep optimization optional at first. Correctness and stable lowering are
+  required before adding canonicalization, constant folding, or dead-code
+  elimination.
 
 ## Value Model
 - Add a compiled value representation matching runtime semantics:
@@ -362,6 +413,12 @@
 ## Testing
 - Keep every existing compiled BASIC test passing.
 - Add compiler/interpreter equivalence tests for every extended feature.
+- Add IR verifier tests for malformed block structure, type mismatches,
+  invalid lvalues, and helper signature mismatches.
+- Add AST-to-IR tests for expression values, lvalues, control flow, sections,
+  functions, arrays, object fields, and helper calls.
+- Add backend-neutral IR execution tests where practical before checking
+  generated machine code.
 - Add compile-failure tests for unsupported object features during the
   staged rollout.
 - Add tests for:
@@ -388,63 +445,76 @@
    - Preserve BASIC parser-only validation.
    - Convert unsupported extended nodes to clear compile diagnostics.
 
-2. Typed compiler IR.
-   - Add value kinds, typed operands, lvalues, and conversions.
+2. Typed SSA IR.
+   - Add IR modules, functions, basic blocks, typed SSA values, lvalues,
+     memory operations, terminators, and conversions.
+   - Add IR verifier coverage before backend lowering.
+   - Keep source locations on instructions that can report diagnostics.
    - Keep BASIC complex expressions compiling through the new path.
 
-3. Runtime state layout.
+3. AST-to-IR lowering.
+   - Lower expressions, statements, sections, and function declarations into
+     verified SSA IR.
+   - Preserve explicit mutable storage for assignments, arrays, object fields,
+     by-ref arguments, and writable predefined symbols.
+
+4. AsmJit backend skeleton.
+   - Lower verified IR for the existing BASIC complex subset through AsmJit.
+   - Keep backend interfaces generic enough for LLVM or TPDE experiments.
+
+5. Runtime state layout.
    - Add typed slots for formula variables, parameters, constants, and
      section locals.
 
-4. Scalar and color values.
+6. Scalar and color values.
    - Compile bool, int, float, complex, and color literals and
      conversions.
 
-5. Declarations and assignment.
+7. Declarations and assignment.
    - Compile typed declarations, default initialization, and typed
      assignment.
 
-6. Control flow.
+8. Control flow.
    - Compile if, while, repeat/until, eager logical evaluation, and loop
      guards.
 
-7. Section dispatch.
+9. Section dispatch.
    - Add compiled `final` and `transform`; preserve fractal sections.
 
-8. Parameters and constants.
+10. Parameters and constants.
    - Compile `@param`, predefined symbols, defaults, and value-aware APIs.
 
-9. User functions.
+11. User functions.
    - Compile function tables, calls, returns, recursion, const, and
      by-ref arguments.
 
-10. Arrays.
+12. Arrays.
     - Add array handles, static indexing, dynamic resize, bounds checks,
       and array built-ins.
 
-11. Built-ins.
+13. Built-ins.
     - Add multi-arg/value built-ins and compiled helper ABI.
 
-12. Import-aware lowering.
+14. Import-aware lowering.
     - Consume retained imported AST metadata and resolved references already
       checked by semantic analysis for class and plug-in parameter lowering.
 
-13. Builtin Image class.
+15. Builtin Image class.
     - Add builtin image parameter metadata, runtime handles, host binding
       APIs, and helpers for documented image operations.
     - Keep `Image` out of import resolution and retained AST metadata.
 
-14. Object/class descriptors.
+16. Object/class descriptors.
     - Build descriptors, layouts, inheritance metadata, and visibility
       checks.
 
-15. Object execution.
+17. Object execution.
     - Compile `new`, constructors, field access, method calls, casts, and
       object plug-in params.
 
-16. Optimization and cleanup.
-    - Inline hot helpers, remove redundant conversions, and stabilize
-      generated code organization.
+18. Optimization and cleanup.
+    - Add optional IR canonicalization, constant folding, dead-code removal,
+      hot helper inlining, and backend-specific cleanup.
 
 ## Risks
 - Value ABI churn can make early codegen brittle.
