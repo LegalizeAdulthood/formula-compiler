@@ -332,16 +332,20 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "}\n\n";
 
     // Magnitude operations
-    out << "float c_mag_sqr(vec2 z) {\n";
-    out << "    return z.x * z.x + z.y * z.y;\n";
+    out << "vec2 c_mod_sqr(vec2 z) {\n";
+    out << "    return vec2(z.x * z.x + z.y * z.y, 0.0);\n";
     out << "}\n\n";
 
-    out << "float c_abs(vec2 z) {\n";
-    out << "    return sqrt(c_mag_sqr(z));\n";
+    out << "vec2 c_mag(vec2 z) {\n";
+    out << "    return vec2(sqrt(c_mod_sqr(z).x), 0.0);\n";
     out << "}\n\n";
 
-    out << "float c_cabs(vec2 z) {\n";
-    out << "    return c_abs(z);\n";
+    out << "vec2 c_abs(vec2 z) {\n";
+    out << "    return vec2(abs(z.x), abs(z.y));\n";
+    out << "}\n\n";
+
+    out << "vec2 c_cabs(vec2 z) {\n";
+    out << "    return c_mag(z);\n";
     out << "}\n\n";
 
     // Power function
@@ -568,7 +572,7 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     }
     else
     {
-        out << indent() << "if (c_mag_sqr(z) > bailout * bailout) break;\n";
+        out << indent() << "if (c_mod_sqr(z).x > bailout * bailout) break;\n";
     }
 
     out << "\n" << indent() << "iter++;\n";
@@ -752,8 +756,7 @@ void GLSLEmitter::visit(const ast::UnaryOpNode &node)
     }
     else if (node.op() == '|')
     {
-        // Modulus/absolute value
-        m_output << "c_abs(";
+        m_output << "c_mod_sqr(";
         node.operand()->visit(*this);
         m_output << ")";
     }

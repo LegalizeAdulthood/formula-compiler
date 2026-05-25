@@ -185,6 +185,36 @@ TEST(TestGLSLEmitter, emitsUnaryArithmeticThroughComplexHelpers)
     expect_contains(shader, "    z = z;\n");
 }
 
+TEST(TestGLSLEmitter, emitsModulusAsModulusSquared)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = |z|\n")};
+
+    expect_contains(shader,
+        "vec2 c_mod_sqr(vec2 z) {\n"
+        "    return vec2(z.x * z.x + z.y * z.y, 0.0);\n"
+        "}\n");
+    expect_contains(shader, "    z = c_mod_sqr(z);\n");
+}
+
+TEST(TestGLSLEmitter, emitsAbsoluteBuiltinsWithBasicSemantics)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = abs((3, -4))\n"
+                                               "  z = cabs((3, 4))\n")};
+
+    expect_contains(shader,
+        "vec2 c_abs(vec2 z) {\n"
+        "    return vec2(abs(z.x), abs(z.y));\n"
+        "}\n");
+    expect_contains(shader,
+        "vec2 c_cabs(vec2 z) {\n"
+        "    return c_mag(z);\n"
+        "}\n");
+    expect_contains(shader, "    z = c_abs(vec2(3.0, -4.0));\n");
+    expect_contains(shader, "    z = c_cabs(vec2(3.0, 4.0));\n");
+}
+
 } // namespace
 
 } // namespace formula::test
