@@ -2,13 +2,13 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <glad/glad.h>
-
-#include <GLFW/glfw3.h>
-
 #include <formula/parser/ParseOptions.h>
 #include <formula/parser/Parser.h>
 #include <formula/translator/GLSLEmitter.h>
+
+#include <glad/glad.h>
+
+#include <GLFW/glfw3.h>
 
 #include <array>
 #include <cstddef>
@@ -30,9 +30,7 @@ constexpr int SKIP_EXIT_CODE{77};
 const char *DEFAULT_FORMULA{"init:\n"
                             "  z = pixel\n"
                             "loop:\n"
-                            "  z = sqr(z) + p1\n"
-                            "bailout:\n"
-                            "  |z| < 4\n"};
+                            "  z = sqr(z) + p1\n"};
 
 struct GlfwSession
 {

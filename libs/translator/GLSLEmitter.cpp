@@ -42,6 +42,27 @@ bool is_predefined_variable(const std::string &name)
     return PREDEFINED_VARIABLES.count(name) > 0;
 }
 
+std::string format_float(double value)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(17) << value;
+    std::string text{out.str()};
+    while (text.size() > 3 && text.back() == '0' && text[text.size() - 2] != '.')
+    {
+        text.pop_back();
+    }
+    if (text == "-0.0")
+    {
+        return "0.0";
+    }
+    return text;
+}
+
+std::string complex_literal(double real, double imag)
+{
+    return "vec2(" + format_float(real) + ", " + format_float(imag) + ")";
+}
+
 class SymbolCollector : public ast::NullVisitor
 {
 public:
@@ -596,17 +617,16 @@ void GLSLEmitter::visit(const ast::LiteralNode &node)
 {
     if (std::holds_alternative<Complex>(node.value()))
     {
-        auto c = std::get<Complex>(node.value());
-        m_output << "vec2(" << std::fixed << std::setprecision(17) << c.re << ", " << c.im << ")";
+        const Complex c{std::get<Complex>(node.value())};
+        m_output << complex_literal(c.re, c.im);
     }
     else if (std::holds_alternative<double>(node.value()))
     {
-        double val = std::get<double>(node.value());
-        m_output << std::fixed << std::setprecision(17) << val;
+        m_output << complex_literal(std::get<double>(node.value()), 0.0);
     }
     else if (std::holds_alternative<int>(node.value()))
     {
-        m_output << std::get<int>(node.value());
+        m_output << complex_literal(static_cast<double>(std::get<int>(node.value())), 0.0);
     }
 }
 

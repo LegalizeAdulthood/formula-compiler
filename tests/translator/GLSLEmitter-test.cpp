@@ -136,6 +136,30 @@ TEST(TestGLSLEmitter, declaresUnknownUserVariableReads)
     expect_contains(shader, "    z = c_add(foo, pixel);\n");
 }
 
+TEST(TestGLSLEmitter, emitsIntegerLiteralAsComplexValue)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = 0\n")};
+
+    expect_contains(shader, "    z = vec2(0.0, 0.0);\n");
+}
+
+TEST(TestGLSLEmitter, emitsFloatLiteralAsComplexValue)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = z + 1.5\n")};
+
+    expect_contains(shader, "    z = c_add(z, vec2(1.5, 0.0));\n");
+}
+
+TEST(TestGLSLEmitter, emitsComplexLiteralAsComplexValue)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = z + (1, 2)\n")};
+
+    expect_contains(shader, "    z = c_add(z, vec2(1.0, 2.0));\n");
+}
+
 } // namespace
 
 } // namespace formula::test
