@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/translator/GLSLEmitter.h>
 
@@ -16,12 +16,11 @@ namespace formula::codegen
 namespace
 {
 
-/// This Visitor is an example implementation that emits a GLSL compute
-/// shader for the fractal formula.
+/// This Visitor is an experimental implementation that emits a GLSL compute
+/// shader for a BASIC fractal formula.
 ///
-/// This example was generated with Copilot and not much else was done,
-/// so the results may be incorrect and buggy as an actual GLSL compute
-/// shader.
+/// The current output is debug/example shader text. It is not a
+/// production-correct BASIC backend.
 ///
 /// It merely serves as an example for your own Visitor.
 ///
