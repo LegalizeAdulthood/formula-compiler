@@ -195,20 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. Backfill ExtendedRuntime tests for plug-in and object values.
-    - Add tests that formula, parameter, and predefined storage preserve
-      shared plug-in/object handles and stored metadata.
-    - Add tests that formula and parameter lvalues can replace plug-in values
-      without changing unrelated runtime state.
-    - Add tests that read-only parameter and predefined lvalues reject plug-in
-      replacement while leaving the original handle intact.
-    - Add tests that missing parameter and predefined lookups still return
-      empty values when plug-in values exist elsewhere.
-    - Add tests that rebinding a plug-in parameter updates only that parameter
-      and does not alter formula-scope or predefined values with the same
-      source spelling.
-
-2. User constructors and casts.
+1. User constructors and casts.
     - Run class constructors during `new Class(...)` and `new @plugin(...)`
       once method dispatch exists.
     - Enforce constructor inheritance rules validated by semantic analysis,

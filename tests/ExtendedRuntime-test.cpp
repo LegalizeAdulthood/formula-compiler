@@ -11,6 +11,22 @@
 namespace formula::test
 {
 
+namespace
+{
+
+Value plugin_value(std::string class_name, int field_value)
+{
+    PluginValue plugin;
+    plugin.filename = "common.ulb";
+    plugin.class_name = std::move(class_name);
+    plugin.base_class = "Base";
+    plugin.object_fields = {{"field", Value{field_value}}};
+    plugin.object_initialized = true;
+    return make_plugin_value(std::move(plugin));
+}
+
+} // namespace
+
 TEST(TestExtendedRuntime, setGetAndMissingValues)
 {
     ExtendedRuntimeState state;
@@ -20,6 +36,24 @@ TEST(TestExtendedRuntime, setGetAndMissingValues)
     EXPECT_EQ(Value{}, state.value("sourcename"));
     EXPECT_EQ("SourceName", state.source_name("SourceName"));
     EXPECT_EQ("", state.source_name("sourcename"));
+}
+
+TEST(TestExtendedRuntime, storesPluginValuesInFormulaParameterAndPredefinedScopes)
+{
+    ExtendedRuntimeState state;
+    const Value formula{plugin_value("FormulaPlugin", 1)};
+    const Value parameter{plugin_value("ParameterPlugin", 2)};
+    const Value predefined{plugin_value("PredefinedPlugin", 3)};
+
+    state.set_formula_value("plugin", formula);
+    state.set_parameter_value("@plugin", parameter);
+    state.set_predefined_value("#plugin", predefined, true);
+
+    EXPECT_EQ(formula, state.value("plugin"));
+    EXPECT_EQ(parameter, state.parameter_value("plugin"));
+    EXPECT_EQ(parameter, state.parameter_value("@plugin"));
+    EXPECT_EQ(predefined, state.predefined_value("plugin"));
+    EXPECT_EQ(predefined, state.predefined_value("#plugin"));
 }
 
 TEST(TestExtendedRuntime, localScopesShadowFormulaValues)
@@ -48,6 +82,24 @@ TEST(TestExtendedRuntime, lvalueAssignsFormulaVariables)
     target.set(Value{4});
 
     EXPECT_EQ(Value{4}, state.value("z"));
+}
+
+TEST(TestExtendedRuntime, formulaAndParameterLvaluesReplacePluginValues)
+{
+    ExtendedRuntimeState state;
+    const Value formula{plugin_value("FormulaPlugin", 1)};
+    const Value parameter{plugin_value("ParameterPlugin", 2)};
+    const Value replacement{plugin_value("ReplacementPlugin", 3)};
+    state.set_formula_value("plugin", formula);
+    state.set_parameter_value("@plugin", parameter, true);
+    state.set_predefined_value("#plugin", plugin_value("PredefinedPlugin", 4), true);
+
+    state.lvalue("plugin").set(replacement);
+    state.parameter_lvalue("@plugin").set(formula);
+
+    EXPECT_EQ(replacement, state.value("plugin"));
+    EXPECT_EQ(formula, state.parameter_value("plugin"));
+    EXPECT_EQ(plugin_value("PredefinedPlugin", 4), state.predefined_value("plugin"));
 }
 
 TEST(TestExtendedRuntime, byReferenceBindingMutatesTarget)
@@ -111,6 +163,54 @@ TEST(TestExtendedRuntime, readOnlyLvalueRejectsAssignment)
     EXPECT_FALSE(state.predefined_lvalue("#pi").writable());
     EXPECT_THROW(state.parameter_lvalue("p").set(Value{6}), std::runtime_error);
     EXPECT_THROW(state.predefined_lvalue("pi").set(Value{4.0}), std::runtime_error);
+}
+
+TEST(TestExtendedRuntime, readOnlyPluginLvaluesRejectAssignment)
+{
+    ExtendedRuntimeState state;
+    const Value parameter{plugin_value("ParameterPlugin", 1)};
+    const Value predefined{plugin_value("PredefinedPlugin", 2)};
+    state.set_parameter_value("@plugin", parameter);
+    state.set_predefined_value("#plugin", predefined, false);
+
+    EXPECT_FALSE(state.parameter_lvalue("plugin").writable());
+    EXPECT_FALSE(state.predefined_lvalue("#plugin").writable());
+    EXPECT_THROW(state.parameter_lvalue("@plugin").set(plugin_value("Replacement", 3)), std::runtime_error);
+    EXPECT_THROW(state.predefined_lvalue("plugin").set(plugin_value("Replacement", 4)), std::runtime_error);
+    EXPECT_EQ(parameter, state.parameter_value("plugin"));
+    EXPECT_EQ(predefined, state.predefined_value("plugin"));
+}
+
+TEST(TestExtendedRuntime, missingPluginLookupsReturnEmptyValues)
+{
+    ExtendedRuntimeState state;
+    state.set_formula_value("plugin", plugin_value("FormulaPlugin", 1));
+    state.set_parameter_value("@plugin", plugin_value("ParameterPlugin", 2));
+    state.set_predefined_value("#plugin", plugin_value("PredefinedPlugin", 3), true);
+
+    EXPECT_EQ(Value{}, state.value("missing"));
+    EXPECT_FALSE(state.has_parameter_value("missing"));
+    EXPECT_EQ(Value{}, state.parameter_value("missing"));
+    EXPECT_FALSE(state.has_predefined_value("#missing"));
+    EXPECT_EQ(Value{}, state.predefined_value("#missing"));
+}
+
+TEST(TestExtendedRuntime, rebindingPluginParameterIsIsolatedFromOtherScopes)
+{
+    ExtendedRuntimeState state;
+    const Value formula{plugin_value("FormulaPlugin", 1)};
+    const Value predefined{plugin_value("PredefinedPlugin", 2)};
+    const Value original_parameter{plugin_value("ParameterPlugin", 3)};
+    const Value replacement{plugin_value("ReplacementPlugin", 4)};
+    state.set_formula_value("plugin", formula);
+    state.set_parameter_value("@plugin", original_parameter);
+    state.set_predefined_value("#plugin", predefined, true);
+
+    state.set_parameter_value("plugin", replacement);
+
+    EXPECT_EQ(formula, state.value("plugin"));
+    EXPECT_EQ(replacement, state.parameter_value("@plugin"));
+    EXPECT_EQ(predefined, state.predefined_value("plugin"));
 }
 
 TEST(TestExtendedRuntime, readOnlyAliasRejectsAssignment)
