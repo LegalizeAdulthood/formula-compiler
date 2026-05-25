@@ -735,7 +735,8 @@ std::optional<int> literal_int(const ast::Expr &expr)
     {
         return std::nullopt;
     }
-    if (const auto *value = std::get_if<int>(&literal->value()))
+    const ast::LiteralNode::ValueType literal_value{literal->value()};
+    if (const auto *value = std::get_if<int>(&literal_value))
     {
         return *value;
     }

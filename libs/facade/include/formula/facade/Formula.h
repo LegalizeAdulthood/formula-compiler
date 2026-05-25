@@ -7,6 +7,7 @@
 #include <formula/core/Complex.h>
 #include <formula/parser/FormulaEntry.h>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
