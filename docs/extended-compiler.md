@@ -5,6 +5,8 @@
 - Preserve existing BASIC compiled behavior and public `Complex` APIs.
 - Share semantic rules with the extended interpreter wherever possible.
 - Compile procedural semantics first, then object/class semantics.
+- Use the current parser, resolver, and diagnostic semantic analyzer as
+  the compiler front end.
 - Imports are load metadata. The compiler consumes resolved references and
   retained imported ASTs; it does not execute import directives.
 
@@ -33,11 +35,18 @@
 - Extended AST nodes currently fail compilation or are unsupported.
 - Public formula execution still exposes `Complex` wrappers around run
   results.
+- EXTENDED parsing, reference collection, and diagnostic semantic analysis
+  already cover the accepted syntax surface. The compiler work starts from
+  validated ASTs and retained reference metadata.
+- BASIC formulas are fully checked by the parser and do not need semantic
+  analysis.
 
 ## Architecture
-- Add a compiler semantic analysis pass before machine-code emission.
-- Lower AST to a typed compiler IR. Avoid emitting directly from raw AST
-  for extended features.
+- Run the existing resolver and diagnostic semantic analyzer before
+  machine-code emission for EXTENDED inputs.
+- Lower AST to a typed compiler IR after semantic diagnostics pass. The
+  current analyzer validates meaning but does not mutate ASTs or return a
+  typed IR.
 - Keep a shared semantic model with the interpreter:
   - value kinds
   - type conversions
@@ -47,7 +56,7 @@
   - import reference resolution
 - Split JIT into clear phases:
   - load metadata validation
-  - semantic analysis
+  - diagnostic semantic analysis
   - typed IR build
   - layout planning
   - code emission
@@ -97,7 +106,9 @@
   present.
 
 ## Semantic Analysis
-- Build symbol tables before emission:
+- Treat the parser, resolver, and semantic analyzer as the front-end gate.
+  Stop compilation when they report diagnostics.
+- Build compiler symbol tables before emission:
   - formula variables
   - section-local variables
   - function declarations
@@ -107,13 +118,15 @@
   - imported classes
 - Normalize names using the same rules as parser/interpreter.
 - Resolve user functions before built-ins.
-- Resolve `@param` and `#constant` references explicitly.
-- Resolve object/class references through `LoadedFormula::files` metadata:
+- Resolve `@param` and predefined-symbol references explicitly.
+- Consume load/reference metadata for object and class references:
   - `import_graph`
   - `resolved_references`
   - `retained_classes`
   - `class_index`
 - Reject unresolved classes and missing retained ASTs before codegen.
+- Keep compiler-specific type/layout tables separate from the diagnostic
+  analyzer until a shared typed semantic model exists.
 - Attach source locations to semantic diagnostics.
 
 ## Type System
@@ -126,9 +139,10 @@
 - Function calls coerce arguments to declared parameter types.
 - Return statements coerce to declared return type.
 - Section returns use section-specific expected types:
-  - fractal bailout: bool/numeric truth
-  - coloring final: float, color, or complex-compatible value as allowed
-  - transformation transform: void or value ignored after state mutation
+  - fractal bailout: bool, int, float, or complex truth value
+  - coloring final: bool, int, float, complex, or color
+  - transformation transform: result ignored; `#pixel` and `#solid`
+    mutations carry output state
 - Invalid conversions become compile diagnostics.
 
 ## Memory Layout
@@ -178,8 +192,8 @@
   - `final`
   - `transform`
 - Run `global` once and preserve formula-scope state.
-- Enforce read-only global variables from non-global sections if that
-  remains the chosen semantic model.
+- Enforce formula globals as writable only in `global`; non-global sections
+  read formula globals but do not assign them.
 - Preserve current section entry points for BASIC formulas.
 
 ## Expressions
@@ -187,22 +201,22 @@
   - literals: bool, int, float, complex, string, color
   - identifiers
   - `@param`
-  - `#constant`
+  - predefined symbols
   - unary `-` and `!`
   - binary arithmetic and comparisons
-  - logical `&&` and `||` with short-circuiting
-  - assignment expressions
+  - logical `&&` and `||` with eager operand evaluation
+  - assignment statement stores
   - member access
   - array indexing
   - `new`
   - function calls with multiple args
 - Preserve UF precedence already parsed by AST shape.
-- Generate short-circuit control flow for logical operations.
 - Generate lvalue/rvalue paths for assignment targets.
 
 ## Statements
 - Compile:
   - statement sequences
+  - assignment statements
   - typed declarations
   - static array declarations
   - dynamic array declarations
@@ -257,6 +271,9 @@
   default to an empty host image handle.
 - Support `#pixel`, `#z`, `#index`, `#color`, `#solid`, and other
   environment constants as typed state reads/writes where UF permits.
+- Unknown predefined symbols are parse errors. Section and constant-context
+  availability are semantic diagnostics. Globally read-only predefined
+  symbols are rejected as assignment targets by the parser.
 - Preserve current symbol-label behavior for existing complex built-ins.
 
 ## Built-Ins
@@ -290,7 +307,7 @@
   builtin descriptor so member access, method calls, and parameter
   binding can share the object/member lowering path without requiring a
   parsed class definition.
-- Build class descriptors during semantic analysis:
+- Build compiler class descriptors after diagnostic semantic analysis:
   - class name
   - base class
   - fields
@@ -307,6 +324,8 @@
 - Support casts after object model type checks exist.
 - Support plug-in object parameters as object references initialized from
   parameter metadata.
+- Parameter defaults are resolved before interpretation or compilation.
+  The compiler should not need lazy default or plug-in resolution.
 - Support builtin image parameters as image handles initialized from host
   parameter bindings. Add helpers or direct lowering for documented image
   operations. Unsupported image members must produce compile diagnostics
@@ -316,13 +335,14 @@
 
 ## Imports
 - Import directives are not executable AST nodes.
-- Compiler input is the main AST plus `LoadedFormula::files` metadata.
+- Compiler input is the main AST plus load/reference metadata from formula
+  loading.
 - Compile only referenced retained imported class ASTs.
 - Do not compile unreferenced imported classes.
 - Preserve UF class lookup order already resolved by load metadata.
 - Diagnostics from missing imports, cycles, parse errors, and unresolved
-  class names remain load diagnostics; compiler should not duplicate
-  them unless metadata is inconsistent.
+  class names remain load or semantic diagnostics; compiler should not
+  duplicate them unless metadata is inconsistent.
 
 ## Error Handling
 - Replace boolean-only `compile()` failure with structured diagnostics.
@@ -364,6 +384,8 @@
 ## Implementation Slices
 1. Diagnostics and feature gates.
    - Add compile diagnostics while preserving `compile()` bool.
+   - Run resolver and diagnostic semantic analysis for EXTENDED inputs.
+   - Preserve BASIC parser-only validation.
    - Convert unsupported extended nodes to clear compile diagnostics.
 
 2. Typed compiler IR.
@@ -383,14 +405,14 @@
      assignment.
 
 6. Control flow.
-   - Compile if, while, repeat/until, logical short-circuiting, and loop
+   - Compile if, while, repeat/until, eager logical evaluation, and loop
      guards.
 
 7. Section dispatch.
    - Add compiled `final` and `transform`; preserve fractal sections.
 
 8. Parameters and constants.
-   - Compile `@param`, `#constant`, defaults, and value-aware APIs.
+   - Compile `@param`, predefined symbols, defaults, and value-aware APIs.
 
 9. User functions.
    - Compile function tables, calls, returns, recursion, const, and
@@ -403,9 +425,9 @@
 11. Built-ins.
     - Add multi-arg/value built-ins and compiled helper ABI.
 
-12. Import-aware semantic analysis.
-    - Consume retained imported AST metadata and resolved references for
-      class and plug-in parameter type checks.
+12. Import-aware lowering.
+    - Consume retained imported AST metadata and resolved references already
+      checked by semantic analysis for class and plug-in parameter lowering.
 
 13. Builtin Image class.
     - Add builtin image parameter metadata, runtime handles, host binding
