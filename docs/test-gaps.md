@@ -51,13 +51,7 @@ Import metadata:
 
 ## Implementation Slices
 
-1. Add interpreter or semantic tests for global-section write protection.
-   - Prefer semantic analyzer coverage if writes are rejected before runtime.
-   - Add interpreter coverage only if a valid AST can still reach the runtime
-     write-protection path.
-   - Assert writes outside `global:` fail clearly.
-
-2. Reconcile `docs/extended-interpreter.md` test list.
+1. Reconcile `docs/extended-interpreter.md` test list.
     - Keep `color arithmetic` and `global read-only behavior` until the
       slices above are implemented.
     - Remove or reword `public import metadata`; it is not a documented UF6

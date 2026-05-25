@@ -134,6 +134,21 @@ TEST(TestExtendedInterpreter, semanticFailureBlocksExecution)
     EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
+TEST(TestExtendedInterpreter, globalWriteOutsideGlobalBlocksExecution)
+{
+    ExtendedInterpreter interpreter{formula_entry("global:\n"
+                                                  "int count\n"
+                                                  "init:\n"
+                                                  "count=1"),
+        options()};
+
+    ASSERT_FALSE(interpreter.ok());
+    ASSERT_EQ(1U, interpreter.diagnostics().size());
+    EXPECT_EQ(ExtendedInterpreterDiagnosticKind::SEMANTIC, interpreter.diagnostics()[0].kind);
+    EXPECT_EQ("invalid assignment target: count is global", interpreter.diagnostics()[0].message);
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
+}
+
 TEST(TestExtendedInterpreter, exposesParameterMetadataAfterConstruction)
 {
     ExtendedInterpreter interpreter{formula_entry("default:\n"
