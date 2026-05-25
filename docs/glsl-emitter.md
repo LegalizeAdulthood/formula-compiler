@@ -154,6 +154,34 @@ The caller or a later coloring pass can map these values to pixels. If the
 current `imageStore` placeholder is kept temporarily, document it as debug
 output and test only the generated formula kernel semantics.
 
+## Example Program Framework
+
+Use `glfw3` plus `glad` from vcpkg for the smallest practical
+cross-platform OpenGL example program.
+
+- `glfw3` provides window creation, context creation, and minimal input.
+- `glad` provides the modern OpenGL function loader needed for shader and
+  compute-shader entry points.
+- The example should create a hidden GLFW window for automated tests, request
+  an OpenGL 4.5 core context, load GLAD, compile the generated shader, execute
+  it, and read back pixels or buffer contents.
+- Linux CI may need a display provider such as Xvfb.
+
+Prefer these manifest dependencies:
+
+```json
+{
+  "name": "glfw3"
+},
+{
+  "name": "glad",
+  "features": ["gl-api-45", "loader"]
+}
+```
+
+Avoid SDL2, raylib, and freeglut for this test harness. They either add more
+abstraction than needed or are less suitable for modern OpenGL shader tests.
+
 ## Implementation Slices
 
 ### 1. Mark Current Emitter Unsupported For Production
