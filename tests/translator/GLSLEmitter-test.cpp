@@ -60,6 +60,17 @@ TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
         "\n"
         "layout(rgba32f, binding = 0) uniform image2D output_image;\n");
     expect_contains(shader,
+        "struct FormulaResult {\n"
+        "    vec2 z;\n"
+        "    vec2 bailout;\n"
+        "    uint iter;\n"
+        "    uint escaped;\n"
+        "};\n"
+        "\n"
+        "layout(std430, binding = 2) buffer FormulaResults {\n"
+        "    FormulaResult formula_results[];\n"
+        "};\n");
+    expect_contains(shader,
         "layout(std140, binding = 1) uniform FractalParams {\n"
         "    vec2 p1;          // Parameter 1\n"
         "    vec2 p2;          // Parameter 2\n"
@@ -115,6 +126,7 @@ TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
         "void main() {\n"
         "    // Get pixel coordinates\n"
         "    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);\n");
+    expect_contains(shader, "    uint pixel_index = uint(pixel_coords.y) * resolution.x + uint(pixel_coords.x);\n");
     expect_contains(shader,
         "    // Screen-derived predefined variables\n"
         "    vec2 scrnmax = vec2(resolution);\n"
@@ -123,13 +135,15 @@ TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
     expect_contains(shader,
         "    // Variable initialization\n"
         "    vec2 z = pixel;       // Default initialization\n"
+        "    vec2 bailout_value = vec2(1.0, 0.0);\n"
         "    float lastsqr_value = 0.0;\n"
         "    uint iter = 0u;\n");
+    expect_contains(shader, "    uint escaped = 0u;\n");
     expect_contains(shader,
         "    // Main iteration loop\n"
         "    while (iter < maxit) {\n");
     expect_contains(shader,
-        "    // Output color based on iteration count\n"
+        "    // Debug output color based on iteration count\n"
         "    float t = float(iter) / float(maxit);\n"
         "    vec4 color = vec4(t, t * t, sqrt(t), 1.0);\n"
         "    imageStore(output_image, pixel_coords, color);\n");
@@ -481,7 +495,40 @@ TEST(TestGLSLEmitter, emitsBailoutTruthiness)
                                                "bailout:\n"
                                                "  |z| < 4\n")};
 
-    expect_contains(shader, "        if (!c_truth(c_lt(c_mod_sqr(z), vec2(4.0, 0.0)))) break;\n");
+    expect_contains(shader, "        bailout_value = c_lt(c_mod_sqr(z), vec2(4.0, 0.0));\n");
+    expect_contains(shader,
+        "        if (!c_truth(bailout_value)) {\n"
+        "            escaped = 1u;\n"
+        "            break;\n"
+        "        }\n");
+}
+
+TEST(TestGLSLEmitter, emitsDefaultBailoutResult)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = pixel\n")};
+
+    expect_contains(shader, "        bailout_value = c_bool(c_mod_sqr(z).x <= bailout * bailout);\n");
+    expect_contains(shader,
+        "        if (!c_truth(bailout_value)) {\n"
+        "            escaped = 1u;\n"
+        "            break;\n"
+        "        }\n");
+}
+
+TEST(TestGLSLEmitter, emitsFormulaResultOutput)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = pixel\n"
+                                               "bailout:\n"
+                                               "  |z| < 4\n")};
+
+    expect_contains(shader,
+        "    // Formula result output\n"
+        "    formula_results[pixel_index].z = z;\n"
+        "    formula_results[pixel_index].bailout = bailout_value;\n"
+        "    formula_results[pixel_index].iter = iter;\n"
+        "    formula_results[pixel_index].escaped = escaped;\n");
 }
 
 } // namespace

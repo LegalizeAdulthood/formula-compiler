@@ -281,6 +281,15 @@ std::string GLSLEmitter::emit_header()
 
     // Output image binding
     out << "layout(rgba32f, binding = 0) uniform image2D output_image;\n\n";
+    out << "struct FormulaResult {\n";
+    out << "    vec2 z;\n";
+    out << "    vec2 bailout;\n";
+    out << "    uint iter;\n";
+    out << "    uint escaped;\n";
+    out << "};\n\n";
+    out << "layout(std430, binding = 2) buffer FormulaResults {\n";
+    out << "    FormulaResult formula_results[];\n";
+    out << "};\n\n";
 
     return out.str();
 }
@@ -635,6 +644,7 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);\n";
     out << indent() << "if (pixel_coords.x >= resolution.x || pixel_coords.y >= resolution.y)\n";
     out << indent() << "    return;\n\n";
+    out << indent() << "uint pixel_index = uint(pixel_coords.y) * resolution.x + uint(pixel_coords.x);\n\n";
 
     // Map pixel to complex plane
     out << indent() << "// Map pixel to complex plane\n";
@@ -661,8 +671,10 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     // Variable initialization (INIT section)
     out << indent() << "// Variable initialization\n";
     out << indent() << "vec2 z = pixel;       // Default initialization\n";
+    out << indent() << "vec2 bailout_value = vec2(1.0, 0.0);\n";
     out << indent() << "float lastsqr_value = 0.0;\n";
     out << indent() << "uint iter = 0u;\n\n";
+    out << indent() << "uint escaped = 0u;\n\n";
     if (!m_user_vars.empty())
     {
         out << indent() << "// Formula variables\n";
@@ -696,22 +708,32 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Bailout test\n";
     if (formula.bailout)
     {
-        out << indent() << "if (!c_truth(";
+        out << indent() << "bailout_value = ";
         clear_result();
         emit_expression(formula.bailout);
-        out << m_output.str() << ")) break;\n";
+        out << m_output.str() << ";\n";
     }
     else
     {
-        out << indent() << "if (c_mod_sqr(z).x > bailout * bailout) break;\n";
+        out << indent() << "bailout_value = c_bool(c_mod_sqr(z).x <= bailout * bailout);\n";
     }
+    out << indent() << "if (!c_truth(bailout_value)) {\n";
+    out << indent() << "    escaped = 1u;\n";
+    out << indent() << "    break;\n";
+    out << indent() << "}\n";
 
     out << "\n" << indent() << "iter++;\n";
     m_indent_level--;
     out << indent() << "}\n\n";
 
-    // Color output (simple iteration count coloring)
-    out << indent() << "// Output color based on iteration count\n";
+    out << indent() << "// Formula result output\n";
+    out << indent() << "formula_results[pixel_index].z = z;\n";
+    out << indent() << "formula_results[pixel_index].bailout = bailout_value;\n";
+    out << indent() << "formula_results[pixel_index].iter = iter;\n";
+    out << indent() << "formula_results[pixel_index].escaped = escaped;\n\n";
+
+    // Debug image output (simple iteration count coloring)
+    out << indent() << "// Debug output color based on iteration count\n";
     out << indent() << "float t = float(iter) / float(maxit);\n";
     out << indent() << "vec4 color = vec4(t, t * t, sqrt(t), 1.0);\n";
     out << indent() << "imageStore(output_image, pixel_coords, color);\n";

@@ -132,19 +132,16 @@ contract and should not need generated assignment guards.
 
 ## Output Contract
 
-Keep image coloring outside the core BASIC emitter until a client contract is
-defined.
+Keep image coloring outside the core BASIC emitter. The shader writes one
+`FormulaResult` per pixel to storage buffer binding 2:
 
-The BASIC GLSL emitter should initially emit:
+- `vec2 z`: final formula value
+- `vec2 bailout`: last bailout expression value
+- `uint iter`: final iteration count
+- `uint escaped`: 1 if the loop exited because the bailout test failed
 
-- a loop result
-- final `z`
-- final iteration count
-- bailout state
-
-The caller or a later coloring pass can map these values to pixels. If the
-current `imageStore` placeholder is kept temporarily, document it as debug
-output and test only the generated formula kernel semantics.
+The caller or a later coloring pass can map these values to pixels. The
+`imageStore` output is debug-only iteration coloring on image binding 0.
 
 ## Example Program Framework
 
@@ -176,22 +173,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Define Section Result And Output ABI
-
-- Decide the shader ABI for loop result, final `z`, iteration count, and
-  bailout result.
-- Keep debug image output separate from formula result storage.
-- Update `emit_shader` docs to describe what the shader writes.
-- Test the generated output block.
-
-### 2. Add GLSL Compile Validation
+### 1. Add GLSL Compile Validation
 
 - Add an optional test path that runs a GLSL validator when available.
 - Keep the test skipped if the validator is not installed.
 - Validate emitted shaders for representative BASIC formulas.
 - Include formulas with user variables, conditionals, builtins, and bailout.
 
-### 3. Add Interpreter Equivalence Fixtures
+### 2. Add Interpreter Equivalence Fixtures
 
 - Build a small corpus of BASIC formulas with known interpreter results.
 - For each formula, assert emitted GLSL contains the expected lowered
@@ -199,7 +188,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - If a GLSL execution harness becomes available, compare numeric results
   against interpreter output.
 
-### 4. Remove Example-Only Caveats
+### 3. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.
