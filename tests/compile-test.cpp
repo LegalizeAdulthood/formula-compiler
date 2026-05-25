@@ -242,6 +242,56 @@ TEST(TestCompiledFormulaRun, modulus)
     EXPECT_EQ(0.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, sqrUpdatesLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=sqr(3+flip(4))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{25.0, 0.0}), result);
+    EXPECT_EQ((Complex{25.0, 0.0}), formula->get_value("lastsqr"));
+}
+
+TEST(TestCompiledFormulaRun, sqrReplacesLastsqrOnEachCall)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=sqr(3+flip(4))\n"
+                                            "ignored=sqr(1+flip(2))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{5.0, 0.0}), result);
+    EXPECT_EQ((Complex{5.0, 0.0}), formula->get_value("lastsqr"));
+}
+
+TEST(TestCompiledFormulaRun, modulusDoesNotUpdateLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=|3+flip(4)|\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value("lastsqr", {7.0, 0.0});
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{7.0, 0.0}), result);
+    EXPECT_EQ((Complex{7.0, 0.0}), formula->get_value("lastsqr"));
+}
+
 TEST(TestCompiledFormulaRun, conjugate)
 {
     const FormulaPtr formula{create_formula("conj(z)", Options{})};
@@ -300,6 +350,23 @@ TEST(TestCompiledFormulaRun, functionSelectorUsesBoundBuiltin)
     EXPECT_EQ("sin", formula->get_function("fn1"));
     EXPECT_NEAR(1.0, result.re, 1e-8);
     EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, selectedSqrUpdatesLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=fn1(3+flip(4))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("fn1", "sqr"));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{25.0, 0.0}), result);
+    EXPECT_EQ((Complex{25.0, 0.0}), formula->get_value("lastsqr"));
 }
 
 TEST(TestCompiledFormulaRun, basicUnknownVariableCompilesAsZero)

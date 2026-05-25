@@ -22,18 +22,14 @@ correctness.
 - BASIC function calls dispatch through the shared runtime function table.
 - `fn1`, `fn2`, `fn3`, and `fn4` use the same selector state as the
   interpreter and default to `sin`, `sqr`, `sinh`, and `cosh`.
+- Direct and selected `sqr()` calls update `lastsqr` with the argument modulus
+  squared.
 - Assignment statements store both real and imaginary components.
 - Runtime inputs bound before `compile()` are embedded in the compiled data
   section.
 - Unsupported extended AST nodes make compilation fail.
 
 ## Gaps
-
-### `sqr()` Does Not Update `lastsqr`
-
-The interpreter stores the argument modulus squared in `lastsqr` before
-returning the square. The compiler calls the shared `sqr` function directly and
-does not update `lastsqr`.
 
 ### `rand` And `srand()` Are Not Compiled
 
@@ -58,13 +54,7 @@ compiled data from a clean state or be rejected clearly.
 
 ## Implementation Slices
 
-### 1. Update `lastsqr` For Compiled `sqr()`
-
-- Detect selected or direct `sqr()` calls before invoking the runtime function.
-- Emit code that stores the argument modulus squared in `lastsqr`.
-- Add compiled tests matching interpreter `sqr` and selected-`sqr` behavior.
-
-### 2. Define Live Runtime Input Binding
+### 1. Define Live Runtime Input Binding
 
 - Decide whether compiled formulas support `set_value()` after `compile()`.
 - If supported, store compiled symbols in memory owned by `m_state.symbols` so
@@ -72,28 +62,28 @@ compiled data from a clean state or be rejected clearly.
 - If not supported, document and enforce the pre-compile binding contract.
 - Add tests for `pixel`, `p1` through `p5`, and the documented rendering inputs.
 
-### 3. Compile `rand` Advancement
+### 2. Compile `rand` Advancement
 
 - Move per-formula random state into a helper callable from generated code.
 - Advance `rand` before compiled iterate and perturb-iterate sections.
 - Keep startup `rand` as `(0, 0)` until the first iteration.
 - Add deterministic tests using `set_random_seed`.
 
-### 4. Compile `srand()`
+### 3. Compile `srand()`
 
 - Add a generated-call path that resets the per-formula random state and
   returns `(0, 0)`.
 - Verify that a formula-level `srand(seed)` overrides the client seed.
 - Add repeatability tests shared with interpreter expectations.
 
-### 5. Reset State On Recompile
+### 4. Reset State On Recompile
 
 - Clear compiled data bindings and function pointers before rebuilding code.
 - Preserve user-visible runtime state that should survive recompilation.
 - Add tests that compile, change function selectors or values, recompile, and
   verify the new compiled behavior.
 
-### 6. Expand Interpreter/Compiler Parity Fixtures
+### 5. Expand Interpreter/Compiler Parity Fixtures
 
 - Add paired tests for every BASIC runtime semantic in `basic-interpreter.md`.
 - Keep direct AST-only tests only for semantics that parsed BASIC formulas

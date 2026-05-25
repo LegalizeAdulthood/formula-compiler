@@ -405,6 +405,23 @@ static CompileError call_binary(
 }
 #endif
 
+static CompileError store_lastsqr(asmjit::x86::Compiler &comp, EmitterState &state, asmjit::x86::Xmm argument)
+{
+    asmjit::Label label{get_symbol_label(comp, state.data.symbols, "lastsqr")};
+    asmjit::x86::Xmm squared{comp.newXmm()};
+    asmjit::x86::Xmm sum{comp.newXmm()};
+    asmjit::x86::Xmm zero{comp.newXmm()};
+    ASMJIT_CHECK(comp.movapd(squared, argument));
+    ASMJIT_CHECK(comp.mulpd(squared, squared));
+    ASMJIT_CHECK(comp.movapd(sum, squared));
+    ASMJIT_CHECK(comp.shufpd(sum, sum, 1));
+    ASMJIT_CHECK(comp.addsd(sum, squared));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(label), sum));
+    ASMJIT_CHECK(comp.xorpd(zero, zero));
+    ASMJIT_CHECK(comp.movsd(asmjit::x86::ptr(label, sizeof(double)), zero));
+    return {};
+}
+
 void Compiler::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
@@ -430,6 +447,14 @@ void Compiler::visit(const FunctionCallNode &node)
     {
         // identity does nothing
         return;
+    }
+    if (name == "sqr")
+    {
+        if (const CompileError err = store_lastsqr(comp, state, m_result.back()); err)
+        {
+            m_err = err;
+            return;
+        }
     }
     if (ComplexFunction *fn = lookup_complex(name))
     {
