@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2025 Richard Thomson
+# Copyright 2025-2026 Richard Thomson
 #
 cmake_minimum_required(VERSION 3.23...3.31)
 
@@ -45,7 +45,9 @@ misc_group_sources("GitHub" FILES
     "LICENSE.txt"
     "ReadMe.md")
 misc_group_sources("Docs" FILES
+    "docs/basic-compiler.md"
     "docs/basic-formula.txt"
+    "docs/basic-interpreter.md"
     "docs/gradient-grammar.txt"
     "docs/basic-parser.md"
     "docs/compiler-directives.md"
@@ -54,6 +56,8 @@ misc_group_sources("Docs" FILES
     "docs/extended-interpreter.md"
     "docs/extended-parameters.md"
     "docs/extended-semantics.md"
+    "docs/glsl-emitter.md"
+    "docs/id.txt"
     "docs/semantic-analyzer.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
