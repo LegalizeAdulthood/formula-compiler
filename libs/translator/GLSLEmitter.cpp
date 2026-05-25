@@ -7,6 +7,7 @@
 #include <formula/core/Visitor.h>
 
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <unordered_set>
 
@@ -15,6 +16,124 @@ namespace formula::codegen
 
 namespace
 {
+
+bool is_predefined_variable(const std::string &name)
+{
+    static const std::unordered_set<std::string> PREDEFINED_VARIABLES{
+        "pixel",
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "p5",
+        "pi",
+        "e",
+        "maxit",
+        "rand",
+        "lastsqr",
+        "scrnmax",
+        "scrnpix",
+        "whitesq",
+        "ismand",
+        "center",
+        "magxmag",
+        "rotskew",
+    };
+    return PREDEFINED_VARIABLES.count(name) > 0;
+}
+
+class SymbolCollector : public ast::NullVisitor
+{
+public:
+    void collect(const ast::Expr &expr)
+    {
+        if (expr)
+        {
+            expr->visit(*this);
+        }
+    }
+
+    const std::set<std::string> &symbols() const
+    {
+        return m_symbols;
+    }
+
+    void visit(const ast::AssignmentNode &node) override
+    {
+        collect_symbol(node.variable());
+        collect(node.expression());
+    }
+
+    void visit(const ast::BinaryOpNode &node) override
+    {
+        collect(node.left());
+        collect(node.right());
+    }
+
+    void visit(const ast::FunctionCallNode &node) override
+    {
+        if (node.has_target())
+        {
+            collect(node.target());
+        }
+        for (const ast::Expr &arg : node.args())
+        {
+            collect(arg);
+        }
+    }
+
+    void visit(const ast::IdentifierNode &node) override
+    {
+        collect_symbol(node.name());
+    }
+
+    void visit(const ast::IfStatementNode &node) override
+    {
+        collect(node.condition());
+        if (node.has_then_block())
+        {
+            collect(node.then_block());
+        }
+        if (node.has_else_block())
+        {
+            collect(node.else_block());
+        }
+    }
+
+    void visit(const ast::StatementSeqNode &node) override
+    {
+        for (const ast::Expr &statement : node.statements())
+        {
+            collect(statement);
+        }
+    }
+
+    void visit(const ast::UnaryOpNode &node) override
+    {
+        collect(node.operand());
+    }
+
+private:
+    void collect_symbol(const std::string &name)
+    {
+        if (name != "z" && !is_predefined_variable(name))
+        {
+            m_symbols.insert(name);
+        }
+    }
+
+    std::set<std::string> m_symbols;
+};
+
+std::set<std::string> collect_formula_symbols(const ast::FormulaSections &formula)
+{
+    SymbolCollector collector;
+    collector.collect(formula.per_image);
+    collector.collect(formula.initialize);
+    collector.collect(formula.iterate);
+    collector.collect(formula.bailout);
+    return collector.symbols();
+}
 
 /// This Visitor is an experimental implementation that emits a GLSL compute
 /// shader for a BASIC fractal formula.
@@ -62,6 +181,7 @@ private:
     std::string emit_uniforms();
     std::string emit_complex_math_functions();
     std::string emit_builtin_functions();
+    std::string emit_variable_declarations();
     std::string emit_main_function(const ast::FormulaSections &formula);
 
     // Code emission helpers
@@ -79,6 +199,7 @@ private:
 
     // Variable type tracking
     std::unordered_set<std::string> m_complex_vars;
+    std::set<std::string> m_user_vars;
 
     // Indentation management
     int m_indent_level{0};
@@ -94,7 +215,6 @@ GLSLEmitter::GLSLEmitter()
     // Mark known complex variables
     m_complex_vars.insert("pixel");
     m_complex_vars.insert("z");
-    m_complex_vars.insert("c");
     m_complex_vars.insert("p1");
     m_complex_vars.insert("p2");
     m_complex_vars.insert("p3");
@@ -110,6 +230,8 @@ std::string GLSLEmitter::indent() const
 std::string GLSLEmitter::emit_shader(const ast::FormulaSections &formula)
 {
     std::ostringstream shader;
+    m_user_vars = collect_formula_symbols(formula);
+    m_complex_vars.insert(m_user_vars.begin(), m_user_vars.end());
 
     // Emit shader components
     shader << emit_header();
@@ -342,6 +464,16 @@ std::string GLSLEmitter::emit_builtin_functions()
     return out.str();
 }
 
+std::string GLSLEmitter::emit_variable_declarations()
+{
+    std::ostringstream out;
+    for (const std::string &name : m_user_vars)
+    {
+        out << indent() << "vec2 " << name << " = vec2(0.0, 0.0);\n";
+    }
+    return out.str();
+}
+
 std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
 {
     std::ostringstream out;
@@ -375,6 +507,12 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "vec2 z = pixel;       // Default initialization\n";
     out << indent() << "float lastsqr = 0.0;\n";
     out << indent() << "uint iter = 0u;\n\n";
+    if (!m_user_vars.empty())
+    {
+        out << indent() << "// Formula variables\n";
+        out << emit_variable_declarations();
+        out << "\n";
+    }
 
     if (formula.initialize)
     {

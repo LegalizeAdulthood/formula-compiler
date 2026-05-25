@@ -112,6 +112,30 @@ TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
         "    imageStore(output_image, pixel_coords, color);\n");
 }
 
+TEST(TestGLSLEmitter, declaresAssignedUserVariables)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  c = pixel\n"
+                                               "loop:\n"
+                                               "  z = sqr(z) + c\n")};
+
+    expect_contains(shader,
+        "    // Formula variables\n"
+        "    vec2 c = vec2(0.0, 0.0);\n");
+    expect_contains(shader, "    c = pixel;\n");
+}
+
+TEST(TestGLSLEmitter, declaresUnknownUserVariableReads)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = foo + pixel\n")};
+
+    expect_contains(shader,
+        "    // Formula variables\n"
+        "    vec2 foo = vec2(0.0, 0.0);\n");
+    expect_contains(shader, "    z = c_add(foo, pixel);\n");
+}
+
 } // namespace
 
 } // namespace formula::test
