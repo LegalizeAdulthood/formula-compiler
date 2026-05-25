@@ -195,16 +195,7 @@
 Each slice should leave BASIC behavior unchanged and should run the project
 workflow before being considered complete.
 
-1. User constructors and casts.
-    - Run class constructors during `new Class(...)` and `new @plugin(...)`
-      once method dispatch exists.
-    - Enforce constructor inheritance rules validated by semantic analysis,
-      including matching derived/ancestor constructor arguments and explicit
-      ancestor constructor calls.
-    - Implement casts between object references according to the retained
-      class inheritance graph; failed casts return an empty/null reference.
-    - Tests: constructor arguments initialize fields, base-to-derived casts,
-      failed casts, and constructor arity/type backstops.
+No remaining implementation slices are planned in this document.
 
 ## Tests
 - Interpreter tests for typed declarations/defaults/coercions and

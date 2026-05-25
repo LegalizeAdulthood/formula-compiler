@@ -2485,7 +2485,7 @@ TEST(TestExtendedInterpreter, bailoutSectionRejectsInvalidRuntimeResult)
     EXPECT_THROW(interpreter.interpret(Section::BAILOUT), std::runtime_error);
 }
 
-TEST(TestExtendedInterpreter, unsupportedObjectConstructionFailsClearly)
+TEST(TestExtendedInterpreter, userObjectConstructionRunsConstructor)
 {
     std::unordered_map<std::string, std::string> files{
         {"main.ufm",
@@ -2494,12 +2494,16 @@ TEST(TestExtendedInterpreter, unsupportedObjectConstructionFailsClearly)
             "global:\n"
             "Texture texture\n"
             "init:\n"
-            "new Texture()\n"
+            "texture = new Texture(7)\n"
+            "texture.value\n"
             "}\n"},
         {"common.ulb",
             "class Texture {\n"
             "public:\n"
             "int value\n"
+            "func Texture(int next)\n"
+            "this.value = next\n"
+            "endfunc\n"
             "}\n"},
     };
     ExtendedInterpreterOptions interpreter_options{options()};
@@ -2512,10 +2516,82 @@ TEST(TestExtendedInterpreter, unsupportedObjectConstructionFailsClearly)
                                                   "global:\n"
                                                   "Texture texture\n"
                                                   "init:\n"
+                                                  "texture = new Texture(7)\n"
+                                                  "texture.value\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{7}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, pluginObjectConstructionRunsConstructor)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "init:\n"
+            "(new @texture(9)).value\n"
+            "default:\n"
+            "Texture param texture\n"
+            "endparam\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "int value\n"
+            "func Texture(int next)\n"
+            "this.value = next\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"common.ulb\"\n"
+                                                  "init:\n"
+                                                  "(new @texture(9)).value\n"
+                                                  "default:\n"
+                                                  "Texture param texture\n"
+                                                  "endparam\n"),
+        interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{9}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, userObjectConstructorArityBackstop)
+{
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm",
+            "Formula {\n"
+            "import \"common.ulb\"\n"
+            "init:\n"
+            "new Texture()\n"
+            "}\n"},
+        {"common.ulb",
+            "class Texture {\n"
+            "public:\n"
+            "func Texture(int next)\n"
+            "endfunc\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry("import \"common.ulb\"\n"
+                                                  "init:\n"
                                                   "new Texture()\n"),
         interpreter_options};
 
-    expect_unsupported(interpreter, Section::INITIALIZE, "NewNode");
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_THROW(interpreter.interpret(Section::INITIALIZE), std::runtime_error);
 }
 
 TEST(TestExtendedInterpreter, unsupportedObjectMethodCallFailsClearly)
@@ -2664,20 +2740,26 @@ TEST(TestExtendedInterpreter, builtinObjectFieldAccessFailsClearly)
         std::runtime_error);
 }
 
-TEST(TestExtendedInterpreter, unsupportedClassCastFailsClearly)
+TEST(TestExtendedInterpreter, classCastAcceptsDerivedObject)
 {
     const std::string body{"import \"common.ulb\"\n"
                            "global:\n"
-                           "Texture texture\n"
+                           "Base base\n"
+                           "Derived derived\n"
                            "init:\n"
-                           "Texture(@image)\n"
+                           "base = new @texture\n"
+                           "derived = Derived(base)\n"
+                           "derived.value\n"
                            "default:\n"
-                           "Image param image\n"
+                           "Base param texture\n"
+                           "default=Derived\n"
                            "endparam\n"};
     std::unordered_map<std::string, std::string> files{
         {"main.ufm", "Formula {\n" + body + "}\n"},
         {"common.ulb",
-            "class Texture {\n"
+            "class Base {\n"
+            "}\n"
+            "class Derived(Base) {\n"
             "public:\n"
             "int value\n"
             "}\n"},
@@ -2690,7 +2772,43 @@ TEST(TestExtendedInterpreter, unsupportedClassCastFailsClearly)
     };
     ExtendedInterpreter interpreter{formula_entry(body), interpreter_options};
 
-    expect_unsupported(interpreter, Section::INITIALIZE, "FunctionCallNode");
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{0}, interpreter.interpret(Section::INITIALIZE));
+}
+
+TEST(TestExtendedInterpreter, classCastRejectsUnrelatedObject)
+{
+    const std::string body{"import \"common.ulb\"\n"
+                           "global:\n"
+                           "Base base\n"
+                           "Other other\n"
+                           "init:\n"
+                           "base = new @texture\n"
+                           "Other(base)\n"
+                           "default:\n"
+                           "Base param texture\n"
+                           "default=Derived\n"
+                           "endparam\n"};
+    std::unordered_map<std::string, std::string> files{
+        {"main.ufm", "Formula {\n" + body + "}\n"},
+        {"common.ulb",
+            "class Base {\n"
+            "}\n"
+            "class Derived(Base) {\n"
+            "}\n"
+            "class Other {\n"
+            "}\n"},
+    };
+    ExtendedInterpreterOptions interpreter_options{options()};
+    interpreter_options.parser.source_filename = "main.ufm";
+    interpreter_options.parser.file_importer = [&files](std::string_view filename)
+    {
+        return files.at(std::string{filename});
+    };
+    ExtendedInterpreter interpreter{formula_entry(body), interpreter_options};
+
+    ASSERT_TRUE(interpreter.ok());
+    EXPECT_EQ(Value{}, interpreter.interpret(Section::INITIALIZE));
 }
 
 TEST(TestExtendedInterpreter, interpretsScalarDeclarations)

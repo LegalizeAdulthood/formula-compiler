@@ -1347,6 +1347,7 @@ FunctionMap collect_function_declarations(const ast::FormulaSections &formula)
 
 const ast::FunctionDeclNode *find_class_method(const ast::FormulaSections &ast, std::string_view name);
 const ast::FunctionDeclNode *find_static_class_method(const ast::FormulaSections &ast, std::string_view name);
+const ast::FunctionDeclNode *find_class_constructor(const ast::FormulaSections &ast, std::string_view name);
 
 const ast::FunctionDeclNode *find_method_in_expr(const ast::Expr &node, std::string_view name, bool is_static)
 {
@@ -1395,6 +1396,19 @@ const ast::FunctionDeclNode *find_static_class_method(const ast::FormulaSections
         return function;
     }
     return find_method_in_expr(ast.private_members, name, true);
+}
+
+const ast::FunctionDeclNode *find_class_constructor(const ast::FormulaSections &ast, std::string_view name)
+{
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.public_members, name, false)})
+    {
+        return function;
+    }
+    if (const ast::FunctionDeclNode *function{find_method_in_expr(ast.protected_members, name, false)})
+    {
+        return function;
+    }
+    return find_method_in_expr(ast.private_members, name, false);
 }
 
 const ast::DeclarationNode *find_declaration_in_expr(const ast::Expr &node, std::string_view name)
@@ -1593,6 +1607,11 @@ public:
             m_result = *builtin;
             return;
         }
+        if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.name())})
+        {
+            m_result = cast_object(*klass, node.args());
+            return;
+        }
         const auto function = m_functions.find(node.name());
         if (function == m_functions.end())
         {
@@ -1683,7 +1702,6 @@ public:
         }
         if (!node.type().empty() && node.type().front() == '@')
         {
-            check_arity(node.type(), node.args().size(), 0U);
             m_result = m_state.parameter_value(node.type());
             if (m_result.kind() == ValueKind::PLUGIN)
             {
@@ -1692,7 +1710,7 @@ public:
                 {
                     throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
                 }
-                m_result = make_object_value(*plugin);
+                m_result = construct_object(*plugin, node.args());
                 return;
             }
             if (m_result.kind() == ValueKind::EMPTY)
@@ -1707,7 +1725,6 @@ public:
         }
         if (m_state.has_parameter_value(node.type()))
         {
-            check_arity(node.type(), node.args().size(), 0U);
             m_result = m_state.parameter_value(node.type());
             if (m_result.kind() == ValueKind::PLUGIN)
             {
@@ -1716,7 +1733,7 @@ public:
                 {
                     throw std::runtime_error("missing plug-in binding: " + node.type());
                 }
-                m_result = make_object_value(*plugin);
+                m_result = construct_object(*plugin, node.args());
                 return;
             }
             if (m_result.kind() == ValueKind::EMPTY)
@@ -1727,6 +1744,11 @@ public:
             {
                 throw std::runtime_error("missing plug-in binding: " + node.type());
             }
+            return;
+        }
+        if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.type())})
+        {
+            m_result = construct_object(*klass, node.args());
             return;
         }
         unsupported_runtime_node("NewNode");
@@ -2236,6 +2258,55 @@ private:
         }
         return declaration->initializer() ? interpret(declaration->initializer())
                                           : make_plugin_value(PluginValue{{}, std::string{declaration->type()}});
+    }
+
+    Value construct_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
+    {
+        PluginValue plugin;
+        plugin.filename = klass.reference.filename;
+        plugin.class_name = klass.reference.class_name;
+        plugin.base_class = klass.base_class;
+        plugin.ast = klass.ast;
+        return construct_object(plugin, args);
+    }
+
+    Value construct_object(const PluginValue &plugin, const std::vector<ast::Expr> &args)
+    {
+        Value object{make_object_value(plugin)};
+        const Value::PluginPtr object_plugin{std::get<Value::PluginPtr>(object.storage())};
+        const ast::FunctionDeclNode *constructor{};
+        if (object_plugin && object_plugin->ast)
+        {
+            constructor = find_class_constructor(*object_plugin->ast, object_plugin->class_name);
+        }
+        if (constructor == nullptr)
+        {
+            check_arity(object_plugin ? object_plugin->class_name : std::string{"constructor"}, args.size(), 0U);
+            return object;
+        }
+        call_method(object, *constructor, args);
+        return object;
+    }
+
+    Value cast_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
+    {
+        check_arity(klass.reference.class_name, args.size(), 1U);
+        const Value value{interpret(args.front())};
+        if (value.kind() != ValueKind::PLUGIN)
+        {
+            return {};
+        }
+        const Value::PluginPtr plugin{std::get<Value::PluginPtr>(value.storage())};
+        if (!plugin || !plugin->object_initialized)
+        {
+            return {};
+        }
+        if (!runtime_class_matches_parameter_type(
+                m_files.retained_classes, plugin->class_name, klass.reference.class_name))
+        {
+            return {};
+        }
+        return value;
     }
 
     const ast::DeclarationNode *find_class_declaration(std::string_view class_name, std::string_view name) const
