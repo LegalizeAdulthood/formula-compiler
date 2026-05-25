@@ -2,10 +2,10 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/SemanticAnalyzer.h>
+#include <formula/semantics/SemanticAnalyzer.h>
 
-#include <formula/Formula.h>
-#include <formula/ParseOptions.h>
+#include <formula/facade/Formula.h>
+#include <formula/parser/ParseOptions.h>
 
 #include "NodeFormatter.h"
 #include "trim_ws.h"

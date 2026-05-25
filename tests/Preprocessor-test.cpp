@@ -2,7 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/Preprocessor.h>
+#include <formula/parser/Preprocessor.h>
 
 #include <gtest/gtest.h>
 

@@ -2,10 +2,10 @@
 //
 // Copyright 2025-2026 Richard Thomson
 //
-#include <formula/Parser.h>
+#include <formula/parser/Parser.h>
 
-#include <formula/Formula.h>
-#include <formula/ParseOptions.h>
+#include <formula/facade/Formula.h>
+#include <formula/parser/ParseOptions.h>
 
 #include "ExpressionParam.h"
 #include "NodeFormatter.h"

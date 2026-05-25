@@ -2,14 +2,14 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include <formula/Simplifier.h>
+#include <formula/semantics/Simplifier.h>
 
 #include "function-call.h"
 #include "node-builders.h"
 #include "NodeFormatter.h"
 #include "trim_ws.h"
 
-#include <formula/Node.h>
+#include <formula/core/Node.h>
 
 #include <gtest/gtest.h>
 

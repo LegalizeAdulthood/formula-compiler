@@ -2,8 +2,8 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/FileEntry.h>
-#include <formula/Parameter.h>
+#include <formula/core/FileEntry.h>
+#include <formula/parser/Parameter.h>
 
 #include <gtest/gtest.h>
 

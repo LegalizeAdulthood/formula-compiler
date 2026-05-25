@@ -2,7 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/Gradient.h>
+#include <formula/parser/Gradient.h>
 
 #include <test_data.h>
 

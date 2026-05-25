@@ -2,8 +2,8 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include <formula/Formula.h>
-#include <formula/ParseOptions.h>
+#include <formula/facade/Formula.h>
+#include <formula/parser/ParseOptions.h>
 
 #include <iostream>
 #include <map>

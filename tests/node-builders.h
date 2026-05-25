@@ -4,8 +4,8 @@
 //
 #pragma once
 
-#include <formula/Node.h>
-#include <formula/Visitor.h>
+#include <formula/core/Node.h>
+#include <formula/core/Visitor.h>
 
 #include <memory>
 #include <string>

@@ -2,7 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/FileEntry.h>
+#include <formula/core/FileEntry.h>
 
 #include <gtest/gtest.h>
 

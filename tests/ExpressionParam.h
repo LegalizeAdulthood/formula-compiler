@@ -4,7 +4,7 @@
 //
 #pragma once
 
-#include <formula/Formula.h>
+#include <formula/facade/Formula.h>
 
 #include <array>
 #include <string>

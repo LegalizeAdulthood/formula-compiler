@@ -4,7 +4,7 @@
 //
 #include "NodeFormatter.h"
 
-#include <formula/Node.h>
+#include <formula/core/Node.h>
 
 #include <iostream>
 #include <sstream>

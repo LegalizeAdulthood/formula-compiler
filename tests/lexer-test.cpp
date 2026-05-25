@@ -2,7 +2,7 @@
 //
 // Copyright 2025 Richard Thomson
 //
-#include <formula/Lexer.h>
+#include <formula/parser/Lexer.h>
 
 #include <gtest/gtest.h>
 

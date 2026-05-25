@@ -4,7 +4,7 @@
 //
 #pragma once
 
-#include <formula/Visitor.h>
+#include <formula/core/Visitor.h>
 
 #include <memory>
 #include <ostream>

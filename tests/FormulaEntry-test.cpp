@@ -2,11 +2,11 @@
 //
 // Copyright 2025-2026 Richard Thomson
 //
-#include <formula/Formula.h>
-#include <formula/FormulaEntry.h>
-#include <formula/ParseOptions.h>
-#include <formula/Parser.h>
-#include <formula/ReferenceCollector.h>
+#include <formula/facade/Formula.h>
+#include <formula/parser/FormulaEntry.h>
+#include <formula/parser/ParseOptions.h>
+#include <formula/parser/Parser.h>
+#include <formula/semantics/ReferenceCollector.h>
 
 #include <gtest/gtest.h>
 

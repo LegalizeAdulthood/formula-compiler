@@ -2,7 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/Value.h>
+#include <formula/core/Value.h>
 
 #include <gtest/gtest.h>
 

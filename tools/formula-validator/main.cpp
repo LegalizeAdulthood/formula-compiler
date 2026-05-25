@@ -3,10 +3,10 @@
 // Copyright 2025 Richard Thomson
 //
 
-#include <formula/Formula.h>
-#include <formula/FormulaEntry.h>
-#include <formula/ParseOptions.h>
-#include <formula/Parser.h>
+#include <formula/facade/Formula.h>
+#include <formula/parser/FormulaEntry.h>
+#include <formula/parser/ParseOptions.h>
+#include <formula/parser/Parser.h>
 
 #include <cctype>
 #include <filesystem>

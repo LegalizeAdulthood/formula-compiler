@@ -2,8 +2,8 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/ExtendedInterpreter.h>
-#include <formula/Parser.h>
+#include <formula/interpreter/ExtendedInterpreter.h>
+#include <formula/parser/Parser.h>
 
 #include <gtest/gtest.h>
 

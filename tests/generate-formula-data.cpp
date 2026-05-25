@@ -4,7 +4,7 @@
 //
 // Tool to parse id.frm and generate C++ source files with formula data
 
-#include "formula/FormulaEntry.h"
+#include <formula/parser/FormulaEntry.h>
 
 #include <algorithm>
 #include <fstream>
@@ -76,7 +76,7 @@ static bool generate_header(const std::string &filename)
 // Auto-generated file from id.frm - DO NOT EDIT MANUALLY
 #pragma once
 
-#include <formula/FormulaEntry.h>
+#include <formula/parser/FormulaEntry.h>
 
 #include <cstdint>
 

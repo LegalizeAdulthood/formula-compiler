@@ -2,7 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
-#include <formula/ExtendedRuntime.h>
+#include <formula/interpreter/ExtendedRuntime.h>
 
 #include <gtest/gtest.h>
 
