@@ -217,8 +217,8 @@ No remaining implementation slices are planned in this document.
 - Tests for section dispatch: fractal, coloring `final`, transformation
   `transform`, and global read-only behavior.
 - Tests for import loading: chained imports, import order, missing file,
-  public import metadata, referenced AST retention, and syntax errors in
-  referenced imported classes.
+  referenced AST retention, and syntax errors in referenced imported
+  classes.
 - Tests that `ExtendedInterpreter` refuses to run when parse, resolution, or
   semantic diagnostics contain errors.
 - Regression: existing basic interpreter tests still pass unchanged.
