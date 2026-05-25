@@ -327,8 +327,13 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "}\n\n";
 
     // Square
-    out << "vec2 c_sqr(vec2 z) {\n";
+    out << "vec2 c_sqr_value(vec2 z) {\n";
     out << "    return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);\n";
+    out << "}\n\n";
+
+    out << "vec2 c_sqr(vec2 z, inout float lastsqr_value) {\n";
+    out << "    lastsqr_value = z.x * z.x + z.y * z.y;\n";
+    out << "    return c_sqr_value(z);\n";
     out << "}\n\n";
 
     // Magnitude operations
@@ -414,13 +419,13 @@ std::string GLSLEmitter::emit_complex_math_functions()
     // Inverse trigonometric functions
     out << "vec2 c_asin(vec2 z) {\n";
     out << "    vec2 i = vec2(0.0, 1.0);\n";
-    out << "    vec2 t = c_sqrt(c_sub(vec2(1.0, 0.0), c_sqr(z)));\n";
+    out << "    vec2 t = c_sqrt(c_sub(vec2(1.0, 0.0), c_sqr_value(z)));\n";
     out << "    return c_mul(vec2(0.0, -1.0), c_log(c_add(c_mul(i, z), t)));\n";
     out << "}\n\n";
 
     out << "vec2 c_acos(vec2 z) {\n";
     out << "    vec2 i = vec2(0.0, 1.0);\n";
-    out << "    vec2 t = c_sqrt(c_sub(vec2(1.0, 0.0), c_sqr(z)));\n";
+    out << "    vec2 t = c_sqrt(c_sub(vec2(1.0, 0.0), c_sqr_value(z)));\n";
     out << "    return c_mul(vec2(0.0, -1.0), c_log(c_add(z, c_mul(i, t))));\n";
     out << "}\n\n";
 
@@ -431,11 +436,11 @@ std::string GLSLEmitter::emit_complex_math_functions()
 
     // Inverse hyperbolic functions
     out << "vec2 c_asinh(vec2 z) {\n";
-    out << "    return c_log(c_add(z, c_sqrt(c_add(c_sqr(z), vec2(1.0, 0.0)))));\n";
+    out << "    return c_log(c_add(z, c_sqrt(c_add(c_sqr_value(z), vec2(1.0, 0.0)))));\n";
     out << "}\n\n";
 
     out << "vec2 c_acosh(vec2 z) {\n";
-    out << "    return c_log(c_add(z, c_sqrt(c_sub(c_sqr(z), vec2(1.0, 0.0)))));\n";
+    out << "    return c_log(c_add(z, c_sqrt(c_sub(c_sqr_value(z), vec2(1.0, 0.0)))));\n";
     out << "}\n\n";
 
     out << "vec2 c_atanh(vec2 z) {\n";
@@ -544,7 +549,7 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     // Variable initialization (INIT section)
     out << indent() << "// Variable initialization\n";
     out << indent() << "vec2 z = pixel;       // Default initialization\n";
-    out << indent() << "float lastsqr = 0.0;\n";
+    out << indent() << "float lastsqr_value = 0.0;\n";
     out << indent() << "uint iter = 0u;\n\n";
     if (!m_user_vars.empty())
     {
@@ -652,10 +657,9 @@ void GLSLEmitter::visit(const ast::IdentifierNode &node)
 {
     const std::string &name = node.name();
 
-    // Special case for lastsqr - use underscore for GLSL convention
     if (name == "lastsqr")
     {
-        m_output << "lastsqr";
+        m_output << "vec2(lastsqr_value, 0.0)";
     }
     else
     {
@@ -756,6 +760,10 @@ void GLSLEmitter::visit(const ast::FunctionCallNode &node)
     std::string glsl_func = map_builtin_function(node.name());
     m_output << glsl_func << "(";
     node.arg()->visit(*this);
+    if (node.name() == "sqr")
+    {
+        m_output << ", lastsqr_value";
+    }
     m_output << ")";
 }
 

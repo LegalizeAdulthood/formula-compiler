@@ -48,7 +48,6 @@ The current emitter has these BASIC correctness gaps:
 - `pi`, `e`, and `maxit` are not represented as complex values.
 - `fn1` through `fn4` are hardcoded identity functions.
 - `flip` emits `(-imag, real)` instead of `(imag, real)`.
-- `sqr` does not update `lastsqr`.
 - `rand` and the `srand` random-state reset are not modeled.
 - `scrnmax`, `scrnpix`, `whitesq`, `ismand`, `center`, `magxmag`, and
   `rotskew` are not modeled.
@@ -184,22 +183,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Model `lastsqr`
-
-- Emit `lastsqr` as `vec2(lastsqr_value, 0.0)` when read.
-- Store the scalar backing value separately.
-- Make `sqr(expr)` update `lastsqr_value` from its input before returning the
-  square.
-- Test formulas that read `lastsqr` after `sqr`.
-
-### 2. Add Runtime-Selected `fn1` Through `fn4`
+### 1. Add Runtime-Selected `fn1` Through `fn4`
 
 - Add uniform selectors for `fn1`, `fn2`, `fn3`, and `fn4`.
 - Emit dispatch helpers that call the selected builtin.
 - Limit selectors to the BASIC runtime-selectable function set.
 - Test emitted dispatch for each selector token.
 
-### 3. Add Random Support
+### 2. Add Random Support
 
 - Add deterministic per-pixel random state.
 - Implement `rand` as current random value.
@@ -207,14 +198,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Define how client seed input enters the shader.
 - Test emitted state updates for `rand` and `srand`.
 
-### 4. Add Remaining Predefined Variables
+### 3. Add Remaining Predefined Variables
 
 - Emit or compute `scrnmax`, `scrnpix`, `whitesq`, `ismand`, `center`,
   `magxmag`, and `rotskew`.
 - Keep all predefined variables as `vec2`.
 - Test each predefined variable appears with correct initialization.
 
-### 5. Define Section Result And Output ABI
+### 4. Define Section Result And Output ABI
 
 - Decide the shader ABI for loop result, final `z`, iteration count, and
   bailout result.
@@ -222,14 +213,14 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - Update `emit_shader` docs to describe what the shader writes.
 - Test the generated output block.
 
-### 6. Add GLSL Compile Validation
+### 5. Add GLSL Compile Validation
 
 - Add an optional test path that runs a GLSL validator when available.
 - Keep the test skipped if the validator is not installed.
 - Validate emitted shaders for representative BASIC formulas.
 - Include formulas with user variables, conditionals, builtins, and bailout.
 
-### 7. Add Interpreter Equivalence Fixtures
+### 6. Add Interpreter Equivalence Fixtures
 
 - Build a small corpus of BASIC formulas with known interpreter results.
 - For each formula, assert emitted GLSL contains the expected lowered
@@ -237,7 +228,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 - If a GLSL execution harness becomes available, compare numeric results
   against interpreter output.
 
-### 8. Remove Example-Only Caveats
+### 7. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.

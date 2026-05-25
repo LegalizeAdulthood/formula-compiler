@@ -100,7 +100,7 @@ TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
     expect_contains(shader,
         "    // Variable initialization\n"
         "    vec2 z = pixel;       // Default initialization\n"
-        "    float lastsqr = 0.0;\n"
+        "    float lastsqr_value = 0.0;\n"
         "    uint iter = 0u;\n");
     expect_contains(shader,
         "    // Main iteration loop\n"
@@ -259,7 +259,7 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
     // clang-format off
     constexpr std::string_view functions[]{
         "sin", "cos", "sinh", "cosh", "cosxx", "tan", "cotan", "tanh", "cotanh",
-        "sqr", "log", "exp", "abs", "conj", "real", "imag", "flip",
+        "log", "exp", "abs", "conj", "real", "imag", "flip",
         "fn1", "fn2", "fn3", "fn4", "srand", "asin", "asinh", "acos", "acosh",
         "atan", "atanh", "sqrt", "cabs", "floor", "ceil", "trunc", "round",
         "ident", "one", "zero",
@@ -269,6 +269,7 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
     {
         expect_contains(shader, "    z = c_" + std::string{function} + "(p1);\n");
     }
+    expect_contains(shader, "    z = c_sqr(p1, lastsqr_value);\n");
 }
 
 TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
@@ -291,6 +292,26 @@ TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
         "vec2 c_cosxx(vec2 z) {\n"
         "    return vec2(cos(z.x) * cosh(z.y), sin(z.x) * sinh(z.y));\n"
         "}\n");
+}
+
+TEST(TestGLSLEmitter, emitsSqrWithLastsqrUpdate)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = sqr((3, 4))\n"
+                                               "  z = lastsqr\n")};
+
+    expect_contains(shader,
+        "vec2 c_sqr_value(vec2 z) {\n"
+        "    return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);\n"
+        "}\n");
+    expect_contains(shader,
+        "vec2 c_sqr(vec2 z, inout float lastsqr_value) {\n"
+        "    lastsqr_value = z.x * z.x + z.y * z.y;\n"
+        "    return c_sqr_value(z);\n"
+        "}\n");
+    expect_contains(shader, "    float lastsqr_value = 0.0;\n");
+    expect_contains(shader, "    z = c_sqr(vec2(3.0, 4.0), lastsqr_value);\n");
+    expect_contains(shader, "    z = vec2(lastsqr_value, 0.0);\n");
 }
 
 TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
