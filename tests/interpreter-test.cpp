@@ -130,6 +130,54 @@ TEST(TestFormulaInterpreter, basicFormulaSectionDispatchIsUnchanged)
     EXPECT_EQ(0.0, formula->interpret(Section::BAILOUT).re);
 }
 
+struct RuntimeInputParam
+{
+    std::string_view name;
+    Complex value;
+};
+
+inline void PrintTo(const RuntimeInputParam &param, std::ostream *os)
+{
+    *os << param.name;
+}
+
+class RuntimeInputs : public TestWithParam<RuntimeInputParam>
+{
+};
+
+TEST_P(RuntimeInputs, clientSuppliedPredefinedValueIsRead)
+{
+    const RuntimeInputParam &param{GetParam()};
+    const FormulaPtr formula{create_formula(param.name, Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value(param.name, param.value);
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ(param.value, result);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFormulaInterpreter, RuntimeInputs,
+    Values(RuntimeInputParam{"p1", {1.0, 2.0}}, RuntimeInputParam{"p2", {3.0, 4.0}},
+        RuntimeInputParam{"p3", {5.0, 6.0}}, RuntimeInputParam{"p4", {7.0, 8.0}}, RuntimeInputParam{"p5", {9.0, 10.0}},
+        RuntimeInputParam{"pixel", {-1.0, -2.0}}, RuntimeInputParam{"maxit", {256.0, 0.0}},
+        RuntimeInputParam{"scrnmax", {320.0, 200.0}}, RuntimeInputParam{"scrnpix", {12.0, 34.0}},
+        RuntimeInputParam{"whitesq", {1.0, 0.0}}, RuntimeInputParam{"center", {-0.75, 0.1}},
+        RuntimeInputParam{"magxmag", {2.0, 3.0}}, RuntimeInputParam{"rotskew", {45.0, 0.25}},
+        RuntimeInputParam{"ismand", {0.0, 0.0}}));
+
+TEST(TestFormulaInterpreter, DISABLED_ismandDefaultsToTrue)
+{
+    const FormulaPtr formula{create_formula("ismand", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{1.0, 0.0}), result);
+}
+
 TEST(TestFormulaInterpreter, assignment)
 {
     const FormulaPtr formula{create_formula("z=4+2", Options{})};
@@ -217,6 +265,59 @@ TEST(TestFormulaInterpreter, identity)
 
     EXPECT_EQ(3.0, result.re);
     EXPECT_EQ(4.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, DISABLED_cosxxUsesDocumentedRealInputSemantics)
+{
+    const FormulaPtr formula{create_formula("cosxx(1)", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_NEAR(std::cos(1.0), result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, DISABLED_cosxxUsesDocumentedComplexInputSemantics)
+{
+    const FormulaPtr formula{create_formula("cosxx(1+flip(2))", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_NEAR(std::cos(1.0) * std::cosh(2.0), result.re, 1e-8);
+    EXPECT_NEAR(std::sin(1.0) * std::sinh(2.0), result.im, 1e-8);
+}
+
+TEST(TestFormulaInterpreter, DISABLED_sqrUpdatesLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=sqr(3+flip(4))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{25.0, 0.0}), result);
+}
+
+TEST(TestFormulaInterpreter, DISABLED_sqrReplacesLastsqrOnEachCall)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=sqr(3+flip(4))\n"
+                                            "ignored=sqr(1+flip(2))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{5.0, 0.0}), result);
 }
 
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)

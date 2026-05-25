@@ -104,38 +104,46 @@ to `(1, 0)` unless the client overrides it.
 - Parser diagnostics already cover unknown functions, bad builtin arity, and
   invalid assignment targets.
 
+## Test Status
+
+Interpreter tests now cover client-supplied predefined values through the
+existing `set_value` binding API.
+
+Disabled tests record the currently missing runtime semantics for:
+
+- documented `cosxx` real and complex behavior
+- `sqr()` updating `lastsqr`
+- `ismand` defaulting to true
+
+Enable those tests as each implementation slice closes the corresponding gap.
+
 ## Implementation Slices
 
-### 1. Add Tests For Current Runtime Gaps
-
-- Add failing interpreter tests for the documented `cosxx` formula.
-- Add failing interpreter tests showing `sqr()` updates `lastsqr`.
-- Add tests showing `ismand` defaults to `(1, 0)`.
-- Add tests documenting that client-supplied predefined values are read through
-  existing `set_value` bindings.
-
-### 2. Correct `cosxx`
+### 1. Correct `cosxx`
 
 - Replace the current `cos(z) * cosh(z)` implementation.
 - Update real-input expectations so `cosxx(x)` equals `cos(x)`.
 - Add complex-input tests for both real and imaginary parts.
+- Enable the disabled `cosxx` interpreter tests.
 
-### 3. Add `lastsqr` Runtime State
+### 2. Add `lastsqr` Runtime State
 
 - Special-case `sqr()` evaluation in the interpreter so it can update
   `lastsqr`.
 - Keep `lastsqr` read-only at parse time.
 - Add tests that read `lastsqr` after one and multiple `sqr()` calls.
 - Add tests that direct `|z|` modulus expressions do not update `lastsqr`.
+- Enable the disabled `lastsqr` interpreter tests.
 
-### 4. Initialize Documented Defaults
+### 3. Initialize Documented Defaults
 
 - Initialize `ismand` to `(1, 0)`.
 - Initialize `lastsqr` to `(0, 0)`.
 - Decide whether initial `rand` is zero, client-supplied, or generated at
   formula construction. Record that decision in this document before code.
+- Enable the disabled `ismand` interpreter test.
 
-### 5. Add Runtime Function Selectors
+### 4. Add Runtime Function Selectors
 
 - Add per-formula selector storage for `fn1`, `fn2`, `fn3`, and `fn4`.
 - Add a client API to bind each selector by BASIC builtin function name.
@@ -143,7 +151,7 @@ to `(1, 0)` unless the client overrides it.
 - Keep default selector behavior as identity for backward compatibility.
 - Add tests for selected functions and invalid selector names.
 
-### 6. Add Per-Formula Random State
+### 5. Add Per-Formula Random State
 
 - Replace `srand()` global C RNG seeding with per-formula seed state.
 - Make `srand(seed)` reset that state and return the documented BASIC value
@@ -152,14 +160,14 @@ to `(1, 0)` unless the client overrides it.
 - Advance `rand` once per iteration section execution.
 - Add deterministic tests that seed with `srand()` and verify repeatability.
 
-### 7. Document Runtime Input Contract
+### 6. Document Runtime Input Contract
 
 - Document which predefined variables are supplied by the client.
 - Keep `set_value` as the binding mechanism for complex predefined values.
-- Add tests for `maxit`, `scrnmax`, `scrnpix`, `whitesq`, `center`,
-  `magxmag`, and `rotskew` round-tripping through `set_value`.
+- Keep the existing round-trip tests for client-supplied predefined values
+  passing.
 
-### 8. Keep JIT And GLSL In Sync
+### 7. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.
