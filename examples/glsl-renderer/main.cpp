@@ -11,6 +11,7 @@
 #include <GLFW/glfw3.h>
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -26,11 +27,23 @@ namespace
 constexpr int IMAGE_WIDTH{16};
 constexpr int IMAGE_HEIGHT{16};
 constexpr int SKIP_EXIT_CODE{77};
+constexpr std::uint32_t FUNCTION_SIN{0U};
+constexpr std::uint32_t FUNCTION_SINH{2U};
+constexpr std::uint32_t FUNCTION_COSH{3U};
+constexpr std::uint32_t FUNCTION_SQR{9U};
 
 const char *DEFAULT_FORMULA{"init:\n"
                             "  z = pixel\n"
                             "loop:\n"
                             "  z = sqr(z) + p1\n"};
+
+struct FormulaResult
+{
+    std::array<float, 2> z{};
+    std::array<float, 2> bailout{};
+    std::uint32_t iter{};
+    std::uint32_t escaped{};
+};
 
 struct GlfwSession
 {
@@ -312,11 +325,25 @@ BufferObject create_parameter_buffer()
         std::array<float, 2> p4{0.0F, 0.0F};
         std::array<float, 2> p5{0.0F, 0.0F};
         std::array<float, 2> center{0.0F, 0.0F};
+        std::array<float, 2> magxmag{1.0F, 1.0F};
+        std::array<float, 2> rotskew{0.0F, 0.0F};
+        std::array<float, 2> ismand{1.0F, 0.0F};
         std::array<float, 2> view_size{3.0F, 3.0F};
         std::array<std::uint32_t, 2> resolution{IMAGE_WIDTH, IMAGE_HEIGHT};
         std::uint32_t maxit{64U};
         float bailout{4.0F};
+        std::uint32_t random_seed{0U};
+        std::uint32_t fn1_selector{FUNCTION_SIN};
+        std::uint32_t fn2_selector{FUNCTION_SQR};
+        std::uint32_t fn3_selector{FUNCTION_SINH};
+        std::uint32_t fn4_selector{FUNCTION_COSH};
+        std::array<std::uint32_t, 3> padding{};
     };
+    static_assert(offsetof(Parameters, magxmag) == 48U, "magxmag offset");
+    static_assert(offsetof(Parameters, view_size) == 72U, "view_size offset");
+    static_assert(offsetof(Parameters, resolution) == 80U, "resolution offset");
+    static_assert(offsetof(Parameters, random_seed) == 96U, "random_seed offset");
+    static_assert(offsetof(Parameters, fn4_selector) == 112U, "fn4_selector offset");
 
     const Parameters parameters;
     BufferObject buffer;
@@ -324,6 +351,19 @@ BufferObject create_parameter_buffer()
     glBindBuffer(GL_UNIFORM_BUFFER, buffer.handle);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(parameters), &parameters, GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, buffer.handle);
+    return buffer;
+}
+
+BufferObject create_result_buffer()
+{
+    static_assert(sizeof(FormulaResult) == 24U, "FormulaResult size");
+
+    const std::vector<FormulaResult> results(static_cast<std::size_t>(IMAGE_WIDTH * IMAGE_HEIGHT));
+    BufferObject buffer;
+    glGenBuffers(1, &buffer.handle);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer.handle);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, results.size() * sizeof(FormulaResult), results.data(), GL_STATIC_READ);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, buffer.handle);
     return buffer;
 }
 
@@ -369,10 +409,11 @@ bool render_shader(const std::string &shader_source)
     const ProgramObject program{link_program(shader.handle)};
     const TextureObject texture{create_output_texture()};
     const BufferObject parameters{create_parameter_buffer()};
+    const BufferObject results{create_result_buffer()};
 
     glUseProgram(program.handle);
     glDispatchCompute((IMAGE_WIDTH + 7U) / 8U, (IMAGE_HEIGHT + 7U) / 8U, 1U);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
 
     std::vector<float> pixels(static_cast<std::size_t>(IMAGE_WIDTH * IMAGE_HEIGHT * 4));
     glBindTexture(GL_TEXTURE_2D, texture.handle);
@@ -382,9 +423,25 @@ bool render_shader(const std::string &shader_source)
         throw std::runtime_error{"OpenGL render failed"};
     }
 
+    FormulaResult first_result;
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, results.handle);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(first_result), &first_result);
+    if (glGetError() != GL_NO_ERROR)
+    {
+        throw std::runtime_error{"OpenGL result readback failed"};
+    }
+    if (!std::isfinite(first_result.z[0]) || !std::isfinite(first_result.z[1]) ||
+        !std::isfinite(first_result.bailout[0]) || !std::isfinite(first_result.bailout[1]))
+    {
+        throw std::runtime_error{"OpenGL result readback was not finite"};
+    }
+
     (void) parameters;
     std::cout << "Rendered " << IMAGE_WIDTH << "x" << IMAGE_HEIGHT << " GLSL smoke image.\n";
     std::cout << "First pixel: " << pixels[0] << ", " << pixels[1] << ", " << pixels[2] << ", " << pixels[3] << "\n";
+    std::cout << "First result: z=(" << first_result.z[0] << ", " << first_result.z[1] << "), bailout=("
+              << first_result.bailout[0] << ", " << first_result.bailout[1] << "), iter=" << first_result.iter
+              << ", escaped=" << first_result.escaped << "\n";
     return true;
 }
 
