@@ -247,6 +247,49 @@ TEST(TestGLSLEmitter, emitsLogicalOperatorsThroughHelpers)
     expect_contains(shader, "    z = c_or(c_lt(z, p1), c_ne(z, p2));\n");
 }
 
+TEST(TestGLSLEmitter, emitsConditionalTruthiness)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  if z < p1\n"
+                                               "    z = p1\n"
+                                               "  elseif z > p2\n"
+                                               "    z = p2\n"
+                                               "  else\n"
+                                               "    z = p3\n"
+                                               "  endif\n")};
+
+    expect_contains(shader, "bool c_truth(vec2 value) { return value.x != 0.0; }\n");
+    expect_contains(shader, "    if (c_truth(c_lt(z, p1))) {\n");
+    expect_contains(shader,
+        "    } else {\n"
+        "        if (c_truth(c_gt(z, p2))) {\n");
+}
+
+TEST(TestGLSLEmitter, emitsNestedConditionalTruthiness)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  if z < p1\n"
+                                               "    if z > p2\n"
+                                               "      z = p3\n"
+                                               "    endif\n"
+                                               "  endif\n")};
+
+    expect_contains(shader,
+        "    if (c_truth(c_lt(z, p1))) {\n"
+        "        if (c_truth(c_gt(z, p2))) {\n"
+        "            z = p3;\n");
+}
+
+TEST(TestGLSLEmitter, emitsBailoutTruthiness)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = pixel\n"
+                                               "bailout:\n"
+                                               "  |z| < 4\n")};
+
+    expect_contains(shader, "        if (!c_truth(c_lt(c_mod_sqr(z), vec2(4.0, 0.0)))) break;\n");
+}
+
 } // namespace
 
 } // namespace formula::test

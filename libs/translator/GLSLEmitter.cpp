@@ -473,6 +473,7 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "vec2 c_trunc(vec2 z) { return trunc(z); }\n";
     out << "vec2 c_round(vec2 z) { return round(z); }\n\n";
 
+    out << "bool c_truth(vec2 value) { return value.x != 0.0; }\n";
     out << "vec2 c_bool(bool value) { return value ? vec2(1.0, 0.0) : vec2(0.0, 0.0); }\n";
     out << "vec2 c_lt(vec2 a, vec2 b) { return c_bool(a.x < b.x); }\n";
     out << "vec2 c_le(vec2 a, vec2 b) { return c_bool(a.x <= b.x); }\n";
@@ -575,7 +576,7 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Bailout test\n";
     if (formula.bailout)
     {
-        out << indent() << "if (!(";
+        out << indent() << "if (!c_truth(";
         clear_result();
         emit_expression(formula.bailout);
         out << m_output.str() << ")) break;\n";
@@ -778,9 +779,9 @@ void GLSLEmitter::visit(const ast::UnaryOpNode &node)
 
 void GLSLEmitter::visit(const ast::IfStatementNode &node)
 {
-    m_output << indent() << "if (";
+    m_output << indent() << "if (c_truth(";
     node.condition()->visit(*this);
-    m_output << ") {\n";
+    m_output << ")) {\n";
 
     if (node.has_then_block())
     {
