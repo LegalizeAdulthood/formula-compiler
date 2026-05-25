@@ -66,6 +66,16 @@ TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
         "    vec2 p3;          // Parameter 3\n"
         "    vec2 p4;          // Parameter 4\n"
         "    vec2 p5;          // Parameter 5\n");
+    expect_contains(shader,
+        "    uint fn1_selector; // Default sin\n"
+        "    uint fn2_selector; // Default sqr\n"
+        "    uint fn3_selector; // Default sinh\n"
+        "    uint fn4_selector; // Default cosh\n");
+    expect_contains(shader,
+        "const uint FUNCTION_SIN = 0u;\n"
+        "const uint FUNCTION_COS = 1u;\n"
+        "const uint FUNCTION_SINH = 2u;\n"
+        "const uint FUNCTION_COSH = 3u;\n");
 }
 
 TEST(TestGLSLEmitter, emitsHelperDeclarationSnapshot)
@@ -78,10 +88,12 @@ TEST(TestGLSLEmitter, emitsHelperDeclarationSnapshot)
         "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
         "}\n");
     expect_contains(shader,
-        "vec2 c_fn1(vec2 z) { return c_ident(z); }\n"
-        "vec2 c_fn2(vec2 z) { return c_ident(z); }\n"
-        "vec2 c_fn3(vec2 z) { return c_ident(z); }\n"
-        "vec2 c_fn4(vec2 z) { return c_ident(z); }\n");
+        "vec2 c_fn1(vec2 z, inout float lastsqr_value) {\n"
+        "    return c_dispatch_function(fn1_selector, z, lastsqr_value);\n"
+        "}\n"
+        "vec2 c_fn2(vec2 z, inout float lastsqr_value) {\n"
+        "    return c_dispatch_function(fn2_selector, z, lastsqr_value);\n"
+        "}\n");
 }
 
 TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
@@ -260,9 +272,8 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
     constexpr std::string_view functions[]{
         "sin", "cos", "sinh", "cosh", "cosxx", "tan", "cotan", "tanh", "cotanh",
         "log", "exp", "abs", "conj", "real", "imag", "flip",
-        "fn1", "fn2", "fn3", "fn4", "srand", "asin", "asinh", "acos", "acosh",
-        "atan", "atanh", "sqrt", "cabs", "floor", "ceil", "trunc", "round",
-        "ident", "one", "zero",
+        "srand", "asin", "asinh", "acos", "acosh", "atan", "atanh", "sqrt",
+        "cabs", "floor", "ceil", "trunc", "round", "ident", "one", "zero",
     };
     // clang-format on
     for (const std::string_view function : functions)
@@ -270,6 +281,10 @@ TEST(TestGLSLEmitter, emitsBasicBuiltinFunctionMapping)
         expect_contains(shader, "    z = c_" + std::string{function} + "(p1);\n");
     }
     expect_contains(shader, "    z = c_sqr(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value);\n");
 }
 
 TEST(TestGLSLEmitter, emitsCorrectedBuiltinHelperSemantics)
@@ -312,6 +327,28 @@ TEST(TestGLSLEmitter, emitsSqrWithLastsqrUpdate)
     expect_contains(shader, "    float lastsqr_value = 0.0;\n");
     expect_contains(shader, "    z = c_sqr(vec2(3.0, 4.0), lastsqr_value);\n");
     expect_contains(shader, "    z = vec2(lastsqr_value, 0.0);\n");
+}
+
+TEST(TestGLSLEmitter, emitsFunctionSelectorDispatch)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = fn1(p1)\n"
+                                               "  z = fn2(p1)\n"
+                                               "  z = fn3(p1)\n"
+                                               "  z = fn4(p1)\n")};
+
+    expect_contains(shader, "vec2 c_dispatch_function(uint selector, vec2 z, inout float lastsqr_value) {\n");
+    expect_contains(shader, "    case FUNCTION_SIN: return c_sin(z);\n");
+    expect_contains(shader, "    case FUNCTION_COS: return c_cos(z);\n");
+    expect_contains(shader, "    case FUNCTION_SINH: return c_sinh(z);\n");
+    expect_contains(shader, "    case FUNCTION_COSH: return c_cosh(z);\n");
+    expect_contains(shader, "    case FUNCTION_SQR: return c_sqr(z, lastsqr_value);\n");
+    expect_contains(shader, "    case FUNCTION_SRAND: return c_srand(z);\n");
+    expect_contains(shader, "    return c_ident(z);\n");
+    expect_contains(shader, "    z = c_fn1(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn2(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn3(p1, lastsqr_value);\n");
+    expect_contains(shader, "    z = c_fn4(p1, lastsqr_value);\n");
 }
 
 TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
