@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include "function-call.h"
 
@@ -20,7 +20,7 @@ std::array<FunctionCallParam, 37> g_calls{
     FunctionCallParam{"conj(1.0)", {1.0, 0.0}},
     FunctionCallParam{"cos(pi)", {-1.0, 0.0}},
     FunctionCallParam{"cosh(1)", {1.5430806348152437, 0.0}},
-    FunctionCallParam{"cosxx(1)", {0.83373002513114913, 0.0}},
+    FunctionCallParam{"cosxx(1)", {0.54030230586813977, 0.0}},
     FunctionCallParam{"cotan(1.0)", {0.64209261593433076, 0.0}},
     FunctionCallParam{"cotanh(1.0)", {1.3130352854993312, 0.0}},
     FunctionCallParam{"exp(1.0)", {2.7182818284590451, 0.0}},

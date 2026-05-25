@@ -267,7 +267,7 @@ TEST(TestFormulaInterpreter, identity)
     EXPECT_EQ(4.0, result.im);
 }
 
-TEST(TestFormulaInterpreter, DISABLED_cosxxUsesDocumentedRealInputSemantics)
+TEST(TestFormulaInterpreter, cosxxUsesDocumentedRealInputSemantics)
 {
     const FormulaPtr formula{create_formula("cosxx(1)", Options{})};
     ASSERT_TRUE(formula) << "formula should have parsed";
@@ -279,7 +279,7 @@ TEST(TestFormulaInterpreter, DISABLED_cosxxUsesDocumentedRealInputSemantics)
     EXPECT_EQ(0.0, result.im);
 }
 
-TEST(TestFormulaInterpreter, DISABLED_cosxxUsesDocumentedComplexInputSemantics)
+TEST(TestFormulaInterpreter, cosxxUsesDocumentedComplexInputSemantics)
 {
     const FormulaPtr formula{create_formula("cosxx(1+flip(2))", Options{})};
     ASSERT_TRUE(formula) << "formula should have parsed";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include "functions.h"
 
@@ -35,9 +35,7 @@ double cabs(double arg)
 
 double cosxx(double arg)
 {
-    // TODO: this is bogus and needs to be corrected for complex argument z=x+iy
-    // cos(x)cosh(y) + isin(x)sinh(y)
-    return std::cos(arg) * std::cosh(arg);
+    return std::cos(arg);
 }
 
 double conj(double arg)
@@ -232,7 +230,7 @@ Complex fn4(const Complex &arg)
 
 Complex cosxx(const Complex &arg)
 {
-    return cos(arg) * cosh(arg);
+    return {std::cos(arg.re) * std::cosh(arg.im), std::sin(arg.re) * std::sinh(arg.im)};
 }
 
 double fn1(double arg)

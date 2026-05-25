@@ -255,7 +255,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 - Emit helpers for all BASIC builtin functions listed in `basic-formula.txt`.
 - Correct `flip` to return `vec2(z.y, z.x)`.
-- Correct `cosxx` to match existing runtime behavior.
+- Correct `cosxx` to match documented BASIC behavior.
 - Keep builtin function names normalized to lowercase in emitted helper calls.
 - Test every builtin at least for symbol mapping.
 
