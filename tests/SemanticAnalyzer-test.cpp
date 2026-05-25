@@ -2729,6 +2729,82 @@ TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsGlobalWritesInGlobalSection)
     }
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisRejectsGlobalWritesOutsideGlobalSection)
+{
+    struct Case
+    {
+        parser::EntryKind entry_kind;
+        const char *section;
+        const char *body;
+    };
+    const std::array<Case, 6> cases{{
+        {parser::EntryKind::FRACTAL, "init",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "init:\n"
+            "seed=2\n"
+            "values[0]=seed"},
+        {parser::EntryKind::FRACTAL, "loop",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "loop:\n"
+            "seed=2\n"
+            "values[0]=seed"},
+        {parser::EntryKind::COLORING, "init",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "init:\n"
+            "seed=2\n"
+            "values[0]=seed"},
+        {parser::EntryKind::COLORING, "loop",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "loop:\n"
+            "seed=2\n"
+            "values[0]=seed"},
+        {parser::EntryKind::COLORING, "final",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "final:\n"
+            "seed=2\n"
+            "values[0]=seed\n"
+            "seed"},
+        {parser::EntryKind::TRANSFORMATION, "transform",
+            "global:\n"
+            "int seed=1\n"
+            "int values[1]\n"
+            "transform:\n"
+            "seed=2\n"
+            "values[0]=seed"},
+    }};
+
+    for (const Case &test_case : cases)
+    {
+        parser::Options options;
+        options.dialect = Dialect::EXTENDED;
+        options.entry_kind = test_case.entry_kind;
+        const LoadedFormula loaded{load_formula(test_case.body, options)};
+        ASSERT_TRUE(loaded.ast);
+        FormulaSemanticContext context;
+        context.entry_kind = test_case.entry_kind;
+
+        const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+        ASSERT_EQ(2U, diagnostics.size()) << test_case.section;
+        EXPECT_EQ(SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET, diagnostics[0].code);
+        EXPECT_EQ(test_case.section, diagnostics[0].section_name);
+        EXPECT_EQ("invalid assignment target: seed is global", diagnostics[0].message);
+        EXPECT_EQ(SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET, diagnostics[1].code);
+        EXPECT_EQ(test_case.section, diagnostics[1].section_name);
+        EXPECT_EQ("invalid assignment target: values is global", diagnostics[1].message);
+    }
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsColorFinalSectionResult)
 {
     parser::Options options;

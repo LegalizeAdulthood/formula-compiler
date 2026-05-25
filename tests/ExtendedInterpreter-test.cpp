@@ -2511,10 +2511,8 @@ TEST(TestExtendedInterpreter, userObjectConstructionRunsConstructor)
         {"main.ufm",
             "Formula {\n"
             "import \"common.ulb\"\n"
-            "global:\n"
-            "Texture texture\n"
             "init:\n"
-            "texture = new Texture(7)\n"
+            "Texture texture = new Texture(7)\n"
             "texture.value\n"
             "}\n"},
         {"common.ulb",
@@ -2533,10 +2531,8 @@ TEST(TestExtendedInterpreter, userObjectConstructionRunsConstructor)
         return files.at(std::string{filename});
     };
     ExtendedInterpreter interpreter{formula_entry("import \"common.ulb\"\n"
-                                                  "global:\n"
-                                                  "Texture texture\n"
                                                   "init:\n"
-                                                  "texture = new Texture(7)\n"
+                                                  "Texture texture = new Texture(7)\n"
                                                   "texture.value\n"),
         interpreter_options};
 
@@ -2765,12 +2761,9 @@ TEST(TestExtendedInterpreter, builtinObjectFieldAccessFailsClearly)
 TEST(TestExtendedInterpreter, classCastAcceptsDerivedObject)
 {
     const std::string body{"import \"common.ulb\"\n"
-                           "global:\n"
-                           "Base base\n"
-                           "Derived derived\n"
                            "init:\n"
-                           "base = new @texture\n"
-                           "derived = Derived(base)\n"
+                           "Base base = new @texture\n"
+                           "Derived derived = Derived(base)\n"
                            "derived.value\n"
                            "default:\n"
                            "Base param texture\n"
@@ -2801,11 +2794,9 @@ TEST(TestExtendedInterpreter, classCastAcceptsDerivedObject)
 TEST(TestExtendedInterpreter, classCastRejectsUnrelatedObject)
 {
     const std::string body{"import \"common.ulb\"\n"
-                           "global:\n"
-                           "Base base\n"
-                           "Other other\n"
                            "init:\n"
-                           "base = new @texture\n"
+                           "Base base = new @texture\n"
+                           "Other other\n"
                            "Other(base)\n"
                            "default:\n"
                            "Base param texture\n"

@@ -51,28 +51,19 @@ Import metadata:
 
 ## Implementation Slices
 
-1. Add semantic analyzer tests rejecting writes to global variables outside
-   `global:`.
-   - For fractal formulas, reject writes from `init:` and `loop:`.
-   - For coloring formulas, reject writes from `init:`, `loop:`, and `final:`.
-   - For transformations, reject writes from `transform:`.
-   - Cover scalar assignment and array element assignment.
-   - If needed, mark symbols declared in `global:` as read-only when checking
-     all non-global sections.
-
-2. Add interpreter tests for global-section state sharing.
+1. Add interpreter tests for global-section state sharing.
    - Execute `global:` first, then another legal section.
    - Assert values declared and assigned in `global:` are visible when the
      later section runs.
    - Cover scalar and array readback.
 
-3. Add interpreter or semantic tests for global-section write protection.
+2. Add interpreter or semantic tests for global-section write protection.
    - Prefer semantic analyzer coverage if writes are rejected before runtime.
    - Add interpreter coverage only if a valid AST can still reach the runtime
      write-protection path.
    - Assert writes outside `global:` fail clearly.
 
-4. Reconcile `docs/extended-interpreter.md` test list.
+3. Reconcile `docs/extended-interpreter.md` test list.
     - Keep `color arithmetic` and `global read-only behavior` until the
       slices above are implemented.
     - Remove or reword `public import metadata`; it is not a documented UF6

@@ -1371,6 +1371,15 @@ public:
             diagnostic.message = "invalid assignment target: " + node.variable() + " is const";
             m_diagnostics.push_back(std::move(diagnostic));
         }
+        if (const std::optional<std::string> name = assignment_symbol_name(node.target());
+            name && is_global_symbol(*name) && m_section != "global")
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
+            diagnostic.section_name = m_section;
+            diagnostic.message = "invalid assignment target: " + *name + " is global";
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
         const SemanticTypeKind target_type{expression_type(node.target())};
         const SemanticTypeKind value_type{expression_type(node.expression())};
         if (!can_convert(value_type, target_type))
@@ -1392,6 +1401,10 @@ public:
         if (node.is_array())
         {
             declare_array(node.name(), type_kind(node.type()), node.is_dynamic_array());
+        }
+        if (m_section == "global")
+        {
+            m_global_symbols.insert(node.name());
         }
         for (const ast::Expr &dimension : node.dimensions())
         {
@@ -2695,6 +2708,24 @@ private:
         return nullptr;
     }
 
+    bool is_global_symbol(const std::string &name) const
+    {
+        return m_global_symbols.find(name) != m_global_symbols.end();
+    }
+
+    std::optional<std::string> assignment_symbol_name(const ast::Expr &expr) const
+    {
+        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+        {
+            return identifier->name();
+        }
+        if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
+        {
+            return assignment_symbol_name(index->target());
+        }
+        return std::nullopt;
+    }
+
     bool is_array_builtin(const std::string &name) const
     {
         return name == "setLength" || name == "length";
@@ -2887,6 +2918,7 @@ private:
     std::vector<std::unordered_map<std::string, std::string>> m_symbol_type_names{{}};
     std::vector<std::unordered_map<std::string, ArraySymbol>> m_array_symbols{{}};
     std::vector<std::unordered_set<std::string>> m_read_only_symbols{{}};
+    std::unordered_set<std::string> m_global_symbols;
     std::unordered_map<std::string, FunctionSignature> m_functions;
     std::unordered_set<std::string> m_class_names;
     std::unordered_map<std::string, std::string> m_class_bases;
