@@ -2,6 +2,7 @@
 //
 // Copyright 2026 Richard Thomson
 //
+#include <formula/facade/Formula.h>
 #include <formula/parser/ParseOptions.h>
 #include <formula/parser/Parser.h>
 #include <formula/translator/GLSLEmitter.h>
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -44,6 +46,12 @@ std::string emit_basic_shader(std::string_view body)
 void expect_contains(std::string_view text, std::string_view snippet)
 {
     EXPECT_NE(text.find(snippet), std::string_view::npos) << snippet;
+}
+
+void expect_complex_near(const Complex &expected, const Complex &actual)
+{
+    EXPECT_NEAR(expected.re, actual.re, 1.0e-12);
+    EXPECT_NEAR(expected.im, actual.im, 1.0e-12);
 }
 
 void validate_glsl_compute_shader(std::string_view name, std::string_view shader)
@@ -554,6 +562,112 @@ TEST(TestGLSLEmitter, emitsFormulaResultOutput)
         "    formula_results[pixel_index].bailout = bailout_value;\n"
         "    formula_results[pixel_index].iter = iter;\n"
         "    formula_results[pixel_index].escaped = escaped;\n");
+}
+
+TEST(TestGLSLEmitter, loweredFixturesMatchKnownInterpreterResults)
+{
+    struct EquivalenceFixture
+    {
+        std::string body;
+        Section section;
+        std::map<std::string, Complex> values;
+        Complex expected;
+        std::vector<std::string_view> snippets;
+    };
+    const std::vector<EquivalenceFixture> fixtures{
+        {
+            "bailout:\n"
+            "  abs((-3, -4))\n",
+            Section::BAILOUT,
+            {},
+            {3.0, 4.0},
+            {"bailout_value = c_abs(vec2(-3.0, -4.0));\n"},
+        },
+        {
+            "bailout:\n"
+            "  |(3, 4)|\n",
+            Section::BAILOUT,
+            {},
+            {25.0, 0.0},
+            {"bailout_value = c_mod_sqr(vec2(3.0, 4.0));\n"},
+        },
+        {
+            "init:\n"
+            "  z = sqr((3, 4))\n"
+            "bailout:\n"
+            "  lastsqr\n",
+            Section::INITIALIZE,
+            {},
+            {-7.0, 24.0},
+            {
+                "z = c_sqr(vec2(3.0, 4.0), lastsqr_value);\n",
+                "bailout_value = vec2(lastsqr_value, 0.0);\n",
+            },
+        },
+        {
+            "bailout:\n"
+            "  (1, 2) == (1, 2)\n",
+            Section::BAILOUT,
+            {},
+            {1.0, 0.0},
+            {"bailout_value = c_eq(vec2(1.0, 2.0), vec2(1.0, 2.0));\n"},
+        },
+        {
+            "bailout:\n"
+            "  (0, 1) || (0, 0)\n",
+            Section::BAILOUT,
+            {},
+            {0.0, 0.0},
+            {"bailout_value = c_or(vec2(0.0, 1.0), vec2(0.0, 0.0));\n"},
+        },
+        {
+            "bailout:\n"
+            "  cosxx(1 + flip(2))\n",
+            Section::BAILOUT,
+            {},
+            {2.0327230070196656, 3.0518977991518},
+            {
+                "bailout_value = "
+                "c_cosxx(c_add(vec2(1.0, 0.0), c_flip(vec2(2.0, 0.0))));\n",
+            },
+        },
+        {
+            "bailout:\n"
+            "  fn2((3, 4))\n",
+            Section::BAILOUT,
+            {},
+            {-7.0, 24.0},
+            {
+                "bailout_value = "
+                "c_fn2(vec2(3.0, 4.0), lastsqr_value, random_state, rand);\n",
+            },
+        },
+        {
+            "init:\n"
+            "  z = pixel + p1\n",
+            Section::INITIALIZE,
+            {{"pixel", {1.0, 2.0}}, {"p1", {3.0, 4.0}}},
+            {4.0, 6.0},
+            {"z = c_add(pixel, p1);\n"},
+        },
+    };
+
+    for (const EquivalenceFixture &fixture : fixtures)
+    {
+        const FormulaPtr formula{create_formula(fixture.body, parser::Options{})};
+        ASSERT_TRUE(formula) << fixture.body;
+        for (const auto &value : fixture.values)
+        {
+            formula->set_value(value.first, value.second);
+        }
+        expect_complex_near(fixture.expected, formula->interpret(fixture.section));
+
+        const std::string shader{emit_basic_shader(fixture.body)};
+        for (const std::string_view snippet : fixture.snippets)
+        {
+            expect_contains(shader, snippet);
+        }
+    }
 }
 
 TEST(TestGLSLEmitter, validatesRepresentativeShadersWithGlslang)

@@ -173,15 +173,7 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Add Interpreter Equivalence Fixtures
-
-- Build a small corpus of BASIC formulas with known interpreter results.
-- For each formula, assert emitted GLSL contains the expected lowered
-  operations.
-- If a GLSL execution harness becomes available, compare numeric results
-  against interpreter output.
-
-### 2. Remove Example-Only Caveats
+### 1. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.
