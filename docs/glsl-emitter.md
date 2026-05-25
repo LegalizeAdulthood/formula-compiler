@@ -173,7 +173,16 @@ abstraction than needed or are less suitable for modern OpenGL shader tests.
 
 ## Implementation Slices
 
-### 1. Remove Example-Only Caveats
+### 1. Update Example ABI Binding
+
+- Update `examples/glsl-renderer` to bind every field in the emitted
+  `FractalParams` uniform block in the correct order.
+- Add the binding 2 result storage buffer required by `FormulaResult` output.
+- Set default function selectors to `sin`, `sqr`, `sinh`, and `cosh`.
+- Read back at least one `FormulaResult` record in the smoke path so the
+  example verifies the current shader ABI, not only image output.
+
+### 2. Remove Example-Only Caveats
 
 - Once tests cover the supported BASIC surface, replace example caveats with
   a precise supported/unsupported feature list.
