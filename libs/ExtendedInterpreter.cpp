@@ -417,6 +417,27 @@ bool is_legacy_function_parameter_name(std::string_view name)
     return name == "fn1" || name == "fn2" || name == "fn3" || name == "fn4";
 }
 
+std::string default_function_parameter_target(std::string_view type, std::string_view name)
+{
+    if (type == "color")
+    {
+        return "mergenormal";
+    }
+    if (name == "fn2")
+    {
+        return "sqr";
+    }
+    if (name == "fn3")
+    {
+        return "sinh";
+    }
+    if (name == "fn4")
+    {
+        return "cosh";
+    }
+    return "sin";
+}
+
 RuntimeParameterMetadata collect_runtime_parameter_metadata(const ast::FormulaSections &ast)
 {
     return RuntimeParameterMetadataCollector{}.collect(ast.defaults);
@@ -2673,7 +2694,7 @@ public:
         if (!m_state.has_parameter_value(node.name()))
         {
             m_state.set_parameter_value(
-                node.name(), Value{std::string{node.type() == "color" ? "mergenormal" : "sin"}});
+                node.name(), Value{default_function_parameter_target(node.type(), node.name())});
         }
         m_current_function = nullptr;
     }

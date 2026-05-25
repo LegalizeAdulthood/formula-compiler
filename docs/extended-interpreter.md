@@ -154,6 +154,10 @@
   - `const` arguments reject assignment inside the function.
   - Functions can read/write formula variables; global-section functions
     follow UF rules: callable outside global only if declared `const`.
+  - Function parameters named `fn1`, `fn2`, `fn3`, and `fn4` default to
+    `sin`, `sqr`, `sinh`, and `cosh`, matching the BASIC and Id engine
+    defaults. Other complex function parameters default to `sin`; color
+    function parameters default to `mergenormal`.
 - Built-ins:
   - Preserve existing math built-ins.
   - Add multi-arg/value built-ins needed by UF6 procedural docs:

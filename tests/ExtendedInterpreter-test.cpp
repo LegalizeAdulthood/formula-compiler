@@ -334,6 +334,14 @@ TEST(TestExtendedInterpreter, initializesFunctionParameterDefaults)
     ExtendedInterpreter interpreter{formula_entry("default:\n"
                                                   "complex func fn1\n"
                                                   "endfunc\n"
+                                                  "complex func fn2\n"
+                                                  "endfunc\n"
+                                                  "complex func fn3\n"
+                                                  "endfunc\n"
+                                                  "complex func fn4\n"
+                                                  "endfunc\n"
+                                                  "complex func custom\n"
+                                                  "endfunc\n"
                                                   "color func merge\n"
                                                   "default=mergesoftlight()\n"
                                                   "endfunc\n"),
@@ -341,6 +349,10 @@ TEST(TestExtendedInterpreter, initializesFunctionParameterDefaults)
 
     ASSERT_TRUE(interpreter.ok());
     EXPECT_EQ(Value{std::string{"sin"}}, interpreter.value("@fn1"));
+    EXPECT_EQ(Value{std::string{"sqr"}}, interpreter.value("@fn2"));
+    EXPECT_EQ(Value{std::string{"sinh"}}, interpreter.value("@fn3"));
+    EXPECT_EQ(Value{std::string{"cosh"}}, interpreter.value("@fn4"));
+    EXPECT_EQ(Value{std::string{"sin"}}, interpreter.value("@custom"));
     EXPECT_EQ(Value{std::string{"mergesoftlight"}}, interpreter.value("@merge"));
 }
 
