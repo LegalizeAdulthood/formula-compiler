@@ -88,6 +88,14 @@ predefined symbols.
 No remaining extended formula parser implementation slices are planned in this
 file.
 
+## Known Runtime Divergence
+
+`docs/uf6/conditionals.txt` explicitly documents short-circuit evaluation for
+`&&` and `||`: expressions are evaluated left-to-right and evaluation stops
+once the result is known. Current GLSL translator work emits helper calls for
+logical operators, which forces both operands to be evaluated. That divergence
+must be corrected in translator/runtime work, not parser work.
+
 Future parser work should be added here only when it is truly syntactic. If the
 work needs symbol tables, type information, imported class metadata, formula
 kind compatibility, or runtime/compiler support, record it in the semantic,
