@@ -2573,6 +2573,27 @@ TEST(TestSemanticAnalyzer, formulaAnalysisReportsInvalidBailoutSectionResult)
     EXPECT_EQ("invalid section result: bailout got string", diagnostics.front().message);
 }
 
+TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsAllowedColorArithmetic)
+{
+    parser::Options options;
+    options.dialect = Dialect::EXTENDED;
+    options.entry_kind = parser::EntryKind::COLORING;
+    const LoadedFormula loaded{load_formula("final:\n"
+                                            "color add = rgba(0.1,0.2,0.3,0.4) + rgba(0.5,0.6,0.7,0.8)\n"
+                                            "color sub = rgba(0.8,0.7,0.6,0.5) - rgba(0.1,0.2,0.3,0.4)\n"
+                                            "color mul = rgba(0.1,0.2,0.3,0.4) * 2\n"
+                                            "color div = rgba(0.2,0.4,0.6,0.8) / 2\n"
+                                            "add + sub + mul + div",
+        options)};
+    ASSERT_TRUE(loaded.ast);
+    FormulaSemanticContext context;
+    context.entry_kind = parser::EntryKind::COLORING;
+
+    const std::vector<SemanticDiagnostic> diagnostics{analyze_formula(*loaded.ast, context)};
+
+    EXPECT_TRUE(diagnostics.empty());
+}
+
 TEST(TestSemanticAnalyzer, formulaAnalysisAcceptsColorFinalSectionResult)
 {
     parser::Options options;

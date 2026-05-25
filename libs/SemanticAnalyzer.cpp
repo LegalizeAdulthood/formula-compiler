@@ -2257,7 +2257,29 @@ private:
         {
             return SemanticTypeKind::BOOL;
         }
+        if (const std::optional<SemanticTypeKind> color_type = color_binary_expression_type(node.op(), left, right))
+        {
+            return *color_type;
+        }
         return numeric_result_type(left, right);
+    }
+
+    std::optional<SemanticTypeKind> color_binary_expression_type(
+        const std::string &op, SemanticTypeKind left, SemanticTypeKind right) const
+    {
+        if (left != SemanticTypeKind::COLOR && right != SemanticTypeKind::COLOR)
+        {
+            return std::nullopt;
+        }
+        if ((op == "+" || op == "-") && left == SemanticTypeKind::COLOR && right == SemanticTypeKind::COLOR)
+        {
+            return SemanticTypeKind::COLOR;
+        }
+        if ((op == "*" || op == "/") && left == SemanticTypeKind::COLOR && is_numeric_type(right))
+        {
+            return SemanticTypeKind::COLOR;
+        }
+        return SemanticTypeKind::ERROR;
     }
 
     SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node)
@@ -2452,6 +2474,11 @@ private:
             return true;
         }
         return conversion_rank(from) >= 0 && conversion_rank(to) >= 0 && conversion_rank(from) <= conversion_rank(to);
+    }
+
+    bool is_numeric_type(SemanticTypeKind type) const
+    {
+        return conversion_rank(type) >= 0;
     }
 
     int conversion_rank(SemanticTypeKind type) const
