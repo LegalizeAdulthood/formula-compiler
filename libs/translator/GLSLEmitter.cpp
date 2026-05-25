@@ -480,6 +480,8 @@ std::string GLSLEmitter::emit_complex_math_functions()
     out << "vec2 c_ge(vec2 a, vec2 b) { return c_bool(a.x >= b.x); }\n";
     out << "vec2 c_eq(vec2 a, vec2 b) { return c_bool(a.x == b.x && a.y == b.y); }\n";
     out << "vec2 c_ne(vec2 a, vec2 b) { return c_bool(a.x != b.x || a.y != b.y); }\n\n";
+    out << "vec2 c_and(vec2 a, vec2 b) { return c_bool(a.x != 0.0 && b.x != 0.0); }\n";
+    out << "vec2 c_or(vec2 a, vec2 b) { return c_bool(a.x != 0.0 || b.x != 0.0); }\n\n";
 
     return out.str();
 }
@@ -720,10 +722,9 @@ void GLSLEmitter::visit(const ast::BinaryOpNode &node)
     }
     else if (op == "&&" || op == "||")
     {
-        // Logical operations
-        m_output << "(";
+        m_output << (op == "&&" ? "c_and(" : "c_or(");
         node.left()->visit(*this);
-        m_output << " " << op << " ";
+        m_output << ", ";
         node.right()->visit(*this);
         m_output << ")";
     }

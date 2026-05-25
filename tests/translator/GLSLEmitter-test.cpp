@@ -235,6 +235,18 @@ TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
     expect_contains(shader, "    z = c_ne(z, p1);\n");
 }
 
+TEST(TestGLSLEmitter, emitsLogicalOperatorsThroughHelpers)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = (z < p1) && (z != p2)\n"
+                                               "  z = (z < p1) || (z != p2)\n")};
+
+    expect_contains(shader, "vec2 c_and(vec2 a, vec2 b) { return c_bool(a.x != 0.0 && b.x != 0.0); }\n");
+    expect_contains(shader, "vec2 c_or(vec2 a, vec2 b) { return c_bool(a.x != 0.0 || b.x != 0.0); }\n");
+    expect_contains(shader, "    z = c_and(c_lt(z, p1), c_ne(z, p2));\n");
+    expect_contains(shader, "    z = c_or(c_lt(z, p1), c_ne(z, p2));\n");
+}
+
 } // namespace
 
 } // namespace formula::test
