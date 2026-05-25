@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -30,6 +30,7 @@ namespace formula::ast
 class Node;
 
 using SymbolTable = std::map<std::string, Complex>;
+using FunctionSelectors = std::map<std::string, std::string>;
 
 struct LabelBinding
 {
@@ -50,6 +51,7 @@ struct DataSection
 struct EmitterState
 {
     SymbolTable symbols;
+    FunctionSelectors functions;
     DataSection data;
 };
 

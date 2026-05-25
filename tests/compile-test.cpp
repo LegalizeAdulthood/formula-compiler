@@ -241,6 +241,35 @@ TEST(TestCompiledFormulaRun, identity)
     ASSERT_EQ(4.0, result.im);
 }
 
+TEST(TestCompiledFormulaRun, functionSelectorUsesIdDefault)
+{
+    const FormulaPtr formula{create_formula("fn1(pi/2)", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ("sin", formula->get_function("fn1"));
+    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestCompiledFormulaRun, functionSelectorUsesBoundBuiltin)
+{
+    const FormulaPtr formula{create_formula("fn1(pi/2)", Options{})};
+    ASSERT_TRUE(formula) << "Formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("fn1", "sin"));
+    ASSERT_TRUE(formula->compile());
+
+    const Complex result{formula->run(Section::BAILOUT)};
+
+    EXPECT_EQ("sin", formula->get_function("fn1"));
+    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
 TEST(TestCompiledFormulaRun, basicUnknownVariableCompilesAsZero)
 {
     const FormulaPtr formula{create_formula("missing + 1", Options{})};

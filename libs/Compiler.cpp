@@ -412,7 +412,7 @@ void Compiler::visit(const FunctionCallNode &node)
     {
         return;
     }
-    const std::string &name{node.name()};
+    const std::string name{select_function(node.name(), state.functions)};
     if (name == "conj")
     {
         asmjit::x86::Xmm xmm1{comp.newXmm()};

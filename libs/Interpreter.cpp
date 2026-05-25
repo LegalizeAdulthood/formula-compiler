@@ -23,8 +23,9 @@ namespace
 class Interpreter : public NullVisitor
 {
 public:
-    explicit Interpreter(Dictionary symbols) :
-        m_symbols(std::move(symbols))
+    explicit Interpreter(Dictionary symbols, std::map<std::string, std::string> functions) :
+        m_symbols(std::move(symbols)),
+        m_functions(std::move(functions))
     {
     }
     Interpreter(const Interpreter &rhs) = delete;
@@ -76,6 +77,7 @@ private:
 
     std::vector<Complex> m_result{1};
     Dictionary m_symbols;
+    std::map<std::string, std::string> m_functions;
 };
 
 void unsupported_node(std::string_view name)
@@ -184,14 +186,15 @@ void Interpreter::visit(const FunctionDeclNode &)
 void Interpreter::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
-    if (node.name() == "sqr")
+    const std::string name{select_function(node.name(), m_functions)};
+    if (name == "sqr")
     {
         const Complex arg{back()};
         m_symbols["lastsqr"] = {arg.re * arg.re + arg.im * arg.im, 0.0};
-        back() = evaluate(node.name(), arg);
+        back() = evaluate(name, arg);
         return;
     }
-    back() = evaluate(node.name(), back());
+    back() = evaluate(name, back());
 }
 
 void Interpreter::visit(const IdentifierNode &node)
@@ -322,7 +325,13 @@ void Interpreter::visit(const WhileNode &)
 
 Complex interpret(const std::shared_ptr<Node> &expr, Dictionary &symbols)
 {
-    Interpreter interp(symbols);
+    return interpret(expr, symbols, {});
+}
+
+Complex interpret(
+    const std::shared_ptr<Node> &expr, Dictionary &symbols, const std::map<std::string, std::string> &functions)
+{
+    Interpreter interp(symbols, functions);
     expr->visit(interp);
     symbols = interp.symbols();
     return interp.result();

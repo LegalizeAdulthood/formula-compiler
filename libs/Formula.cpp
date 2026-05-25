@@ -10,8 +10,13 @@
 #include <formula/Parser.h>
 #include <formula/ReferenceCollector.h>
 
+#include "functions.h"
+
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdint>
+#include <string>
 #include <utility>
 
 using namespace formula::ast;
@@ -21,6 +26,14 @@ namespace formula
 
 namespace
 {
+
+std::string normalize_identifier(std::string_view name)
+{
+    std::string result{name};
+    std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    return result;
+}
 
 class ParsedFormula : public Formula
 {
@@ -39,6 +52,30 @@ public:
             return it->second;
         }
         return {};
+    }
+    bool set_function(std::string_view name, std::string_view function) override
+    {
+        const std::string selector{normalize_identifier(name)};
+        const std::string target{normalize_identifier(function)};
+        if (!is_function_selector(selector) || !is_selectable_function(target))
+        {
+            return false;
+        }
+        m_state.functions[selector] = target;
+        return true;
+    }
+    std::string get_function(std::string_view name) const override
+    {
+        const std::string selector{normalize_identifier(name)};
+        if (!is_function_selector(selector))
+        {
+            return {};
+        }
+        if (const auto it = m_state.functions.find(selector); it != m_state.functions.end())
+        {
+            return it->second;
+        }
+        return "ident";
     }
     const Expr &get_section(Section section) const override;
 
@@ -73,6 +110,10 @@ ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
     m_state.symbols["lastsqr"] = {0.0, 0.0};
     m_state.symbols["rand"] = {0.0, 0.0};
     m_state.symbols["_result"] = {0.0, 0.0};
+    m_state.functions["fn1"] = "sin";
+    m_state.functions["fn2"] = "sqr";
+    m_state.functions["fn3"] = "sinh";
+    m_state.functions["fn4"] = "cosh";
 }
 
 const Expr &ParsedFormula::get_section(Section section) const
@@ -112,17 +153,17 @@ Complex ParsedFormula::interpret(Section part)
     switch (part)
     {
     case Section::PER_IMAGE:
-        return ast::interpret(m_ast->per_image, m_state.symbols);
+        return ast::interpret(m_ast->per_image, m_state.symbols, m_state.functions);
     case Section::INITIALIZE:
-        return ast::interpret(m_ast->initialize, m_state.symbols);
+        return ast::interpret(m_ast->initialize, m_state.symbols, m_state.functions);
     case Section::ITERATE:
-        return ast::interpret(m_ast->iterate, m_state.symbols);
+        return ast::interpret(m_ast->iterate, m_state.symbols, m_state.functions);
     case Section::BAILOUT:
-        return ast::interpret(m_ast->bailout, m_state.symbols);
+        return ast::interpret(m_ast->bailout, m_state.symbols, m_state.functions);
     case Section::PERTURB_INITIALIZE:
-        return ast::interpret(m_ast->perturb_initialize, m_state.symbols);
+        return ast::interpret(m_ast->perturb_initialize, m_state.symbols, m_state.functions);
     case Section::PERTURB_ITERATE:
-        return ast::interpret(m_ast->perturb_iterate, m_state.symbols);
+        return ast::interpret(m_ast->perturb_iterate, m_state.symbols, m_state.functions);
     }
     throw std::runtime_error("Invalid part for interpreter");
 }

@@ -373,6 +373,28 @@ ComplexFunction *lookup_complex(std::string_view name)
     return nullptr;
 }
 
+bool is_function_selector(std::string_view name)
+{
+    return name == "fn1" || name == "fn2" || name == "fn3" || name == "fn4";
+}
+
+bool is_selectable_function(std::string_view name)
+{
+    return !is_function_selector(name) && (lookup_complex(name) != nullptr || lookup_real(name) != nullptr);
+}
+
+std::string select_function(std::string_view name, const std::map<std::string, std::string> &functions)
+{
+    if (is_function_selector(name))
+    {
+        if (const auto it = functions.find(std::string{name}); it != functions.end())
+        {
+            return it->second;
+        }
+    }
+    return std::string{name};
+}
+
 double evaluate(std::string_view name, double value)
 {
     if (const auto fn = lookup_real(name))

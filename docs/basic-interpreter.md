@@ -33,16 +33,12 @@ and predefined variables.
 - `ismand` defaults to true, represented as `(1, 0)`.
 - `lastsqr` defaults to `(0, 0)`.
 - `rand` defaults to `(0, 0)` until per-formula random state is implemented.
+- `fn1`, `fn2`, `fn3`, and `fn4` default to `sin`, `sqr`, `sinh`, and `cosh`,
+  matching the Id engine defaults. They can be bound by the client to supported
+  BASIC builtin functions. Selector names and target names are matched
+  case-insensitively and stored in lowercase.
 
 ## Gaps
-
-### `fn1` Through `fn4`
-
-`fn1`, `fn2`, `fn3`, and `fn4` are runtime-selected functions. The current
-implementation hardcodes them as identity functions.
-
-The interpreter needs per-formula selector state so a client can bind each
-token to one of the supported BASIC builtin functions.
 
 ### `rand` And `srand`
 
@@ -89,15 +85,7 @@ overrides it.
 
 ## Implementation Slices
 
-### 1. Add Runtime Function Selectors
-
-- Add per-formula selector storage for `fn1`, `fn2`, `fn3`, and `fn4`.
-- Add a client API to bind each selector by BASIC builtin function name.
-- Validate selector tokens against the BASIC runtime-selectable builtin set.
-- Keep default selector behavior as identity for backward compatibility.
-- Add tests for selected functions and invalid selector names.
-
-### 2. Add Per-Formula Random State
+### 1. Add Per-Formula Random State
 
 - Replace `srand()` global C RNG seeding with per-formula seed state.
 - Make `srand(seed)` reset that state and return the documented BASIC value
@@ -106,14 +94,14 @@ overrides it.
 - Advance `rand` once per iteration section execution.
 - Add deterministic tests that seed with `srand()` and verify repeatability.
 
-### 3. Document Runtime Input Contract
+### 2. Document Runtime Input Contract
 
 - Document which predefined variables are supplied by the client.
 - Keep `set_value` as the binding mechanism for complex predefined values.
 - Keep the existing round-trip tests for client-supplied predefined values
   passing.
 
-### 4. Keep JIT And GLSL In Sync
+### 3. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.

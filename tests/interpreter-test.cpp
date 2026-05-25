@@ -289,6 +289,77 @@ TEST(TestFormulaInterpreter, identity)
     EXPECT_EQ(4.0, result.im);
 }
 
+TEST(TestFormulaInterpreter, functionSelectorsUseIdDefaults)
+{
+    const FormulaPtr formula{create_formula("fn1(pi/2)", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ("sin", formula->get_function("fn1"));
+    EXPECT_EQ("sqr", formula->get_function("fn2"));
+    EXPECT_EQ("sinh", formula->get_function("fn3"));
+    EXPECT_EQ("cosh", formula->get_function("fn4"));
+    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, functionSelectorUsesBoundBuiltin)
+{
+    const FormulaPtr formula{create_formula("fn1(pi/2)", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("fn1", "sin"));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ("sin", formula->get_function("fn1"));
+    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, functionSelectorNamesAreCaseInsensitive)
+{
+    const FormulaPtr formula{create_formula("fn2(0)", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("FN2", "COS"));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ("cos", formula->get_function("Fn2"));
+    EXPECT_NEAR(1.0, result.re, 1e-8);
+    EXPECT_EQ(0.0, result.im);
+}
+
+TEST(TestFormulaInterpreter, functionSelectorRejectsInvalidNames)
+{
+    const FormulaPtr formula{create_formula("fn1(1)", Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+
+    EXPECT_FALSE(formula->set_function("fn5", "sin"));
+    EXPECT_FALSE(formula->set_function("fn1", "missing"));
+    EXPECT_FALSE(formula->set_function("fn1", "fn2"));
+    EXPECT_EQ("", formula->get_function("fn5"));
+    EXPECT_EQ("sin", formula->get_function("fn1"));
+}
+
+TEST(TestFormulaInterpreter, selectedSqrUpdatesLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "ignored=fn1(3+flip(4))\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    ASSERT_TRUE(formula->set_function("fn1", "sqr"));
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{25.0, 0.0}), result);
+}
+
 TEST(TestFormulaInterpreter, cosxxUsesDocumentedRealInputSemantics)
 {
     const FormulaPtr formula{create_formula("cosxx(1)", Options{})};
