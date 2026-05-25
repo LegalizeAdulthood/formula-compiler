@@ -1,19 +1,19 @@
-# BASIC Parser Verification Plan
+# BASIC Parser Verification
 
 ## Summary
 
 BASIC formulas cannot reference user functions, other formulas, classes,
 imports, parameters, or extended formula metadata. Every valid BASIC construct
-should therefore be verifiable during parsing. No semantic analyzer should be
-needed for BASIC formulas.
+is therefore verifiable during parsing. No semantic analyzer is needed for
+BASIC formulas.
 
-The parser should reject BASIC inputs that would otherwise fail later in the
+The parser rejects BASIC inputs that would otherwise fail later in the
 interpreter or compiler. Unknown variables remain valid and evaluate as zero.
 
 Extended formulas add syntax and entity references on top of BASIC semantics.
 They do not weaken BASIC rules. Any constraint described here for BASIC
 expressions, builtin functions, builtin variables, assignment, precedence, or
-runtime operator behavior should also hold for extended formulas unless a later
+runtime operator behavior also holds for extended formulas unless a later
 Ultra Fractal feature explicitly extends that specific construct.
 
 The BASIC language semantics are described in `basic-formula.txt`. The
@@ -24,7 +24,7 @@ the BASIC spelling of a one-argument call with the complex literal `(x, y)`.
 
 ## BASIC Builtins
 
-The parser should treat these predefined variables as known BASIC names:
+The parser treats these predefined variables as known BASIC names:
 
 - `z`
 - `p1`, `p2`, `p3`, `p4`, `p5`
@@ -42,8 +42,8 @@ The parser should treat these predefined variables as known BASIC names:
 - `magxmag`
 - `rotskew`
 
-`z` is mutable. The other predefined variables are read-only and should not be
-valid assignment targets.
+`z` is mutable. The other predefined variables are read-only and are not valid
+assignment targets.
 
 Variable lookup remains permissive. Any other identifier is a user variable and
 is initialized to zero by runtime behavior.
@@ -55,7 +55,7 @@ All BASIC variable names, function names, and keywords match
 case-insensitively. Preserve identifier spelling in the AST and diagnostics,
 but normalize names for validation.
 
-The parser should treat these names as the complete BASIC builtin function set:
+The parser treats these names as the complete BASIC builtin function set:
 
 - `sin`, `cos`, `sinh`, `cosh`, `cosxx`
 - `tan`, `cotan`, `tanh`, `cotanh`
@@ -67,14 +67,13 @@ The parser should treat these names as the complete BASIC builtin function set:
 - `floor`, `ceil`, `trunc`, `round`
 - `ident`, `zero`, `one`
 
-Each builtin function must parse with exactly one argument. This includes
-`zero` and `one`. A numeric pair written directly inside the call parentheses,
-such as `sin(3, 4)`, is one complex literal argument and should parse as
-`sin((3, 4))`.
+Each builtin function parses with exactly one argument. This includes `zero`
+and `one`. A numeric pair written directly inside the call parentheses, such as
+`sin(3, 4)`, is one complex literal argument and parses as `sin((3, 4))`.
 
 ## Parse Mode
 
-BASIC has one parser contract. It should reject:
+BASIC has one parser contract. It rejects:
 
 - Unknown function calls.
 - Builtin calls with anything other than one argument.
@@ -82,9 +81,9 @@ BASIC has one parser contract. It should reject:
 - Assignment to builtin function names.
 - Any extended-only syntax.
 
-The same static restrictions should be enforced in extended formulas for
-shared BASIC constructs. Extended-only constructs can add valid forms, such as
-user-defined function calls or class member calls, but they should not make
+The same static restrictions are enforced in extended formulas for shared
+BASIC constructs. Extended-only constructs can add valid forms, such as
+user-defined function calls or class member calls, but they do not make
 read-only builtin assignment, builtin arity errors, malformed assignment, or
 other BASIC syntax violations valid.
 
@@ -141,7 +140,7 @@ After parsing succeeds in BASIC dialect:
 
 ## BASIC Expression Rules
 
-The parser should enforce the expression rules from `basic-formula.txt`:
+The parser enforces the expression rules from `basic-formula.txt`:
 
 - Assignment is a statement operator only.
 - Assignment is not valid inside an expression.
@@ -159,11 +158,12 @@ The parser should enforce the expression rules from `basic-formula.txt`:
 Logical operators short-circuit left to right. This intentionally differs from
 `docs/id.txt`; Iterated Dynamics will be updated to match this behavior.
 
-## Parser Changes
+## Current Parser Behavior
 
 ### Function Calls
 
-For BASIC constructs, distinguish builtin function calls from generic calls:
+For BASIC constructs, the parser distinguishes builtin function calls from
+generic calls:
 
 - Accept `sin(expr)` and other known builtins.
 - Accept `sin(3, 4)` as one complex literal argument, equivalent to
@@ -177,7 +177,7 @@ For BASIC constructs, distinguish builtin function calls from generic calls:
   `one()` without an argument. They are still BASIC builtin functions and take
   one argument by parser contract.
 
-Add parser error codes for:
+Parser diagnostics include specific error codes for:
 
 - Unknown BASIC function call.
 - Invalid BASIC function arity.
@@ -191,16 +191,16 @@ builtin rules above.
 
 ### Builtin Assignment
 
-Make the BASIC verification policy explicit:
+The BASIC verification policy is:
 
-- Shared BASIC semantics should reject assignment to builtin variables and
+- Shared BASIC semantics reject assignment to builtin variables and
   builtin function names, using case-insensitive matching.
 - Both BASIC and extended formulas reject invalid builtin assignment in shared
   expression contexts.
 
 Do not use a semantic analyzer to reject read-only builtin assignments.
 
-Add parser error codes for:
+Parser diagnostics include specific error codes for:
 
 - Assignment to a read-only BASIC builtin variable.
 - Assignment to a BASIC builtin function name.
@@ -210,8 +210,7 @@ error. Use a specific diagnostic so tests can verify the rule directly.
 
 ### Extended Syntax Rejection
 
-Keep rejecting extended-only syntax in BASIC through lexer/parser dialect
-checks:
+Extended-only syntax is rejected in BASIC through lexer/parser dialect checks:
 
 - typed declarations
 - arrays
@@ -225,84 +224,12 @@ checks:
 - loops other than existing BASIC `if`
 - functions and classes
 
-Add regression tests for any extended token that currently becomes a generic
-BASIC expression by accident.
+Regression tests cover extended tokens that could otherwise become generic
+BASIC expressions by accident.
 
-## Implementation Slices
+## Implemented Test Coverage
 
-Before starting code implementation, present the completed BASIC parser plan
-for review and wait for approval.
-
-1. Add parse tests that document the intended BASIC contract.
-   - Unknown variables still parse and evaluate as zero.
-   - Unknown function calls fail during parse.
-   - Builtin calls require exactly one argument.
-   - Numeric pair calls such as `sin(1, 2)` parse as one complex literal
-     argument.
-   - Generic multi-argument and zero-argument builtin calls fail during parse.
-   - Read-only builtin variable assignment reports a specific parser error.
-   - Builtin function assignment reports a specific parser error.
-
-2. Add BASIC-only function-call validation.
-   - Reject postfix calls where the callee is not a known BASIC builtin.
-   - Reject known builtin calls with argument count other than one.
-   - Treat numeric literal pairs inside call parentheses as one complex
-     literal argument.
-   - Match builtin function names case-insensitively.
-   - Preserve extended multi-argument calls.
-   - Follow up by applying builtin arity validation to extended builtin calls
-     without rejecting extended user-defined calls.
-
-3. Add BASIC builtin-assignment tests.
-   - Verify builtin variable assignment is rejected.
-   - Verify builtin function assignment is rejected.
-   - Verify read-only builtin matching is case-insensitive.
-   - Verify the same shared builtin-assignment rules in extended formulas.
-   - Remove warning-mode expectations from parser tests.
-
-4. Review default parser options.
-   - Remove options that allow builtin assignment in BASIC.
-   - Ensure BASIC parse success means full static BASIC validation.
-
-5. Add extended-token regression tests under BASIC.
-   - Ensure extended-only tokens remain invalid in BASIC.
-   - Ensure no extended AST nodes can be produced in BASIC.
-
-6. Update interpreter and compiler assumptions.
-   - Remove or simplify BASIC runtime checks that duplicate parser validation.
-   - Keep runtime handling for unknown variables as zero.
-   - Keep runtime errors for internal misuse only.
-
-7. Fix BASIC logical evaluation.
-   - Ensure interpreted `&&` and `||` short-circuit left to right.
-   - Ensure compiled `&&` and `||` short-circuit left to right.
-   - Preserve truthiness based on the real part of complex values.
-
-8. Lock BASIC precedence behavior.
-   - Add tests for assignment as statement-only syntax.
-   - Add tests for chained assignment.
-   - Add tests for power, unary negation, multiplication, addition,
-     comparison, and logical precedence.
-   - Add tests for modulus grouping and nested modulus with parentheses.
-
-Suggested implementation order:
-
-1. Add failing parser tests for BASIC function call validation.
-2. Add parser error codes.
-3. Implement BASIC function call validation.
-4. Add failing parser tests for read-only builtin assignment.
-5. Implement BASIC builtin assignment validation.
-6. Backfill shared builtin assignment validation onto extended formulas.
-7. Backfill shared builtin arity validation onto extended builtin calls.
-8. Add case-insensitive matching tests.
-9. Normalize BASIC validation lookups while preserving source spelling.
-10. Add runtime tests for short-circuit logical evaluation.
-11. Fix interpreter and compiler logical evaluation.
-12. Add precedence and modulus regression tests.
-
-## Tests
-
-Add parser tests for:
+Parser and runtime tests cover:
 
 - `a` parses as an identifier.
 - `foo(1)` fails in BASIC.
@@ -328,8 +255,12 @@ Add parser tests for:
 - `0&&srand(1)` skips the right operand in BASIC.
 - `1||srand(1)` skips the right operand in BASIC.
 
-Add interpreter/compiler regression tests showing that valid BASIC formulas no
-longer rely on runtime detection for unknown functions or bad arity.
+Interpreter/compiler regression tests cover valid BASIC formulas without
+runtime detection for unknown functions or bad arity.
+
+## Remaining Work
+
+No BASIC parser implementation slices remain.
 
 ## Relationship To Semantic Analysis
 
