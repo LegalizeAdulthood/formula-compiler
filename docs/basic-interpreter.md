@@ -28,19 +28,10 @@ and predefined variables.
 - Builtin function names are normalized to lowercase by the parser.
 - `f(3, 4)` is parsed as a one-argument call with complex literal `(3, 4)`.
 - `cosxx(x + iy)` returns `cos(x) cosh(y) + i sin(x) sinh(y)`.
+- `sqr()` updates `lastsqr` with the argument modulus squared before
+  returning the square.
 
 ## Gaps
-
-### `lastsqr`
-
-`lastsqr` should contain the modulus from the last `sqr()` function call.
-Current `sqr()` returns the square but does not update `lastsqr`.
-
-The intended runtime shape is:
-
-- evaluate the `sqr` argument
-- store `arg.re * arg.re + arg.im * arg.im` in `lastsqr` as `(value, 0)`
-- return `arg * arg`
 
 ### `fn1` Through `fn4`
 
@@ -100,23 +91,13 @@ existing `set_value` binding API.
 
 Disabled tests record the currently missing runtime semantics for:
 
-- `sqr()` updating `lastsqr`
 - `ismand` defaulting to true
 
 Enable those tests as each implementation slice closes the corresponding gap.
 
 ## Implementation Slices
 
-### 1. Add `lastsqr` Runtime State
-
-- Special-case `sqr()` evaluation in the interpreter so it can update
-  `lastsqr`.
-- Keep `lastsqr` read-only at parse time.
-- Add tests that read `lastsqr` after one and multiple `sqr()` calls.
-- Add tests that direct `|z|` modulus expressions do not update `lastsqr`.
-- Enable the disabled `lastsqr` interpreter tests.
-
-### 2. Initialize Documented Defaults
+### 1. Initialize Documented Defaults
 
 - Initialize `ismand` to `(1, 0)`.
 - Initialize `lastsqr` to `(0, 0)`.
@@ -124,7 +105,7 @@ Enable those tests as each implementation slice closes the corresponding gap.
   formula construction. Record that decision in this document before code.
 - Enable the disabled `ismand` interpreter test.
 
-### 3. Add Runtime Function Selectors
+### 2. Add Runtime Function Selectors
 
 - Add per-formula selector storage for `fn1`, `fn2`, `fn3`, and `fn4`.
 - Add a client API to bind each selector by BASIC builtin function name.
@@ -132,7 +113,7 @@ Enable those tests as each implementation slice closes the corresponding gap.
 - Keep default selector behavior as identity for backward compatibility.
 - Add tests for selected functions and invalid selector names.
 
-### 4. Add Per-Formula Random State
+### 3. Add Per-Formula Random State
 
 - Replace `srand()` global C RNG seeding with per-formula seed state.
 - Make `srand(seed)` reset that state and return the documented BASIC value
@@ -141,14 +122,14 @@ Enable those tests as each implementation slice closes the corresponding gap.
 - Advance `rand` once per iteration section execution.
 - Add deterministic tests that seed with `srand()` and verify repeatability.
 
-### 5. Document Runtime Input Contract
+### 4. Document Runtime Input Contract
 
 - Document which predefined variables are supplied by the client.
 - Keep `set_value` as the binding mechanism for complex predefined values.
 - Keep the existing round-trip tests for client-supplied predefined values
   passing.
 
-### 6. Keep JIT And GLSL In Sync
+### 5. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.

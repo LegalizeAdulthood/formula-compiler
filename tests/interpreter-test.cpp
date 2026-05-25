@@ -291,7 +291,7 @@ TEST(TestFormulaInterpreter, cosxxUsesDocumentedComplexInputSemantics)
     EXPECT_NEAR(std::sin(1.0) * std::sinh(2.0), result.im, 1e-8);
 }
 
-TEST(TestFormulaInterpreter, DISABLED_sqrUpdatesLastsqr)
+TEST(TestFormulaInterpreter, sqrUpdatesLastsqr)
 {
     const FormulaPtr formula{create_formula("bailout:\n"
                                             "ignored=sqr(3+flip(4))\n"
@@ -305,7 +305,7 @@ TEST(TestFormulaInterpreter, DISABLED_sqrUpdatesLastsqr)
     EXPECT_EQ((Complex{25.0, 0.0}), result);
 }
 
-TEST(TestFormulaInterpreter, DISABLED_sqrReplacesLastsqrOnEachCall)
+TEST(TestFormulaInterpreter, sqrReplacesLastsqrOnEachCall)
 {
     const FormulaPtr formula{create_formula("bailout:\n"
                                             "ignored=sqr(3+flip(4))\n"
@@ -318,6 +318,21 @@ TEST(TestFormulaInterpreter, DISABLED_sqrReplacesLastsqrOnEachCall)
     const Complex result{formula->interpret(Section::BAILOUT)};
 
     EXPECT_EQ((Complex{5.0, 0.0}), result);
+}
+
+TEST(TestFormulaInterpreter, modulusDoesNotUpdateLastsqr)
+{
+    const FormulaPtr formula{create_formula("bailout:\n"
+                                            "|3+flip(4)|\n"
+                                            "lastsqr\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::BAILOUT));
+    formula->set_value("lastsqr", {7.0, 0.0});
+
+    const Complex result{formula->interpret(Section::BAILOUT)};
+
+    EXPECT_EQ((Complex{7.0, 0.0}), result);
 }
 
 TEST(TestFormulaInterpreter, assignmentStatementsIterate)

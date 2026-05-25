@@ -184,6 +184,13 @@ void Interpreter::visit(const FunctionDeclNode &)
 void Interpreter::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
+    if (node.name() == "sqr")
+    {
+        const Complex arg{back()};
+        m_symbols["lastsqr"] = {arg.re * arg.re + arg.im * arg.im, 0.0};
+        back() = evaluate(node.name(), arg);
+        return;
+    }
     back() = evaluate(node.name(), back());
 }
 
