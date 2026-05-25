@@ -297,6 +297,9 @@ std::string GLSLEmitter::emit_uniforms()
     out << "    vec2 p4;          // Parameter 4\n";
     out << "    vec2 p5;          // Parameter 5\n";
     out << "    vec2 center;      // View center\n";
+    out << "    vec2 magxmag;     // Magnification and x magnitude\n";
+    out << "    vec2 rotskew;     // Rotation and skew\n";
+    out << "    vec2 ismand;      // Mandelbrot/Julia toggle\n";
     out << "    vec2 view_size;   // View size\n";
     out << "    uvec2 resolution; // Image resolution\n";
     out << "    uint maxit;       // Max iterations\n";
@@ -637,6 +640,10 @@ std::string GLSLEmitter::emit_main_function(const ast::FormulaSections &formula)
     out << indent() << "// Map pixel to complex plane\n";
     out << indent() << "vec2 uv = vec2(pixel_coords) / vec2(resolution);\n";
     out << indent() << "vec2 pixel = center + (uv * 2.0 - 1.0) * view_size;\n\n";
+    out << indent() << "// Screen-derived predefined variables\n";
+    out << indent() << "vec2 scrnmax = vec2(resolution);\n";
+    out << indent() << "vec2 scrnpix = vec2(pixel_coords);\n";
+    out << indent() << "vec2 whitesq = vec2(float((pixel_coords.x + pixel_coords.y) & 1), 0.0);\n\n";
     out << indent() << "// Random state\n";
     out << indent() << "uint random_state = random_seed ^ uint(pixel_coords.x) ^ (uint(pixel_coords.y) << 16u);\n";
     out << indent() << "vec2 rand = vec2(0.0, 0.0);\n\n";
@@ -766,6 +773,18 @@ void GLSLEmitter::visit(const ast::IdentifierNode &node)
     if (name == "lastsqr")
     {
         m_output << "vec2(lastsqr_value, 0.0)";
+    }
+    else if (name == "pi")
+    {
+        m_output << "vec2(pi, 0.0)";
+    }
+    else if (name == "e")
+    {
+        m_output << "vec2(e, 0.0)";
+    }
+    else if (name == "maxit")
+    {
+        m_output << "vec2(float(maxit), 0.0)";
     }
     else
     {

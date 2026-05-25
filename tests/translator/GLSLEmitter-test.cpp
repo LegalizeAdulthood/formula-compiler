@@ -67,6 +67,11 @@ TEST(TestGLSLEmitter, emitsHeaderAndUniformSnapshot)
         "    vec2 p4;          // Parameter 4\n"
         "    vec2 p5;          // Parameter 5\n");
     expect_contains(shader,
+        "    vec2 center;      // View center\n"
+        "    vec2 magxmag;     // Magnification and x magnitude\n"
+        "    vec2 rotskew;     // Rotation and skew\n"
+        "    vec2 ismand;      // Mandelbrot/Julia toggle\n");
+    expect_contains(shader,
         "    uint fn1_selector; // Default sin\n"
         "    uint fn2_selector; // Default sqr\n"
         "    uint fn3_selector; // Default sinh\n"
@@ -110,6 +115,11 @@ TEST(TestGLSLEmitter, emitsSectionStructureSnapshot)
         "void main() {\n"
         "    // Get pixel coordinates\n"
         "    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);\n");
+    expect_contains(shader,
+        "    // Screen-derived predefined variables\n"
+        "    vec2 scrnmax = vec2(resolution);\n"
+        "    vec2 scrnpix = vec2(pixel_coords);\n"
+        "    vec2 whitesq = vec2(float((pixel_coords.x + pixel_coords.y) & 1), 0.0);\n");
     expect_contains(shader,
         "    // Variable initialization\n"
         "    vec2 z = pixel;       // Default initialization\n"
@@ -385,6 +395,18 @@ TEST(TestGLSLEmitter, emitsRandomStateAndSrandReset)
         "    while (iter < maxit) {\n"
         "        rand = c_next_rand(random_state);\n");
     expect_contains(shader, "        z = rand;\n");
+}
+
+TEST(TestGLSLEmitter, emitsPredefinedVariablesAsComplexValues)
+{
+    const std::string shader{emit_basic_shader("init:\n"
+                                               "  z = pi + e + maxit\n"
+                                               "  z = scrnmax + scrnpix + whitesq\n"
+                                               "  z = ismand + center + magxmag + rotskew\n")};
+
+    expect_contains(shader, "    z = c_add(c_add(vec2(pi, 0.0), vec2(e, 0.0)), vec2(float(maxit), 0.0));\n");
+    expect_contains(shader, "    z = c_add(c_add(scrnmax, scrnpix), whitesq);\n");
+    expect_contains(shader, "    z = c_add(c_add(c_add(ismand, center), magxmag), rotskew);\n");
 }
 
 TEST(TestGLSLEmitter, emitsComparisonOperatorsThroughHelpers)
