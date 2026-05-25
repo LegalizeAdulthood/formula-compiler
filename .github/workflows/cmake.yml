@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright 2025 Richard Thomson
+# Copyright 2025-2026 Richard Thomson
 #
 name: CMake
 
@@ -42,7 +42,14 @@ jobs:
         ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh
         echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
         sudo dpkg-reconfigure man-db
-        sudo apt install mono-complete xinerama xcursor xorg libglu1-mesa pkg-config
+        sudo apt-get update
+        sudo apt-get install -y \
+          mono-complete \
+          libxinerama-dev \
+          libxcursor-dev \
+          xorg-dev \
+          libglu1-mesa-dev \
+          pkg-config
 
     - name: Install Prerequisites macOS
       if: ${{matrix.os == 'macos-latest'}}
