@@ -5,6 +5,14 @@
   "version-semver": "1.0.0",
   "dependencies": [
     "asmjit",
+    {
+      "name": "glad",
+      "features": [
+        "gl-api-45",
+        "loader"
+      ]
+    },
+    "glfw3",
     "gtest",
     "zlib"
   ]

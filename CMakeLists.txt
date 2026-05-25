@@ -18,6 +18,7 @@ project("${FORMULA_COMPILER_PROJECT_NAME}" CXX)
 include(CTest)
 
 add_subdirectory(libs)
+add_subdirectory(examples)
 add_subdirectory(tools)
 
 vs_startup_project(formula-compiler)
