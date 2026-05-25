@@ -300,7 +300,7 @@ Complex zero(const Complex & /*arg*/)
 
 double set_rand(double arg)
 {
-    std::srand(static_cast<int>(arg));
+    (void) arg;
     return 0.0;
 }
 

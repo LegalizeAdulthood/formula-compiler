@@ -189,7 +189,7 @@ TEST(TestFormulaInterpreter, lastsqrDefaultsToZero)
     EXPECT_EQ((Complex{0.0, 0.0}), result);
 }
 
-TEST(TestFormulaInterpreter, randDefaultsToZeroUntilRandomStateIsImplemented)
+TEST(TestFormulaInterpreter, randDefaultsToZeroBeforeIteration)
 {
     const FormulaPtr formula{create_formula("rand", Options{})};
     ASSERT_TRUE(formula) << "formula should have parsed";
@@ -198,6 +198,70 @@ TEST(TestFormulaInterpreter, randDefaultsToZeroUntilRandomStateIsImplemented)
     const Complex result{formula->interpret(Section::BAILOUT)};
 
     EXPECT_EQ((Complex{0.0, 0.0}), result);
+}
+
+TEST(TestFormulaInterpreter, randChangesEachIteration)
+{
+    const FormulaPtr formula{create_formula("init:\n"
+                                            "srand(1234)\n"
+                                            "loop:\n"
+                                            "z=rand\n",
+        Options{})};
+    ASSERT_TRUE(formula) << "formula should have parsed";
+    ASSERT_TRUE(formula->get_section(Section::INITIALIZE));
+    ASSERT_TRUE(formula->get_section(Section::ITERATE));
+    formula->interpret(Section::INITIALIZE);
+
+    const Complex first{formula->interpret(Section::ITERATE)};
+    const Complex second{formula->interpret(Section::ITERATE)};
+
+    EXPECT_GE(first.re, 0.0);
+    EXPECT_LT(first.re, 1.0);
+    EXPECT_GE(first.im, 0.0);
+    EXPECT_LT(first.im, 1.0);
+    EXPECT_NE(first, second);
+}
+
+TEST(TestFormulaInterpreter, srandRepeatsRandomSequence)
+{
+    const auto first_iteration = []
+    {
+        const FormulaPtr formula{create_formula("init:\n"
+                                                "srand(1234)\n"
+                                                "loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->interpret(Section::INITIALIZE);
+        return formula->interpret(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(), first_iteration());
+}
+
+TEST(TestFormulaInterpreter, clientSeedRepeatsRandomSequence)
+{
+    const auto first_iteration = []
+    {
+        const FormulaPtr formula{create_formula("loop:\n"
+                                                "rand\n",
+            Options{})};
+        formula->set_random_seed(5678);
+        return formula->interpret(Section::ITERATE);
+    };
+
+    EXPECT_EQ(first_iteration(), first_iteration());
+}
+
+TEST(TestFormulaInterpreter, settingClientSeedResetsRandUntilIteration)
+{
+    const FormulaPtr formula{create_formula("loop:\n"
+                                            "rand\n",
+        Options{})};
+    formula->interpret(Section::ITERATE);
+
+    formula->set_random_seed(5678);
+
+    EXPECT_EQ((Complex{0.0, 0.0}), formula->get_value("rand"));
 }
 
 TEST(TestFormulaInterpreter, assignment)

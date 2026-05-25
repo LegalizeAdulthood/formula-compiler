@@ -23,9 +23,10 @@ namespace
 class Interpreter : public NullVisitor
 {
 public:
-    explicit Interpreter(Dictionary symbols, std::map<std::string, std::string> functions) :
+    explicit Interpreter(Dictionary symbols, std::map<std::string, std::string> functions, std::mt19937 *random) :
         m_symbols(std::move(symbols)),
-        m_functions(std::move(functions))
+        m_functions(std::move(functions)),
+        m_random(random)
     {
     }
     Interpreter(const Interpreter &rhs) = delete;
@@ -78,6 +79,7 @@ private:
     std::vector<Complex> m_result{1};
     Dictionary m_symbols;
     std::map<std::string, std::string> m_functions;
+    std::mt19937 *m_random{};
 };
 
 void unsupported_node(std::string_view name)
@@ -187,6 +189,15 @@ void Interpreter::visit(const FunctionCallNode &node)
 {
     node.arg()->visit(*this);
     const std::string name{select_function(node.name(), m_functions)};
+    if (name == "srand")
+    {
+        if (m_random != nullptr)
+        {
+            m_random->seed(static_cast<std::mt19937::result_type>(back().re));
+        }
+        back() = {};
+        return;
+    }
     if (name == "sqr")
     {
         const Complex arg{back()};
@@ -331,7 +342,13 @@ Complex interpret(const std::shared_ptr<Node> &expr, Dictionary &symbols)
 Complex interpret(
     const std::shared_ptr<Node> &expr, Dictionary &symbols, const std::map<std::string, std::string> &functions)
 {
-    Interpreter interp(symbols, functions);
+    return interpret(expr, symbols, functions, nullptr);
+}
+
+Complex interpret(const std::shared_ptr<Node> &expr, Dictionary &symbols,
+    const std::map<std::string, std::string> &functions, std::mt19937 *random)
+{
+    Interpreter interp(symbols, functions, random);
     expr->visit(interp);
     symbols = interp.symbols();
     return interp.result();

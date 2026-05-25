@@ -8,6 +8,7 @@
 
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 
 namespace formula::ast
@@ -20,5 +21,7 @@ using Dictionary = std::map<std::string, Complex>;
 Complex interpret(const std::shared_ptr<Node> &expr, Dictionary &symbols);
 Complex interpret(
     const std::shared_ptr<Node> &expr, Dictionary &symbols, const std::map<std::string, std::string> &functions);
+Complex interpret(const std::shared_ptr<Node> &expr, Dictionary &symbols,
+    const std::map<std::string, std::string> &functions, std::mt19937 *random);
 
 } // namespace formula::ast

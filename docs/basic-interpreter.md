@@ -32,25 +32,18 @@ and predefined variables.
   returning the square.
 - `ismand` defaults to true, represented as `(1, 0)`.
 - `lastsqr` defaults to `(0, 0)`.
-- `rand` defaults to `(0, 0)` until per-formula random state is implemented.
+- `rand` defaults to `(0, 0)` before the first iteration. It advances once
+  per iteration section execution to a complex value with both components in
+  the range `[0, 1)`. `srand()` resets the per-formula random sequence and
+  returns `(0, 0)`.
+- The client owns the initial random seed. The runtime uses a stable seed of
+  zero until the client calls `set_random_seed` or the formula calls `srand()`.
 - `fn1`, `fn2`, `fn3`, and `fn4` default to `sin`, `sqr`, `sinh`, and `cosh`,
   matching the Id engine defaults. They can be bound by the client to supported
   BASIC builtin functions. Selector names and target names are matched
   case-insensitively and stored in lowercase.
 
 ## Gaps
-
-### `rand` And `srand`
-
-`rand` should be a complex random value whose real and imaginary parts are in
-the range `[0, 1)`. It should change each iteration. `srand()` should seed the
-random sequence.
-
-The current implementation seeds the C library RNG in `srand()`, but `rand`
-is only an initialized symbol value. It is not generated, advanced, or tied to
-the seeded state.
-
-The interpreter should use per-formula random state, not global C RNG state.
 
 ### Predefined Runtime Inputs
 
@@ -68,7 +61,8 @@ Some predefined variables are supplied by the rendering client:
 
 The existing `set_value` API can bind these values, but the interpreter does
 not make the runtime contract explicit. The plan should document and test the
-client-supplied values that must be present for complete image rendering.
+client-supplied values and random seed that must be present for complete,
+deterministically reproducible image rendering.
 
 `ismand` has a documented default of true and is initialized unless the client
 overrides it.
@@ -85,23 +79,16 @@ overrides it.
 
 ## Implementation Slices
 
-### 1. Add Per-Formula Random State
-
-- Replace `srand()` global C RNG seeding with per-formula seed state.
-- Make `srand(seed)` reset that state and return the documented BASIC value
-  shape.
-- Make `rand` read from per-formula random state.
-- Advance `rand` once per iteration section execution.
-- Add deterministic tests that seed with `srand()` and verify repeatability.
-
-### 2. Document Runtime Input Contract
+### 1. Document Runtime Input Contract
 
 - Document which predefined variables are supplied by the client.
 - Keep `set_value` as the binding mechanism for complex predefined values.
+- Keep `set_random_seed` as the binding mechanism for deterministic random
+  state.
 - Keep the existing round-trip tests for client-supplied predefined values
   passing.
 
-### 3. Keep JIT And GLSL In Sync
+### 2. Keep JIT And GLSL In Sync
 
 - Mirror each corrected BASIC interpreter semantic in the JIT compiler.
 - Keep GLSL-specific work in `glsl-emitter.md`.

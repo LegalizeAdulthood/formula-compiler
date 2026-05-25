@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cctype>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <utility>
 
@@ -77,6 +78,11 @@ public:
         }
         return "ident";
     }
+    void set_random_seed(std::uint32_t seed) override
+    {
+        m_random.seed(seed);
+        m_state.symbols["rand"] = {0.0, 0.0};
+    }
     const Expr &get_section(Section section) const override;
 
     Complex interpret(Section part) override;
@@ -88,9 +94,11 @@ private:
 
     CompileError init_code_holder(asmjit::CodeHolder &code);
     CompileError compile_part(asmjit::x86::Compiler &comp, Expr node, asmjit::Label &label);
+    void advance_random();
 
     EmitterState m_state;
     FormulaSectionsPtr m_ast;
+    std::mt19937 m_random;
     Function *m_per_image{};
     Function *m_initialize{};
     Function *m_iterate{};
@@ -102,7 +110,8 @@ private:
 };
 
 ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
-    m_ast(std::move(ast))
+    m_ast(std::move(ast)),
+    m_random(0U)
 {
     m_state.symbols["e"] = {std::exp(1.0), 0.0};
     m_state.symbols["pi"] = {std::atan2(0.0, -1.0), 0.0};
@@ -114,6 +123,12 @@ ParsedFormula::ParsedFormula(FormulaSectionsPtr ast) :
     m_state.functions["fn2"] = "sqr";
     m_state.functions["fn3"] = "sinh";
     m_state.functions["fn4"] = "cosh";
+}
+
+void ParsedFormula::advance_random()
+{
+    std::uniform_real_distribution<double> distribution{0.0, 1.0};
+    m_state.symbols["rand"] = {distribution(m_random), distribution(m_random)};
 }
 
 const Expr &ParsedFormula::get_section(Section section) const
@@ -153,17 +168,19 @@ Complex ParsedFormula::interpret(Section part)
     switch (part)
     {
     case Section::PER_IMAGE:
-        return ast::interpret(m_ast->per_image, m_state.symbols, m_state.functions);
+        return ast::interpret(m_ast->per_image, m_state.symbols, m_state.functions, &m_random);
     case Section::INITIALIZE:
-        return ast::interpret(m_ast->initialize, m_state.symbols, m_state.functions);
+        return ast::interpret(m_ast->initialize, m_state.symbols, m_state.functions, &m_random);
     case Section::ITERATE:
-        return ast::interpret(m_ast->iterate, m_state.symbols, m_state.functions);
+        advance_random();
+        return ast::interpret(m_ast->iterate, m_state.symbols, m_state.functions, &m_random);
     case Section::BAILOUT:
-        return ast::interpret(m_ast->bailout, m_state.symbols, m_state.functions);
+        return ast::interpret(m_ast->bailout, m_state.symbols, m_state.functions, &m_random);
     case Section::PERTURB_INITIALIZE:
-        return ast::interpret(m_ast->perturb_initialize, m_state.symbols, m_state.functions);
+        return ast::interpret(m_ast->perturb_initialize, m_state.symbols, m_state.functions, &m_random);
     case Section::PERTURB_ITERATE:
-        return ast::interpret(m_ast->perturb_iterate, m_state.symbols, m_state.functions);
+        advance_random();
+        return ast::interpret(m_ast->perturb_iterate, m_state.symbols, m_state.functions, &m_random);
     }
     throw std::runtime_error("Invalid part for interpreter");
 }
