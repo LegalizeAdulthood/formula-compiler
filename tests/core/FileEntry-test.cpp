@@ -4,8 +4,12 @@
 //
 #include <formula/core/FileEntry.h>
 
+#include <formula/test/test_data.h>
+
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -175,6 +179,31 @@ TEST(TestFileEntry, recordsTrimmedHeaderAndNameRanges)
     EXPECT_EQ(29U, entries[0].body_range.begin.column);
     EXPECT_EQ(4U, entries[0].body_range.end.line);
     EXPECT_EQ(1U, entries[0].body_range.end.column);
+}
+
+TEST(TestFileEntry, parsesIdFormulaCorpus)
+{
+    const std::filesystem::path path{std::filesystem::path{std::string{TEST_DATA}} / "id.frm"};
+    std::ifstream input{path};
+    ASSERT_TRUE(input);
+
+    const std::vector<FileEntry> entries{load_file_entries(input, path.string())};
+
+    ASSERT_EQ(227U, entries.size());
+    EXPECT_EQ("comment", entries.front().name);
+    EXPECT_EQ("Newton_real", entries.back().name);
+    std::size_t formula_count{};
+    for (const FileEntry &entry : entries)
+    {
+        if (!entry.name.empty() && entry.name != "comment")
+        {
+            ++formula_count;
+        }
+        EXPECT_FALSE(entry.body.empty());
+        EXPECT_LE(entry.source_range.begin.line, entry.source_range.end.line);
+        EXPECT_LE(entry.body_range.begin.line, entry.body_range.end.line);
+    }
+    EXPECT_EQ(194U, formula_count);
 }
 
 } // namespace formula::test

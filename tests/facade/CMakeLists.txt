@@ -8,7 +8,6 @@ target_folder(generate-formula-data "Tests/Tools")
 
 set(FORMULA_DATA_H "${CMAKE_CURRENT_BINARY_DIR}/formula-data.h")
 set(FORMULA_DATA_CPP "${CMAKE_CURRENT_BINARY_DIR}/formula-data.cpp")
-set(ID_FRM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/id.frm")
 
 add_custom_command(
     OUTPUT "${FORMULA_DATA_H}" "${FORMULA_DATA_CPP}"

@@ -123,7 +123,7 @@ Do not add diagnostics in the first pass unless an existing caller requires
 them.
 
 ## Implementation Slices
-1. Run corpus-oriented tests and `cmake --workflow rt-default`.
+All planned implementation slices are complete.
 
 ## Non-Goals
 - Do not normalize line endings.
