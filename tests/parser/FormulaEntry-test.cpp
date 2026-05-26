@@ -1657,7 +1657,7 @@ z=c:z=z*z+c,|z|>4})entry"};
     EXPECT_EQ("Mandelbrot", entries[0].file_entry.name);
     EXPECT_EQ("XAXIS", entries[0].file_entry.paren_value);
     EXPECT_EQ("float=y", entries[0].file_entry.bracket_value);
-    EXPECT_EQ("  ; comment here\n"
+    EXPECT_EQ("  \n"
               "z=c:z=z*z+c,|z|>4",
         entries[0].file_entry.body);
 }

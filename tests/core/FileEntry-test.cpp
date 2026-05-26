@@ -92,6 +92,40 @@ TEST(TestFileEntry, ignoresCloseBraceInQuotedStrings)
     EXPECT_EQ(" title=\"not } done\" value=1 ", entries[0].body);
 }
 
+TEST(TestFileEntry, preparesBodyByRemovingCommentsOutsideStrings)
+{
+    const std::string input{"Name { a=1 ; comment\r\n"
+                            "b=\"; keep\" ; removed\n"
+                            "c=2 }"};
+
+    const std::vector<FileEntry> entries{load_file_entries(input)};
+
+    ASSERT_EQ(1U, entries.size());
+    EXPECT_EQ(" a=1 \r\n"
+              "b=\"; keep\" \n"
+              "c=2 ",
+        entries[0].body);
+}
+
+TEST(TestFileEntry, preparesBodyByJoiningStrictContinuations)
+{
+    const std::string input{"Name { a=\\\r\n"
+                            "  b\n"
+                            "c=\\  \n"
+                            " d\r"
+                            "e=\\\n"
+                            "\tf }"};
+
+    const std::vector<FileEntry> entries{load_file_entries(input)};
+
+    ASSERT_EQ(1U, entries.size());
+    EXPECT_EQ(" a=b\n"
+              "c=\\  \n"
+              " d\r"
+              "e=f ",
+        entries[0].body);
+}
+
 TEST(TestFileEntry, recordsSourceRanges)
 {
     std::istringstream input{"\n"

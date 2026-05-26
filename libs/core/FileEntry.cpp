@@ -60,14 +60,12 @@ private:
 
         advance();
         result.body_range.begin = m_location;
-        const size_t body_start{m_position};
-        const SourceLocation body_end{scan_body()};
+        const SourceLocation body_end{scan_body(result.body)};
         if (at_end())
         {
             return std::nullopt;
         }
 
-        result.body = m_text.substr(body_start, m_position - body_start);
         result.body_range.end = body_end;
         advance();
         result.source_range.end = m_location;
@@ -238,7 +236,7 @@ private:
         return position;
     }
 
-    SourceLocation scan_body()
+    SourceLocation scan_body(std::string &body)
     {
         while (!at_end())
         {
@@ -247,39 +245,76 @@ private:
                 skip_comment();
                 continue;
             }
+            if (current_char() == '\\' && is_line_ending_at(m_position + 1))
+            {
+                advance();
+                advance();
+                skip_horizontal_whitespace();
+                continue;
+            }
             if (current_char() == '"')
             {
-                skip_string();
+                append_string(body);
                 continue;
             }
             if (current_char() == '}')
             {
                 return m_location;
             }
-            advance();
+            append_current_char(body);
         }
         return m_location;
     }
 
-    void skip_string()
+    void append_string(std::string &body)
     {
-        advance();
+        append_current_char(body);
         while (!at_end())
         {
             if (current_char() == '\\')
             {
-                advance();
+                append_current_char(body);
                 if (!at_end())
                 {
-                    advance();
+                    append_current_char(body);
                 }
                 continue;
             }
             if (current_char() == '"')
             {
-                advance();
+                append_current_char(body);
                 return;
             }
+            append_current_char(body);
+        }
+    }
+
+    void append_current_char(std::string &body)
+    {
+        if (current_char() == '\r')
+        {
+            body.push_back('\r');
+            if (m_position + 1 < m_text.size() && m_text[m_position + 1] == '\n')
+            {
+                body.push_back('\n');
+            }
+            advance();
+            return;
+        }
+
+        body.push_back(current_char());
+        advance();
+    }
+
+    bool is_line_ending_at(std::size_t position) const
+    {
+        return position < m_text.size() && (m_text[position] == '\r' || m_text[position] == '\n');
+    }
+
+    void skip_horizontal_whitespace()
+    {
+        while (!at_end() && (current_char() == ' ' || current_char() == '\t'))
+        {
             advance();
         }
     }
