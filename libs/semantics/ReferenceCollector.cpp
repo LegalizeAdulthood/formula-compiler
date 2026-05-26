@@ -4,9 +4,9 @@
 //
 #include <formula/semantics/ReferenceCollector.h>
 
+#include <formula/core/Visitor.h>
 #include <formula/parser/ParseOptions.h>
 #include <formula/parser/Parser.h>
-#include <formula/core/Visitor.h>
 
 #include <algorithm>
 #include <cctype>
@@ -59,196 +59,221 @@ public:
         return m_references;
     }
 
-    void collect_parameter_names(const ast::Expr &expr)
-    {
-        m_collecting_parameter_names = true;
-        visit_expr(expr);
-        m_collecting_parameter_names = false;
-    }
-
-    void visit(const ast::AssignmentNode &node) override
-    {
-        visit_expr(node.target());
-        visit_expr(node.expression());
-    }
-
-    void visit(const ast::BinaryOpNode &node) override
-    {
-        visit_expr(node.left());
-        visit_expr(node.right());
-    }
-
-    void visit(const ast::DeclarationNode &node) override
-    {
-        add_reference(FormulaReferenceKind::DECLARATION, node.type());
-        for (const ast::Expr &dimension : node.dimensions())
-        {
-            visit_expr(dimension);
-        }
-        visit_expr(node.initializer());
-    }
-
-    void visit(const ast::FunctionCallNode &node) override
-    {
-        if (node.has_target())
-        {
-            add_member_reference(node.target());
-            visit_expr(node.target());
-        }
-        for (const ast::Expr &arg : node.args())
-        {
-            visit_expr(arg);
-        }
-    }
-
-    void visit(const ast::FunctionBlockNode &node) override
-    {
-        add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.type());
-        visit_expr(node.block());
-    }
-
-    void visit(const ast::HeadingBlockNode &node) override
-    {
-        visit_expr(node.block());
-    }
-
-    void visit(const ast::FunctionDeclNode &node) override
-    {
-        add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.return_type());
-        for (const ast::FunctionArgument &arg : node.args())
-        {
-            add_reference(FormulaReferenceKind::FUNCTION_ARGUMENT, arg.type);
-        }
-        visit_expr(node.body());
-    }
-
-    void visit(const ast::IfStatementNode &node) override
-    {
-        visit_expr(node.condition());
-        if (node.has_then_block())
-        {
-            visit_expr(node.then_block());
-        }
-        if (node.has_else_block())
-        {
-            visit_expr(node.else_block());
-        }
-    }
-
-    void visit(const ast::IndexNode &node) override
-    {
-        visit_expr(node.target());
-        for (const ast::Expr &index : node.indices())
-        {
-            visit_expr(index);
-        }
-    }
-
-    void visit(const ast::MemberAccessNode &node) override
-    {
-        add_member_reference(node.target());
-        visit_expr(node.target());
-    }
-
-    void visit(const ast::NewNode &node) override
-    {
-        if ((node.type().empty() || node.type().front() != '@') && !is_parameter_reference(node.type()))
-        {
-            add_reference(FormulaReferenceKind::NEW_OBJECT, node.type());
-        }
-        for (const ast::Expr &arg : node.args())
-        {
-            visit_expr(arg);
-        }
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        m_parameter_names.push_back(node.name());
-        add_reference(FormulaReferenceKind::PARAM_BLOCK, node.type());
-        visit_expr(node.block());
-    }
-
-    void visit(const ast::RepeatUntilNode &node) override
-    {
-        visit_expr(node.body());
-        visit_expr(node.condition());
-    }
-
-    void visit(const ast::ReturnNode &node) override
-    {
-        visit_expr(node.expression());
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (node.key() == "default")
-        {
-            if (const auto *default_class = std::get_if<ast::EnumName>(&node.value()))
-            {
-                add_reference(FormulaReferenceKind::PARAM_DEFAULT, default_class->name);
-            }
-        }
-        if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
-        {
-            visit_expr(*expr);
-        }
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            visit_expr(statement);
-        }
-    }
-
-    void visit(const ast::UnaryOpNode &node) override
-    {
-        visit_expr(node.operand());
-    }
-
-    void visit(const ast::WhileNode &node) override
-    {
-        visit_expr(node.condition());
-        visit_expr(node.body());
-    }
+    void collect_parameter_names(const ast::Expr &expr);
+    void visit(const ast::AssignmentNode &node) override;
+    void visit(const ast::BinaryOpNode &node) override;
+    void visit(const ast::DeclarationNode &node) override;
+    void visit(const ast::FunctionCallNode &node) override;
+    void visit(const ast::FunctionBlockNode &node) override;
+    void visit(const ast::HeadingBlockNode &node) override;
+    void visit(const ast::FunctionDeclNode &node) override;
+    void visit(const ast::IfStatementNode &node) override;
+    void visit(const ast::IndexNode &node) override;
+    void visit(const ast::MemberAccessNode &node) override;
+    void visit(const ast::NewNode &node) override;
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::RepeatUntilNode &node) override;
+    void visit(const ast::ReturnNode &node) override;
+    void visit(const ast::SettingNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
+    void visit(const ast::UnaryOpNode &node) override;
+    void visit(const ast::WhileNode &node) override;
 
 private:
-    void add_reference(FormulaReferenceKind kind, std::string_view type)
-    {
-        if (!m_collecting_parameter_names && is_class_reference(type))
-        {
-            m_references.push_back(FormulaReference{kind, std::string{type}, {}});
-        }
-    }
-
-    void add_member_reference(const ast::Expr &expr)
-    {
-        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get());
-            identifier && is_potential_class_identifier(identifier->name()))
-        {
-            add_reference(FormulaReferenceKind::CLASS_MEMBER, identifier->name());
-        }
-    }
-
-    bool is_parameter_reference(std::string_view name) const
-    {
-        return std::find(m_parameter_names.begin(), m_parameter_names.end(), name) != m_parameter_names.end();
-    }
-
-    void visit_expr(const ast::Expr &expr)
-    {
-        if (expr)
-        {
-            expr->visit(*this);
-        }
-    }
+    void add_reference(FormulaReferenceKind kind, std::string_view type);
+    void add_member_reference(const ast::Expr &expr);
+    bool is_parameter_reference(std::string_view name) const;
+    void visit_expr(const ast::Expr &expr);
 
     std::vector<FormulaReference> m_references;
     std::vector<std::string> m_parameter_names;
     bool m_collecting_parameter_names{};
 };
+
+void ReferenceCollector::collect_parameter_names(const ast::Expr &expr)
+{
+    m_collecting_parameter_names = true;
+    visit_expr(expr);
+    m_collecting_parameter_names = false;
+}
+
+void ReferenceCollector::visit(const ast::AssignmentNode &node)
+{
+    visit_expr(node.target());
+    visit_expr(node.expression());
+}
+
+void ReferenceCollector::visit(const ast::BinaryOpNode &node)
+{
+    visit_expr(node.left());
+    visit_expr(node.right());
+}
+
+void ReferenceCollector::visit(const ast::DeclarationNode &node)
+{
+    add_reference(FormulaReferenceKind::DECLARATION, node.type());
+    for (const ast::Expr &dimension : node.dimensions())
+    {
+        visit_expr(dimension);
+    }
+    visit_expr(node.initializer());
+}
+
+void ReferenceCollector::visit(const ast::FunctionCallNode &node)
+{
+    if (node.has_target())
+    {
+        add_member_reference(node.target());
+        visit_expr(node.target());
+    }
+    for (const ast::Expr &arg : node.args())
+    {
+        visit_expr(arg);
+    }
+}
+
+void ReferenceCollector::visit(const ast::FunctionBlockNode &node)
+{
+    add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.type());
+    visit_expr(node.block());
+}
+
+void ReferenceCollector::visit(const ast::HeadingBlockNode &node)
+{
+    visit_expr(node.block());
+}
+
+void ReferenceCollector::visit(const ast::FunctionDeclNode &node)
+{
+    add_reference(FormulaReferenceKind::FUNCTION_RETURN, node.return_type());
+    for (const ast::FunctionArgument &arg : node.args())
+    {
+        add_reference(FormulaReferenceKind::FUNCTION_ARGUMENT, arg.type);
+    }
+    visit_expr(node.body());
+}
+
+void ReferenceCollector::visit(const ast::IfStatementNode &node)
+{
+    visit_expr(node.condition());
+    if (node.has_then_block())
+    {
+        visit_expr(node.then_block());
+    }
+    if (node.has_else_block())
+    {
+        visit_expr(node.else_block());
+    }
+}
+
+void ReferenceCollector::visit(const ast::IndexNode &node)
+{
+    visit_expr(node.target());
+    for (const ast::Expr &index : node.indices())
+    {
+        visit_expr(index);
+    }
+}
+
+void ReferenceCollector::visit(const ast::MemberAccessNode &node)
+{
+    add_member_reference(node.target());
+    visit_expr(node.target());
+}
+
+void ReferenceCollector::visit(const ast::NewNode &node)
+{
+    if ((node.type().empty() || node.type().front() != '@') && !is_parameter_reference(node.type()))
+    {
+        add_reference(FormulaReferenceKind::NEW_OBJECT, node.type());
+    }
+    for (const ast::Expr &arg : node.args())
+    {
+        visit_expr(arg);
+    }
+}
+
+void ReferenceCollector::visit(const ast::ParamBlockNode &node)
+{
+    m_parameter_names.push_back(node.name());
+    add_reference(FormulaReferenceKind::PARAM_BLOCK, node.type());
+    visit_expr(node.block());
+}
+
+void ReferenceCollector::visit(const ast::RepeatUntilNode &node)
+{
+    visit_expr(node.body());
+    visit_expr(node.condition());
+}
+
+void ReferenceCollector::visit(const ast::ReturnNode &node)
+{
+    visit_expr(node.expression());
+}
+
+void ReferenceCollector::visit(const ast::SettingNode &node)
+{
+    if (node.key() == "default")
+    {
+        if (const auto *default_class = std::get_if<ast::EnumName>(&node.value()))
+        {
+            add_reference(FormulaReferenceKind::PARAM_DEFAULT, default_class->name);
+        }
+    }
+    if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
+    {
+        visit_expr(*expr);
+    }
+}
+
+void ReferenceCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        visit_expr(statement);
+    }
+}
+
+void ReferenceCollector::visit(const ast::UnaryOpNode &node)
+{
+    visit_expr(node.operand());
+}
+
+void ReferenceCollector::visit(const ast::WhileNode &node)
+{
+    visit_expr(node.condition());
+    visit_expr(node.body());
+}
+
+void ReferenceCollector::add_reference(FormulaReferenceKind kind, std::string_view type)
+{
+    if (!m_collecting_parameter_names && is_class_reference(type))
+    {
+        m_references.push_back(FormulaReference{kind, std::string{type}, {}});
+    }
+}
+
+void ReferenceCollector::add_member_reference(const ast::Expr &expr)
+{
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get());
+        identifier && is_potential_class_identifier(identifier->name()))
+    {
+        add_reference(FormulaReferenceKind::CLASS_MEMBER, identifier->name());
+    }
+}
+
+bool ReferenceCollector::is_parameter_reference(std::string_view name) const
+{
+    return std::find(m_parameter_names.begin(), m_parameter_names.end(), name) != m_parameter_names.end();
+}
+
+void ReferenceCollector::visit_expr(const ast::Expr &expr)
+{
+    if (expr)
+    {
+        expr->visit(*this);
+    }
+}
 
 void collect_section_references(ReferenceCollector &collector, const ast::FormulaSections &ast)
 {
