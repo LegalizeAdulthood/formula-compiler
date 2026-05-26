@@ -4,6 +4,7 @@
 //
 #include <formula/parser/Parameter.h>
 
+#include <formula/core/Section.h>
 #include <formula/core/Visitor.h>
 #include <formula/parser/ParseOptions.h>
 #include <formula/parser/Parser.h>
@@ -432,6 +433,33 @@ std::string section_name(std::string_view line)
     line = trim(line);
     line.remove_suffix(1);
     return std::string{line};
+}
+
+std::optional<SourceLocation> first_non_space_location(std::string_view text, SourceLocation start)
+{
+    std::size_t line{1};
+    std::size_t column{1};
+    for (char ch : text)
+    {
+        if (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n')
+        {
+            return location_at(std::move(start), line, column);
+        }
+        if (ch == '\r')
+        {
+            ++line;
+            column = 1;
+            continue;
+        }
+        if (ch == '\n')
+        {
+            ++line;
+            column = 1;
+            continue;
+        }
+        ++column;
+    }
+    return std::nullopt;
 }
 
 bool is_known_layer_section(std::string_view name)
@@ -1077,21 +1105,22 @@ public:
 private:
     void parse_basic_line(BasicParameterEntry &entry, const ProcessedLine &processed);
 
-    void parse_extended_line(ExtendedParameterEntry &entry, const ProcessedLine &processed);
+    void parse_extended_section_body(const formula::Section &section);
 
-    void start_extended_section(
-        ExtendedParameterEntry &entry, std::string name, std::size_t line_number, std::size_t column);
+    void start_extended_section(ExtendedParameterEntry &entry, std::string name, SourceLocation location);
 
-    void start_layer_section(std::string name, std::size_t line_number, std::size_t column);
+    void start_layer_section(std::string name, SourceLocation location);
 
     void finish_layer(ExtendedParameterEntry &entry);
 
     void drop_section();
 
-    std::vector<Parameter> parse_assignments(std::string_view line, std::size_t line_number);
+    std::vector<Parameter> parse_assignments(std::string_view line, SourceLocation line_location);
 
     void error(ParseErrorCode code, std::size_t line, std::size_t column);
+    void error(ParseErrorCode code, SourceLocation location);
 
+    std::string_view m_input;
     std::vector<ProcessedLine> m_lines;
     SourceLocation m_source_location;
     std::optional<ParameterLayer> m_current_layer;
@@ -1104,6 +1133,7 @@ private:
 };
 
 BodyParser::BodyParser(std::string_view input, SourceLocation source_location) :
+    m_input(input),
     m_lines(preprocess_lines(input)),
     m_source_location(std::move(source_location))
 {
@@ -1123,9 +1153,23 @@ BasicParameterEntry BodyParser::parse_basic()
 ExtendedParameterEntry BodyParser::parse_extended()
 {
     ExtendedParameterEntry result;
-    for (const ProcessedLine &line : m_lines)
+    const std::vector<formula::Section> sections{formula::split_sections(m_input, m_source_location)};
+    if (!sections.empty())
     {
-        parse_extended_line(result, line);
+        const std::string_view leading_text{
+            m_input.substr(0, static_cast<std::size_t>(sections.front().name.data() - m_input.data()))};
+        if (const std::optional<SourceLocation> location{first_non_space_location(leading_text, m_source_location)})
+        {
+            error(ParseErrorCode::EXPECTED_SECTION_LABEL, *location);
+        }
+    }
+    for (const formula::Section &section : sections)
+    {
+        start_extended_section(result, std::string{section.name}, section.name_range.begin);
+        if (m_current_section != nullptr)
+        {
+            parse_extended_section_body(section);
+        }
     }
     if (!m_seen_fractal)
     {
@@ -1160,49 +1204,34 @@ void BodyParser::parse_basic_line(BasicParameterEntry &entry, const ProcessedLin
         return;
     }
 
-    std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
+    std::vector<Parameter> assignments{parse_assignments(line, location_at(m_source_location, processed.line, 1))};
     entry.assignments.insert(entry.assignments.end(), std::make_move_iterator(assignments.begin()),
         std::make_move_iterator(assignments.end()));
 }
 
-void BodyParser::parse_extended_line(ExtendedParameterEntry &entry, const ProcessedLine &processed)
+void BodyParser::parse_extended_section_body(const formula::Section &section)
 {
-    const std::string_view line{processed.text};
-    const std::string_view stripped{trim(line)};
-    if (stripped.empty())
+    for (const ProcessedLine &processed : preprocess_lines(section.body))
     {
-        return;
-    }
-
-    const std::size_t first_non_space{line.find_first_not_of(" \t")};
-    if (is_section_label(stripped))
-    {
-        start_extended_section(entry, section_name(stripped), processed.line, first_non_space + 1);
-        return;
-    }
-
-    if (m_current_section == nullptr)
-    {
-        if (!m_drop_current_section)
+        const std::string_view line{processed.text};
+        if (trim(line).empty())
         {
-            error(ParseErrorCode::EXPECTED_SECTION_LABEL, processed.line, first_non_space + 1);
+            continue;
         }
-        return;
+        std::vector<Parameter> assignments{
+            parse_assignments(line, location_at(section.body_range.begin, processed.line, 1))};
+        m_current_section->assignments.insert(m_current_section->assignments.end(),
+            std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
     }
-
-    std::vector<Parameter> assignments{parse_assignments(line, processed.line)};
-    m_current_section->assignments.insert(m_current_section->assignments.end(),
-        std::make_move_iterator(assignments.begin()), std::make_move_iterator(assignments.end()));
 }
 
-void BodyParser::start_extended_section(
-    ExtendedParameterEntry &entry, std::string name, std::size_t line_number, std::size_t column)
+void BodyParser::start_extended_section(ExtendedParameterEntry &entry, std::string name, SourceLocation location)
 {
     if (!m_seen_fractal)
     {
         if (name != "fractal")
         {
-            error(ParseErrorCode::EXPECTED_FRACTAL_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_FRACTAL_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1216,13 +1245,13 @@ void BodyParser::start_extended_section(
 
     if (name == "fractal")
     {
-        error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, line_number, column);
+        error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, std::move(location));
         drop_section();
         return;
     }
     if (!is_known_layer_section(name))
     {
-        error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, line_number, column);
+        error(ParseErrorCode::UNEXPECTED_PARAMETER_SECTION, std::move(location));
         drop_section();
         return;
     }
@@ -1230,7 +1259,7 @@ void BodyParser::start_extended_section(
     {
         if (m_seen_layer && !is_complete_layer_state(m_layer_state))
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, location);
         }
         finish_layer(entry);
         m_current_layer.emplace();
@@ -1243,18 +1272,18 @@ void BodyParser::start_extended_section(
     }
     if (!m_seen_layer)
     {
-        error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        error(ParseErrorCode::EXPECTED_LAYER_SECTION, std::move(location));
         drop_section();
         return;
     }
-    start_layer_section(std::move(name), line_number, column);
+    start_layer_section(std::move(name), std::move(location));
 }
 
-void BodyParser::start_layer_section(std::string name, std::size_t line_number, std::size_t column)
+void BodyParser::start_layer_section(std::string name, SourceLocation location)
 {
     if (!m_current_layer)
     {
-        error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        error(ParseErrorCode::EXPECTED_LAYER_SECTION, std::move(location));
         drop_section();
         return;
     }
@@ -1262,13 +1291,13 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
     switch (m_layer_state)
     {
     case LayerParseState::EXPECT_LAYER:
-        error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        error(ParseErrorCode::EXPECTED_LAYER_SECTION, std::move(location));
         drop_section();
         return;
     case LayerParseState::EXPECT_MAPPING:
         if (name != "mapping")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1287,7 +1316,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
         }
         if (name != "formula")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1299,7 +1328,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
     case LayerParseState::EXPECT_INSIDE:
         if (name != "inside")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1311,7 +1340,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
     case LayerParseState::EXPECT_OUTSIDE:
         if (name != "outside")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1323,7 +1352,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
     case LayerParseState::EXPECT_GRADIENT:
         if (name != "gradient")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1335,7 +1364,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
     case LayerParseState::EXPECT_OPACITY_OR_LAYER:
         if (name != "opacity" && name != "alpha")
         {
-            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, line_number, column);
+            error(ParseErrorCode::EXPECTED_PARAMETER_SECTION, std::move(location));
             drop_section();
             return;
         }
@@ -1346,7 +1375,7 @@ void BodyParser::start_layer_section(std::string name, std::size_t line_number, 
         m_layer_state = LayerParseState::EXPECT_LAYER_AFTER_OPACITY;
         return;
     case LayerParseState::EXPECT_LAYER_AFTER_OPACITY:
-        error(ParseErrorCode::EXPECTED_LAYER_SECTION, line_number, column);
+        error(ParseErrorCode::EXPECTED_LAYER_SECTION, std::move(location));
         drop_section();
         return;
     }
@@ -1367,7 +1396,7 @@ void BodyParser::drop_section()
     m_drop_current_section = true;
 }
 
-std::vector<Parameter> BodyParser::parse_assignments(std::string_view line, std::size_t line_number)
+std::vector<Parameter> BodyParser::parse_assignments(std::string_view line, SourceLocation line_location)
 {
     std::vector<Parameter> result;
     std::size_t pos{};
@@ -1387,20 +1416,20 @@ std::vector<Parameter> BodyParser::parse_assignments(std::string_view line, std:
         const std::size_t key_end{pos};
         if (assignment_start == key_end)
         {
-            error(ParseErrorCode::EXPECTED_ASSIGNMENT, line_number, assignment_start + 1);
+            error(ParseErrorCode::EXPECTED_ASSIGNMENT, location_at(line_location, 1, assignment_start + 1));
             break;
         }
 
         if (pos >= line.length() || line[pos] != '=')
         {
-            error(ParseErrorCode::EXPECTED_ASSIGNMENT, line_number, assignment_start + 1);
+            error(ParseErrorCode::EXPECTED_ASSIGNMENT, location_at(line_location, 1, assignment_start + 1));
             break;
         }
         ++pos;
         const std::size_t value_start{pos};
         if (value_start >= line.length() || is_space(line[value_start]))
         {
-            error(ParseErrorCode::EXPECTED_VALUE, line_number, value_start + 1);
+            error(ParseErrorCode::EXPECTED_VALUE, location_at(line_location, 1, value_start + 1));
             break;
         }
 
@@ -1412,7 +1441,7 @@ std::vector<Parameter> BodyParser::parse_assignments(std::string_view line, std:
             std::optional<ParsedValue> value{parse_quoted_value(line, value_start)};
             if (!value)
             {
-                error(ParseErrorCode::UNTERMINATED_QUOTED_STRING, line_number, value_start + 1);
+                error(ParseErrorCode::UNTERMINATED_QUOTED_STRING, location_at(line_location, 1, value_start + 1));
                 break;
             }
             assignment.value = std::move(value->text);
@@ -1435,6 +1464,11 @@ std::vector<Parameter> BodyParser::parse_assignments(std::string_view line, std:
 void BodyParser::error(ParseErrorCode code, std::size_t line, std::size_t column)
 {
     m_diagnostics.push_back(ParseDiagnostic{code, location_at(m_source_location, line, column)});
+}
+
+void BodyParser::error(ParseErrorCode code, SourceLocation location)
+{
+    m_diagnostics.push_back(ParseDiagnostic{code, std::move(location)});
 }
 
 } // namespace
