@@ -42,47 +42,11 @@ public:
     explicit ParsedFormula(FormulaSectionsPtr ast);
     ~ParsedFormula() override;
 
-    void set_value(std::string_view name, Complex value) override
-    {
-        m_state.symbols[std::string{name}] = value;
-    }
-    Complex get_value(std::string_view name) const override
-    {
-        if (auto it = m_state.symbols.find(std::string{name}); it != m_state.symbols.end())
-        {
-            return it->second;
-        }
-        return {};
-    }
-    bool set_function(std::string_view name, std::string_view function) override
-    {
-        const std::string selector{normalize_identifier(name)};
-        const std::string target{normalize_identifier(function)};
-        if (!is_function_selector(selector) || !is_selectable_function(target))
-        {
-            return false;
-        }
-        m_state.functions[selector] = target;
-        return true;
-    }
-    std::string get_function(std::string_view name) const override
-    {
-        const std::string selector{normalize_identifier(name)};
-        if (!is_function_selector(selector))
-        {
-            return {};
-        }
-        if (const auto it = m_state.functions.find(selector); it != m_state.functions.end())
-        {
-            return it->second;
-        }
-        return "ident";
-    }
-    void set_random_seed(std::uint32_t seed) override
-    {
-        m_random.seed(seed);
-        m_state.symbols["rand"] = {0.0, 0.0};
-    }
+    void set_value(std::string_view name, Complex value) override;
+    Complex get_value(std::string_view name) const override;
+    bool set_function(std::string_view name, std::string_view function) override;
+    std::string get_function(std::string_view name) const override;
+    void set_random_seed(std::uint32_t seed) override;
     const Expr &get_section(Section section) const override;
 
     Complex interpret(Section part) override;
@@ -134,6 +98,52 @@ ParsedFormula::~ParsedFormula()
     {
         m_runtime.release(m_module);
     }
+}
+
+void ParsedFormula::set_value(std::string_view name, Complex value)
+{
+    m_state.symbols[std::string{name}] = value;
+}
+
+Complex ParsedFormula::get_value(std::string_view name) const
+{
+    if (auto it = m_state.symbols.find(std::string{name}); it != m_state.symbols.end())
+    {
+        return it->second;
+    }
+    return {};
+}
+
+bool ParsedFormula::set_function(std::string_view name, std::string_view function)
+{
+    const std::string selector{normalize_identifier(name)};
+    const std::string target{normalize_identifier(function)};
+    if (!is_function_selector(selector) || !is_selectable_function(target))
+    {
+        return false;
+    }
+    m_state.functions[selector] = target;
+    return true;
+}
+
+std::string ParsedFormula::get_function(std::string_view name) const
+{
+    const std::string selector{normalize_identifier(name)};
+    if (!is_function_selector(selector))
+    {
+        return {};
+    }
+    if (const auto it = m_state.functions.find(selector); it != m_state.functions.end())
+    {
+        return it->second;
+    }
+    return "ident";
+}
+
+void ParsedFormula::set_random_seed(std::uint32_t seed)
+{
+    m_random.seed(seed);
+    m_state.symbols["rand"] = {0.0, 0.0};
 }
 
 void ParsedFormula::advance_random()
