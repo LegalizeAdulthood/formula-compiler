@@ -87,13 +87,11 @@ Extended parameter set parser:
 - Keep assignment parsing inside the parameter parser.
 
 ## Implementation Slices
-1. Refactor gradient parsing to use `split_sections`; keep existing behavior
-   and tests green.
-2. Refactor extended parameter set parsing to use `split_sections`; keep basic
+1. Refactor extended parameter set parsing to use `split_sections`; keep basic
    parameter parsing unchanged.
-3. Add regression tests that comments and continuations are still handled only
+2. Add regression tests that comments and continuations are still handled only
    by `FileEntry` before section splitting.
-4. Run `cmake --workflow rt-default`.
+3. Run `cmake --workflow rt-default`.
 
 ## Non-Goals
 - Do not parse formulas with this helper in this pass.

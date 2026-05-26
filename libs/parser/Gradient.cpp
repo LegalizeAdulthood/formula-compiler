@@ -4,6 +4,8 @@
 //
 #include <formula/parser/Gradient.h>
 
+#include <formula/core/Section.h>
+
 #include <cctype>
 #include <stdexcept>
 #include <string>
@@ -373,33 +375,32 @@ OpacitySection parse_opacity_section(Lexer &tokens, std::string_view value_key_n
 
 GradientEntry parse_gradient(const formula::FileEntry &file_entry)
 {
-    Lexer tokens{file_entry.body};
     GradientEntry entry;
     entry.name = file_entry.name;
     bool has_gradient{};
     bool has_opacity{};
 
-    while (tokens.peek().type != TokenType::END_OF_FILE)
+    for (const formula::Section &section : formula::split_sections(file_entry.body, file_entry.body_range.begin))
     {
-        Token header = expect_next(tokens, TokenType::COLON, "section header");
-        if (header.value == "gradient")
+        Lexer tokens{section.body};
+        if (section.name == "gradient")
         {
             entry.gradient = parse_gradient_section(tokens);
             has_gradient = true;
         }
-        else if (header.value == "opacity")
+        else if (section.name == "opacity")
         {
             entry.opacity = parse_opacity_section(tokens, "opacity");
             has_opacity = true;
         }
-        else if (header.value == "alpha")
+        else if (section.name == "alpha")
         {
             entry.opacity = parse_opacity_section(tokens, "alpha");
             has_opacity = true;
         }
         else
         {
-            throw std::runtime_error("unexpected section: " + header.value);
+            throw std::runtime_error("unexpected section: " + std::string{section.name});
         }
     }
 
