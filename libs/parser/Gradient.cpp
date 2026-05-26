@@ -43,7 +43,7 @@ public:
     Token peek();
 
 private:
-    void skip_whitespace_and_comments();
+    void skip_whitespace();
     Token scan_quoted_string();
     Token scan_integer();
     Token scan_identifier();
@@ -59,7 +59,7 @@ Lexer::Lexer(std::string_view text) :
 
 Token Lexer::next()
 {
-    skip_whitespace_and_comments();
+    skip_whitespace();
 
     if (m_pos >= m_text.size())
     {
@@ -107,7 +107,7 @@ Token Lexer::peek()
     return t;
 }
 
-void Lexer::skip_whitespace_and_comments()
+void Lexer::skip_whitespace()
 {
     while (m_pos < m_text.size())
     {
@@ -115,13 +115,6 @@ void Lexer::skip_whitespace_and_comments()
         if (std::isspace(static_cast<unsigned char>(ch)))
         {
             ++m_pos;
-        }
-        else if (ch == ';')
-        {
-            while (m_pos < m_text.size() && m_text[m_pos] != '\n')
-            {
-                ++m_pos;
-            }
         }
         else
         {

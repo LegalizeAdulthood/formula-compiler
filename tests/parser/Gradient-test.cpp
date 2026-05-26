@@ -111,6 +111,25 @@ opacity:
     EXPECT_EQ("Vivid; not a comment", entry.gradient.title);
 }
 
+TEST(TestGradientParser, usesPreparedFileEntryBody)
+{
+    const char *const ugr{R"ugr(
+Test {
+gradient:
+  title="Vivid; not a comment" ; comment
+  index=0 color=0
+opacity:
+  index=0 opacity=255
+}
+)ugr"};
+
+    GradientEntry entry = parse_one_gradient(ugr);
+
+    EXPECT_EQ("Vivid; not a comment", entry.gradient.title);
+    ASSERT_EQ(1U, entry.gradient.points.size());
+    EXPECT_TRUE(has_control_point(entry.gradient.points[0], 0, 0, 0, 0));
+}
+
 TEST(TestGradientParser, parsesGradientControlPoints)
 {
     const char *const ugr{R"ugr(
