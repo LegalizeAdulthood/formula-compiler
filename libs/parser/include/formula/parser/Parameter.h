@@ -6,8 +6,8 @@
 
 #include <formula/core/FileEntry.h>
 #include <formula/core/Node.h>
-#include <formula/parser/ParseOptions.h>
 #include <formula/core/SourceLocation.h>
+#include <formula/parser/ParseOptions.h>
 
 #include <cstddef>
 #include <functional>
@@ -139,8 +139,8 @@ struct ParameterReferenceSet
 using ParameterEntryResolver =
     std::function<std::optional<FileEntry>(std::string_view filename, std::string_view entry)>;
 
-BasicParameterEntry parse_basic_parameters(FileEntry file_entry);
-ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry);
+BasicParameterEntry parse_basic_parameters(const FileEntry &file_entry);
+ExtendedParameterEntry parse_extended_parameters(const FileEntry &file_entry);
 std::vector<ParameterReference> collect_parameter_references(const ExtendedParameterEntry &parameters);
 ParameterReferenceSet resolve_parameter_references(
     const ExtendedParameterEntry &parameters, const ParameterEntryResolver &resolver);

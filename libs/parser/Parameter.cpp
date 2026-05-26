@@ -1445,18 +1445,19 @@ std::string decompress_parameter_set(std::string_view body)
     return zlib_inflate(compressed);
 }
 
-BasicParameterEntry parse_basic_parameters(FileEntry file_entry)
+BasicParameterEntry parse_basic_parameters(const FileEntry &file_entry)
 {
     return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_basic();
 }
 
-ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry)
+ExtendedParameterEntry parse_extended_parameters(const FileEntry &file_entry)
 {
+    std::string body{file_entry.body};
     if (is_compressed_parameter_set(file_entry.body))
     {
         try
         {
-            file_entry.body = decompress_parameter_set(file_entry.body);
+            body = decompress_parameter_set(file_entry.body);
         }
         catch (const std::exception &)
         {
@@ -1466,7 +1467,7 @@ ExtendedParameterEntry parse_extended_parameters(FileEntry file_entry)
             return result;
         }
     }
-    return BodyParser{file_entry.body, file_entry.body_range.begin}.parse_extended();
+    return BodyParser{body, file_entry.body_range.begin}.parse_extended();
 }
 
 std::vector<ParameterReference> collect_parameter_references(const ExtendedParameterEntry &parameters)
