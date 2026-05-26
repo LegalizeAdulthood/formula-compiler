@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/parser/Lexer.h>
 
@@ -128,119 +128,9 @@ TEST(TestLexer, peekDoesNotAdvance)
     EXPECT_DOUBLE_EQ(3.14, std::get<double>(token2.value));
 }
 
-TEST(TestLexer, lineContinuationWithLF)
+TEST(TestLexer, unknownCharacterIsInvalid)
 {
-    Lexer lexer{"1\\\n"
-                "2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(12, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
-}
-
-TEST(TestLexer, lineContinuationWithCRLF)
-{
-    Lexer lexer{"1\\\r\n"
-                "2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(12, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
-}
-
-TEST(TestLexer, lineContinuationMultiple)
-{
-    Lexer lexer{"1\\\n"
-                "\\\n"
-                "2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(12, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
-}
-
-TEST(TestLexer, lineContinuationWithSpaces)
-{
-    Lexer lexer{"1 \\\n"
-                "  2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(1, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::INTEGER, token2.type);
-    EXPECT_EQ(2, std::get<int>(token2.value));
-}
-
-TEST(TestLexer, lineContinuationWithTrailingWhitespace)
-{
-    Lexer lexer{"1\\ \n"
-                "2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(12, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
-    ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
-    const LexicalDiagnostic &warning{lexer.get_warnings().front()};
-    EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(1U, warning.location.line);
-    EXPECT_EQ(3U, warning.location.column);
-}
-
-TEST(TestLexer, lineContinuationWithTrailingWhitespaceAndCRLF)
-{
-    Lexer lexer{"1\\ \r\n"
-                "2"};
-
-    const Token token1{lexer.get_token()};
-    const Token token2{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    EXPECT_EQ(12, std::get<int>(token1.value));
-    EXPECT_EQ(TokenType::END_OF_INPUT, token2.type);
-    ASSERT_FALSE(lexer.get_warnings().empty()) << "lexer should have produced a warning";
-    const LexicalDiagnostic &warning{lexer.get_warnings().front()};
-    EXPECT_EQ(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, warning.code);
-    EXPECT_EQ(1U, warning.location.line);
-    EXPECT_EQ(3U, warning.location.column);
-}
-
-TEST(TestLexer, multipleWarnings)
-{
-    Lexer lexer{"1\\ \n"
-                "2\\ \n"
-                "3\n"};
-
-    const Token token1{lexer.get_token()};
-
-    EXPECT_EQ(TokenType::INTEGER, token1.type);
-    const auto &warnings{lexer.get_warnings()};
-    ASSERT_EQ(2, warnings.size()) << "lexer should have produced two warnings";
-    EXPECT_TRUE(std::all_of(warnings.begin(), warnings.end(),
-        [](const LexicalDiagnostic &w) { return w.code == LexerErrorCode::CONTINUATION_WITH_WHITESPACE; }))
-        << "all warnings should be CONTINUATION_WITH_WHITESPACE";
-    EXPECT_EQ(1U, warnings[0].location.line) << "line of first warning";
-    EXPECT_EQ(3U, warnings[0].location.column) << "column of first warning";
-    EXPECT_EQ(2U, warnings[1].location.line) << "line of second warning";
-    EXPECT_EQ(3U, warnings[1].location.column) << "column of second warning";
-}
-
-TEST(TestLexer, backslashNotFollowedByNewlineIsInvalid)
-{
-    Lexer lexer{"1\\2"};
+    Lexer lexer{"1?2"};
 
     const Token token1{lexer.get_token()};
     const Token invalid{lexer.get_token()};
@@ -598,15 +488,6 @@ static TextTokenParam s_params[]{
     {"ident", "ident", TokenType::IDENT},                                     //
     {"one", "one", TokenType::ONE},                                           //
     {"zero", "zero", TokenType::ZERO},                                        //
-    {"commentAfter", "1;this is a comment", TokenType::INTEGER, 1, 1},        //
-    {"commentBefore",                                                         //
-        ";this is a comment\n"                                                //
-        "1",                                                                  //
-        TokenType::TERMINATOR, 19, 1},                                        //
-    {"continuation",                                                          //
-        "\\\n"                                                                //
-        "   1",                                                               //
-        TokenType::INTEGER, 4, 1},                                            //
     {"true", "true", TokenType::LIT_TRUE},                                    //
     {"false", "false", TokenType::LIT_FALSE},                                 //
     {"string", R"text("Some text.")text", TokenType::QUOTED_STRING},          //
@@ -624,10 +505,6 @@ static TextTokenParam s_params[]{
     {"publicSection", "public:", TokenType::PUBLIC, 1, 7},                    //
     {"protectedSection", "protected:", TokenType::PROTECTED, 1, 10},          //
     {"privateSection", "private:", TokenType::PRIVATE, 1, 8},                 //
-    {"tokenContinued",                                                        //
-        "re\\\n"                                                              //
-        "    al",                                                             //
-        TokenType::REAL},                                                     //
 };
 
 INSTANTIATE_TEST_SUITE_P(TestLexing, TokenRecognized, ValuesIn(s_params));

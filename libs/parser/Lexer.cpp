@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #include <formula/parser/Lexer.h>
 
@@ -318,9 +318,6 @@ Token Lexer::get_token()
         return {TokenType::COLON, start, 1};
     case ',':
         return {TokenType::COMMA, start, 1};
-    case '\\':
-        // Backslash here means it wasn't part of a line continuation
-        // (those are handled in skip_whitespace)
     default:
         // Unknown character
         return {TokenType::INVALID, start, 1};
@@ -346,21 +343,10 @@ void Lexer::skip_whitespace()
     while (m_position < m_input.length())
     {
         char ch = m_input[m_position];
-        // Skip only spaces and tabs and continuations, not newlines
+        // Skip only spaces and tabs, not newlines
         if (ch == ' ' || ch == '\t' || ch == '\r')
         {
             advance();
-        }
-        else if (ch == ';')
-        {
-            skip_comment();
-        }
-        else if (ch == '\\')
-        {
-            if (!skip_continuation())
-            {
-                break;
-            }
         }
         else
         {
@@ -368,62 +354,6 @@ void Lexer::skip_whitespace()
         }
     }
     m_source_location = position_to_location(m_position);
-}
-
-void Lexer::skip_comment()
-{
-    // Skip from semicolon to end of line, not including the newline
-    while (m_position < m_input.length())
-    {
-        char ch = m_input[m_position];
-        ++m_position;
-        if (ch == '\n')
-        {
-            --m_position;
-            break;
-        }
-    }
-}
-
-bool Lexer::skip_continuation()
-{
-    char ch = m_input[m_position];
-    while (ch == '\\') // continue until we can't
-    {
-        ++m_position;
-        const auto trailing{m_input.find_first_of(" \t", m_position)};
-        if (trailing == m_position)
-        {
-            warning(LexerErrorCode::CONTINUATION_WITH_WHITESPACE, position_to_location(trailing));
-            m_position = m_input.find_first_not_of(" \t", m_position);
-        }
-        // not eol
-        if (m_input[m_position] != '\n' && m_input[m_position] != '\r')
-        {
-            // Not a continuation
-            --m_position;
-            m_source_location = position_to_location(m_position);
-            return false;
-        }
-        // skip eol
-        while (m_position < m_input.length() && (m_input[m_position] == '\r' || m_input[m_position] == '\n'))
-        {
-            ++m_position;
-        }
-        const auto begin_line{m_position};
-        const auto next{m_input.find_first_not_of(" \t", begin_line)};
-        if (next == std::string::npos)
-        {
-            m_position = m_input.length();
-            m_source_location = position_to_location(m_position);
-            return true;
-        }
-
-        m_position = next;
-        m_source_location = position_to_location(m_position);
-        ch = m_input[m_position];
-    }
-    return true;
 }
 
 bool Lexer::is_number_start() const
@@ -563,14 +493,7 @@ void Lexer::advance()
 
     ++m_position;
     const char ch = m_input[m_position];
-    if (ch == '\\')
-    {
-        if (!skip_continuation())
-        {
-            error(LexerErrorCode::CONTINUATION_WITHOUT_NEWLINE, position_to_location(m_position));
-        }
-    }
-    else if (ch == '\n')
+    if (ch == '\n')
     {
         // Normal advance
         ++m_source_location.line;

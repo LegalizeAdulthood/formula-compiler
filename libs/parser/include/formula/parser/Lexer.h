@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Copyright 2025 Richard Thomson
+// Copyright 2025-2026 Richard Thomson
 //
 #pragma once
 
@@ -20,10 +20,8 @@ namespace formula::lexer
 enum class LexerErrorCode
 {
     NONE = 0,
-    CONTINUATION_WITH_WHITESPACE,
     INVALID_NUMBER,
     STRING_LITERAL_NOT_SUPPORTED,
-    CONTINUATION_WITHOUT_NEWLINE,
 };
 
 enum class TokenType
@@ -243,14 +241,6 @@ public:
     }
 
 private:
-    void warning(LexerErrorCode code)
-    {
-        m_warnings.push_back(LexicalDiagnostic{code, m_source_location});
-    }
-    void warning(LexerErrorCode code, SourceLocation loc)
-    {
-        m_warnings.push_back(LexicalDiagnostic{code, loc});
-    }
     void error(LexerErrorCode code)
     {
         m_errors.push_back(LexicalDiagnostic{code, m_source_location});
@@ -260,8 +250,6 @@ private:
         m_errors.push_back(LexicalDiagnostic{code, loc});
     }
     void skip_whitespace();
-    void skip_comment();
-    bool skip_continuation();
     Token lex_number();
     bool is_number_start() const;
     Token identifier();

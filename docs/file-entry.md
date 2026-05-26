@@ -123,19 +123,17 @@ Do not add diagnostics in the first pass unless an existing caller requires
 them.
 
 ## Implementation Slices
-1. Simplify formula lexer by removing comment and continuation skipping from
-   `Lexer`. Update tests that expected lexer-level continuation warnings.
-2. Simplify parameter parser by deleting local comment stripping and
+1. Simplify parameter parser by deleting local comment stripping and
    continuation joining. Keep assignment parsing and compressed body handling.
-3. Simplify gradient parser by deleting local comment skipping.
-4. Update `docs/extended-parameters.md`, `docs/l-system-parser.md`, and any
+2. Simplify gradient parser by deleting local comment skipping.
+3. Update `docs/extended-parameters.md`, `docs/l-system-parser.md`, and any
    parser docs that still describe downstream parsers owning comment or
    continuation handling.
-5. Standardize entry parser APIs so parameter, gradient, L-system, and future
+4. Standardize entry parser APIs so parameter, gradient, L-system, and future
     entry-based parsers accept `const FileEntry &` as their public input.
     Keep raw string parsing only for formula snippets, tests, and
     parser-internal helpers.
-6. Run corpus-oriented tests and `cmake --workflow rt-default`.
+5. Run corpus-oriented tests and `cmake --workflow rt-default`.
 
 ## Non-Goals
 - Do not normalize line endings.

@@ -192,9 +192,6 @@ static SimpleExpressionParam s_simple_expressions[]{
     {"logicalOr", "4==3||5==6", "binary_op:|| binary_op:== literal:4 literal:3 binary_op:== literal:5 literal:6"},  //
     {"comparisonLogicalPrecedence", "1+2<4&&5",                                                                     //
         "binary_op:&& binary_op:< binary_op:+ literal:1 literal:2 literal:4 literal:5"},                            //
-    {"ignoreComments", "3; z=6 oh toodlee doo", "literal:3"},                                                       //
-    {"ignoreCommentsLF", "3; z=6 oh toodlee doo\n", "literal:3"},                                                   //
-    {"ignoreCommentsCRLF", "3; z=6 oh toodlee doo\r\n", "literal:3"},                                               //
     {"reservedVariablePrefixToUserVariable", "e2=1", "assignment:e2 literal:1"},                                    //
     {"reservedFunctionPrefixToUserVariable", "sine=1", "assignment:sine literal:1"},                                //
     {"reservedKeywordPrefixToUserVariable", "if1=1", "assignment:if1 literal:1"},                                   //
@@ -365,11 +362,6 @@ static SimpleExpressionParam s_simple_expressions[]{
         "endif } "
         "endif } "
         "endif"},
-    {"backslashContinuesStatement",
-        "if(\\\n"
-        "0)\n"
-        "endif",
-        "if_statement:( literal:0 ) { } endif"},
     {"ifSequence",
         "if(0)\n"
         "1,2\n"
@@ -452,14 +444,14 @@ static MultiStatementParam s_multi_statements[]{
     {"assignmentStatements",                           //
         "z=3\n"                                        //
         "z=4\n"},                                      //
-    {"assignmentWithComments",                         //
-        "z=3; comment\n"                               //
-        "z=4; another comment\n"},                     //
+    {"assignmentWithNewlines",                         //
+        "z=3\n"                                        //
+        "z=4\n"},                                      //
     {"assignmentWithBlankLines",                       //
-        "z=3; comment\n"                               //
+        "z=3\n"                                        //
         "\r\n"                                         //
         "\n"                                           //
-        "z=4; another comment\n"},                     //
+        "z=4\n"},                                      //
     {"commaSeparatedStatements", "3,4"},               //
     {"commaSeparatedAssignmentStatements", "z=3,z=4"}, //
     {"mixedNewlineAndCommaSeparators",                 //
