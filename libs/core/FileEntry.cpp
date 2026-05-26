@@ -411,7 +411,7 @@ std::vector<FileEntry> load_file_entries(std::string_view text, std::string file
 std::vector<FileEntry> load_file_entries(std::istream &in, std::string filename)
 {
     std::string text{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
-    return load_file_entries(std::string_view{text}, std::move(filename));
+    return load_file_entries(text, std::move(filename));
 }
 
 } // namespace formula
