@@ -483,81 +483,91 @@ std::optional<ParsedValue> parse_quoted_value(std::string_view line, std::size_t
 class DefinitionCollector : public ast::NullVisitor
 {
 public:
-    explicit DefinitionCollector(ParameterDefinitions &definitions) :
-        m_definitions(definitions)
-    {
-    }
+    explicit DefinitionCollector(ParameterDefinitions &definitions);
 
-    void visit(const ast::FunctionBlockNode &node) override
-    {
-        m_definitions.functions.push_back(node.name());
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        ParameterDefinition definition;
-        definition.type = node.type();
-        definition.name = node.name();
-        collect_param_settings(definition, node.block());
-        m_definitions.params.push_back(std::move(definition));
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            visit_expr(statement);
-        }
-    }
+    void visit(const ast::FunctionBlockNode &node) override;
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
+    void visit(const ast::SettingNode &node) override;
 
 private:
-    void collect_param_settings(ParameterDefinition &definition, const ast::Expr &expr)
-    {
-        m_found_default = false;
-        m_current_definition = &definition;
-        visit_expr(expr);
-        m_current_definition = nullptr;
-        definition.has_default = m_found_default;
-    }
-
-    void visit_expr(const ast::Expr &expr)
-    {
-        if (expr)
-        {
-            expr->visit(*this);
-        }
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (node.key() == "default")
-        {
-            m_found_default = true;
-        }
-        else if (node.key() == "enum" && m_current_definition != nullptr)
-        {
-            if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
-            {
-                m_current_definition->enum_values = *values;
-            }
-        }
-        else if (node.key() == "param_forward")
-        {
-            const auto *values = std::get_if<std::vector<std::string>>(&node.value());
-            if (values != nullptr && values->size() >= 2)
-            {
-                ParameterForward forward;
-                forward.old_name = values->front();
-                forward.path.assign(std::next(values->begin()), values->end());
-                m_definitions.forwards.push_back(std::move(forward));
-            }
-        }
-    }
+    void collect_param_settings(ParameterDefinition &definition, const ast::Expr &expr);
+    void visit_expr(const ast::Expr &expr);
 
     ParameterDefinitions &m_definitions;
     ParameterDefinition *m_current_definition{};
     bool m_found_default{};
 };
+
+DefinitionCollector::DefinitionCollector(ParameterDefinitions &definitions) :
+    m_definitions(definitions)
+{
+}
+
+void DefinitionCollector::visit(const ast::FunctionBlockNode &node)
+{
+    m_definitions.functions.push_back(node.name());
+}
+
+void DefinitionCollector::visit(const ast::ParamBlockNode &node)
+{
+    ParameterDefinition definition;
+    definition.type = node.type();
+    definition.name = node.name();
+    collect_param_settings(definition, node.block());
+    m_definitions.params.push_back(std::move(definition));
+}
+
+void DefinitionCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        visit_expr(statement);
+    }
+}
+
+void DefinitionCollector::collect_param_settings(ParameterDefinition &definition, const ast::Expr &expr)
+{
+    m_found_default = false;
+    m_current_definition = &definition;
+    visit_expr(expr);
+    m_current_definition = nullptr;
+    definition.has_default = m_found_default;
+}
+
+void DefinitionCollector::visit_expr(const ast::Expr &expr)
+{
+    if (expr)
+    {
+        expr->visit(*this);
+    }
+}
+
+void DefinitionCollector::visit(const ast::SettingNode &node)
+{
+    if (node.key() == "default")
+    {
+        m_found_default = true;
+    }
+    else if (node.key() == "enum" && m_current_definition != nullptr)
+    {
+        if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+        {
+            m_current_definition->enum_values = *values;
+        }
+    }
+    else if (node.key() == "param_forward")
+    {
+        const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+        if (values != nullptr && values->size() >= 2)
+        {
+            ParameterForward forward;
+            forward.old_name = values->front();
+            forward.path.assign(std::next(values->begin()), values->end());
+            m_definitions.forwards.push_back(std::move(forward));
+        }
+    }
+}
 
 ParameterDefinitions collect_definitions(const ast::FormulaSections &ast)
 {
