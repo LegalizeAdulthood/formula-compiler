@@ -87,16 +87,13 @@ Extended parameter set parser:
 - Keep assignment parsing inside the parameter parser.
 
 ## Implementation Slices
-1. Add `Section` and `split_sections` to core with focused tests for label
-   recognition, body boundaries, leading text, colons inside body lines,
-   hyphenated names, CRLF preservation, and source ranges.
-2. Refactor gradient parsing to use `split_sections`; keep existing behavior
+1. Refactor gradient parsing to use `split_sections`; keep existing behavior
    and tests green.
-3. Refactor extended parameter set parsing to use `split_sections`; keep basic
+2. Refactor extended parameter set parsing to use `split_sections`; keep basic
    parameter parsing unchanged.
-4. Add regression tests that comments and continuations are still handled only
+3. Add regression tests that comments and continuations are still handled only
    by `FileEntry` before section splitting.
-5. Run `cmake --workflow rt-default`.
+4. Run `cmake --workflow rt-default`.
 
 ## Non-Goals
 - Do not parse formulas with this helper in this pass.

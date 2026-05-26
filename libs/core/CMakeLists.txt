@@ -13,6 +13,8 @@ add_library(formula-core
     include/formula/core/Node.h
     Node.cpp
     include/formula/core/NodeTyper.h
+    include/formula/core/Section.h
+    Section.cpp
     include/formula/core/SourceLocation.h
     include/formula/core/Value.h
     Value.cpp

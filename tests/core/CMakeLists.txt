@@ -4,6 +4,7 @@
 #
 add_library(test-formula-core OBJECT
     FileEntry-test.cpp
+    Section-test.cpp
     "${TEST_DATA_H}"
     Value-test.cpp
 )
