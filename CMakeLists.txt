@@ -59,6 +59,7 @@ misc_group_sources("Docs" FILES
     "docs/extended-parameter-interpreter.md"
     "docs/extended-parameters.md"
     "docs/extended-semantics.md"
+    "docs/file-entry.md"
     "docs/glsl-emitter.md"
     "docs/id.txt"
     "docs/semantic-analyzer.md")
