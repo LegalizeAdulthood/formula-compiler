@@ -4,9 +4,9 @@
 //
 #include <formula/parser/Parameter.h>
 
+#include <formula/core/Visitor.h>
 #include <formula/parser/ParseOptions.h>
 #include <formula/parser/Parser.h>
-#include <formula/core/Visitor.h>
 
 #include <zlib.h>
 
@@ -54,12 +54,6 @@ struct ProcessedLine
 {
     std::string text;
     std::size_t line{};
-};
-
-struct CommentStrippedLine
-{
-    std::string text;
-    bool in_quote{};
 };
 
 struct ParsedValue
@@ -140,12 +134,6 @@ std::string_view trim(std::string_view text)
     return text;
 }
 
-bool ends_with_continuation(std::string_view text)
-{
-    text = trim(text);
-    return !text.empty() && text.back() == '\\';
-}
-
 bool starts_with(std::string_view text, std::string_view prefix)
 {
     return text.size() >= prefix.size() && text.substr(0, prefix.size()) == prefix;
@@ -167,39 +155,6 @@ bool equals_ignore_case(std::string_view lhs, std::string_view rhs)
         }
     }
     return true;
-}
-
-CommentStrippedLine strip_comment(std::string_view line, bool in_quote)
-{
-    std::string result;
-    bool escaped{};
-    for (char ch : line)
-    {
-        if (escaped)
-        {
-            result.push_back(ch);
-            escaped = false;
-            continue;
-        }
-        if (ch == '\\' && in_quote)
-        {
-            result.push_back(ch);
-            escaped = true;
-            continue;
-        }
-        if (ch == '"')
-        {
-            in_quote = !in_quote;
-            result.push_back(ch);
-            continue;
-        }
-        if (ch == ';' && !in_quote)
-        {
-            break;
-        }
-        result.push_back(ch);
-    }
-    return {std::move(result), in_quote};
 }
 
 std::vector<std::string> split_physical_lines(std::string_view input);
@@ -322,8 +277,7 @@ std::string compressed_payload(std::string_view body)
     bool found_marker{};
     for (std::string_view line : lines)
     {
-        const CommentStrippedLine stripped{strip_comment(line, false)};
-        std::string_view text{trim(stripped.text)};
+        std::string_view text{trim(line)};
         if (!found_marker)
         {
             if (text.empty())
@@ -355,8 +309,7 @@ bool is_compressed_parameter_set(std::string_view body)
     const std::vector<std::string> lines{split_physical_lines(body)};
     for (std::string_view line : lines)
     {
-        const CommentStrippedLine stripped{strip_comment(line, false)};
-        const std::string_view text{trim(stripped.text)};
+        const std::string_view text{trim(line)};
         if (text.empty())
         {
             continue;
@@ -440,47 +393,11 @@ std::vector<std::string> split_physical_lines(std::string_view input)
 std::vector<ProcessedLine> preprocess_lines(std::string_view input)
 {
     std::vector<ProcessedLine> result;
-    std::string current;
-    std::size_t current_line{};
-    bool continuing{};
-    bool quote_continues{};
     const std::vector<std::string> physical_lines{split_physical_lines(input)};
-
     for (std::size_t i = 0; i < physical_lines.size(); ++i)
     {
-        if (!continuing)
-        {
-            current_line = i + 1;
-        }
-
-        CommentStrippedLine stripped{strip_comment(physical_lines[i], quote_continues)};
-        std::string piece{std::move(stripped.text)};
-        if (continuing)
-        {
-            piece.erase(0, piece.find_first_not_of(" \t"));
-        }
-        current.append(piece);
-
-        if (ends_with_continuation(current))
-        {
-            current.erase(current.find_last_not_of(" \t") + 1);
-            current.pop_back();
-            continuing = true;
-            quote_continues = stripped.in_quote;
-            continue;
-        }
-
-        result.push_back({std::move(current), current_line});
-        current.clear();
-        continuing = false;
-        quote_continues = false;
+        result.push_back({physical_lines[i], i + 1});
     }
-
-    if (!current.empty())
-    {
-        result.push_back({std::move(current), current_line});
-    }
-
     return result;
 }
 

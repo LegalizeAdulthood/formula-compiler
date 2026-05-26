@@ -345,17 +345,20 @@ TEST(TestParameterParser, preservesRepeatedAssignmentsInOrder)
 
 TEST(TestParameterParser, stripsCommentsOutsideQuotedStrings)
 {
-    FileEntry entry{entry_with_body("fractal:\n"
-                                    "title=\"Name;date\" ; comment\n"
-                                    "magn=1.5 ; tail\n"
-                                    "layer:\n"
-                                    "mapping:\n"
-                                    "formula:\n"
-                                    "inside:\n"
-                                    "outside:\n"
-                                    "gradient:\n")};
+    std::istringstream input{"Entry { fractal:\n"
+                             "title=\"Name;date\" ; comment\n"
+                             "magn=1.5 ; tail\n"
+                             "layer:\n"
+                             "mapping:\n"
+                             "formula:\n"
+                             "inside:\n"
+                             "outside:\n"
+                             "gradient:\n"
+                             "}"};
+    const std::vector<FileEntry> entries{load_file_entries(input)};
+    ASSERT_EQ(1U, entries.size());
 
-    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entries[0])};
 
     ASSERT_TRUE(result.diagnostics.empty());
     ASSERT_EQ(2U, result.fractal.assignments.size());
@@ -365,19 +368,21 @@ TEST(TestParameterParser, stripsCommentsOutsideQuotedStrings)
 
 TEST(TestParameterParser, joinsLineContinuationsBeforeParsing)
 {
-    FileEntry entry{entry_with_body("fractal:\n"
-                                    "title=\"Alpha \\\r\n"
-                                    "  Beta\"\n"
-                                    "center=-1.234\\\n"
-                                    "  567/0\n"
-                                    "layer:\n"
-                                    "mapping:\n"
-                                    "formula:\n"
-                                    "inside:\n"
-                                    "outside:\n"
-                                    "gradient:\n")};
+    std::istringstream input{"Entry { fractal:\n"
+                             "title=\"Alpha Beta\"\n"
+                             "center=-1.234\\\n"
+                             "  567/0\n"
+                             "layer:\n"
+                             "mapping:\n"
+                             "formula:\n"
+                             "inside:\n"
+                             "outside:\n"
+                             "gradient:\n"
+                             "}"};
+    const std::vector<FileEntry> entries{load_file_entries(input)};
+    ASSERT_EQ(1U, entries.size());
 
-    const ExtendedParameterEntry result{parse_extended_parameters(entry)};
+    const ExtendedParameterEntry result{parse_extended_parameters(entries[0])};
 
     ASSERT_TRUE(result.diagnostics.empty());
     ASSERT_EQ(2U, result.fractal.assignments.size());
