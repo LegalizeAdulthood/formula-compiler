@@ -62,6 +62,7 @@ misc_group_sources("Docs" FILES
     "docs/file-entry.md"
     "docs/glsl-emitter.md"
     "docs/id.txt"
+    "docs/l-system-parser.md"
     "docs/semantic-analyzer.md")
 misc_group_sources("VcPkg" FILES
     "vcpkg.json")
