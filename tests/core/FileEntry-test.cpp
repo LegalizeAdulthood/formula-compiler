@@ -112,4 +112,35 @@ TEST(TestFileEntry, recordsSourceRanges)
     EXPECT_EQ(2U, entries[0].source_range.end.column);
 }
 
+TEST(TestFileEntry, recordsTrimmedHeaderAndNameRanges)
+{
+    const std::string input{"\n"
+                            "  Entry (paren) [bracket]  {\n"
+                            "body\n"
+                            "}"};
+
+    const std::vector<FileEntry> entries{load_file_entries(input, "test.ufm")};
+
+    ASSERT_EQ(1U, entries.size());
+    EXPECT_EQ("Entry", entries[0].name);
+    EXPECT_EQ("paren", entries[0].paren_value);
+    EXPECT_EQ("bracket", entries[0].bracket_value);
+    EXPECT_EQ(2U, entries[0].source_range.begin.line);
+    EXPECT_EQ(3U, entries[0].source_range.begin.column);
+    EXPECT_EQ(4U, entries[0].source_range.end.line);
+    EXPECT_EQ(2U, entries[0].source_range.end.column);
+    EXPECT_EQ(2U, entries[0].header_range.begin.line);
+    EXPECT_EQ(3U, entries[0].header_range.begin.column);
+    EXPECT_EQ(2U, entries[0].header_range.end.line);
+    EXPECT_EQ(26U, entries[0].header_range.end.column);
+    EXPECT_EQ(2U, entries[0].name_range.begin.line);
+    EXPECT_EQ(3U, entries[0].name_range.begin.column);
+    EXPECT_EQ(2U, entries[0].name_range.end.line);
+    EXPECT_EQ(8U, entries[0].name_range.end.column);
+    EXPECT_EQ(2U, entries[0].body_range.begin.line);
+    EXPECT_EQ(29U, entries[0].body_range.begin.column);
+    EXPECT_EQ(4U, entries[0].body_range.end.line);
+    EXPECT_EQ(1U, entries[0].body_range.end.column);
+}
+
 } // namespace formula::test

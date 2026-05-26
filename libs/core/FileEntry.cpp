@@ -17,31 +17,11 @@ namespace formula
 namespace
 {
 
-void strip_leading(std::string &text)
-{
-    if (const auto first_non_space = text.find_first_not_of(" \t\r\n"); first_non_space != 0)
-    {
-        text.erase(0, first_non_space);
-    }
-}
-
-void strip_trailing(std::string &text)
-{
-    if (const auto last_non_space = text.find_last_not_of(" \t\r\n"); last_non_space != std::string::npos)
-    {
-        text.erase(last_non_space + 1);
-    }
-    else
-    {
-        text.clear();
-    }
-}
-
 class Scanner
 {
 public:
-    Scanner(std::string text, std::string filename) :
-        m_text(std::move(text))
+    Scanner(std::string_view text, std::string filename) :
+        m_text(text)
     {
         m_location.filename = std::move(filename);
     }
@@ -66,11 +46,12 @@ private:
         }
 
         FileEntry result;
-        result.header_range.begin = m_location;
         result.source_range.begin = m_location;
-        std::string header{scan_header()};
-        result.header_range.end = m_location;
-        parse_header(result, std::move(header));
+        const std::size_t header_begin_position{m_position};
+        const SourceLocation header_begin_location{m_location};
+        scan_header();
+        const std::size_t header_end_position{m_position};
+        parse_header(result, header_begin_position, header_begin_location, header_end_position);
 
         if (at_end())
         {
@@ -93,64 +74,168 @@ private:
         return result;
     }
 
-    std::string scan_header()
+    void scan_header()
     {
-        std::string result;
         while (!at_end() && current_char() != '{')
         {
             if (current_char() == ';')
             {
-                result.append(1, ' ');
                 skip_comment();
                 continue;
             }
-            result.append(1, current_char());
             advance();
         }
-        strip_leading(result);
-        strip_trailing(result);
+    }
+
+    void parse_header(FileEntry &entry, std::size_t header_begin_position, SourceLocation header_begin_location,
+        std::size_t header_end_position) const
+    {
+        const std::size_t first{trim_begin(header_begin_position, header_end_position)};
+        if (first == header_end_position)
+        {
+            entry.header_range = {m_location, m_location};
+            entry.name_range = entry.header_range;
+            return;
+        }
+
+        const std::size_t header_end{trim_end(first, header_end_position)};
+        entry.header_range = {location_at(header_begin_position, header_begin_location, first),
+            location_at(header_begin_position, header_begin_location, header_end)};
+        std::size_t name_end{header_end};
+        strip_trailing_bracket(first, name_end, entry.bracket_value);
+        strip_trailing_paren(first, name_end, entry.paren_value);
+        name_end = trim_end(first, name_end);
+        if (name_end <= first)
+        {
+            entry.name_range = {location_at(header_begin_position, header_begin_location, first),
+                location_at(header_begin_position, header_begin_location, first)};
+            return;
+        }
+
+        entry.name = m_text.substr(first, name_end - first);
+        entry.name_range = {location_at(header_begin_position, header_begin_location, first),
+            location_at(header_begin_position, header_begin_location, name_end)};
+    }
+
+    void strip_trailing_bracket(std::size_t begin, std::size_t &end, std::string &value) const
+    {
+        end = trim_end(begin, end);
+        if (end <= begin || m_text[end - 1] != ']')
+        {
+            return;
+        }
+        const std::size_t open_bracket{m_text.find_last_of('[', end - 1)};
+        if (open_bracket == std::string::npos || open_bracket < begin)
+        {
+            return;
+        }
+        value = m_text.substr(open_bracket + 1, end - open_bracket - 2);
+        end = open_bracket;
+    }
+
+    void strip_trailing_paren(std::size_t begin, std::size_t &end, std::string &value) const
+    {
+        end = trim_end(begin, end);
+        if (end <= begin || m_text[end - 1] != ')')
+        {
+            return;
+        }
+        const std::size_t open_paren{m_text.find_last_of('(', end - 1)};
+        if (open_paren == std::string::npos || open_paren < begin)
+        {
+            return;
+        }
+        value = m_text.substr(open_paren + 1, end - open_paren - 2);
+        end = open_paren;
+    }
+
+    std::size_t trim_begin(std::size_t begin, std::size_t end) const
+    {
+        while (begin < end)
+        {
+            if (m_text[begin] == ';')
+            {
+                begin = skip_comment(begin, end);
+                continue;
+            }
+            if (!is_space(m_text[begin]))
+            {
+                return begin;
+            }
+            begin = next_position(begin);
+        }
+        return begin;
+    }
+
+    std::size_t trim_end(std::size_t begin, std::size_t end) const
+    {
+        std::size_t last{begin};
+        std::size_t position{begin};
+        while (position < end)
+        {
+            if (m_text[position] == ';')
+            {
+                position = skip_comment(position, end);
+                continue;
+            }
+            const std::size_t next{next_position(position)};
+            if (!is_space(m_text[position]))
+            {
+                last = next;
+            }
+            position = next;
+        }
+        return last;
+    }
+
+    SourceLocation location_at(
+        std::size_t header_begin_position, SourceLocation header_begin_location, std::size_t position) const
+    {
+        SourceLocation result{header_begin_location};
+        std::size_t pos{header_begin_position};
+        while (pos < position && pos < m_text.size())
+        {
+            if (m_text[pos] == '\r')
+            {
+                ++pos;
+                if (pos < position && pos < m_text.size() && m_text[pos] == '\n')
+                {
+                    ++pos;
+                }
+                ++result.line;
+                result.column = 1;
+                continue;
+            }
+            if (m_text[pos] == '\n')
+            {
+                ++pos;
+                ++result.line;
+                result.column = 1;
+                continue;
+            }
+            ++pos;
+            ++result.column;
+        }
         return result;
     }
 
-    void parse_header(FileEntry &entry, std::string header) const
+    std::size_t next_position(std::size_t position) const
     {
-        strip_trailing_bracket(header, entry.bracket_value);
-        strip_trailing_paren(header, entry.paren_value);
-        strip_trailing(header);
-        entry.name = std::move(header);
-        entry.name_range = entry.header_range;
+        if (position < m_text.size() && m_text[position] == '\r' && position + 1 < m_text.size() &&
+            m_text[position + 1] == '\n')
+        {
+            return position + 2;
+        }
+        return position + 1;
     }
 
-    void strip_trailing_bracket(std::string &text, std::string &value) const
+    std::size_t skip_comment(std::size_t position, std::size_t end) const
     {
-        strip_trailing(text);
-        if (text.empty() || text.back() != ']')
+        while (position < end && m_text[position] != '\n' && m_text[position] != '\r')
         {
-            return;
+            ++position;
         }
-        const auto open_bracket{text.find_last_of('[')};
-        if (open_bracket == std::string::npos)
-        {
-            return;
-        }
-        value = text.substr(open_bracket + 1, text.length() - open_bracket - 2);
-        text.erase(open_bracket);
-    }
-
-    void strip_trailing_paren(std::string &text, std::string &value) const
-    {
-        strip_trailing(text);
-        if (text.empty() || text.back() != ')')
-        {
-            return;
-        }
-        const auto open_paren{text.find_last_of('(')};
-        if (open_paren == std::string::npos)
-        {
-            return;
-        }
-        value = text.substr(open_paren + 1, text.length() - open_paren - 2);
-        text.erase(open_paren);
+        return position;
     }
 
     SourceLocation scan_body()
@@ -275,7 +360,7 @@ private:
         ++m_location.column;
     }
 
-    std::string m_text;
+    std::string_view m_text;
     size_t m_position{};
     SourceLocation m_location;
 };
@@ -284,14 +369,14 @@ private:
 
 std::vector<FileEntry> load_file_entries(std::string_view text, std::string filename)
 {
-    Scanner scanner{std::string{text}, std::move(filename)};
+    Scanner scanner{text, std::move(filename)};
     return scanner.entries();
 }
 
 std::vector<FileEntry> load_file_entries(std::istream &in, std::string filename)
 {
     std::string text{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
-    return load_file_entries(text, std::move(filename));
+    return load_file_entries(std::string_view{text}, std::move(filename));
 }
 
 } // namespace formula
