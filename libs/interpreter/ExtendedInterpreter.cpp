@@ -306,83 +306,91 @@ struct RuntimeParameterMetadata
 class RuntimeParameterMetadataCollector : public ast::NullVisitor
 {
 public:
-    RuntimeParameterMetadata collect(const ast::Expr &node)
-    {
-        visit_node(node);
-        return std::move(m_metadata);
-    }
-
-    void visit(const ast::FunctionBlockNode &node) override
-    {
-        m_metadata.functions.push_back({node.type(), node.name(), {}, {}, false});
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        RuntimeParameterInfo param{node.type(), node.name(), {}, {}, false};
-        m_current_param = &param;
-        visit_node(node.block());
-        m_current_param = nullptr;
-        m_metadata.params.push_back(std::move(param));
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (node.key() == "default" && m_current_param != nullptr)
-        {
-            if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
-            {
-                m_current_param->default_selector = selector->name;
-            }
-            return;
-        }
-        if (node.key() == "enum" && m_current_param != nullptr)
-        {
-            if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
-            {
-                m_current_param->enum_values = *values;
-            }
-            return;
-        }
-        if (node.key() == "selectable" && m_current_param != nullptr)
-        {
-            if (const auto *selectable = std::get_if<bool>(&node.value()))
-            {
-                m_current_param->selectable = *selectable;
-            }
-            return;
-        }
-        if (node.key() != "param_forward")
-        {
-            return;
-        }
-        if (const auto *values = std::get_if<std::vector<std::string>>(&node.value());
-            values != nullptr && values->size() >= 2U)
-        {
-            m_metadata.forwards.push_back({values->front(), {std::next(values->begin()), values->end()}});
-        }
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            visit_node(statement);
-        }
-    }
+    RuntimeParameterMetadata collect(const ast::Expr &node);
+    void visit(const ast::FunctionBlockNode &node) override;
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::SettingNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
 
 private:
-    void visit_node(const ast::Expr &node)
-    {
-        if (node)
-        {
-            node->visit(*this);
-        }
-    }
+    void visit_node(const ast::Expr &node);
 
     RuntimeParameterMetadata m_metadata;
     RuntimeParameterInfo *m_current_param{};
 };
+
+RuntimeParameterMetadata RuntimeParameterMetadataCollector::collect(const ast::Expr &node)
+{
+    visit_node(node);
+    return std::move(m_metadata);
+}
+
+void RuntimeParameterMetadataCollector::visit(const ast::FunctionBlockNode &node)
+{
+    m_metadata.functions.push_back({node.type(), node.name(), {}, {}, false});
+}
+
+void RuntimeParameterMetadataCollector::visit(const ast::ParamBlockNode &node)
+{
+    RuntimeParameterInfo param{node.type(), node.name(), {}, {}, false};
+    m_current_param = &param;
+    visit_node(node.block());
+    m_current_param = nullptr;
+    m_metadata.params.push_back(std::move(param));
+}
+
+void RuntimeParameterMetadataCollector::visit(const ast::SettingNode &node)
+{
+    if (node.key() == "default" && m_current_param != nullptr)
+    {
+        if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
+        {
+            m_current_param->default_selector = selector->name;
+        }
+        return;
+    }
+    if (node.key() == "enum" && m_current_param != nullptr)
+    {
+        if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+        {
+            m_current_param->enum_values = *values;
+        }
+        return;
+    }
+    if (node.key() == "selectable" && m_current_param != nullptr)
+    {
+        if (const auto *selectable = std::get_if<bool>(&node.value()))
+        {
+            m_current_param->selectable = *selectable;
+        }
+        return;
+    }
+    if (node.key() != "param_forward")
+    {
+        return;
+    }
+    if (const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+        values != nullptr && values->size() >= 2U)
+    {
+        m_metadata.forwards.push_back({values->front(), {std::next(values->begin()), values->end()}});
+    }
+}
+
+void RuntimeParameterMetadataCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        visit_node(statement);
+    }
+}
+
+void RuntimeParameterMetadataCollector::visit_node(const ast::Expr &node)
+{
+    if (node)
+    {
+        node->visit(*this);
+    }
+}
 
 bool starts_with(std::string_view text, std::string_view prefix)
 {
