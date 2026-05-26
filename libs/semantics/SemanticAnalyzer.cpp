@@ -1301,1620 +1301,113 @@ void check_parameter_bindings(std::vector<SemanticDiagnostic> &diagnostics, cons
 class FormulaSymbolCollector : public ast::NullVisitor
 {
 public:
-    FormulaSymbolCollector(const BuiltinRegistry &builtins, const FormulaSemanticContext &context) :
-        m_builtins(builtins),
-        m_entry_kind(context.entry_kind)
-    {
-        for (const RetainedFormulaClass *klass : context.retained_classes)
-        {
-            if (klass)
-            {
-                m_class_names.insert(klass->reference.class_name);
-                m_class_bases.emplace(normalized_identifier(klass->reference.class_name), klass->base_class);
-                collect_class_members(*klass);
-            }
-        }
-    }
+    FormulaSymbolCollector(const BuiltinRegistry &builtins, const FormulaSemanticContext &context);
 
-    std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula)
-    {
-        validate_section_availability(formula);
-        m_parameter_metadata = collect_parameter_metadata(formula);
-        predeclare_functions(formula.per_image);
-        predeclare_functions(formula.builtin);
-        predeclare_functions(formula.initialize);
-        predeclare_functions(formula.iterate);
-        predeclare_functions(formula.bailout);
-        predeclare_functions(formula.perturb_initialize);
-        predeclare_functions(formula.perturb_iterate);
-        predeclare_functions(formula.defaults);
-        predeclare_functions(formula.type_switch);
-        predeclare_functions(formula.final);
-        predeclare_functions(formula.transform);
-        predeclare_functions(formula.public_members);
-        predeclare_functions(formula.protected_members);
-        predeclare_functions(formula.private_members);
-
-        collect_section("global", formula.per_image);
-        collect_section("builtin", formula.builtin);
-        collect_section("init", formula.initialize);
-        collect_section("loop", formula.iterate);
-        if (formula.has_bailout_section)
-        {
-            validate_section_result("bailout", formula.bailout,
-                {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX});
-        }
-        else
-        {
-            collect_section("bailout", formula.bailout);
-        }
-        collect_section("perturbinit", formula.perturb_initialize);
-        collect_section("perturbloop", formula.perturb_iterate);
-        collect_section("default", formula.defaults);
-        collect_section("switch", formula.type_switch);
-        if (formula.has_final_section)
-        {
-            validate_section_result("final", formula.final,
-                {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX,
-                    SemanticTypeKind::COLOR});
-        }
-        else
-        {
-            collect_section("final", formula.final);
-        }
-        collect_section("transform", formula.transform);
-        collect_section("public", formula.public_members);
-        collect_section("protected", formula.protected_members);
-        collect_section("private", formula.private_members);
-        return m_diagnostics;
-    }
-
-    void visit(const ast::AssignmentNode &node) override
-    {
-        if (!node.variable().empty() && is_read_only_symbol(node.variable()))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
-            diagnostic.message = "invalid assignment target: " + node.variable() + " is const";
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        if (const std::optional<std::string> name = assignment_symbol_name(node.target());
-            name && is_global_symbol(*name) && m_section != "global")
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
-            diagnostic.section_name = m_section;
-            diagnostic.message = "invalid assignment target: " + *name + " is global";
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        const SemanticTypeKind target_type{expression_type(node.target())};
-        const SemanticTypeKind value_type{expression_type(node.expression())};
-        if (!can_convert(value_type, target_type))
-        {
-            report_invalid_conversion(value_type, target_type);
-        }
-    }
-
-    void visit(const ast::BinaryOpNode &node) override
-    {
-        collect(node.left());
-        collect(node.right());
-    }
-
-    void visit(const ast::DeclarationNode &node) override
-    {
-        validate_type(node.type());
-        declare(node.name(), SemanticSymbolKind::LOCAL, node.type());
-        if (node.is_array())
-        {
-            declare_array(node.name(), type_kind(node.type()), node.is_dynamic_array());
-        }
-        if (m_section == "global")
-        {
-            m_global_symbols.insert(node.name());
-        }
-        for (const ast::Expr &dimension : node.dimensions())
-        {
-            if (dimension)
-            {
-                validate_index_type(constant_expression_type(dimension));
-            }
-        }
-        if (node.initializer())
-        {
-            const SemanticTypeKind value_type{expression_type(node.initializer())};
-            const SemanticTypeKind target_type{type_kind(node.type())};
-            if (!can_convert(value_type, target_type))
-            {
-                report_invalid_conversion(value_type, target_type);
-            }
-        }
-    }
-
-    void visit(const ast::FunctionDeclNode &node) override
-    {
-        if (!node.return_type().empty())
-        {
-            validate_type(node.return_type());
-        }
-        if (m_predeclared_functions.find(&node) == m_predeclared_functions.end())
-        {
-            declare_function(node);
-        }
-        begin_scope();
-        m_function_return_types.push_back(
-            node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type()));
-        for (const ast::FunctionArgument &arg : node.args())
-        {
-            validate_type(arg.type);
-            declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, arg.type, arg.is_const);
-        }
-        collect(node.body());
-        if (m_function_return_types.back() != SemanticTypeKind::VOID && !returns_on_all_paths(node.body()))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
-            diagnostic.message = "missing return: " + node.name();
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        m_function_return_types.pop_back();
-        end_scope();
-    }
-
-    void visit(const ast::FunctionCallNode &node) override
-    {
-        std::size_t checked_args{};
-        if (std::optional<FunctionSignature> signature =
-                parameter_function_signature(function_parameter_name(node.name())))
-        {
-            validate_call_arity(node.name(), node.args().size(), signature->argument_types.size());
-            checked_args = validate_user_call_arguments(node, *signature);
-        }
-        else if (node.has_target())
-        {
-            checked_args = validate_member_call(node);
-        }
-        else if (is_array_builtin(node.name()))
-        {
-            checked_args = validate_array_builtin_call(node);
-        }
-        else if (node.name() == "print")
-        {
-            checked_args = node.args().size();
-            for (const ast::Expr &arg : node.args())
-            {
-                expression_type(arg);
-            }
-        }
-        else if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
-        {
-            validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
-            checked_args = validate_builtin_call_arguments(node, *function);
-        }
-        else if (const auto function = m_functions.find(node.name()); function != m_functions.end())
-        {
-            validate_call_arity(node.name(), node.args().size(), function->second.argument_types.size());
-            checked_args = validate_user_call_arguments(node, function->second);
-        }
-        else if (is_class(node.name()))
-        {
-            checked_args = validate_cast_call(node);
-        }
-        else if (!is_declared(node.name()))
-        {
-            report_unknown_symbol(node.name());
-        }
-        for (std::size_t index = checked_args; index < node.args().size(); ++index)
-        {
-            collect(node.args()[index]);
-        }
-    }
-
-    void visit(const ast::ConstantRefNode &node) override
-    {
-        validate_predefined_symbol_ref(node);
-    }
-
-    void visit(const ast::IdentifierNode &node) override
-    {
-        if (!is_declared(node.name()) && !is_builtin_variable(node.name()) && !is_class(node.name()))
-        {
-            report_unknown_symbol(node.name());
-        }
-    }
-
-    void visit(const ast::IfStatementNode &node) override
-    {
-        validate_condition_type(expression_type(node.condition()));
-        collect_block(node.has_then_block() ? node.then_block() : ast::Expr{});
-        collect_block(node.has_else_block() ? node.else_block() : ast::Expr{});
-    }
-
-    void visit(const ast::IndexNode &node) override
-    {
-        collect(node.target());
-        for (const ast::Expr &index : node.indices())
-        {
-            validate_index_type(expression_type(index));
-        }
-    }
-
-    void visit(const ast::MemberAccessNode &node) override
-    {
-        validate_member_access(node);
-    }
-
-    void visit(const ast::NewNode &node) override
-    {
-        validate_new_expression(node);
-        for (const ast::Expr &arg : node.args())
-        {
-            collect(arg);
-        }
-    }
-
-    void visit(const ast::ParameterRefNode &node) override
-    {
-        if (!parameter_type(node.name()))
-        {
-            report_unknown_symbol(node.name());
-        }
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        validate_type(node.type());
-        collect(node.block());
-    }
-
-    void visit(const ast::RepeatUntilNode &node) override
-    {
-        collect_block(node.body());
-        validate_condition_type(expression_type(node.condition()));
-    }
-
-    void visit(const ast::ReturnNode &node) override
-    {
-        if (m_function_return_types.empty())
-        {
-            collect(node.expression());
-            return;
-        }
-        const SemanticTypeKind expected_type{m_function_return_types.back()};
-        const SemanticTypeKind actual_type{
-            node.expression() ? expression_type(node.expression()) : SemanticTypeKind::VOID};
-        if (!can_convert(actual_type, expected_type))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
-            diagnostic.message = "invalid return: " + type_name(actual_type) + " to " + type_name(expected_type);
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            collect(statement);
-        }
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (m_section == "switch")
-        {
-            validate_switch_setting(node);
-        }
-        if (const auto *expr = std::get_if<ast::Expr>(&node.value()); expr != nullptr)
-        {
-            constant_expression_type(*expr);
-        }
-    }
-
-    void visit(const ast::UnaryOpNode &node) override
-    {
-        collect(node.operand());
-    }
-
-    void visit(const ast::WhileNode &node) override
-    {
-        validate_condition_type(expression_type(node.condition()));
-        collect_block(node.body());
-    }
+    std::vector<SemanticDiagnostic> collect(const ast::FormulaSections &formula);
+    void visit(const ast::AssignmentNode &node) override;
+    void visit(const ast::BinaryOpNode &node) override;
+    void visit(const ast::DeclarationNode &node) override;
+    void visit(const ast::FunctionDeclNode &node) override;
+    void visit(const ast::FunctionCallNode &node) override;
+    void visit(const ast::ConstantRefNode &node) override;
+    void visit(const ast::IdentifierNode &node) override;
+    void visit(const ast::IfStatementNode &node) override;
+    void visit(const ast::IndexNode &node) override;
+    void visit(const ast::MemberAccessNode &node) override;
+    void visit(const ast::NewNode &node) override;
+    void visit(const ast::ParameterRefNode &node) override;
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::RepeatUntilNode &node) override;
+    void visit(const ast::ReturnNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
+    void visit(const ast::SettingNode &node) override;
+    void visit(const ast::UnaryOpNode &node) override;
+    void visit(const ast::WhileNode &node) override;
 
 private:
-    void begin_scope()
-    {
-        m_scopes.emplace_back();
-        m_symbol_types.emplace_back();
-        m_symbol_type_names.emplace_back();
-        m_array_symbols.emplace_back();
-        m_read_only_symbols.emplace_back();
-    }
-
-    void end_scope()
-    {
-        m_scopes.pop_back();
-        m_symbol_types.pop_back();
-        m_symbol_type_names.pop_back();
-        m_array_symbols.pop_back();
-        m_read_only_symbols.pop_back();
-    }
-
-    void collect(const ast::Expr &expr)
-    {
-        if (expr)
-        {
-            expr->visit(*this);
-        }
-    }
-
-    void collect_section(std::string_view section, const ast::Expr &expr)
-    {
-        const std::string previous_section{m_section};
-        m_section = std::string{section};
-        collect(expr);
-        m_section = previous_section;
-    }
-
-    void validate_section_availability(const ast::FormulaSections &formula)
-    {
-        validate_section_allowed("global", formula.per_image,
-            {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING, parser::EntryKind::TRANSFORMATION});
-        validate_section_allowed("builtin", formula.builtin, {parser::EntryKind::FRACTAL});
-        validate_section_allowed("init", formula.initialize, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
-        validate_section_allowed("loop", formula.iterate, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
-        validate_section_allowed("bailout", formula.bailout, {parser::EntryKind::FRACTAL});
-        validate_section_allowed("perturbinit", formula.perturb_initialize, {parser::EntryKind::FRACTAL});
-        validate_section_allowed("perturbloop", formula.perturb_iterate, {parser::EntryKind::FRACTAL});
-        validate_section_allowed("final", formula.final, {parser::EntryKind::COLORING});
-        validate_section_allowed("transform", formula.transform, {parser::EntryKind::TRANSFORMATION});
-        validate_section_allowed("public", formula.public_members, {parser::EntryKind::CLASS});
-        validate_section_allowed("protected", formula.protected_members, {parser::EntryKind::CLASS});
-        validate_section_allowed("private", formula.private_members, {parser::EntryKind::CLASS});
-    }
-
+    void begin_scope();
+    void end_scope();
+    void collect(const ast::Expr &expr);
+    void collect_section(std::string_view section, const ast::Expr &expr);
+    void validate_section_availability(const ast::FormulaSections &formula);
     void validate_section_allowed(
-        std::string_view section, const ast::Expr &expr, std::initializer_list<parser::EntryKind> entry_kinds)
-    {
-        if (!expr || std::find(entry_kinds.begin(), entry_kinds.end(), m_entry_kind) != entry_kinds.end())
-        {
-            return;
-        }
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION;
-        diagnostic.section_name = std::string{section};
-        diagnostic.message = "invalid section: " + std::string{section} + " for " + entry_kind_name(m_entry_kind);
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
-    void collect_block(const ast::Expr &expr)
-    {
-        begin_scope();
-        collect(expr);
-        end_scope();
-    }
-
-    void predeclare_functions(const ast::Expr &expr)
-    {
-        if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
-        {
-            declare_function(*function);
-            m_predeclared_functions.insert(function);
-        }
-        else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
-        {
-            for (const ast::Expr &statement : sequence->statements())
-            {
-                predeclare_functions(statement);
-            }
-        }
-    }
-
+        std::string_view section, const ast::Expr &expr, std::initializer_list<parser::EntryKind> entry_kinds);
+    void collect_block(const ast::Expr &expr);
+    void predeclare_functions(const ast::Expr &expr);
     void declare(const std::string &name, SemanticSymbolKind, SemanticTypeKind type = SemanticTypeKind::ERROR,
-        bool is_read_only = false)
-    {
-        if (m_scopes.empty())
-        {
-            begin_scope();
-        }
-        if (!m_scopes.back().insert(name).second)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::DUPLICATE_SYMBOL;
-            diagnostic.message = "duplicate symbol: " + name;
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        m_symbol_types.back().emplace(name, type);
-        m_symbol_type_names.back().emplace(name, type_name(type));
-        if (is_read_only)
-        {
-            m_read_only_symbols.back().insert(name);
-        }
-    }
-
+        bool is_read_only = false);
     void declare(
-        const std::string &name, SemanticSymbolKind kind, const std::string &type_name, bool is_read_only = false)
-    {
-        declare(name, kind, type_kind(type_name), is_read_only);
-        m_symbol_type_names.back()[name] = type_name;
-    }
-
-    void declare_array(const std::string &name, SemanticTypeKind element_type, bool is_dynamic)
-    {
-        if (m_array_symbols.empty())
-        {
-            begin_scope();
-        }
-        m_array_symbols.back().emplace(name, ArraySymbol{element_type, is_dynamic});
-    }
-
-    void validate_type(const std::string &name)
-    {
-        if (!m_builtins.find_type(name) && !m_builtins.find_class(name) && !is_class(name))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
-            diagnostic.message = "unknown type: " + name;
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void validate_new_expression(const ast::NewNode &node)
-    {
-        if (!node.type().empty() && node.type().front() == '@')
-        {
-            const std::string type_name{parameter_type_name(node.type())};
-            if (type_name.empty())
-            {
-                report_unknown_symbol(node.type());
-                return;
-            }
-            if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
-            {
-                validate_constructor_call(*klass, node.args().size());
-            }
-            else if (!is_class(type_name))
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
-                diagnostic.message = "invalid new type: " + node.type();
-                m_diagnostics.push_back(std::move(diagnostic));
-            }
-            return;
-        }
-        if (const SemanticClassDescriptor *klass = m_builtins.find_class(node.type()))
-        {
-            validate_constructor_call(*klass, node.args().size());
-            return;
-        }
-        if (const std::string type_name{parameter_type_name(node.type())}; !type_name.empty())
-        {
-            if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
-            {
-                validate_constructor_call(*klass, node.args().size());
-            }
-            else if (!is_class(type_name))
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
-                diagnostic.message = "invalid new type: " + node.type();
-                m_diagnostics.push_back(std::move(diagnostic));
-            }
-            return;
-        }
-        if (!is_class(node.type()))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = m_builtins.find_type(node.type()) ? SemanticDiagnosticCode::INVALID_BUILTIN_USAGE
-                                                                : SemanticDiagnosticCode::UNKNOWN_TYPE;
-            diagnostic.message = "invalid new type: " + node.type();
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void validate_constructor_call(const SemanticClassDescriptor &klass, std::size_t actual)
-    {
-        for (const SemanticFunctionDescriptor &constructor : klass.constructors)
-        {
-            if (constructor.argument_types.size() == actual)
-            {
-                return;
-            }
-        }
-        if (!klass.constructors.empty())
-        {
-            validate_call_arity(klass.name, actual, klass.constructors.front().argument_types.size());
-        }
-    }
-
-    void validate_member_access(const ast::MemberAccessNode &node)
-    {
-        const std::string receiver_type{expression_type_name(node.target())};
-        if (receiver_type.empty())
-        {
-            collect(node.target());
-            return;
-        }
-        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
-        {
-            if (!find_member(*klass, node.member()))
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-                diagnostic.message = "invalid member access: " + receiver_type + "." + node.member();
-                m_diagnostics.push_back(std::move(diagnostic));
-            }
-        }
-        else if (is_class(receiver_type))
-        {
-            validate_user_member_access(receiver_type, node.member());
-        }
-    }
-
-    const SemanticType *find_member(const SemanticClassDescriptor &klass, const std::string &name) const
-    {
-        for (const SemanticSymbol &field : klass.fields)
-        {
-            if (field.name == name)
-            {
-                return &field.type;
-            }
-        }
-        for (const SemanticFunctionDescriptor &method : klass.methods)
-        {
-            if (method.name == name)
-            {
-                return &method.return_type;
-            }
-        }
-        return nullptr;
-    }
-
-    std::size_t validate_member_call(const ast::FunctionCallNode &node)
-    {
-        const std::string receiver_type{expression_type_name(node.target())};
-        if (receiver_type.empty())
-        {
-            return 0U;
-        }
-        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
-        {
-            const SemanticFunctionDescriptor *method{find_method(*klass, node.name())};
-            if (!method)
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-                diagnostic.message = "invalid member access: " + receiver_type + "." + node.name();
-                m_diagnostics.push_back(std::move(diagnostic));
-                return 0U;
-            }
-            validate_call_arity(node.name(), node.args().size(), method->argument_types.size());
-            return validate_builtin_call_arguments(node, *method);
-        }
-        if (is_class(receiver_type))
-        {
-            return validate_user_member_call(receiver_type, node);
-        }
-        collect(node.target());
-        return 0U;
-    }
-
-    const SemanticFunctionDescriptor *find_method(const SemanticClassDescriptor &klass, const std::string &name) const
-    {
-        for (const SemanticFunctionDescriptor &method : klass.methods)
-        {
-            if (method.name == name)
-            {
-                return &method;
-            }
-        }
-        return nullptr;
-    }
-
-    void validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected)
-    {
-        if (actual != expected)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_CALL_ARITY;
-            diagnostic.message = "invalid call arity: " + name + " expects " + std::to_string(expected) + " argument";
-            if (expected != 1U)
-            {
-                diagnostic.message += "s";
-            }
-            diagnostic.message += ", got " + std::to_string(actual);
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    std::size_t validate_array_builtin_call(const ast::FunctionCallNode &node)
-    {
-        if (node.name() == "setLength")
-        {
-            validate_call_arity(node.name(), node.args().size(), 2U);
-            if (!node.args().empty())
-            {
-                validate_dynamic_array_argument(node.name(), node.args().front());
-            }
-            if (node.args().size() >= 2U)
-            {
-                validate_argument_type(node.name(), expression_type(node.args()[1]), SemanticTypeKind::INT);
-            }
-            return std::min<std::size_t>(node.args().size(), 2U);
-        }
-        validate_call_arity(node.name(), node.args().size(), 1U);
-        if (!node.args().empty())
-        {
-            validate_dynamic_array_argument(node.name(), node.args().front());
-        }
-        return std::min<std::size_t>(node.args().size(), 1U);
-    }
-
-    void validate_dynamic_array_argument(const std::string &name, const ast::Expr &arg)
-    {
-        const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(arg.get());
-        if (!identifier)
-        {
-            report_invalid_dynamic_array_argument(name);
-            collect(arg);
-            return;
-        }
-        if (!is_declared(identifier->name()))
-        {
-            report_unknown_symbol(identifier->name());
-            return;
-        }
-        const ArraySymbol *array = array_symbol(identifier->name());
-        if (!array || !array->is_dynamic)
-        {
-            report_invalid_dynamic_array_argument(name);
-        }
-    }
-
-    void report_invalid_dynamic_array_argument(const std::string &name)
-    {
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-        diagnostic.message = "invalid dynamic array argument: " + name;
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
+        const std::string &name, SemanticSymbolKind kind, const std::string &type_name, bool is_read_only = false);
+    void declare_array(const std::string &name, SemanticTypeKind element_type, bool is_dynamic);
+    void validate_type(const std::string &name);
+    void validate_new_expression(const ast::NewNode &node);
+    void validate_constructor_call(const SemanticClassDescriptor &klass, std::size_t actual);
+    void validate_member_access(const ast::MemberAccessNode &node);
+    const SemanticType *find_member(const SemanticClassDescriptor &klass, const std::string &name) const;
+    std::size_t validate_member_call(const ast::FunctionCallNode &node);
+    const SemanticFunctionDescriptor *find_method(const SemanticClassDescriptor &klass, const std::string &name) const;
+    void validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected);
+    std::size_t validate_array_builtin_call(const ast::FunctionCallNode &node);
+    void validate_dynamic_array_argument(const std::string &name, const ast::Expr &arg);
+    void report_invalid_dynamic_array_argument(const std::string &name);
     void validate_section_result(
-        std::string_view name, const ast::Expr &expr, std::initializer_list<SemanticTypeKind> allowed_types)
-    {
-        if (!expr)
-        {
-            return;
-        }
-        const std::string previous_section{m_section};
-        m_section = std::string{name};
-        const SemanticTypeKind type{expression_type(expr)};
-        m_section = previous_section;
-        if (type == SemanticTypeKind::ERROR ||
-            std::find(allowed_types.begin(), allowed_types.end(), type) != allowed_types.end())
-        {
-            return;
-        }
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION_RESULT;
-        diagnostic.section_name = std::string{name};
-        diagnostic.message = "invalid section result: " + std::string{name} + " got " + type_name(type);
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
+        std::string_view name, const ast::Expr &expr, std::initializer_list<SemanticTypeKind> allowed_types);
     std::size_t validate_builtin_call_arguments(
-        const ast::FunctionCallNode &node, const SemanticFunctionDescriptor &function)
-    {
-        const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
-        for (std::size_t index = 0; index < count; ++index)
-        {
-            validate_argument_type(
-                node.name(), expression_type(node.args()[index]), function.argument_types[index].kind);
-        }
-        return count;
-    }
-
-    std::size_t validate_user_call_arguments(const ast::FunctionCallNode &node, const FunctionSignature &function)
-    {
-        const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
-        for (std::size_t index = 0; index < count; ++index)
-        {
-            validate_argument_type(node.name(), expression_type(node.args()[index]), function.argument_types[index]);
-            if (function.by_ref_arguments[index] && !is_assignment_target(node.args()[index]))
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-                diagnostic.message = "invalid by-ref argument: " + node.name();
-                m_diagnostics.push_back(std::move(diagnostic));
-            }
-        }
-        return count;
-    }
-
-    std::size_t validate_cast_call(const ast::FunctionCallNode &node)
-    {
-        validate_call_arity(node.name(), node.args().size(), 1U);
-        if (!node.args().empty())
-        {
-            const SemanticTypeKind arg_type{expression_type(node.args().front())};
-            if (arg_type != SemanticTypeKind::CLASS_OBJECT && arg_type != SemanticTypeKind::BUILTIN_OBJECT &&
-                arg_type != SemanticTypeKind::ERROR)
-            {
-                SemanticDiagnostic diagnostic;
-                diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-                diagnostic.message = "invalid cast argument: " + node.name() + " got " + type_name(arg_type);
-                m_diagnostics.push_back(std::move(diagnostic));
-            }
-        }
-        return std::min<std::size_t>(node.args().size(), 1U);
-    }
-
-    void validate_argument_type(const std::string &name, SemanticTypeKind actual, SemanticTypeKind expected)
-    {
-        if (!can_convert(actual, expected))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-            diagnostic.message =
-                "invalid argument type: " + name + " got " + type_name(actual) + ", expected " + type_name(expected);
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void declare_function(const ast::FunctionDeclNode &node)
-    {
-        declare(node.name(), SemanticSymbolKind::USER_FUNCTION, SemanticTypeKind::FUNCTION);
-        FunctionSignature signature;
-        signature.return_type = node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type());
-        for (const ast::FunctionArgument &arg : node.args())
-        {
-            signature.argument_types.push_back(type_kind(arg.type));
-            signature.by_ref_arguments.push_back(arg.is_by_ref);
-        }
-        m_functions.emplace(node.name(), std::move(signature));
-    }
-
-    bool returns_on_all_paths(const ast::Expr &expr) const
-    {
-        if (!expr)
-        {
-            return false;
-        }
-        if (dynamic_cast<const ast::ReturnNode *>(expr.get()) != nullptr)
-        {
-            return true;
-        }
-        if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
-        {
-            return std::any_of(sequence->statements().begin(), sequence->statements().end(),
-                [this](const ast::Expr &statement) { return returns_on_all_paths(statement); });
-        }
-        if (const auto *branch = dynamic_cast<const ast::IfStatementNode *>(expr.get()))
-        {
-            return branch->has_then_block() && branch->has_else_block() && returns_on_all_paths(branch->then_block()) &&
-                returns_on_all_paths(branch->else_block());
-        }
-        return false;
-    }
-
-    SemanticTypeKind expression_type(const ast::Expr &expr)
-    {
-        if (!expr)
-        {
-            return SemanticTypeKind::VOID;
-        }
-        if (const auto *literal = dynamic_cast<const ast::LiteralNode *>(expr.get()))
-        {
-            switch (literal->value().index())
-            {
-            case 0:
-                return SemanticTypeKind::INT;
-            case 1:
-                return SemanticTypeKind::FLOAT;
-            case 2:
-                return SemanticTypeKind::COMPLEX;
-            case 3:
-                return SemanticTypeKind::BOOL;
-            case 4:
-                return SemanticTypeKind::STRING;
-            case 5:
-                return SemanticTypeKind::COLOR;
-            default:
-                return SemanticTypeKind::ERROR;
-            }
-        }
-        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
-        {
-            if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
-            {
-                report_unknown_symbol(identifier->name());
-                return SemanticTypeKind::ERROR;
-            }
-            return symbol_type(identifier->name());
-        }
-        if (const auto *constant = dynamic_cast<const ast::ConstantRefNode *>(expr.get()))
-        {
-            if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(constant->name()))
-            {
-                validate_predefined_symbol_ref(*constant, *symbol);
-                return symbol->type.kind;
-            }
-            report_unknown_symbol(constant->name());
-            return SemanticTypeKind::ERROR;
-        }
-        if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(expr.get()))
-        {
-            const std::optional<SemanticTypeKind> type{parameter_type(parameter->name())};
-            if (!type)
-            {
-                report_unknown_symbol(parameter->name());
-                return SemanticTypeKind::ERROR;
-            }
-            return *type;
-        }
-        if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
-        {
-            return index_expression_type(*index);
-        }
-        if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
-        {
-            return binary_expression_type(*binary);
-        }
-        if (const auto *unary = dynamic_cast<const ast::UnaryOpNode *>(expr.get()))
-        {
-            return unary_expression_type(*unary);
-        }
-        if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
-        {
-            visit(*call);
-            if (const std::optional<FunctionSignature> signature =
-                    parameter_function_signature(function_parameter_name(call->name())))
-            {
-                return signature->return_type;
-            }
-            if (call->has_target())
-            {
-                const std::string receiver_type{expression_type_name(call->target())};
-                if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
-                {
-                    if (const SemanticFunctionDescriptor *method = find_method(*klass, call->name()))
-                    {
-                        return method->return_type.kind;
-                    }
-                }
-                return SemanticTypeKind::ERROR;
-            }
-            if (call->name() == "length")
-            {
-                return SemanticTypeKind::INT;
-            }
-            if (call->name() == "setLength")
-            {
-                return SemanticTypeKind::VOID;
-            }
-            if (call->name() == "print")
-            {
-                return SemanticTypeKind::VOID;
-            }
-            if (const SemanticFunctionDescriptor *function = m_builtins.find_function(call->name()))
-            {
-                return function->return_type.kind;
-            }
-            if (const auto function = m_functions.find(call->name()); function != m_functions.end())
-            {
-                return function->second.return_type;
-            }
-            if (is_class(call->name()))
-            {
-                return SemanticTypeKind::CLASS_OBJECT;
-            }
-            return SemanticTypeKind::ERROR;
-        }
-        if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
-        {
-            visit(*new_object);
-            if (!new_object->type().empty() && new_object->type().front() == '@')
-            {
-                const std::string type_name{parameter_type_name(new_object->type())};
-                if (m_builtins.find_class(type_name))
-                {
-                    return SemanticTypeKind::BUILTIN_OBJECT;
-                }
-                return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
-            }
-            if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
-            {
-                if (m_builtins.find_class(type_name))
-                {
-                    return SemanticTypeKind::BUILTIN_OBJECT;
-                }
-                return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
-            }
-            if (m_builtins.find_class(new_object->type()))
-            {
-                return SemanticTypeKind::BUILTIN_OBJECT;
-            }
-            return is_class(new_object->type()) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
-        }
-        if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(expr.get()))
-        {
-            return member_expression_type(*member);
-        }
-        if (const auto *assignment = dynamic_cast<const ast::AssignmentNode *>(expr.get()))
-        {
-            visit(*assignment);
-            return SemanticTypeKind::VOID;
-        }
-        if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
-        {
-            return sequence_expression_type(*sequence);
-        }
-        collect(expr);
-        return SemanticTypeKind::ERROR;
-    }
-
-    SemanticTypeKind constant_expression_type(const ast::Expr &expr)
-    {
-        const bool previous_constant_expression{m_constant_expression};
-        m_constant_expression = true;
-        const SemanticTypeKind type{expression_type(expr)};
-        m_constant_expression = previous_constant_expression;
-        return type;
-    }
-
-    SemanticTypeKind binary_expression_type(const ast::BinaryOpNode &node)
-    {
-        const SemanticTypeKind left{expression_type(node.left())};
-        const SemanticTypeKind right{expression_type(node.right())};
-        if (left == SemanticTypeKind::ERROR || right == SemanticTypeKind::ERROR)
-        {
-            return SemanticTypeKind::ERROR;
-        }
-        if (node.op() == "&&" || node.op() == "||")
-        {
-            return SemanticTypeKind::BOOL;
-        }
-        if (node.op() == "<" || node.op() == "<=" || node.op() == ">" || node.op() == ">=" || node.op() == "==" ||
-            node.op() == "!=")
-        {
-            return SemanticTypeKind::BOOL;
-        }
-        if (const std::optional<SemanticTypeKind> color_type = color_binary_expression_type(node.op(), left, right))
-        {
-            return *color_type;
-        }
-        return numeric_result_type(left, right);
-    }
-
+        const ast::FunctionCallNode &node, const SemanticFunctionDescriptor &function);
+    std::size_t validate_user_call_arguments(const ast::FunctionCallNode &node, const FunctionSignature &function);
+    std::size_t validate_cast_call(const ast::FunctionCallNode &node);
+    void validate_argument_type(const std::string &name, SemanticTypeKind actual, SemanticTypeKind expected);
+    void declare_function(const ast::FunctionDeclNode &node);
+    bool returns_on_all_paths(const ast::Expr &expr) const;
+    SemanticTypeKind expression_type(const ast::Expr &expr);
+    SemanticTypeKind constant_expression_type(const ast::Expr &expr);
+    SemanticTypeKind binary_expression_type(const ast::BinaryOpNode &node);
     std::optional<SemanticTypeKind> color_binary_expression_type(
-        const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
-    {
-        if (left != SemanticTypeKind::COLOR && right != SemanticTypeKind::COLOR)
-        {
-            return std::nullopt;
-        }
-        if ((op == "+" || op == "-") && left == SemanticTypeKind::COLOR && right == SemanticTypeKind::COLOR)
-        {
-            return SemanticTypeKind::COLOR;
-        }
-        if ((op == "*" || op == "/") && left == SemanticTypeKind::COLOR && is_numeric_type(right))
-        {
-            return SemanticTypeKind::COLOR;
-        }
-        report_invalid_color_operator(op, left, right);
-        return SemanticTypeKind::ERROR;
-    }
-
-    void report_invalid_color_operator(const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
-    {
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-        diagnostic.message = "invalid color operator: " + type_name(left) + " " + op + " " + type_name(right);
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
-    SemanticTypeKind index_expression_type(const ast::IndexNode &node)
-    {
-        for (const ast::Expr &index : node.indices())
-        {
-            validate_index_type(expression_type(index));
-        }
-        const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.target().get());
-        if (!identifier)
-        {
-            collect(node.target());
-            return SemanticTypeKind::ERROR;
-        }
-        if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
-        {
-            report_unknown_symbol(identifier->name());
-            return SemanticTypeKind::ERROR;
-        }
-        const ArraySymbol *array = array_symbol(identifier->name());
-        if (!array)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
-            diagnostic.message = "invalid array target: " + identifier->name();
-            m_diagnostics.push_back(std::move(diagnostic));
-            return SemanticTypeKind::ERROR;
-        }
-        return array->element_type;
-    }
-
-    SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node)
-    {
-        const SemanticTypeKind operand{expression_type(node.operand())};
-        if (operand == SemanticTypeKind::ERROR)
-        {
-            return SemanticTypeKind::ERROR;
-        }
-        return node.op() == '!' ? SemanticTypeKind::BOOL : operand;
-    }
-
-    SemanticTypeKind member_expression_type(const ast::MemberAccessNode &node)
-    {
-        validate_member_access(node);
-        const std::string receiver_type{expression_type_name(node.target())};
-        if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
-        {
-            if (const SemanticType *member = find_member(*klass, node.member()))
-            {
-                return member->kind;
-            }
-        }
-        return SemanticTypeKind::ERROR;
-    }
-
-    SemanticTypeKind sequence_expression_type(const ast::StatementSeqNode &node)
-    {
-        SemanticTypeKind result{SemanticTypeKind::VOID};
-        for (const ast::Expr &statement : node.statements())
-        {
-            result = expression_type(statement);
-        }
-        return result;
-    }
-
-    SemanticTypeKind numeric_result_type(SemanticTypeKind left, SemanticTypeKind right) const
-    {
-        const int left_rank{conversion_rank(left)};
-        const int right_rank{conversion_rank(right)};
-        if (left_rank < 0 || right_rank < 0)
-        {
-            return SemanticTypeKind::ERROR;
-        }
-        switch (std::max(left_rank, right_rank))
-        {
-        case 0:
-            return SemanticTypeKind::BOOL;
-        case 1:
-            return SemanticTypeKind::INT;
-        case 2:
-            return SemanticTypeKind::FLOAT;
-        default:
-            return SemanticTypeKind::COMPLEX;
-        }
-    }
-
-    std::string expression_type_name(const ast::Expr &expr)
-    {
-        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
-        {
-            if (is_class(identifier->name()))
-            {
-                return identifier->name();
-            }
-            return symbol_type_name(identifier->name());
-        }
-        if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
-        {
-            if (!new_object->type().empty() && new_object->type().front() == '@')
-            {
-                return parameter_type_name(new_object->type());
-            }
-            if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
-            {
-                return type_name;
-            }
-            return new_object->type();
-        }
-        collect(expr);
-        return {};
-    }
-
-    SemanticTypeKind symbol_type(const std::string &name) const
-    {
-        for (auto scope = m_symbol_types.rbegin(); scope != m_symbol_types.rend(); ++scope)
-        {
-            const auto found = scope->find(name);
-            if (found != scope->end())
-            {
-                return found->second;
-            }
-        }
-        return is_builtin_variable(name) ? SemanticTypeKind::COMPLEX : SemanticTypeKind::ERROR;
-    }
-
-    std::string symbol_type_name(const std::string &name) const
-    {
-        for (auto scope = m_symbol_type_names.rbegin(); scope != m_symbol_type_names.rend(); ++scope)
-        {
-            const auto found = scope->find(name);
-            if (found != scope->end())
-            {
-                return found->second;
-            }
-        }
-        return {};
-    }
-
-    SemanticTypeKind type_kind(const std::string &name) const
-    {
-        if (const SemanticType *type = m_builtins.find_type(name))
-        {
-            return type->kind;
-        }
-        if (m_builtins.find_class(name) || is_class(name))
-        {
-            return SemanticTypeKind::CLASS_OBJECT;
-        }
-        return SemanticTypeKind::ERROR;
-    }
-
-    std::optional<SemanticTypeKind> parameter_type(const std::string &name) const
-    {
-        for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
-        {
-            if (param.name == name)
-            {
-                return type_kind(param.type);
-            }
-        }
-        return std::nullopt;
-    }
-
-    std::string function_parameter_name(const std::string &name) const
-    {
-        if (!name.empty() && name.front() == '@')
-        {
-            return name.substr(1);
-        }
-        return name;
-    }
-
-    std::optional<FunctionSignature> parameter_function_signature(const std::string &name) const
-    {
-        for (const ParameterMetadata::Function &function : m_parameter_metadata.functions)
-        {
-            if (function.name != name)
-            {
-                continue;
-            }
-            FunctionSignature signature;
-            signature.return_type = type_kind(function.type.empty() ? "complex" : function.type);
-            if (signature.return_type == SemanticTypeKind::COLOR)
-            {
-                signature.argument_types.push_back(SemanticTypeKind::COLOR);
-                signature.argument_types.push_back(SemanticTypeKind::COLOR);
-                signature.by_ref_arguments.push_back(false);
-                signature.by_ref_arguments.push_back(false);
-            }
-            else
-            {
-                signature.argument_types.push_back(SemanticTypeKind::COMPLEX);
-                signature.by_ref_arguments.push_back(false);
-            }
-            return signature;
-        }
-        return std::nullopt;
-    }
-
-    std::string parameter_type_name(const std::string &name) const
-    {
-        std::string_view parameter_name{name};
-        if (!parameter_name.empty() && parameter_name.front() == '@')
-        {
-            parameter_name.remove_prefix(1);
-        }
-        for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
-        {
-            if (param.name == parameter_name)
-            {
-                return param.type;
-            }
-        }
-        return {};
-    }
-
-    bool can_convert(SemanticTypeKind from, SemanticTypeKind to) const
-    {
-        if (from == SemanticTypeKind::ERROR || to == SemanticTypeKind::ERROR || from == to)
-        {
-            return true;
-        }
-        return conversion_rank(from) >= 0 && conversion_rank(to) >= 0 && conversion_rank(from) <= conversion_rank(to);
-    }
-
-    bool is_numeric_type(SemanticTypeKind type) const
-    {
-        return conversion_rank(type) >= 0;
-    }
-
-    int conversion_rank(SemanticTypeKind type) const
-    {
-        switch (type)
-        {
-        case SemanticTypeKind::BOOL:
-            return 0;
-        case SemanticTypeKind::INT:
-            return 1;
-        case SemanticTypeKind::FLOAT:
-            return 2;
-        case SemanticTypeKind::COMPLEX:
-            return 3;
-        default:
-            return -1;
-        }
-    }
-
-    std::string type_name(SemanticTypeKind type) const
-    {
-        switch (type)
-        {
-        case SemanticTypeKind::BOOL:
-            return "bool";
-        case SemanticTypeKind::INT:
-            return "int";
-        case SemanticTypeKind::FLOAT:
-            return "float";
-        case SemanticTypeKind::COMPLEX:
-            return "complex";
-        case SemanticTypeKind::COLOR:
-            return "color";
-        case SemanticTypeKind::STRING:
-            return "string";
-        case SemanticTypeKind::BUILTIN_OBJECT:
-            return "builtin object";
-        case SemanticTypeKind::CLASS_OBJECT:
-            return "class object";
-        case SemanticTypeKind::FUNCTION:
-            return "function";
-        case SemanticTypeKind::VOID:
-            return "void";
-        case SemanticTypeKind::ARRAY:
-            return "array";
-        case SemanticTypeKind::ERROR:
-            return "error";
-        }
-        return "error";
-    }
-
-    void report_invalid_conversion(SemanticTypeKind from, SemanticTypeKind to)
-    {
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_TYPE_CONVERSION;
-        diagnostic.message = "invalid conversion: " + type_name(from) + " to " + type_name(to);
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
-    bool is_assignment_target(const ast::Expr &expr) const
-    {
-        return dynamic_cast<const ast::IdentifierNode *>(expr.get()) != nullptr ||
-            dynamic_cast<const ast::IndexNode *>(expr.get()) != nullptr ||
-            dynamic_cast<const ast::MemberAccessNode *>(expr.get()) != nullptr;
-    }
-
-    void validate_condition_type(SemanticTypeKind type)
-    {
-        if (type != SemanticTypeKind::ERROR && conversion_rank(type) < 0)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
-            diagnostic.message = "invalid condition type: " + type_name(type);
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void validate_predefined_symbol_ref(const ast::ConstantRefNode &node)
-    {
-        if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(node.name()))
-        {
-            validate_predefined_symbol_ref(node, *symbol);
-            return;
-        }
-        report_unknown_symbol(node.name());
-    }
-
+        const std::string &op, SemanticTypeKind left, SemanticTypeKind right);
+    void report_invalid_color_operator(const std::string &op, SemanticTypeKind left, SemanticTypeKind right);
+    SemanticTypeKind index_expression_type(const ast::IndexNode &node);
+    SemanticTypeKind unary_expression_type(const ast::UnaryOpNode &node);
+    SemanticTypeKind member_expression_type(const ast::MemberAccessNode &node);
+    SemanticTypeKind sequence_expression_type(const ast::StatementSeqNode &node);
+    SemanticTypeKind numeric_result_type(SemanticTypeKind left, SemanticTypeKind right) const;
+    std::string expression_type_name(const ast::Expr &expr);
+    SemanticTypeKind symbol_type(const std::string &name) const;
+    std::string symbol_type_name(const std::string &name) const;
+    SemanticTypeKind type_kind(const std::string &name) const;
+    std::optional<SemanticTypeKind> parameter_type(const std::string &name) const;
+    std::string function_parameter_name(const std::string &name) const;
+    std::optional<FunctionSignature> parameter_function_signature(const std::string &name) const;
+    std::string parameter_type_name(const std::string &name) const;
+    bool can_convert(SemanticTypeKind from, SemanticTypeKind to) const;
+    bool is_numeric_type(SemanticTypeKind type) const;
+    int conversion_rank(SemanticTypeKind type) const;
+    std::string type_name(SemanticTypeKind type) const;
+    void report_invalid_conversion(SemanticTypeKind from, SemanticTypeKind to);
+    bool is_assignment_target(const ast::Expr &expr) const;
+    void validate_condition_type(SemanticTypeKind type);
+    void validate_predefined_symbol_ref(const ast::ConstantRefNode &node);
     void validate_predefined_symbol_ref(
-        const ast::ConstantRefNode &node, const SemanticPredefinedSymbolDescriptor &symbol)
-    {
-        if (!is_allowed_entry_kind(symbol) || !is_allowed_section(symbol))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
-            diagnostic.section_name = m_section;
-            diagnostic.message = "invalid predefined symbol: #" + node.name();
-            if (!m_section.empty())
-            {
-                diagnostic.message += " in " + m_section;
-            }
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        if (m_constant_expression && !symbol.constant_expression)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
-            diagnostic.section_name = m_section;
-            diagnostic.message = "invalid predefined symbol: #" + node.name() + " in constant expression";
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    void validate_switch_setting(const ast::SettingNode &node)
-    {
-        const auto *param = std::get_if<ast::SwitchParam>(&node.value());
-        if (!param || !param->predefined || param->src == "pixel")
-        {
-            return;
-        }
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
-        diagnostic.section_name = m_section;
-        diagnostic.message = "invalid switch parameter: " + node.key() + "=#" + param->src;
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
-
-    bool is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const
-    {
-        return std::find(symbol.entry_kinds.begin(), symbol.entry_kinds.end(), m_entry_kind) !=
-            symbol.entry_kinds.end();
-    }
-
-    bool is_allowed_section(const SemanticPredefinedSymbolDescriptor &symbol) const
-    {
-        return m_section.empty() ||
-            std::find(symbol.sections.begin(), symbol.sections.end(), m_section) != symbol.sections.end();
-    }
-
-    void validate_index_type(SemanticTypeKind type)
-    {
-        if (!can_convert(type, SemanticTypeKind::INT))
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
-            diagnostic.message = "invalid array index type: " + type_name(type);
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    bool is_declared(const std::string &name) const
-    {
-        for (auto scope = m_scopes.rbegin(); scope != m_scopes.rend(); ++scope)
-        {
-            if (scope->find(name) != scope->end())
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const ArraySymbol *array_symbol(const std::string &name) const
-    {
-        for (auto scope = m_array_symbols.rbegin(); scope != m_array_symbols.rend(); ++scope)
-        {
-            const auto found = scope->find(name);
-            if (found != scope->end())
-            {
-                return &found->second;
-            }
-        }
-        return nullptr;
-    }
-
-    bool is_global_symbol(const std::string &name) const
-    {
-        return m_global_symbols.find(name) != m_global_symbols.end();
-    }
-
-    std::optional<std::string> assignment_symbol_name(const ast::Expr &expr) const
-    {
-        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
-        {
-            return identifier->name();
-        }
-        if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
-        {
-            return assignment_symbol_name(index->target());
-        }
-        return std::nullopt;
-    }
-
-    bool is_array_builtin(const std::string &name) const
-    {
-        return name == "setLength" || name == "length";
-    }
-
-    bool is_class(const std::string &name) const
-    {
-        return m_class_names.find(name) != m_class_names.end();
-    }
-
-    void collect_class_members(const RetainedFormulaClass &klass)
-    {
-        if (!klass.ast)
-        {
-            return;
-        }
-        std::vector<ClassMemberDescriptor> members;
-        collect_class_members(klass.ast->public_members, ClassMemberVisibility::PUBLIC, members);
-        collect_class_members(klass.ast->protected_members, ClassMemberVisibility::PROTECTED, members);
-        collect_class_members(klass.ast->private_members, ClassMemberVisibility::PRIVATE, members);
-        m_class_members.emplace(normalized_identifier(klass.reference.class_name), std::move(members));
-    }
-
+        const ast::ConstantRefNode &node, const SemanticPredefinedSymbolDescriptor &symbol);
+    void validate_switch_setting(const ast::SettingNode &node);
+    bool is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const;
+    bool is_allowed_section(const SemanticPredefinedSymbolDescriptor &symbol) const;
+    void validate_index_type(SemanticTypeKind type);
+    bool is_declared(const std::string &name) const;
+    const ArraySymbol *array_symbol(const std::string &name) const;
+    bool is_global_symbol(const std::string &name) const;
+    std::optional<std::string> assignment_symbol_name(const ast::Expr &expr) const;
+    bool is_array_builtin(const std::string &name) const;
+    bool is_class(const std::string &name) const;
+    void collect_class_members(const RetainedFormulaClass &klass);
     void collect_class_members(
-        const ast::Expr &expr, ClassMemberVisibility visibility, std::vector<ClassMemberDescriptor> &members)
-    {
-        if (!expr)
-        {
-            return;
-        }
-        if (const auto *declaration = dynamic_cast<const ast::DeclarationNode *>(expr.get()))
-        {
-            members.push_back({declaration->name(), visibility});
-        }
-        else if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
-        {
-            FunctionSignature signature;
-            signature.return_type =
-                function->return_type().empty() ? SemanticTypeKind::VOID : type_kind(function->return_type());
-            for (const ast::FunctionArgument &arg : function->args())
-            {
-                signature.argument_types.push_back(type_kind(arg.type));
-                signature.by_ref_arguments.push_back(arg.is_by_ref);
-            }
-            members.push_back({function->name(), visibility, std::move(signature)});
-        }
-        else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
-        {
-            for (const ast::Expr &statement : sequence->statements())
-            {
-                collect_class_members(statement, visibility, members);
-            }
-        }
-    }
-
+        const ast::Expr &expr, ClassMemberVisibility visibility, std::vector<ClassMemberDescriptor> &members);
     const ClassMemberDescriptor *find_class_member(
-        const std::string &class_name, const std::string &member_name, std::unordered_set<std::string> &seen) const
-    {
-        const std::string key{normalized_identifier(class_name)};
-        if (!seen.insert(key).second)
-        {
-            return nullptr;
-        }
-        const auto members = m_class_members.find(key);
-        if (members != m_class_members.end())
-        {
-            for (const ClassMemberDescriptor &member : members->second)
-            {
-                if (same_identifier(member.name, member_name))
-                {
-                    return &member;
-                }
-            }
-        }
-        const auto base = m_class_bases.find(key);
-        if (base == m_class_bases.end() || base->second.empty())
-        {
-            return nullptr;
-        }
-        return find_class_member(base->second, member_name, seen);
-    }
-
-    void validate_user_member_access(const std::string &class_name, const std::string &member_name)
-    {
-        std::unordered_set<std::string> seen;
-        const ClassMemberDescriptor *member{find_class_member(class_name, member_name, seen)};
-        if (!member)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-            diagnostic.message = "invalid member access: " + class_name + "." + member_name;
-            m_diagnostics.push_back(std::move(diagnostic));
-            return;
-        }
-        if (member->visibility != ClassMemberVisibility::PUBLIC)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-            diagnostic.message = "invalid member access: " + class_name + "." + member_name + " is not public";
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-    }
-
-    std::size_t validate_user_member_call(const std::string &class_name, const ast::FunctionCallNode &node)
-    {
-        std::unordered_set<std::string> seen;
-        const ClassMemberDescriptor *member{find_class_member(class_name, node.name(), seen)};
-        if (!member)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-            diagnostic.message = "invalid member access: " + class_name + "." + node.name();
-            m_diagnostics.push_back(std::move(diagnostic));
-            return 0U;
-        }
-        if (member->visibility != ClassMemberVisibility::PUBLIC)
-        {
-            SemanticDiagnostic diagnostic;
-            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
-            diagnostic.message = "invalid member access: " + class_name + "." + node.name() + " is not public";
-            m_diagnostics.push_back(std::move(diagnostic));
-        }
-        if (!member->function)
-        {
-            return 0U;
-        }
-        validate_call_arity(node.name(), node.args().size(), member->function->argument_types.size());
-        return validate_user_call_arguments(node, *member->function);
-    }
-
-    bool is_read_only_symbol(const std::string &name) const
-    {
-        for (auto scope = m_read_only_symbols.rbegin(); scope != m_read_only_symbols.rend(); ++scope)
-        {
-            if (scope->find(name) != scope->end())
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool is_builtin_variable(const std::string &name) const
-    {
-        static constexpr std::array<std::string_view, 19> variables{
-            "z",
-            "p1",
-            "p2",
-            "p3",
-            "p4",
-            "p5",
-            "pixel",
-            "lastsqr",
-            "rand",
-            "pi",
-            "e",
-            "maxit",
-            "scrnmax",
-            "scrnpix",
-            "whitesq",
-            "ismand",
-            "center",
-            "magxmag",
-            "rotskew",
-        };
-        for (std::string_view variable : variables)
-        {
-            if (name == variable)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void report_unknown_symbol(const std::string &name)
-    {
-        SemanticDiagnostic diagnostic;
-        diagnostic.code = SemanticDiagnosticCode::UNKNOWN_SYMBOL;
-        diagnostic.message = "unknown symbol: " + name;
-        m_diagnostics.push_back(std::move(diagnostic));
-    }
+        const std::string &class_name, const std::string &member_name, std::unordered_set<std::string> &seen) const;
+    void validate_user_member_access(const std::string &class_name, const std::string &member_name);
+    std::size_t validate_user_member_call(const std::string &class_name, const ast::FunctionCallNode &node);
+    bool is_read_only_symbol(const std::string &name) const;
+    bool is_builtin_variable(const std::string &name) const;
+    void report_unknown_symbol(const std::string &name);
 
     const BuiltinRegistry &m_builtins;
     parser::EntryKind m_entry_kind{parser::EntryKind::FRACTAL};
@@ -2935,6 +1428,1527 @@ private:
     std::vector<SemanticTypeKind> m_function_return_types;
     std::vector<SemanticDiagnostic> m_diagnostics;
 };
+FormulaSymbolCollector::FormulaSymbolCollector(const BuiltinRegistry &builtins, const FormulaSemanticContext &context) :
+    m_builtins(builtins),
+    m_entry_kind(context.entry_kind)
+{
+    for (const RetainedFormulaClass *klass : context.retained_classes)
+    {
+        if (klass)
+        {
+            m_class_names.insert(klass->reference.class_name);
+            m_class_bases.emplace(normalized_identifier(klass->reference.class_name), klass->base_class);
+            collect_class_members(*klass);
+        }
+    }
+}
+std::vector<SemanticDiagnostic> FormulaSymbolCollector::collect(const ast::FormulaSections &formula)
+{
+    validate_section_availability(formula);
+    m_parameter_metadata = collect_parameter_metadata(formula);
+    predeclare_functions(formula.per_image);
+    predeclare_functions(formula.builtin);
+    predeclare_functions(formula.initialize);
+    predeclare_functions(formula.iterate);
+    predeclare_functions(formula.bailout);
+    predeclare_functions(formula.perturb_initialize);
+    predeclare_functions(formula.perturb_iterate);
+    predeclare_functions(formula.defaults);
+    predeclare_functions(formula.type_switch);
+    predeclare_functions(formula.final);
+    predeclare_functions(formula.transform);
+    predeclare_functions(formula.public_members);
+    predeclare_functions(formula.protected_members);
+    predeclare_functions(formula.private_members);
+
+    collect_section("global", formula.per_image);
+    collect_section("builtin", formula.builtin);
+    collect_section("init", formula.initialize);
+    collect_section("loop", formula.iterate);
+    if (formula.has_bailout_section)
+    {
+        validate_section_result("bailout", formula.bailout,
+            {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX});
+    }
+    else
+    {
+        collect_section("bailout", formula.bailout);
+    }
+    collect_section("perturbinit", formula.perturb_initialize);
+    collect_section("perturbloop", formula.perturb_iterate);
+    collect_section("default", formula.defaults);
+    collect_section("switch", formula.type_switch);
+    if (formula.has_final_section)
+    {
+        validate_section_result("final", formula.final,
+            {SemanticTypeKind::BOOL, SemanticTypeKind::INT, SemanticTypeKind::FLOAT, SemanticTypeKind::COMPLEX,
+                SemanticTypeKind::COLOR});
+    }
+    else
+    {
+        collect_section("final", formula.final);
+    }
+    collect_section("transform", formula.transform);
+    collect_section("public", formula.public_members);
+    collect_section("protected", formula.protected_members);
+    collect_section("private", formula.private_members);
+    return m_diagnostics;
+}
+void FormulaSymbolCollector::visit(const ast::AssignmentNode &node)
+{
+    if (!node.variable().empty() && is_read_only_symbol(node.variable()))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
+        diagnostic.message = "invalid assignment target: " + node.variable() + " is const";
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    if (const std::optional<std::string> name = assignment_symbol_name(node.target());
+        name && is_global_symbol(*name) && m_section != "global")
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ASSIGNMENT_TARGET;
+        diagnostic.section_name = m_section;
+        diagnostic.message = "invalid assignment target: " + *name + " is global";
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    const SemanticTypeKind target_type{expression_type(node.target())};
+    const SemanticTypeKind value_type{expression_type(node.expression())};
+    if (!can_convert(value_type, target_type))
+    {
+        report_invalid_conversion(value_type, target_type);
+    }
+}
+void FormulaSymbolCollector::visit(const ast::BinaryOpNode &node)
+{
+    collect(node.left());
+    collect(node.right());
+}
+void FormulaSymbolCollector::visit(const ast::DeclarationNode &node)
+{
+    validate_type(node.type());
+    declare(node.name(), SemanticSymbolKind::LOCAL, node.type());
+    if (node.is_array())
+    {
+        declare_array(node.name(), type_kind(node.type()), node.is_dynamic_array());
+    }
+    if (m_section == "global")
+    {
+        m_global_symbols.insert(node.name());
+    }
+    for (const ast::Expr &dimension : node.dimensions())
+    {
+        if (dimension)
+        {
+            validate_index_type(constant_expression_type(dimension));
+        }
+    }
+    if (node.initializer())
+    {
+        const SemanticTypeKind value_type{expression_type(node.initializer())};
+        const SemanticTypeKind target_type{type_kind(node.type())};
+        if (!can_convert(value_type, target_type))
+        {
+            report_invalid_conversion(value_type, target_type);
+        }
+    }
+}
+void FormulaSymbolCollector::visit(const ast::FunctionDeclNode &node)
+{
+    if (!node.return_type().empty())
+    {
+        validate_type(node.return_type());
+    }
+    if (m_predeclared_functions.find(&node) == m_predeclared_functions.end())
+    {
+        declare_function(node);
+    }
+    begin_scope();
+    m_function_return_types.push_back(
+        node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type()));
+    for (const ast::FunctionArgument &arg : node.args())
+    {
+        validate_type(arg.type);
+        declare(arg.name, SemanticSymbolKind::FUNCTION_PARAMETER, arg.type, arg.is_const);
+    }
+    collect(node.body());
+    if (m_function_return_types.back() != SemanticTypeKind::VOID && !returns_on_all_paths(node.body()))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
+        diagnostic.message = "missing return: " + node.name();
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    m_function_return_types.pop_back();
+    end_scope();
+}
+void FormulaSymbolCollector::visit(const ast::FunctionCallNode &node)
+{
+    std::size_t checked_args{};
+    if (std::optional<FunctionSignature> signature = parameter_function_signature(function_parameter_name(node.name())))
+    {
+        validate_call_arity(node.name(), node.args().size(), signature->argument_types.size());
+        checked_args = validate_user_call_arguments(node, *signature);
+    }
+    else if (node.has_target())
+    {
+        checked_args = validate_member_call(node);
+    }
+    else if (is_array_builtin(node.name()))
+    {
+        checked_args = validate_array_builtin_call(node);
+    }
+    else if (node.name() == "print")
+    {
+        checked_args = node.args().size();
+        for (const ast::Expr &arg : node.args())
+        {
+            expression_type(arg);
+        }
+    }
+    else if (const SemanticFunctionDescriptor *function = m_builtins.find_function(node.name()))
+    {
+        validate_call_arity(node.name(), node.args().size(), function->argument_types.size());
+        checked_args = validate_builtin_call_arguments(node, *function);
+    }
+    else if (const auto function = m_functions.find(node.name()); function != m_functions.end())
+    {
+        validate_call_arity(node.name(), node.args().size(), function->second.argument_types.size());
+        checked_args = validate_user_call_arguments(node, function->second);
+    }
+    else if (is_class(node.name()))
+    {
+        checked_args = validate_cast_call(node);
+    }
+    else if (!is_declared(node.name()))
+    {
+        report_unknown_symbol(node.name());
+    }
+    for (std::size_t index = checked_args; index < node.args().size(); ++index)
+    {
+        collect(node.args()[index]);
+    }
+}
+void FormulaSymbolCollector::visit(const ast::ConstantRefNode &node)
+{
+    validate_predefined_symbol_ref(node);
+}
+void FormulaSymbolCollector::visit(const ast::IdentifierNode &node)
+{
+    if (!is_declared(node.name()) && !is_builtin_variable(node.name()) && !is_class(node.name()))
+    {
+        report_unknown_symbol(node.name());
+    }
+}
+void FormulaSymbolCollector::visit(const ast::IfStatementNode &node)
+{
+    validate_condition_type(expression_type(node.condition()));
+    collect_block(node.has_then_block() ? node.then_block() : ast::Expr{});
+    collect_block(node.has_else_block() ? node.else_block() : ast::Expr{});
+}
+void FormulaSymbolCollector::visit(const ast::IndexNode &node)
+{
+    collect(node.target());
+    for (const ast::Expr &index : node.indices())
+    {
+        validate_index_type(expression_type(index));
+    }
+}
+void FormulaSymbolCollector::visit(const ast::MemberAccessNode &node)
+{
+    validate_member_access(node);
+}
+void FormulaSymbolCollector::visit(const ast::NewNode &node)
+{
+    validate_new_expression(node);
+    for (const ast::Expr &arg : node.args())
+    {
+        collect(arg);
+    }
+}
+void FormulaSymbolCollector::visit(const ast::ParameterRefNode &node)
+{
+    if (!parameter_type(node.name()))
+    {
+        report_unknown_symbol(node.name());
+    }
+}
+void FormulaSymbolCollector::visit(const ast::ParamBlockNode &node)
+{
+    validate_type(node.type());
+    collect(node.block());
+}
+void FormulaSymbolCollector::visit(const ast::RepeatUntilNode &node)
+{
+    collect_block(node.body());
+    validate_condition_type(expression_type(node.condition()));
+}
+void FormulaSymbolCollector::visit(const ast::ReturnNode &node)
+{
+    if (m_function_return_types.empty())
+    {
+        collect(node.expression());
+        return;
+    }
+    const SemanticTypeKind expected_type{m_function_return_types.back()};
+    const SemanticTypeKind actual_type{node.expression() ? expression_type(node.expression()) : SemanticTypeKind::VOID};
+    if (!can_convert(actual_type, expected_type))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_RETURN;
+        diagnostic.message = "invalid return: " + type_name(actual_type) + " to " + type_name(expected_type);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        collect(statement);
+    }
+}
+void FormulaSymbolCollector::visit(const ast::SettingNode &node)
+{
+    if (m_section == "switch")
+    {
+        validate_switch_setting(node);
+    }
+    if (const auto *expr = std::get_if<ast::Expr>(&node.value()); expr != nullptr)
+    {
+        constant_expression_type(*expr);
+    }
+}
+void FormulaSymbolCollector::visit(const ast::UnaryOpNode &node)
+{
+    collect(node.operand());
+}
+void FormulaSymbolCollector::visit(const ast::WhileNode &node)
+{
+    validate_condition_type(expression_type(node.condition()));
+    collect_block(node.body());
+}
+void FormulaSymbolCollector::begin_scope()
+{
+    m_scopes.emplace_back();
+    m_symbol_types.emplace_back();
+    m_symbol_type_names.emplace_back();
+    m_array_symbols.emplace_back();
+    m_read_only_symbols.emplace_back();
+}
+void FormulaSymbolCollector::end_scope()
+{
+    m_scopes.pop_back();
+    m_symbol_types.pop_back();
+    m_symbol_type_names.pop_back();
+    m_array_symbols.pop_back();
+    m_read_only_symbols.pop_back();
+}
+void FormulaSymbolCollector::collect(const ast::Expr &expr)
+{
+    if (expr)
+    {
+        expr->visit(*this);
+    }
+}
+void FormulaSymbolCollector::collect_section(std::string_view section, const ast::Expr &expr)
+{
+    const std::string previous_section{m_section};
+    m_section = std::string{section};
+    collect(expr);
+    m_section = previous_section;
+}
+void FormulaSymbolCollector::validate_section_availability(const ast::FormulaSections &formula)
+{
+    validate_section_allowed("global", formula.per_image,
+        {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING, parser::EntryKind::TRANSFORMATION});
+    validate_section_allowed("builtin", formula.builtin, {parser::EntryKind::FRACTAL});
+    validate_section_allowed("init", formula.initialize, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
+    validate_section_allowed("loop", formula.iterate, {parser::EntryKind::FRACTAL, parser::EntryKind::COLORING});
+    validate_section_allowed("bailout", formula.bailout, {parser::EntryKind::FRACTAL});
+    validate_section_allowed("perturbinit", formula.perturb_initialize, {parser::EntryKind::FRACTAL});
+    validate_section_allowed("perturbloop", formula.perturb_iterate, {parser::EntryKind::FRACTAL});
+    validate_section_allowed("final", formula.final, {parser::EntryKind::COLORING});
+    validate_section_allowed("transform", formula.transform, {parser::EntryKind::TRANSFORMATION});
+    validate_section_allowed("public", formula.public_members, {parser::EntryKind::CLASS});
+    validate_section_allowed("protected", formula.protected_members, {parser::EntryKind::CLASS});
+    validate_section_allowed("private", formula.private_members, {parser::EntryKind::CLASS});
+}
+void FormulaSymbolCollector::validate_section_allowed(
+    std::string_view section, const ast::Expr &expr, std::initializer_list<parser::EntryKind> entry_kinds)
+{
+    if (!expr || std::find(entry_kinds.begin(), entry_kinds.end(), m_entry_kind) != entry_kinds.end())
+    {
+        return;
+    }
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION;
+    diagnostic.section_name = std::string{section};
+    diagnostic.message = "invalid section: " + std::string{section} + " for " + entry_kind_name(m_entry_kind);
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+void FormulaSymbolCollector::collect_block(const ast::Expr &expr)
+{
+    begin_scope();
+    collect(expr);
+    end_scope();
+}
+void FormulaSymbolCollector::predeclare_functions(const ast::Expr &expr)
+{
+    if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
+    {
+        declare_function(*function);
+        m_predeclared_functions.insert(function);
+    }
+    else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+    {
+        for (const ast::Expr &statement : sequence->statements())
+        {
+            predeclare_functions(statement);
+        }
+    }
+}
+void FormulaSymbolCollector::declare(
+    const std::string &name, SemanticSymbolKind, SemanticTypeKind type, bool is_read_only)
+{
+    if (m_scopes.empty())
+    {
+        begin_scope();
+    }
+    if (!m_scopes.back().insert(name).second)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::DUPLICATE_SYMBOL;
+        diagnostic.message = "duplicate symbol: " + name;
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    m_symbol_types.back().emplace(name, type);
+    m_symbol_type_names.back().emplace(name, type_name(type));
+    if (is_read_only)
+    {
+        m_read_only_symbols.back().insert(name);
+    }
+}
+void FormulaSymbolCollector::declare(
+    const std::string &name, SemanticSymbolKind kind, const std::string &type_name, bool is_read_only)
+{
+    declare(name, kind, type_kind(type_name), is_read_only);
+    m_symbol_type_names.back()[name] = type_name;
+}
+void FormulaSymbolCollector::declare_array(const std::string &name, SemanticTypeKind element_type, bool is_dynamic)
+{
+    if (m_array_symbols.empty())
+    {
+        begin_scope();
+    }
+    m_array_symbols.back().emplace(name, ArraySymbol{element_type, is_dynamic});
+}
+void FormulaSymbolCollector::validate_type(const std::string &name)
+{
+    if (!m_builtins.find_type(name) && !m_builtins.find_class(name) && !is_class(name))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::UNKNOWN_TYPE;
+        diagnostic.message = "unknown type: " + name;
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::validate_new_expression(const ast::NewNode &node)
+{
+    if (!node.type().empty() && node.type().front() == '@')
+    {
+        const std::string type_name{parameter_type_name(node.type())};
+        if (type_name.empty())
+        {
+            report_unknown_symbol(node.type());
+            return;
+        }
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
+        {
+            validate_constructor_call(*klass, node.args().size());
+        }
+        else if (!is_class(type_name))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+            diagnostic.message = "invalid new type: " + node.type();
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+        return;
+    }
+    if (const SemanticClassDescriptor *klass = m_builtins.find_class(node.type()))
+    {
+        validate_constructor_call(*klass, node.args().size());
+        return;
+    }
+    if (const std::string type_name{parameter_type_name(node.type())}; !type_name.empty())
+    {
+        if (const SemanticClassDescriptor *klass = m_builtins.find_class(type_name))
+        {
+            validate_constructor_call(*klass, node.args().size());
+        }
+        else if (!is_class(type_name))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+            diagnostic.message = "invalid new type: " + node.type();
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+        return;
+    }
+    if (!is_class(node.type()))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = m_builtins.find_type(node.type()) ? SemanticDiagnosticCode::INVALID_BUILTIN_USAGE
+                                                            : SemanticDiagnosticCode::UNKNOWN_TYPE;
+        diagnostic.message = "invalid new type: " + node.type();
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::validate_constructor_call(const SemanticClassDescriptor &klass, std::size_t actual)
+{
+    for (const SemanticFunctionDescriptor &constructor : klass.constructors)
+    {
+        if (constructor.argument_types.size() == actual)
+        {
+            return;
+        }
+    }
+    if (!klass.constructors.empty())
+    {
+        validate_call_arity(klass.name, actual, klass.constructors.front().argument_types.size());
+    }
+}
+void FormulaSymbolCollector::validate_member_access(const ast::MemberAccessNode &node)
+{
+    const std::string receiver_type{expression_type_name(node.target())};
+    if (receiver_type.empty())
+    {
+        collect(node.target());
+        return;
+    }
+    if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+    {
+        if (!find_member(*klass, node.member()))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + receiver_type + "." + node.member();
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+    else if (is_class(receiver_type))
+    {
+        validate_user_member_access(receiver_type, node.member());
+    }
+}
+const SemanticType *FormulaSymbolCollector::find_member(
+    const SemanticClassDescriptor &klass, const std::string &name) const
+{
+    for (const SemanticSymbol &field : klass.fields)
+    {
+        if (field.name == name)
+        {
+            return &field.type;
+        }
+    }
+    for (const SemanticFunctionDescriptor &method : klass.methods)
+    {
+        if (method.name == name)
+        {
+            return &method.return_type;
+        }
+    }
+    return nullptr;
+}
+std::size_t FormulaSymbolCollector::validate_member_call(const ast::FunctionCallNode &node)
+{
+    const std::string receiver_type{expression_type_name(node.target())};
+    if (receiver_type.empty())
+    {
+        return 0U;
+    }
+    if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+    {
+        const SemanticFunctionDescriptor *method{find_method(*klass, node.name())};
+        if (!method)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+            diagnostic.message = "invalid member access: " + receiver_type + "." + node.name();
+            m_diagnostics.push_back(std::move(diagnostic));
+            return 0U;
+        }
+        validate_call_arity(node.name(), node.args().size(), method->argument_types.size());
+        return validate_builtin_call_arguments(node, *method);
+    }
+    if (is_class(receiver_type))
+    {
+        return validate_user_member_call(receiver_type, node);
+    }
+    collect(node.target());
+    return 0U;
+}
+const SemanticFunctionDescriptor *FormulaSymbolCollector::find_method(
+    const SemanticClassDescriptor &klass, const std::string &name) const
+{
+    for (const SemanticFunctionDescriptor &method : klass.methods)
+    {
+        if (method.name == name)
+        {
+            return &method;
+        }
+    }
+    return nullptr;
+}
+void FormulaSymbolCollector::validate_call_arity(const std::string &name, std::size_t actual, std::size_t expected)
+{
+    if (actual != expected)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_CALL_ARITY;
+        diagnostic.message = "invalid call arity: " + name + " expects " + std::to_string(expected) + " argument";
+        if (expected != 1U)
+        {
+            diagnostic.message += "s";
+        }
+        diagnostic.message += ", got " + std::to_string(actual);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+std::size_t FormulaSymbolCollector::validate_array_builtin_call(const ast::FunctionCallNode &node)
+{
+    if (node.name() == "setLength")
+    {
+        validate_call_arity(node.name(), node.args().size(), 2U);
+        if (!node.args().empty())
+        {
+            validate_dynamic_array_argument(node.name(), node.args().front());
+        }
+        if (node.args().size() >= 2U)
+        {
+            validate_argument_type(node.name(), expression_type(node.args()[1]), SemanticTypeKind::INT);
+        }
+        return std::min<std::size_t>(node.args().size(), 2U);
+    }
+    validate_call_arity(node.name(), node.args().size(), 1U);
+    if (!node.args().empty())
+    {
+        validate_dynamic_array_argument(node.name(), node.args().front());
+    }
+    return std::min<std::size_t>(node.args().size(), 1U);
+}
+void FormulaSymbolCollector::validate_dynamic_array_argument(const std::string &name, const ast::Expr &arg)
+{
+    const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(arg.get());
+    if (!identifier)
+    {
+        report_invalid_dynamic_array_argument(name);
+        collect(arg);
+        return;
+    }
+    if (!is_declared(identifier->name()))
+    {
+        report_unknown_symbol(identifier->name());
+        return;
+    }
+    const ArraySymbol *array = array_symbol(identifier->name());
+    if (!array || !array->is_dynamic)
+    {
+        report_invalid_dynamic_array_argument(name);
+    }
+}
+void FormulaSymbolCollector::report_invalid_dynamic_array_argument(const std::string &name)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+    diagnostic.message = "invalid dynamic array argument: " + name;
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+void FormulaSymbolCollector::validate_section_result(
+    std::string_view name, const ast::Expr &expr, std::initializer_list<SemanticTypeKind> allowed_types)
+{
+    if (!expr)
+    {
+        return;
+    }
+    const std::string previous_section{m_section};
+    m_section = std::string{name};
+    const SemanticTypeKind type{expression_type(expr)};
+    m_section = previous_section;
+    if (type == SemanticTypeKind::ERROR ||
+        std::find(allowed_types.begin(), allowed_types.end(), type) != allowed_types.end())
+    {
+        return;
+    }
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_SECTION_RESULT;
+    diagnostic.section_name = std::string{name};
+    diagnostic.message = "invalid section result: " + std::string{name} + " got " + type_name(type);
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+std::size_t FormulaSymbolCollector::validate_builtin_call_arguments(
+    const ast::FunctionCallNode &node, const SemanticFunctionDescriptor &function)
+{
+    const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        validate_argument_type(node.name(), expression_type(node.args()[index]), function.argument_types[index].kind);
+    }
+    return count;
+}
+std::size_t FormulaSymbolCollector::validate_user_call_arguments(
+    const ast::FunctionCallNode &node, const FunctionSignature &function)
+{
+    const std::size_t count{std::min(node.args().size(), function.argument_types.size())};
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        validate_argument_type(node.name(), expression_type(node.args()[index]), function.argument_types[index]);
+        if (function.by_ref_arguments[index] && !is_assignment_target(node.args()[index]))
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+            diagnostic.message = "invalid by-ref argument: " + node.name();
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+    return count;
+}
+std::size_t FormulaSymbolCollector::validate_cast_call(const ast::FunctionCallNode &node)
+{
+    validate_call_arity(node.name(), node.args().size(), 1U);
+    if (!node.args().empty())
+    {
+        const SemanticTypeKind arg_type{expression_type(node.args().front())};
+        if (arg_type != SemanticTypeKind::CLASS_OBJECT && arg_type != SemanticTypeKind::BUILTIN_OBJECT &&
+            arg_type != SemanticTypeKind::ERROR)
+        {
+            SemanticDiagnostic diagnostic;
+            diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+            diagnostic.message = "invalid cast argument: " + node.name() + " got " + type_name(arg_type);
+            m_diagnostics.push_back(std::move(diagnostic));
+        }
+    }
+    return std::min<std::size_t>(node.args().size(), 1U);
+}
+void FormulaSymbolCollector::validate_argument_type(
+    const std::string &name, SemanticTypeKind actual, SemanticTypeKind expected)
+{
+    if (!can_convert(actual, expected))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+        diagnostic.message =
+            "invalid argument type: " + name + " got " + type_name(actual) + ", expected " + type_name(expected);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::declare_function(const ast::FunctionDeclNode &node)
+{
+    declare(node.name(), SemanticSymbolKind::USER_FUNCTION, SemanticTypeKind::FUNCTION);
+    FunctionSignature signature;
+    signature.return_type = node.return_type().empty() ? SemanticTypeKind::VOID : type_kind(node.return_type());
+    for (const ast::FunctionArgument &arg : node.args())
+    {
+        signature.argument_types.push_back(type_kind(arg.type));
+        signature.by_ref_arguments.push_back(arg.is_by_ref);
+    }
+    m_functions.emplace(node.name(), std::move(signature));
+}
+bool FormulaSymbolCollector::returns_on_all_paths(const ast::Expr &expr) const
+{
+    if (!expr)
+    {
+        return false;
+    }
+    if (dynamic_cast<const ast::ReturnNode *>(expr.get()) != nullptr)
+    {
+        return true;
+    }
+    if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+    {
+        return std::any_of(sequence->statements().begin(), sequence->statements().end(),
+            [this](const ast::Expr &statement) { return returns_on_all_paths(statement); });
+    }
+    if (const auto *branch = dynamic_cast<const ast::IfStatementNode *>(expr.get()))
+    {
+        return branch->has_then_block() && branch->has_else_block() && returns_on_all_paths(branch->then_block()) &&
+            returns_on_all_paths(branch->else_block());
+    }
+    return false;
+}
+SemanticTypeKind FormulaSymbolCollector::expression_type(const ast::Expr &expr)
+{
+    if (!expr)
+    {
+        return SemanticTypeKind::VOID;
+    }
+    if (const auto *literal = dynamic_cast<const ast::LiteralNode *>(expr.get()))
+    {
+        switch (literal->value().index())
+        {
+        case 0:
+            return SemanticTypeKind::INT;
+        case 1:
+            return SemanticTypeKind::FLOAT;
+        case 2:
+            return SemanticTypeKind::COMPLEX;
+        case 3:
+            return SemanticTypeKind::BOOL;
+        case 4:
+            return SemanticTypeKind::STRING;
+        case 5:
+            return SemanticTypeKind::COLOR;
+        default:
+            return SemanticTypeKind::ERROR;
+        }
+    }
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+    {
+        if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
+        {
+            report_unknown_symbol(identifier->name());
+            return SemanticTypeKind::ERROR;
+        }
+        return symbol_type(identifier->name());
+    }
+    if (const auto *constant = dynamic_cast<const ast::ConstantRefNode *>(expr.get()))
+    {
+        if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(constant->name()))
+        {
+            validate_predefined_symbol_ref(*constant, *symbol);
+            return symbol->type.kind;
+        }
+        report_unknown_symbol(constant->name());
+        return SemanticTypeKind::ERROR;
+    }
+    if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(expr.get()))
+    {
+        const std::optional<SemanticTypeKind> type{parameter_type(parameter->name())};
+        if (!type)
+        {
+            report_unknown_symbol(parameter->name());
+            return SemanticTypeKind::ERROR;
+        }
+        return *type;
+    }
+    if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
+    {
+        return index_expression_type(*index);
+    }
+    if (const auto *binary = dynamic_cast<const ast::BinaryOpNode *>(expr.get()))
+    {
+        return binary_expression_type(*binary);
+    }
+    if (const auto *unary = dynamic_cast<const ast::UnaryOpNode *>(expr.get()))
+    {
+        return unary_expression_type(*unary);
+    }
+    if (const auto *call = dynamic_cast<const ast::FunctionCallNode *>(expr.get()))
+    {
+        visit(*call);
+        if (const std::optional<FunctionSignature> signature =
+                parameter_function_signature(function_parameter_name(call->name())))
+        {
+            return signature->return_type;
+        }
+        if (call->has_target())
+        {
+            const std::string receiver_type{expression_type_name(call->target())};
+            if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+            {
+                if (const SemanticFunctionDescriptor *method = find_method(*klass, call->name()))
+                {
+                    return method->return_type.kind;
+                }
+            }
+            return SemanticTypeKind::ERROR;
+        }
+        if (call->name() == "length")
+        {
+            return SemanticTypeKind::INT;
+        }
+        if (call->name() == "setLength")
+        {
+            return SemanticTypeKind::VOID;
+        }
+        if (call->name() == "print")
+        {
+            return SemanticTypeKind::VOID;
+        }
+        if (const SemanticFunctionDescriptor *function = m_builtins.find_function(call->name()))
+        {
+            return function->return_type.kind;
+        }
+        if (const auto function = m_functions.find(call->name()); function != m_functions.end())
+        {
+            return function->second.return_type;
+        }
+        if (is_class(call->name()))
+        {
+            return SemanticTypeKind::CLASS_OBJECT;
+        }
+        return SemanticTypeKind::ERROR;
+    }
+    if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
+    {
+        visit(*new_object);
+        if (!new_object->type().empty() && new_object->type().front() == '@')
+        {
+            const std::string type_name{parameter_type_name(new_object->type())};
+            if (m_builtins.find_class(type_name))
+            {
+                return SemanticTypeKind::BUILTIN_OBJECT;
+            }
+            return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+        }
+        if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
+        {
+            if (m_builtins.find_class(type_name))
+            {
+                return SemanticTypeKind::BUILTIN_OBJECT;
+            }
+            return is_class(type_name) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+        }
+        if (m_builtins.find_class(new_object->type()))
+        {
+            return SemanticTypeKind::BUILTIN_OBJECT;
+        }
+        return is_class(new_object->type()) ? SemanticTypeKind::CLASS_OBJECT : SemanticTypeKind::ERROR;
+    }
+    if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(expr.get()))
+    {
+        return member_expression_type(*member);
+    }
+    if (const auto *assignment = dynamic_cast<const ast::AssignmentNode *>(expr.get()))
+    {
+        visit(*assignment);
+        return SemanticTypeKind::VOID;
+    }
+    if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+    {
+        return sequence_expression_type(*sequence);
+    }
+    collect(expr);
+    return SemanticTypeKind::ERROR;
+}
+SemanticTypeKind FormulaSymbolCollector::constant_expression_type(const ast::Expr &expr)
+{
+    const bool previous_constant_expression{m_constant_expression};
+    m_constant_expression = true;
+    const SemanticTypeKind type{expression_type(expr)};
+    m_constant_expression = previous_constant_expression;
+    return type;
+}
+SemanticTypeKind FormulaSymbolCollector::binary_expression_type(const ast::BinaryOpNode &node)
+{
+    const SemanticTypeKind left{expression_type(node.left())};
+    const SemanticTypeKind right{expression_type(node.right())};
+    if (left == SemanticTypeKind::ERROR || right == SemanticTypeKind::ERROR)
+    {
+        return SemanticTypeKind::ERROR;
+    }
+    if (node.op() == "&&" || node.op() == "||")
+    {
+        return SemanticTypeKind::BOOL;
+    }
+    if (node.op() == "<" || node.op() == "<=" || node.op() == ">" || node.op() == ">=" || node.op() == "==" ||
+        node.op() == "!=")
+    {
+        return SemanticTypeKind::BOOL;
+    }
+    if (const std::optional<SemanticTypeKind> color_type = color_binary_expression_type(node.op(), left, right))
+    {
+        return *color_type;
+    }
+    return numeric_result_type(left, right);
+}
+std::optional<SemanticTypeKind> FormulaSymbolCollector::color_binary_expression_type(
+    const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
+{
+    if (left != SemanticTypeKind::COLOR && right != SemanticTypeKind::COLOR)
+    {
+        return std::nullopt;
+    }
+    if ((op == "+" || op == "-") && left == SemanticTypeKind::COLOR && right == SemanticTypeKind::COLOR)
+    {
+        return SemanticTypeKind::COLOR;
+    }
+    if ((op == "*" || op == "/") && left == SemanticTypeKind::COLOR && is_numeric_type(right))
+    {
+        return SemanticTypeKind::COLOR;
+    }
+    report_invalid_color_operator(op, left, right);
+    return SemanticTypeKind::ERROR;
+}
+void FormulaSymbolCollector::report_invalid_color_operator(
+    const std::string &op, SemanticTypeKind left, SemanticTypeKind right)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+    diagnostic.message = "invalid color operator: " + type_name(left) + " " + op + " " + type_name(right);
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+SemanticTypeKind FormulaSymbolCollector::index_expression_type(const ast::IndexNode &node)
+{
+    for (const ast::Expr &index : node.indices())
+    {
+        validate_index_type(expression_type(index));
+    }
+    const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.target().get());
+    if (!identifier)
+    {
+        collect(node.target());
+        return SemanticTypeKind::ERROR;
+    }
+    if (!is_declared(identifier->name()) && !is_builtin_variable(identifier->name()))
+    {
+        report_unknown_symbol(identifier->name());
+        return SemanticTypeKind::ERROR;
+    }
+    const ArraySymbol *array = array_symbol(identifier->name());
+    if (!array)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
+        diagnostic.message = "invalid array target: " + identifier->name();
+        m_diagnostics.push_back(std::move(diagnostic));
+        return SemanticTypeKind::ERROR;
+    }
+    return array->element_type;
+}
+SemanticTypeKind FormulaSymbolCollector::unary_expression_type(const ast::UnaryOpNode &node)
+{
+    const SemanticTypeKind operand{expression_type(node.operand())};
+    if (operand == SemanticTypeKind::ERROR)
+    {
+        return SemanticTypeKind::ERROR;
+    }
+    return node.op() == '!' ? SemanticTypeKind::BOOL : operand;
+}
+SemanticTypeKind FormulaSymbolCollector::member_expression_type(const ast::MemberAccessNode &node)
+{
+    validate_member_access(node);
+    const std::string receiver_type{expression_type_name(node.target())};
+    if (const SemanticClassDescriptor *klass = m_builtins.find_class(receiver_type))
+    {
+        if (const SemanticType *member = find_member(*klass, node.member()))
+        {
+            return member->kind;
+        }
+    }
+    return SemanticTypeKind::ERROR;
+}
+SemanticTypeKind FormulaSymbolCollector::sequence_expression_type(const ast::StatementSeqNode &node)
+{
+    SemanticTypeKind result{SemanticTypeKind::VOID};
+    for (const ast::Expr &statement : node.statements())
+    {
+        result = expression_type(statement);
+    }
+    return result;
+}
+SemanticTypeKind FormulaSymbolCollector::numeric_result_type(SemanticTypeKind left, SemanticTypeKind right) const
+{
+    const int left_rank{conversion_rank(left)};
+    const int right_rank{conversion_rank(right)};
+    if (left_rank < 0 || right_rank < 0)
+    {
+        return SemanticTypeKind::ERROR;
+    }
+    switch (std::max(left_rank, right_rank))
+    {
+    case 0:
+        return SemanticTypeKind::BOOL;
+    case 1:
+        return SemanticTypeKind::INT;
+    case 2:
+        return SemanticTypeKind::FLOAT;
+    default:
+        return SemanticTypeKind::COMPLEX;
+    }
+}
+std::string FormulaSymbolCollector::expression_type_name(const ast::Expr &expr)
+{
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+    {
+        if (is_class(identifier->name()))
+        {
+            return identifier->name();
+        }
+        return symbol_type_name(identifier->name());
+    }
+    if (const auto *new_object = dynamic_cast<const ast::NewNode *>(expr.get()))
+    {
+        if (!new_object->type().empty() && new_object->type().front() == '@')
+        {
+            return parameter_type_name(new_object->type());
+        }
+        if (const std::string type_name{parameter_type_name(new_object->type())}; !type_name.empty())
+        {
+            return type_name;
+        }
+        return new_object->type();
+    }
+    collect(expr);
+    return {};
+}
+SemanticTypeKind FormulaSymbolCollector::symbol_type(const std::string &name) const
+{
+    for (auto scope = m_symbol_types.rbegin(); scope != m_symbol_types.rend(); ++scope)
+    {
+        const auto found = scope->find(name);
+        if (found != scope->end())
+        {
+            return found->second;
+        }
+    }
+    return is_builtin_variable(name) ? SemanticTypeKind::COMPLEX : SemanticTypeKind::ERROR;
+}
+std::string FormulaSymbolCollector::symbol_type_name(const std::string &name) const
+{
+    for (auto scope = m_symbol_type_names.rbegin(); scope != m_symbol_type_names.rend(); ++scope)
+    {
+        const auto found = scope->find(name);
+        if (found != scope->end())
+        {
+            return found->second;
+        }
+    }
+    return {};
+}
+SemanticTypeKind FormulaSymbolCollector::type_kind(const std::string &name) const
+{
+    if (const SemanticType *type = m_builtins.find_type(name))
+    {
+        return type->kind;
+    }
+    if (m_builtins.find_class(name) || is_class(name))
+    {
+        return SemanticTypeKind::CLASS_OBJECT;
+    }
+    return SemanticTypeKind::ERROR;
+}
+std::optional<SemanticTypeKind> FormulaSymbolCollector::parameter_type(const std::string &name) const
+{
+    for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
+    {
+        if (param.name == name)
+        {
+            return type_kind(param.type);
+        }
+    }
+    return std::nullopt;
+}
+std::string FormulaSymbolCollector::function_parameter_name(const std::string &name) const
+{
+    if (!name.empty() && name.front() == '@')
+    {
+        return name.substr(1);
+    }
+    return name;
+}
+std::optional<FunctionSignature> FormulaSymbolCollector::parameter_function_signature(const std::string &name) const
+{
+    for (const ParameterMetadata::Function &function : m_parameter_metadata.functions)
+    {
+        if (function.name != name)
+        {
+            continue;
+        }
+        FunctionSignature signature;
+        signature.return_type = type_kind(function.type.empty() ? "complex" : function.type);
+        if (signature.return_type == SemanticTypeKind::COLOR)
+        {
+            signature.argument_types.push_back(SemanticTypeKind::COLOR);
+            signature.argument_types.push_back(SemanticTypeKind::COLOR);
+            signature.by_ref_arguments.push_back(false);
+            signature.by_ref_arguments.push_back(false);
+        }
+        else
+        {
+            signature.argument_types.push_back(SemanticTypeKind::COMPLEX);
+            signature.by_ref_arguments.push_back(false);
+        }
+        return signature;
+    }
+    return std::nullopt;
+}
+std::string FormulaSymbolCollector::parameter_type_name(const std::string &name) const
+{
+    std::string_view parameter_name{name};
+    if (!parameter_name.empty() && parameter_name.front() == '@')
+    {
+        parameter_name.remove_prefix(1);
+    }
+    for (const ParameterMetadata::Param &param : m_parameter_metadata.params)
+    {
+        if (param.name == parameter_name)
+        {
+            return param.type;
+        }
+    }
+    return {};
+}
+bool FormulaSymbolCollector::can_convert(SemanticTypeKind from, SemanticTypeKind to) const
+{
+    if (from == SemanticTypeKind::ERROR || to == SemanticTypeKind::ERROR || from == to)
+    {
+        return true;
+    }
+    return conversion_rank(from) >= 0 && conversion_rank(to) >= 0 && conversion_rank(from) <= conversion_rank(to);
+}
+bool FormulaSymbolCollector::is_numeric_type(SemanticTypeKind type) const
+{
+    return conversion_rank(type) >= 0;
+}
+int FormulaSymbolCollector::conversion_rank(SemanticTypeKind type) const
+{
+    switch (type)
+    {
+    case SemanticTypeKind::BOOL:
+        return 0;
+    case SemanticTypeKind::INT:
+        return 1;
+    case SemanticTypeKind::FLOAT:
+        return 2;
+    case SemanticTypeKind::COMPLEX:
+        return 3;
+    default:
+        return -1;
+    }
+}
+std::string FormulaSymbolCollector::type_name(SemanticTypeKind type) const
+{
+    switch (type)
+    {
+    case SemanticTypeKind::BOOL:
+        return "bool";
+    case SemanticTypeKind::INT:
+        return "int";
+    case SemanticTypeKind::FLOAT:
+        return "float";
+    case SemanticTypeKind::COMPLEX:
+        return "complex";
+    case SemanticTypeKind::COLOR:
+        return "color";
+    case SemanticTypeKind::STRING:
+        return "string";
+    case SemanticTypeKind::BUILTIN_OBJECT:
+        return "builtin object";
+    case SemanticTypeKind::CLASS_OBJECT:
+        return "class object";
+    case SemanticTypeKind::FUNCTION:
+        return "function";
+    case SemanticTypeKind::VOID:
+        return "void";
+    case SemanticTypeKind::ARRAY:
+        return "array";
+    case SemanticTypeKind::ERROR:
+        return "error";
+    }
+    return "error";
+}
+void FormulaSymbolCollector::report_invalid_conversion(SemanticTypeKind from, SemanticTypeKind to)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_TYPE_CONVERSION;
+    diagnostic.message = "invalid conversion: " + type_name(from) + " to " + type_name(to);
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+bool FormulaSymbolCollector::is_assignment_target(const ast::Expr &expr) const
+{
+    return dynamic_cast<const ast::IdentifierNode *>(expr.get()) != nullptr ||
+        dynamic_cast<const ast::IndexNode *>(expr.get()) != nullptr ||
+        dynamic_cast<const ast::MemberAccessNode *>(expr.get()) != nullptr;
+}
+void FormulaSymbolCollector::validate_condition_type(SemanticTypeKind type)
+{
+    if (type != SemanticTypeKind::ERROR && conversion_rank(type) < 0)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARGUMENT_TYPE;
+        diagnostic.message = "invalid condition type: " + type_name(type);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::validate_predefined_symbol_ref(const ast::ConstantRefNode &node)
+{
+    if (const SemanticPredefinedSymbolDescriptor *symbol = m_builtins.find_predefined_symbol(node.name()))
+    {
+        validate_predefined_symbol_ref(node, *symbol);
+        return;
+    }
+    report_unknown_symbol(node.name());
+}
+void FormulaSymbolCollector::validate_predefined_symbol_ref(
+    const ast::ConstantRefNode &node, const SemanticPredefinedSymbolDescriptor &symbol)
+{
+    if (!is_allowed_entry_kind(symbol) || !is_allowed_section(symbol))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+        diagnostic.section_name = m_section;
+        diagnostic.message = "invalid predefined symbol: #" + node.name();
+        if (!m_section.empty())
+        {
+            diagnostic.message += " in " + m_section;
+        }
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    if (m_constant_expression && !symbol.constant_expression)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+        diagnostic.section_name = m_section;
+        diagnostic.message = "invalid predefined symbol: #" + node.name() + " in constant expression";
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+void FormulaSymbolCollector::validate_switch_setting(const ast::SettingNode &node)
+{
+    const auto *param = std::get_if<ast::SwitchParam>(&node.value());
+    if (!param || !param->predefined || param->src == "pixel")
+    {
+        return;
+    }
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::INVALID_BUILTIN_USAGE;
+    diagnostic.section_name = m_section;
+    diagnostic.message = "invalid switch parameter: " + node.key() + "=#" + param->src;
+    m_diagnostics.push_back(std::move(diagnostic));
+}
+bool FormulaSymbolCollector::is_allowed_entry_kind(const SemanticPredefinedSymbolDescriptor &symbol) const
+{
+    return std::find(symbol.entry_kinds.begin(), symbol.entry_kinds.end(), m_entry_kind) != symbol.entry_kinds.end();
+}
+bool FormulaSymbolCollector::is_allowed_section(const SemanticPredefinedSymbolDescriptor &symbol) const
+{
+    return m_section.empty() ||
+        std::find(symbol.sections.begin(), symbol.sections.end(), m_section) != symbol.sections.end();
+}
+void FormulaSymbolCollector::validate_index_type(SemanticTypeKind type)
+{
+    if (!can_convert(type, SemanticTypeKind::INT))
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_ARRAY_ACCESS;
+        diagnostic.message = "invalid array index type: " + type_name(type);
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+bool FormulaSymbolCollector::is_declared(const std::string &name) const
+{
+    for (auto scope = m_scopes.rbegin(); scope != m_scopes.rend(); ++scope)
+    {
+        if (scope->find(name) != scope->end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+const ArraySymbol *FormulaSymbolCollector::array_symbol(const std::string &name) const
+{
+    for (auto scope = m_array_symbols.rbegin(); scope != m_array_symbols.rend(); ++scope)
+    {
+        const auto found = scope->find(name);
+        if (found != scope->end())
+        {
+            return &found->second;
+        }
+    }
+    return nullptr;
+}
+bool FormulaSymbolCollector::is_global_symbol(const std::string &name) const
+{
+    return m_global_symbols.find(name) != m_global_symbols.end();
+}
+std::optional<std::string> FormulaSymbolCollector::assignment_symbol_name(const ast::Expr &expr) const
+{
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(expr.get()))
+    {
+        return identifier->name();
+    }
+    if (const auto *index = dynamic_cast<const ast::IndexNode *>(expr.get()))
+    {
+        return assignment_symbol_name(index->target());
+    }
+    return std::nullopt;
+}
+bool FormulaSymbolCollector::is_array_builtin(const std::string &name) const
+{
+    return name == "setLength" || name == "length";
+}
+bool FormulaSymbolCollector::is_class(const std::string &name) const
+{
+    return m_class_names.find(name) != m_class_names.end();
+}
+void FormulaSymbolCollector::collect_class_members(const RetainedFormulaClass &klass)
+{
+    if (!klass.ast)
+    {
+        return;
+    }
+    std::vector<ClassMemberDescriptor> members;
+    collect_class_members(klass.ast->public_members, ClassMemberVisibility::PUBLIC, members);
+    collect_class_members(klass.ast->protected_members, ClassMemberVisibility::PROTECTED, members);
+    collect_class_members(klass.ast->private_members, ClassMemberVisibility::PRIVATE, members);
+    m_class_members.emplace(normalized_identifier(klass.reference.class_name), std::move(members));
+}
+void FormulaSymbolCollector::collect_class_members(
+    const ast::Expr &expr, ClassMemberVisibility visibility, std::vector<ClassMemberDescriptor> &members)
+{
+    if (!expr)
+    {
+        return;
+    }
+    if (const auto *declaration = dynamic_cast<const ast::DeclarationNode *>(expr.get()))
+    {
+        members.push_back({declaration->name(), visibility});
+    }
+    else if (const auto *function = dynamic_cast<const ast::FunctionDeclNode *>(expr.get()))
+    {
+        FunctionSignature signature;
+        signature.return_type =
+            function->return_type().empty() ? SemanticTypeKind::VOID : type_kind(function->return_type());
+        for (const ast::FunctionArgument &arg : function->args())
+        {
+            signature.argument_types.push_back(type_kind(arg.type));
+            signature.by_ref_arguments.push_back(arg.is_by_ref);
+        }
+        members.push_back({function->name(), visibility, std::move(signature)});
+    }
+    else if (const auto *sequence = dynamic_cast<const ast::StatementSeqNode *>(expr.get()))
+    {
+        for (const ast::Expr &statement : sequence->statements())
+        {
+            collect_class_members(statement, visibility, members);
+        }
+    }
+}
+const ClassMemberDescriptor *FormulaSymbolCollector::find_class_member(
+    const std::string &class_name, const std::string &member_name, std::unordered_set<std::string> &seen) const
+{
+    const std::string key{normalized_identifier(class_name)};
+    if (!seen.insert(key).second)
+    {
+        return nullptr;
+    }
+    const auto members = m_class_members.find(key);
+    if (members != m_class_members.end())
+    {
+        for (const ClassMemberDescriptor &member : members->second)
+        {
+            if (same_identifier(member.name, member_name))
+            {
+                return &member;
+            }
+        }
+    }
+    const auto base = m_class_bases.find(key);
+    if (base == m_class_bases.end() || base->second.empty())
+    {
+        return nullptr;
+    }
+    return find_class_member(base->second, member_name, seen);
+}
+void FormulaSymbolCollector::validate_user_member_access(const std::string &class_name, const std::string &member_name)
+{
+    std::unordered_set<std::string> seen;
+    const ClassMemberDescriptor *member{find_class_member(class_name, member_name, seen)};
+    if (!member)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+        diagnostic.message = "invalid member access: " + class_name + "." + member_name;
+        m_diagnostics.push_back(std::move(diagnostic));
+        return;
+    }
+    if (member->visibility != ClassMemberVisibility::PUBLIC)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+        diagnostic.message = "invalid member access: " + class_name + "." + member_name + " is not public";
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+}
+std::size_t FormulaSymbolCollector::validate_user_member_call(
+    const std::string &class_name, const ast::FunctionCallNode &node)
+{
+    std::unordered_set<std::string> seen;
+    const ClassMemberDescriptor *member{find_class_member(class_name, node.name(), seen)};
+    if (!member)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+        diagnostic.message = "invalid member access: " + class_name + "." + node.name();
+        m_diagnostics.push_back(std::move(diagnostic));
+        return 0U;
+    }
+    if (member->visibility != ClassMemberVisibility::PUBLIC)
+    {
+        SemanticDiagnostic diagnostic;
+        diagnostic.code = SemanticDiagnosticCode::INVALID_MEMBER_ACCESS;
+        diagnostic.message = "invalid member access: " + class_name + "." + node.name() + " is not public";
+        m_diagnostics.push_back(std::move(diagnostic));
+    }
+    if (!member->function)
+    {
+        return 0U;
+    }
+    validate_call_arity(node.name(), node.args().size(), member->function->argument_types.size());
+    return validate_user_call_arguments(node, *member->function);
+}
+bool FormulaSymbolCollector::is_read_only_symbol(const std::string &name) const
+{
+    for (auto scope = m_read_only_symbols.rbegin(); scope != m_read_only_symbols.rend(); ++scope)
+    {
+        if (scope->find(name) != scope->end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+bool FormulaSymbolCollector::is_builtin_variable(const std::string &name) const
+{
+    static constexpr std::array<std::string_view, 19> variables{
+        "z",
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "p5",
+        "pixel",
+        "lastsqr",
+        "rand",
+        "pi",
+        "e",
+        "maxit",
+        "scrnmax",
+        "scrnpix",
+        "whitesq",
+        "ismand",
+        "center",
+        "magxmag",
+        "rotskew",
+    };
+    for (std::string_view variable : variables)
+    {
+        if (name == variable)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+void FormulaSymbolCollector::report_unknown_symbol(const std::string &name)
+{
+    SemanticDiagnostic diagnostic;
+    diagnostic.code = SemanticDiagnosticCode::UNKNOWN_SYMBOL;
+    diagnostic.message = "unknown symbol: " + name;
+    m_diagnostics.push_back(std::move(diagnostic));
+}
 
 std::vector<SemanticDiagnostic> analyze_formula(
     const ast::FormulaSections &formula, const FormulaSemanticContext &context)
