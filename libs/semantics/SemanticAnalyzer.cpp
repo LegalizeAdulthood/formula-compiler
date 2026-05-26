@@ -4,8 +4,8 @@
 //
 #include <formula/semantics/SemanticAnalyzer.h>
 
-#include <formula/semantics/ReferenceCollector.h>
 #include <formula/core/Visitor.h>
+#include <formula/semantics/ReferenceCollector.h>
 
 #include <algorithm>
 #include <array>
@@ -480,74 +480,81 @@ std::optional<PluginParameterPath> plugin_parameter_path(std::string_view saved_
 class ParameterMetadataCollector : public ast::NullVisitor
 {
 public:
-    explicit ParameterMetadataCollector(ParameterMetadata &metadata) :
-        m_metadata(metadata)
-    {
-    }
+    explicit ParameterMetadataCollector(ParameterMetadata &metadata);
 
-    void visit(const ast::FunctionBlockNode &node) override
-    {
-        m_metadata.functions.push_back({node.type().empty() ? "complex" : node.type(), node.name()});
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        ParameterMetadata::Param param;
-        param.type = node.type();
-        param.name = node.name();
-        m_current_param = &param;
-        if (node.block())
-        {
-            node.block()->visit(*this);
-        }
-        m_current_param = nullptr;
-        m_metadata.params.push_back(std::move(param));
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (node.key() == "default" && m_current_param != nullptr)
-        {
-            m_current_param->has_default = true;
-            if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
-            {
-                m_current_param->default_selector = selector->name;
-            }
-        }
-        if (node.key() == "enum" && m_current_param != nullptr)
-        {
-            const auto *values = std::get_if<std::vector<std::string>>(&node.value());
-            if (values != nullptr)
-            {
-                m_current_param->enum_values = *values;
-            }
-        }
-        if (node.key() != "param_forward")
-        {
-            return;
-        }
-        const auto *values = std::get_if<std::vector<std::string>>(&node.value());
-        if (values != nullptr && values->size() >= 2U)
-        {
-            m_metadata.forwards.push_back({values->front(), (*values)[1]});
-        }
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            if (statement)
-            {
-                statement->visit(*this);
-            }
-        }
-    }
+    void visit(const ast::FunctionBlockNode &node) override;
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::SettingNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
 
 private:
     ParameterMetadata &m_metadata;
     ParameterMetadata::Param *m_current_param{};
 };
+
+ParameterMetadataCollector::ParameterMetadataCollector(ParameterMetadata &metadata) :
+    m_metadata(metadata)
+{
+}
+
+void ParameterMetadataCollector::visit(const ast::FunctionBlockNode &node)
+{
+    m_metadata.functions.push_back({node.type().empty() ? "complex" : node.type(), node.name()});
+}
+
+void ParameterMetadataCollector::visit(const ast::ParamBlockNode &node)
+{
+    ParameterMetadata::Param param;
+    param.type = node.type();
+    param.name = node.name();
+    m_current_param = &param;
+    if (node.block())
+    {
+        node.block()->visit(*this);
+    }
+    m_current_param = nullptr;
+    m_metadata.params.push_back(std::move(param));
+}
+
+void ParameterMetadataCollector::visit(const ast::SettingNode &node)
+{
+    if (node.key() == "default" && m_current_param != nullptr)
+    {
+        m_current_param->has_default = true;
+        if (const auto *selector = std::get_if<ast::EnumName>(&node.value()))
+        {
+            m_current_param->default_selector = selector->name;
+        }
+    }
+    if (node.key() == "enum" && m_current_param != nullptr)
+    {
+        const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+        if (values != nullptr)
+        {
+            m_current_param->enum_values = *values;
+        }
+    }
+    if (node.key() != "param_forward")
+    {
+        return;
+    }
+    const auto *values = std::get_if<std::vector<std::string>>(&node.value());
+    if (values != nullptr && values->size() >= 2U)
+    {
+        m_metadata.forwards.push_back({values->front(), (*values)[1]});
+    }
+}
+
+void ParameterMetadataCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        if (statement)
+        {
+            statement->visit(*this);
+        }
+    }
+}
 
 ParameterMetadata collect_parameter_metadata(const ast::FormulaSections &ast)
 {
