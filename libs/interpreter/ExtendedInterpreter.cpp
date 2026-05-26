@@ -2716,104 +2716,13 @@ class ParameterDefaultCollector : public ast::NullVisitor
 {
 public:
     ParameterDefaultCollector(ExtendedRuntimeState &state, const FunctionMap &functions, const FormulaFileSet &files,
-        std::size_t max_loop_iterations) :
-        m_state(state),
-        m_functions(functions),
-        m_files(files),
-        m_max_loop_iterations(max_loop_iterations)
-    {
-    }
+        std::size_t max_loop_iterations);
 
-    void collect(const ast::Expr &node)
-    {
-        if (node)
-        {
-            node->visit(*this);
-        }
-    }
-
-    void visit(const ast::ParamBlockNode &node) override
-    {
-        m_current_parameter = &node;
-        m_current_enum_values.clear();
-        collect(node.block());
-        if (!m_state.has_parameter_value(node.name()))
-        {
-            Value value{implicit_parameter_default(node.type())};
-            if (!m_current_enum_values.empty())
-            {
-                value = *make_enum_parameter_value(
-                    RuntimeParameterInfo{node.type(), node.name(), m_current_enum_values, {}, false}, value);
-            }
-            m_state.set_parameter_value(node.name(), std::move(value));
-        }
-        m_current_parameter = nullptr;
-        m_current_enum_values.clear();
-    }
-
-    void visit(const ast::FunctionBlockNode &node) override
-    {
-        m_current_function = &node;
-        collect(node.block());
-        if (!m_state.has_parameter_value(node.name()))
-        {
-            m_state.set_parameter_value(
-                node.name(), Value{default_function_parameter_target(node.type(), node.name())});
-        }
-        m_current_function = nullptr;
-    }
-
-    void visit(const ast::SettingNode &node) override
-    {
-        if (node.key() != "default")
-        {
-            if (node.key() == "enum" && m_current_parameter != nullptr)
-            {
-                if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
-                {
-                    m_current_enum_values = *values;
-                }
-            }
-            return;
-        }
-        if (m_current_function != nullptr && !m_state.has_parameter_value(m_current_function->name()))
-        {
-            if (const std::optional<std::string> name{function_name_value(node.value())})
-            {
-                m_state.set_parameter_value(m_current_function->name(), Value{*name});
-            }
-            return;
-        }
-        if (m_current_parameter == nullptr || m_state.has_parameter_value(m_current_parameter->name()))
-        {
-            return;
-        }
-        Value value;
-        if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
-        {
-            value = ExpressionInterpreter{m_state, m_functions, m_files, m_max_loop_iterations}.interpret(*expr);
-        }
-        else
-        {
-            value = value_from_setting(node.value());
-        }
-        value = convert_parameter_default(value, m_current_parameter->type());
-        if (!m_current_enum_values.empty())
-        {
-            value = *make_enum_parameter_value(RuntimeParameterInfo{m_current_parameter->type(),
-                                                   m_current_parameter->name(), m_current_enum_values, {}, false},
-                value);
-        }
-        m_state.set_parameter_value(m_current_parameter->name(), std::move(value));
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        for (const ast::Expr &statement : node.statements())
-        {
-            collect(statement);
-        }
-    }
+    void collect(const ast::Expr &node);
+    void visit(const ast::ParamBlockNode &node) override;
+    void visit(const ast::FunctionBlockNode &node) override;
+    void visit(const ast::SettingNode &node) override;
+    void visit(const ast::StatementSeqNode &node) override;
 
 private:
     ExtendedRuntimeState &m_state;
@@ -2824,6 +2733,105 @@ private:
     const ast::FunctionBlockNode *m_current_function{};
     std::vector<std::string> m_current_enum_values;
 };
+
+ParameterDefaultCollector::ParameterDefaultCollector(ExtendedRuntimeState &state, const FunctionMap &functions,
+    const FormulaFileSet &files, std::size_t max_loop_iterations) :
+    m_state(state),
+    m_functions(functions),
+    m_files(files),
+    m_max_loop_iterations(max_loop_iterations)
+{
+}
+
+void ParameterDefaultCollector::collect(const ast::Expr &node)
+{
+    if (node)
+    {
+        node->visit(*this);
+    }
+}
+
+void ParameterDefaultCollector::visit(const ast::ParamBlockNode &node)
+{
+    m_current_parameter = &node;
+    m_current_enum_values.clear();
+    collect(node.block());
+    if (!m_state.has_parameter_value(node.name()))
+    {
+        Value value{implicit_parameter_default(node.type())};
+        if (!m_current_enum_values.empty())
+        {
+            value = *make_enum_parameter_value(
+                RuntimeParameterInfo{node.type(), node.name(), m_current_enum_values, {}, false}, value);
+        }
+        m_state.set_parameter_value(node.name(), std::move(value));
+    }
+    m_current_parameter = nullptr;
+    m_current_enum_values.clear();
+}
+
+void ParameterDefaultCollector::visit(const ast::FunctionBlockNode &node)
+{
+    m_current_function = &node;
+    collect(node.block());
+    if (!m_state.has_parameter_value(node.name()))
+    {
+        m_state.set_parameter_value(node.name(), Value{default_function_parameter_target(node.type(), node.name())});
+    }
+    m_current_function = nullptr;
+}
+
+void ParameterDefaultCollector::visit(const ast::SettingNode &node)
+{
+    if (node.key() != "default")
+    {
+        if (node.key() == "enum" && m_current_parameter != nullptr)
+        {
+            if (const auto *values = std::get_if<std::vector<std::string>>(&node.value()))
+            {
+                m_current_enum_values = *values;
+            }
+        }
+        return;
+    }
+    if (m_current_function != nullptr && !m_state.has_parameter_value(m_current_function->name()))
+    {
+        if (const std::optional<std::string> name{function_name_value(node.value())})
+        {
+            m_state.set_parameter_value(m_current_function->name(), Value{*name});
+        }
+        return;
+    }
+    if (m_current_parameter == nullptr || m_state.has_parameter_value(m_current_parameter->name()))
+    {
+        return;
+    }
+    Value value;
+    if (const auto *expr = std::get_if<ast::Expr>(&node.value()))
+    {
+        value = ExpressionInterpreter{m_state, m_functions, m_files, m_max_loop_iterations}.interpret(*expr);
+    }
+    else
+    {
+        value = value_from_setting(node.value());
+    }
+    value = convert_parameter_default(value, m_current_parameter->type());
+    if (!m_current_enum_values.empty())
+    {
+        value = *make_enum_parameter_value(RuntimeParameterInfo{m_current_parameter->type(),
+                                               m_current_parameter->name(), m_current_enum_values, {}, false},
+            value);
+    }
+    m_state.set_parameter_value(m_current_parameter->name(), std::move(value));
+}
+
+void ParameterDefaultCollector::visit(const ast::StatementSeqNode &node)
+{
+    for (const ast::Expr &statement : node.statements())
+    {
+        collect(statement);
+    }
+}
 
 const ast::Expr &section_expr(const ast::FormulaSections &formula, Section section)
 {
