@@ -5,9 +5,9 @@
 #include <formula/interpreter/ExtendedInterpreter.h>
 
 #include <formula/core/Node.h>
+#include <formula/core/Visitor.h>
 #include <formula/parser/Parser.h>
 #include <formula/semantics/ReferenceCollector.h>
-#include <formula/core/Visitor.h>
 
 #include <formula/core/functions.h>
 
@@ -1550,1104 +1550,56 @@ class ExpressionInterpreter : public ast::NullVisitor
 {
 public:
     ExpressionInterpreter(ExtendedRuntimeState &state, const FunctionMap &functions, const FormulaFileSet &files,
-        std::size_t max_loop_iterations) :
-        m_state(state),
-        m_functions(functions),
-        m_files(files),
-        m_max_loop_iterations(max_loop_iterations)
-    {
-    }
+        std::size_t max_loop_iterations);
 
-    Value interpret(const ast::Expr &node)
-    {
-        if (!node)
-        {
-            return {};
-        }
-        node->visit(*this);
-        return m_result;
-    }
-
-    void visit(const ast::AssignmentNode &node) override
-    {
-        Value value{interpret(node.expression())};
-        const RuntimeLValue target{lvalue(node.target())};
-        check_array_copy(target.get(), value);
-        target.set(value);
-        m_result = std::move(value);
-    }
-
-    void visit(const ast::BinaryOpNode &node) override
-    {
-        const std::string &op{node.op()};
-        const Value left{interpret(node.left())};
-        if (op == "&&")
-        {
-            m_result = is_truthy(left) ? Value{is_truthy(interpret(node.right()))} : Value{false};
-            return;
-        }
-        if (op == "||")
-        {
-            m_result = is_truthy(left) ? Value{true} : Value{is_truthy(interpret(node.right()))};
-            return;
-        }
-
-        const Value right{interpret(node.right())};
-        if (op == "<" || op == "<=" || op == ">" || op == ">=" || op == "==" || op == "!=")
-        {
-            m_result = compare_values(left, right, op);
-            return;
-        }
-        if (const std::optional<Value> value{color_binary(left, right, op)})
-        {
-            m_result = *value;
-            return;
-        }
-        m_result = numeric_binary(left, right, op);
-    }
-
-    void visit(const ast::ConstantRefNode &node) override
-    {
-        m_result = m_state.predefined_value(node.name());
-    }
-
-    void visit(const ast::DeclarationNode &node) override
-    {
-        if (node.is_array())
-        {
-            if (node.is_dynamic_array())
-            {
-                const Value value{make_dynamic_array(node)};
-                m_state.declare_local_value(node.name(), value);
-                m_result = value;
-                return;
-            }
-            const Value value{make_static_array(node)};
-            m_state.declare_local_value(node.name(), value);
-            m_result = value;
-            return;
-        }
-        Value value;
-        if (const std::optional<ValueKind> kind{parameter_value_kind(node.type())})
-        {
-            value = node.initializer() ? convert_value(interpret(node.initializer()), *kind) : default_value(*kind);
-        }
-        else if (node.initializer())
-        {
-            value = interpret(node.initializer());
-        }
-        else
-        {
-            value = make_plugin_value(PluginValue{{}, std::string{node.type()}});
-        }
-        m_state.declare_local_value(node.name(), value);
-        m_result = std::move(value);
-    }
-
-    void visit(const ast::FunctionBlockNode &) override
-    {
-        unsupported_runtime_node("FunctionBlockNode");
-    }
-
-    void visit(const ast::FunctionDeclNode &node) override
-    {
-        m_functions[node.name()] = &node;
-    }
-
-    void visit(const ast::FunctionCallNode &node) override
-    {
-        if (node.has_target())
-        {
-            if (const auto result = call_static_member(node))
-            {
-                m_result = *result;
-                return;
-            }
-            if (const auto result = call_member(node))
-            {
-                m_result = *result;
-                return;
-            }
-            unsupported_runtime_node("FunctionCallNode");
-        }
-        if (!node.name().empty() && node.name().front() == '@')
-        {
-            m_result = call_parameter_function(node.name().substr(1), node.args());
-            return;
-        }
-        if (is_legacy_function_parameter_name(node.name()) && m_state.has_parameter_value(node.name()))
-        {
-            m_result = call_parameter_function(node.name(), node.args());
-            return;
-        }
-        if (const auto builtin = call_builtin(node.name(), node.args()))
-        {
-            m_result = *builtin;
-            return;
-        }
-        if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.name())})
-        {
-            m_result = cast_object(*klass, node.args());
-            return;
-        }
-        const auto function = m_functions.find(node.name());
-        if (function == m_functions.end())
-        {
-            unsupported_runtime_node("FunctionCallNode");
-        }
-        m_result = call_function(*function->second, node.args());
-    }
-
-    void visit(const ast::HeadingBlockNode &) override
-    {
-        unsupported_runtime_node("HeadingBlockNode");
-    }
-
-    void visit(const ast::IdentifierNode &node) override
-    {
-        m_result = m_state.value(node.name());
-    }
-
-    void visit(const ast::IfStatementNode &node) override
-    {
-        if (is_truthy(interpret(node.condition())))
-        {
-            if (node.has_then_block())
-            {
-                m_result = interpret_block(node.then_block());
-            }
-            return;
-        }
-        if (node.has_else_block())
-        {
-            m_result = interpret_block(node.else_block());
-        }
-    }
-
-    void visit(const ast::IndexNode &node) override
-    {
-        m_result = array_lvalue(node).get();
-    }
-
-    void visit(const ast::LiteralNode &node) override
-    {
-        const ast::LiteralNode::ValueType value{node.value()};
-        switch (value.index())
-        {
-        case 0:
-            m_result = Value{std::get<int>(value)};
-            return;
-        case 1:
-            m_result = Value{std::get<double>(value)};
-            return;
-        case 2:
-            m_result = Value{std::get<Complex>(value)};
-            return;
-        case 3:
-            m_result = Value{std::get<bool>(value)};
-            return;
-        case 4:
-            m_result = Value{std::get<std::string>(value)};
-            return;
-        case 5:
-        {
-            const ast::LiteralNode::Color color{std::get<ast::LiteralNode::Color>(value)};
-            m_result = Value{ColorValue{color.red, color.green, color.blue, color.alpha}};
-            return;
-        }
-        default:
-            throw std::runtime_error("unknown literal variant index");
-        }
-    }
-
-    void visit(const ast::MemberAccessNode &node) override
-    {
-        if (const auto result = class_constant_value(node))
-        {
-            m_result = *result;
-            return;
-        }
-        m_result = member_lvalue(node).get();
-    }
-
-    void visit(const ast::NewNode &node) override
-    {
-        if (node.type() == "Image")
-        {
-            check_arity("Image", node.args().size(), 0U);
-            m_result = make_image_value(ImageValue{});
-            return;
-        }
-        if (!node.type().empty() && node.type().front() == '@')
-        {
-            m_result = m_state.parameter_value(node.type());
-            if (m_result.kind() == ValueKind::PLUGIN)
-            {
-                const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
-                if (!plugin)
-                {
-                    throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
-                }
-                m_result = construct_object(*plugin, node.args());
-                return;
-            }
-            if (m_result.kind() == ValueKind::EMPTY)
-            {
-                m_result = default_value(ValueKind::IMAGE);
-            }
-            else if (m_result.kind() == ValueKind::STRING)
-            {
-                throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
-            }
-            return;
-        }
-        if (m_state.has_parameter_value(node.type()))
-        {
-            m_result = m_state.parameter_value(node.type());
-            if (m_result.kind() == ValueKind::PLUGIN)
-            {
-                const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
-                if (!plugin)
-                {
-                    throw std::runtime_error("missing plug-in binding: " + node.type());
-                }
-                m_result = construct_object(*plugin, node.args());
-                return;
-            }
-            if (m_result.kind() == ValueKind::EMPTY)
-            {
-                m_result = default_value(ValueKind::IMAGE);
-            }
-            else if (m_result.kind() == ValueKind::STRING)
-            {
-                throw std::runtime_error("missing plug-in binding: " + node.type());
-            }
-            return;
-        }
-        if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.type())})
-        {
-            m_result = construct_object(*klass, node.args());
-            return;
-        }
-        unsupported_runtime_node("NewNode");
-    }
-
-    void visit(const ast::ParameterRefNode &node) override
-    {
-        m_result = m_state.parameter_value(node.name());
-    }
-
-    void visit(const ast::RepeatUntilNode &node) override
-    {
-        std::size_t iterations{};
-        do
-        {
-            check_loop_iterations(++iterations);
-            m_result = interpret_block(node.body());
-            if (m_returning)
-            {
-                return;
-            }
-        } while (!is_truthy(interpret(node.condition())));
-    }
-
-    void visit(const ast::ReturnNode &node) override
-    {
-        m_result = node.expression() ? interpret(node.expression()) : Value{};
-        m_returning = true;
-    }
-
-    void visit(const ast::SettingNode &) override
-    {
-        unsupported_runtime_node("SettingNode");
-    }
-
-    void visit(const ast::StatementSeqNode &node) override
-    {
-        m_result = {};
-        for (const ast::Expr &statement : node.statements())
-        {
-            m_result = interpret(statement);
-            if (m_returning)
-            {
-                return;
-            }
-        }
-    }
-
-    void visit(const ast::UnaryOpNode &node) override
-    {
-        const Value value{interpret(node.operand())};
-        switch (node.op())
-        {
-        case '+':
-            m_result = value;
-            return;
-        case '-':
-            m_result = numeric_binary(Value{0}, value, "-");
-            return;
-        case '!':
-            m_result = Value{!is_truthy(value)};
-            return;
-        case '|':
-        {
-            const Complex complex{complex_value(value)};
-            m_result = Value{complex.re * complex.re + complex.im * complex.im};
-            return;
-        }
-        default:
-            throw std::runtime_error("invalid unary operator");
-        }
-    }
-
-    void visit(const ast::WhileNode &node) override
-    {
-        std::size_t iterations{};
-        while (is_truthy(interpret(node.condition())))
-        {
-            check_loop_iterations(++iterations);
-            m_result = interpret_block(node.body());
-            if (m_returning)
-            {
-                return;
-            }
-        }
-    }
+    Value interpret(const ast::Expr &node);
+    void visit(const ast::AssignmentNode &node) override;
+    void visit(const ast::BinaryOpNode &node) override;
+    void visit(const ast::ConstantRefNode &node) override;
+    void visit(const ast::DeclarationNode &node) override;
+    void visit(const ast::FunctionBlockNode &) override;
+    void visit(const ast::FunctionDeclNode &node) override;
+    void visit(const ast::FunctionCallNode &node) override;
+    void visit(const ast::HeadingBlockNode &) override;
+    void visit(const ast::IdentifierNode &node) override;
+    void visit(const ast::IfStatementNode &node) override;
+    void visit(const ast::IndexNode &node) override;
+    void visit(const ast::LiteralNode &node) override;
+    void visit(const ast::MemberAccessNode &node) override;
+    void visit(const ast::NewNode &node) override;
+    void visit(const ast::ParameterRefNode &node) override;
+    void visit(const ast::RepeatUntilNode &node) override;
+    void visit(const ast::ReturnNode &node) override;
+    void visit(const ast::SettingNode &) override;
+    void visit(const ast::StatementSeqNode &node) override;
+    void visit(const ast::UnaryOpNode &node) override;
+    void visit(const ast::WhileNode &node) override;
 
 private:
-    Value make_static_array(const ast::DeclarationNode &node)
-    {
-        ArrayValue array;
-        array.element_kind = value_kind_for_type(node.type());
-        array.dimensions.reserve(node.dimensions().size());
-        for (const ast::Expr &dimension : node.dimensions())
-        {
-            const Value value{convert_value(interpret(dimension), ValueKind::INT)};
-            const int size{std::get<int>(value.storage())};
-            if (size < 0)
-            {
-                throw std::runtime_error("invalid array dimension");
-            }
-            array.dimensions.push_back(size);
-        }
-        const int count{std::accumulate(
-            array.dimensions.begin(), array.dimensions.end(), 1, [](int left, int right) { return left * right; })};
-        array.elements.assign(static_cast<std::size_t>(count), default_value(array.element_kind));
-        return make_array_value(std::move(array));
-    }
-
-    Value make_dynamic_array(const ast::DeclarationNode &node)
-    {
-        ArrayValue array;
-        array.element_kind = value_kind_for_type(node.type());
-        array.dynamic = true;
-        array.dimensions = {0};
-        return make_array_value(std::move(array));
-    }
-
-    Value call_set_length(const std::vector<ast::Expr> &args)
-    {
-        if (args.size() != 2U)
-        {
-            throw std::runtime_error("invalid call arity: setLength");
-        }
-        const RuntimeLValue value{lvalue(args.front())};
-        Value array_value{value.get()};
-        if (array_value.kind() != ValueKind::ARRAY)
-        {
-            throw std::runtime_error("invalid dynamic array argument: setLength");
-        }
-        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
-        if (!array || !array->dynamic)
-        {
-            throw std::runtime_error("invalid dynamic array argument: setLength");
-        }
-        const int size{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
-        if (size < 0)
-        {
-            throw std::runtime_error("invalid array length");
-        }
-        array->dimensions = {size};
-        array->elements.resize(static_cast<std::size_t>(size), default_value(array->element_kind));
-        return {};
-    }
-
-    Value call_length(const std::vector<ast::Expr> &args)
-    {
-        if (args.size() != 1U)
-        {
-            throw std::runtime_error("invalid call arity: length");
-        }
-        const Value array_value{interpret(args.front())};
-        if (array_value.kind() != ValueKind::ARRAY)
-        {
-            throw std::runtime_error("invalid dynamic array argument: length");
-        }
-        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
-        if (!array || !array->dynamic)
-        {
-            throw std::runtime_error("invalid dynamic array argument: length");
-        }
-        return Value{static_cast<int>(array->elements.size())};
-    }
-
-    std::optional<Value> call_builtin(const std::string &name, const std::vector<ast::Expr> &args)
-    {
-        if (name == "setLength")
-        {
-            return call_set_length(args);
-        }
-        if (name == "length")
-        {
-            return call_length(args);
-        }
-        if (name == "print")
-        {
-            std::ostringstream out;
-            for (const ast::Expr &arg : args)
-            {
-                out << format_value(interpret(arg));
-            }
-            m_state.add_message(out.str());
-            return Value{};
-        }
-        if (name == "rgb" || name == "hsl")
-        {
-            check_arity(name, args.size(), 3U);
-            const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
-            const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
-            const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
-            return Value{
-                name == "rgb" ? ColorValue{first, second, third, 1.0} : hsl_to_color(first, second, third, 1.0)};
-        }
-        if (name == "rgba" || name == "hsla")
-        {
-            check_arity(name, args.size(), 4U);
-            const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
-            const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
-            const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
-            const double fourth{real_part(convert_value(interpret(args[3]), ValueKind::FLOAT))};
-            return Value{
-                name == "rgba" ? ColorValue{first, second, third, fourth} : hsl_to_color(first, second, third, fourth)};
-        }
-        if (name == "red" || name == "green" || name == "blue" || name == "alpha" || name == "hue" || name == "sat" ||
-            name == "lum")
-        {
-            check_arity(name, args.size(), 1U);
-            const ColorValue color{color_value(interpret(args.front()))};
-            if (name == "red")
-            {
-                return Value{color.red};
-            }
-            if (name == "green")
-            {
-                return Value{color.green};
-            }
-            if (name == "blue")
-            {
-                return Value{color.blue};
-            }
-            if (name == "alpha")
-            {
-                return Value{color.alpha};
-            }
-            const HslValue hsl{color_to_hsl(color)};
-            if (name == "hue")
-            {
-                return Value{hsl.hue};
-            }
-            if (name == "sat")
-            {
-                return Value{hsl.saturation};
-            }
-            return Value{hsl.luminance};
-        }
-        if (name == "random")
-        {
-            check_arity(name, args.size(), 1U);
-            return Value{random_seed(std::get<int>(convert_value(interpret(args.front()), ValueKind::INT).storage()))};
-        }
-        if (name == "atan2")
-        {
-            check_arity(name, args.size(), 1U);
-            const Complex value{complex_value(interpret(args.front()))};
-            return Value{std::atan2(value.im, value.re)};
-        }
-        if (name == "isNaN" || name == "isInf")
-        {
-            check_arity(name, args.size(), 1U);
-            const double value{real_part(convert_value(interpret(args.front()), ValueKind::FLOAT))};
-            return Value{name == "isNaN" ? std::isnan(value) : std::isinf(value)};
-        }
-        if (lookup_complex(name) != nullptr || lookup_real(name) != nullptr)
-        {
-            check_arity(name, args.size(), 1U);
-            return Value{evaluate(name, complex_value(interpret(args.front())))};
-        }
-        return std::nullopt;
-    }
-
-    Value call_parameter_function(std::string_view name, const std::vector<ast::Expr> &args)
-    {
-        const Value target{m_state.parameter_value(name)};
-        if (target.kind() != ValueKind::STRING)
-        {
-            throw std::runtime_error("invalid function parameter: " + std::string{name});
-        }
-        const std::string &target_name{std::get<std::string>(target.storage())};
-        if (const std::optional<Value> builtin{call_builtin(target_name, args)})
-        {
-            return *builtin;
-        }
-        const auto function = m_functions.find(target_name);
-        if (function == m_functions.end())
-        {
-            throw std::runtime_error("invalid function parameter target: " + target_name);
-        }
-        return call_function(*function->second, args);
-    }
-
-    std::optional<Value> call_member(const ast::FunctionCallNode &node)
-    {
-        Value target_value{interpret(node.target())};
-        if (target_value.kind() == ValueKind::PLUGIN)
-        {
-            return call_object_method(target_value, node);
-        }
-        if (target_value.kind() != ValueKind::IMAGE)
-        {
-            return std::nullopt;
-        }
-        const std::string &name{node.name()};
-        const std::vector<ast::Expr> &args{node.args()};
-        Value::ImagePtr image{image_value(target_value)};
-        if (name == "assign")
-        {
-            check_arity(name, args.size(), 1U);
-            const Value source{interpret(args.front())};
-            RuntimeLValue target{lvalue(node.target())};
-            target.set(source.kind() == ValueKind::EMPTY ? default_value(ValueKind::IMAGE) : source);
-            return Value{};
-        }
-        if (name == "getEmpty")
-        {
-            check_arity(name, args.size(), 0U);
-            return Value{!image || image->empty};
-        }
-        if (name == "getWidth")
-        {
-            check_arity(name, args.size(), 0U);
-            return Value{image && !image->empty ? image->width : 0};
-        }
-        if (name == "getHeight")
-        {
-            check_arity(name, args.size(), 0U);
-            return Value{image && !image->empty ? image->height : 0};
-        }
-        if (name == "getPixel")
-        {
-            check_arity(name, args.size(), 2U);
-            const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
-            const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
-            return Value{image ? image_pixel(*image, x, y) : transparent_color()};
-        }
-        if (name == "setPixel")
-        {
-            check_arity(name, args.size(), 3U);
-            const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
-            const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
-            const ColorValue color{color_value(interpret(args[2]))};
-            if (image && !image->empty && x >= 0 && y >= 0 && x < image->width && y < image->height)
-            {
-                image->pixels[image_pixel_index(*image, x, y)] = color;
-            }
-            return Value{};
-        }
-        if (name == "resize")
-        {
-            check_arity(name, args.size(), 2U);
-            const int width{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
-            const int height{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
-            resize_image(*image, width, height);
-            return Value{};
-        }
-        if (name == "getColor")
-        {
-            check_arity(name, args.size(), 1U);
-            const Complex point{complex_value(interpret(args.front()))};
-            if (!image || image->empty)
-            {
-                return Value{transparent_color()};
-            }
-            const int x{static_cast<int>(((point.re + 1.0) / 2.0) * image->width)};
-            const int y{static_cast<int>(((1.0 - point.im) / 2.0) * image->height)};
-            return Value{image_pixel(*image, x, y)};
-        }
-        return std::nullopt;
-    }
-
-    std::optional<Value> call_object_method(const Value &target_value, const ast::FunctionCallNode &node)
-    {
-        const Value::PluginPtr object{std::get<Value::PluginPtr>(target_value.storage())};
-        if (!object || !object->object_initialized)
-        {
-            throw std::runtime_error("null object reference");
-        }
-        const ast::FunctionDeclNode *method{};
-        if (object->ast)
-        {
-            method = find_class_method(*object->ast, node.name());
-        }
-        std::vector<std::string> seen;
-        std::string base{object->base_class};
-        while (method == nullptr && !base.empty())
-        {
-            if (std::find_if(seen.begin(), seen.end(),
-                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
-            {
-                break;
-            }
-            seen.push_back(base);
-            const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
-            if (klass == nullptr)
-            {
-                break;
-            }
-            if (klass->ast)
-            {
-                method = find_class_method(*klass->ast, node.name());
-            }
-            base = klass->base_class;
-        }
-        if (method == nullptr)
-        {
-            const ast::FunctionDeclNode *static_method{find_static_method(*object, node.name())};
-            if (static_method == nullptr)
-            {
-                return std::nullopt;
-            }
-            return call_function(*static_method, node.args());
-        }
-        return call_method(target_value, *method, node.args());
-    }
-
-    const ast::FunctionDeclNode *find_static_method(const PluginValue &object, std::string_view name) const
-    {
-        const ast::FunctionDeclNode *method{};
-        if (object.ast)
-        {
-            method = find_static_class_method(*object.ast, name);
-        }
-        std::vector<std::string> seen;
-        std::string base{object.base_class};
-        while (method == nullptr && !base.empty())
-        {
-            if (std::find_if(seen.begin(), seen.end(),
-                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
-            {
-                break;
-            }
-            seen.push_back(base);
-            const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
-            if (klass == nullptr)
-            {
-                break;
-            }
-            if (klass->ast)
-            {
-                method = find_static_class_method(*klass->ast, name);
-            }
-            base = klass->base_class;
-        }
-        return method;
-    }
-
-    std::optional<Value> call_static_member(const ast::FunctionCallNode &node)
-    {
-        const std::string *class_name{class_name_from_identifier(node.target())};
-        if (class_name == nullptr)
-        {
-            return std::nullopt;
-        }
-        const ast::FunctionDeclNode *method{find_static_method(*class_name, node.name())};
-        if (method == nullptr)
-        {
-            return std::nullopt;
-        }
-        return call_function(*method, node.args());
-    }
-
-    const ast::FunctionDeclNode *find_static_method(std::string_view class_name, std::string_view name) const
-    {
-        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
-        if (klass == nullptr)
-        {
-            return nullptr;
-        }
-        const ast::FunctionDeclNode *method{};
-        if (klass->ast)
-        {
-            method = find_static_class_method(*klass->ast, name);
-        }
-        std::vector<std::string> seen;
-        std::string base{klass->base_class};
-        while (method == nullptr && !base.empty())
-        {
-            if (std::find_if(seen.begin(), seen.end(),
-                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
-            {
-                break;
-            }
-            seen.push_back(base);
-            klass = find_retained_class_by_name(m_files.retained_classes, base);
-            if (klass == nullptr)
-            {
-                break;
-            }
-            if (klass->ast)
-            {
-                method = find_static_class_method(*klass->ast, name);
-            }
-            base = klass->base_class;
-        }
-        return method;
-    }
-
-    std::optional<Value> class_constant_value(const ast::MemberAccessNode &node)
-    {
-        const std::string *class_name{class_name_from_identifier(node.target())};
-        if (class_name == nullptr)
-        {
-            return std::nullopt;
-        }
-        const ast::DeclarationNode *declaration{find_class_declaration(*class_name, node.member())};
-        if (declaration == nullptr)
-        {
-            return std::nullopt;
-        }
-        if (declaration->is_array())
-        {
-            return declaration->is_dynamic_array() ? make_dynamic_array(*declaration) : make_static_array(*declaration);
-        }
-        if (const std::optional<ValueKind> kind{parameter_value_kind(declaration->type())})
-        {
-            return declaration->initializer() ? convert_value(interpret(declaration->initializer()), *kind)
-                                              : default_value(*kind);
-        }
-        return declaration->initializer() ? interpret(declaration->initializer())
-                                          : make_plugin_value(PluginValue{{}, std::string{declaration->type()}});
-    }
-
-    Value construct_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
-    {
-        PluginValue plugin;
-        plugin.filename = klass.reference.filename;
-        plugin.class_name = klass.reference.class_name;
-        plugin.base_class = klass.base_class;
-        plugin.ast = klass.ast;
-        return construct_object(plugin, args);
-    }
-
-    Value construct_object(const PluginValue &plugin, const std::vector<ast::Expr> &args)
-    {
-        Value object{make_object_value(plugin)};
-        const Value::PluginPtr object_plugin{std::get<Value::PluginPtr>(object.storage())};
-        const ast::FunctionDeclNode *constructor{};
-        if (object_plugin && object_plugin->ast)
-        {
-            constructor = find_class_constructor(*object_plugin->ast, object_plugin->class_name);
-        }
-        if (constructor == nullptr)
-        {
-            check_arity(object_plugin ? object_plugin->class_name : std::string{"constructor"}, args.size(), 0U);
-            return object;
-        }
-        call_method(object, *constructor, args);
-        return object;
-    }
-
-    Value cast_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
-    {
-        check_arity(klass.reference.class_name, args.size(), 1U);
-        const Value value{interpret(args.front())};
-        if (value.kind() != ValueKind::PLUGIN)
-        {
-            return {};
-        }
-        const Value::PluginPtr plugin{std::get<Value::PluginPtr>(value.storage())};
-        if (!plugin || !plugin->object_initialized)
-        {
-            return {};
-        }
-        if (!runtime_class_matches_parameter_type(
-                m_files.retained_classes, plugin->class_name, klass.reference.class_name))
-        {
-            return {};
-        }
-        return value;
-    }
-
-    const ast::DeclarationNode *find_class_declaration(std::string_view class_name, std::string_view name) const
-    {
-        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
-        if (klass == nullptr)
-        {
-            return nullptr;
-        }
-        const ast::DeclarationNode *declaration{};
-        if (klass->ast)
-        {
-            declaration = find_class_declaration_in_ast(*klass->ast, name);
-        }
-        std::vector<std::string> seen;
-        std::string base{klass->base_class};
-        while (declaration == nullptr && !base.empty())
-        {
-            if (std::find_if(seen.begin(), seen.end(),
-                    [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
-            {
-                break;
-            }
-            seen.push_back(base);
-            klass = find_retained_class_by_name(m_files.retained_classes, base);
-            if (klass == nullptr)
-            {
-                break;
-            }
-            if (klass->ast)
-            {
-                declaration = find_class_declaration_in_ast(*klass->ast, name);
-            }
-            base = klass->base_class;
-        }
-        return declaration;
-    }
-
-    RuntimeLValue array_lvalue(const ast::IndexNode &node)
-    {
-        const Value array_value{interpret(node.target())};
-        if (array_value.kind() != ValueKind::ARRAY)
-        {
-            throw std::runtime_error("expected array value");
-        }
-        const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
-        if (!array)
-        {
-            throw std::runtime_error("expected array value");
-        }
-        if (node.indices().size() != array->dimensions.size())
-        {
-            throw std::runtime_error("invalid array index count");
-        }
-        std::size_t flat{};
-        for (std::size_t i = 0; i < node.indices().size(); ++i)
-        {
-            const Value value{convert_value(interpret(node.indices()[i]), ValueKind::INT)};
-            const int index{std::get<int>(value.storage())};
-            if (index < 0 || index >= array->dimensions[i])
-            {
-                throw std::runtime_error("array index out of range");
-            }
-            flat = flat * static_cast<std::size_t>(array->dimensions[i]) + static_cast<std::size_t>(index);
-        }
-        return RuntimeLValue::array_element(array, flat);
-    }
-
-    Value call_function(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
-    {
-        if (args.size() != function.args().size())
-        {
-            throw std::runtime_error("invalid call arity: " + function.name());
-        }
-        const bool caller_returning{m_returning};
-        const Value caller_result{m_result};
-        bool frame_active{true};
-        m_returning = false;
-        m_state.push_function_frame();
-        try
-        {
-            bind_function_arguments(function, args);
-            const Value body_result{interpret(function.body())};
-            Value result{m_returning ? m_result : body_result};
-            m_state.pop_function_frame();
-            frame_active = false;
-            if (!m_returning && !is_void_return(function.return_type()))
-            {
-                throw std::runtime_error("missing return: " + function.name());
-            }
-            if (!is_void_return(function.return_type()))
-            {
-                result = convert_value(result, value_kind_for_type(function.return_type()));
-            }
-            else
-            {
-                result = {};
-            }
-            m_returning = caller_returning;
-            m_result = caller_returning ? caller_result : result;
-            return result;
-        }
-        catch (...)
-        {
-            if (frame_active)
-            {
-                m_state.pop_function_frame();
-            }
-            m_returning = caller_returning;
-            m_result = caller_result;
-            throw;
-        }
-    }
-
-    Value call_method(const Value &object, const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
-    {
-        if (args.size() != function.args().size())
-        {
-            throw std::runtime_error("invalid call arity: " + function.name());
-        }
-        const bool caller_returning{m_returning};
-        const Value caller_result{m_result};
-        bool frame_active{true};
-        m_returning = false;
-        m_state.push_function_frame();
-        try
-        {
-            m_state.declare_local_value("this", object);
-            bind_function_arguments(function, args);
-            const Value body_result{interpret(function.body())};
-            Value result{m_returning ? m_result : body_result};
-            m_state.pop_function_frame();
-            frame_active = false;
-            if (!m_returning && !is_void_return(function.return_type()))
-            {
-                throw std::runtime_error("missing return: " + function.name());
-            }
-            if (!is_void_return(function.return_type()))
-            {
-                result = convert_value(result, value_kind_for_type(function.return_type()));
-            }
-            else
-            {
-                result = {};
-            }
-            m_returning = caller_returning;
-            m_result = caller_returning ? caller_result : result;
-            return result;
-        }
-        catch (...)
-        {
-            if (frame_active)
-            {
-                m_state.pop_function_frame();
-            }
-            m_returning = caller_returning;
-            m_result = caller_result;
-            throw;
-        }
-    }
-
-    void bind_function_arguments(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
-    {
-        for (std::size_t i = 0; i < args.size(); ++i)
-        {
-            const ast::FunctionArgument &arg{function.args()[i]};
-            const ValueKind kind{value_kind_for_type(arg.type)};
-            if (arg.is_by_ref)
-            {
-                RuntimeLValue value{lvalue(args[i])};
-                m_state.bind_local_reference(arg.name, arg.is_const ? value.read_only() : value);
-            }
-            else
-            {
-                m_state.declare_local_value(arg.name, convert_value(interpret(args[i]), kind), !arg.is_const);
-            }
-        }
-    }
-
-    Value interpret_block(const ast::Expr &node)
-    {
-        m_state.push_local_scope();
-        try
-        {
-            Value result{interpret(node)};
-            m_state.pop_local_scope();
-            return result;
-        }
-        catch (...)
-        {
-            m_state.pop_local_scope();
-            throw;
-        }
-    }
-
-    void check_loop_iterations(std::size_t iterations) const
-    {
-        if (iterations > m_max_loop_iterations)
-        {
-            throw std::runtime_error("loop iteration limit exceeded");
-        }
-    }
-
-    RuntimeLValue lvalue(const ast::Expr &node)
-    {
-        if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.get()); identifier)
-        {
-            return m_state.lvalue(identifier->name());
-        }
-        if (const auto *predefined = dynamic_cast<const ast::ConstantRefNode *>(node.get()); predefined)
-        {
-            return m_state.predefined_lvalue(predefined->name());
-        }
-        if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(node.get()); parameter)
-        {
-            return m_state.parameter_lvalue(parameter->name());
-        }
-        if (const auto *index = dynamic_cast<const ast::IndexNode *>(node.get()); index)
-        {
-            return array_lvalue(*index);
-        }
-        if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(node.get()); member)
-        {
-            return member_lvalue(*member);
-        }
-        throw std::runtime_error("invalid assignment target");
-    }
-
-    RuntimeLValue member_lvalue(const ast::MemberAccessNode &node)
-    {
-        const Value target{interpret(node.target())};
-        if (target.kind() != ValueKind::PLUGIN)
-        {
-            throw std::runtime_error("expected object value");
-        }
-        const Value::PluginPtr object{std::get<Value::PluginPtr>(target.storage())};
-        if (!object || !object->object_initialized)
-        {
-            throw std::runtime_error("null object reference");
-        }
-        const std::string member{node.member()};
-        return RuntimeLValue{[object, member]()
-            {
-                const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
-                    [&member](const auto &field) { return field.first == member; })};
-                if (found == object->object_fields.end())
-                {
-                    throw std::runtime_error("unknown object field: " + member);
-                }
-                return found->second;
-            },
-            [object, member](Value value)
-            {
-                const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
-                    [&member](const auto &field) { return field.first == member; })};
-                if (found == object->object_fields.end())
-                {
-                    throw std::runtime_error("unknown object field: " + member);
-                }
-                found->second = std::move(value);
-            },
-            true};
-    }
+    Value make_static_array(const ast::DeclarationNode &node);
+    Value make_dynamic_array(const ast::DeclarationNode &node);
+    Value call_set_length(const std::vector<ast::Expr> &args);
+    Value call_length(const std::vector<ast::Expr> &args);
+    std::optional<Value> call_builtin(const std::string &name, const std::vector<ast::Expr> &args);
+    Value call_parameter_function(std::string_view name, const std::vector<ast::Expr> &args);
+    std::optional<Value> call_member(const ast::FunctionCallNode &node);
+    std::optional<Value> call_object_method(const Value &target_value, const ast::FunctionCallNode &node);
+    const ast::FunctionDeclNode *find_static_method(const PluginValue &object, std::string_view name) const;
+    std::optional<Value> call_static_member(const ast::FunctionCallNode &node);
+    const ast::FunctionDeclNode *find_static_method(std::string_view class_name, std::string_view name) const;
+    std::optional<Value> class_constant_value(const ast::MemberAccessNode &node);
+    Value construct_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args);
+    Value construct_object(const PluginValue &plugin, const std::vector<ast::Expr> &args);
+    Value cast_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args);
+    const ast::DeclarationNode *find_class_declaration(std::string_view class_name, std::string_view name) const;
+    RuntimeLValue array_lvalue(const ast::IndexNode &node);
+    Value call_function(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args);
+    Value call_method(const Value &object, const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args);
+    void bind_function_arguments(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args);
+    Value interpret_block(const ast::Expr &node);
+    void check_loop_iterations(std::size_t iterations) const;
+    RuntimeLValue lvalue(const ast::Expr &node);
+    RuntimeLValue member_lvalue(const ast::MemberAccessNode &node);
 
     ExtendedRuntimeState &m_state;
     FunctionMap m_functions;
@@ -2656,6 +1608,1109 @@ private:
     Value m_result;
     bool m_returning{};
 };
+
+ExpressionInterpreter::ExpressionInterpreter(ExtendedRuntimeState &state, const FunctionMap &functions,
+    const FormulaFileSet &files, std::size_t max_loop_iterations) :
+    m_state(state),
+    m_functions(functions),
+    m_files(files),
+    m_max_loop_iterations(max_loop_iterations)
+{
+}
+
+Value ExpressionInterpreter::interpret(const ast::Expr &node)
+{
+    if (!node)
+    {
+        return {};
+    }
+    node->visit(*this);
+    return m_result;
+}
+
+void ExpressionInterpreter::visit(const ast::AssignmentNode &node)
+{
+    Value value{interpret(node.expression())};
+    const RuntimeLValue target{lvalue(node.target())};
+    check_array_copy(target.get(), value);
+    target.set(value);
+    m_result = std::move(value);
+}
+
+void ExpressionInterpreter::visit(const ast::BinaryOpNode &node)
+{
+    const std::string &op{node.op()};
+    const Value left{interpret(node.left())};
+    if (op == "&&")
+    {
+        m_result = is_truthy(left) ? Value{is_truthy(interpret(node.right()))} : Value{false};
+        return;
+    }
+    if (op == "||")
+    {
+        m_result = is_truthy(left) ? Value{true} : Value{is_truthy(interpret(node.right()))};
+        return;
+    }
+
+    const Value right{interpret(node.right())};
+    if (op == "<" || op == "<=" || op == ">" || op == ">=" || op == "==" || op == "!=")
+    {
+        m_result = compare_values(left, right, op);
+        return;
+    }
+    if (const std::optional<Value> value{color_binary(left, right, op)})
+    {
+        m_result = *value;
+        return;
+    }
+    m_result = numeric_binary(left, right, op);
+}
+
+void ExpressionInterpreter::visit(const ast::ConstantRefNode &node)
+{
+    m_result = m_state.predefined_value(node.name());
+}
+
+void ExpressionInterpreter::visit(const ast::DeclarationNode &node)
+{
+    if (node.is_array())
+    {
+        if (node.is_dynamic_array())
+        {
+            const Value value{make_dynamic_array(node)};
+            m_state.declare_local_value(node.name(), value);
+            m_result = value;
+            return;
+        }
+        const Value value{make_static_array(node)};
+        m_state.declare_local_value(node.name(), value);
+        m_result = value;
+        return;
+    }
+    Value value;
+    if (const std::optional<ValueKind> kind{parameter_value_kind(node.type())})
+    {
+        value = node.initializer() ? convert_value(interpret(node.initializer()), *kind) : default_value(*kind);
+    }
+    else if (node.initializer())
+    {
+        value = interpret(node.initializer());
+    }
+    else
+    {
+        value = make_plugin_value(PluginValue{{}, std::string{node.type()}});
+    }
+    m_state.declare_local_value(node.name(), value);
+    m_result = std::move(value);
+}
+
+void ExpressionInterpreter::visit(const ast::FunctionBlockNode &function_block_node)
+{
+    unsupported_runtime_node("FunctionBlockNode");
+}
+
+void ExpressionInterpreter::visit(const ast::FunctionDeclNode &node)
+{
+    m_functions[node.name()] = &node;
+}
+
+void ExpressionInterpreter::visit(const ast::FunctionCallNode &node)
+{
+    if (node.has_target())
+    {
+        if (const auto result = call_static_member(node))
+        {
+            m_result = *result;
+            return;
+        }
+        if (const auto result = call_member(node))
+        {
+            m_result = *result;
+            return;
+        }
+        unsupported_runtime_node("FunctionCallNode");
+    }
+    if (!node.name().empty() && node.name().front() == '@')
+    {
+        m_result = call_parameter_function(node.name().substr(1), node.args());
+        return;
+    }
+    if (is_legacy_function_parameter_name(node.name()) && m_state.has_parameter_value(node.name()))
+    {
+        m_result = call_parameter_function(node.name(), node.args());
+        return;
+    }
+    if (const auto builtin = call_builtin(node.name(), node.args()))
+    {
+        m_result = *builtin;
+        return;
+    }
+    if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.name())})
+    {
+        m_result = cast_object(*klass, node.args());
+        return;
+    }
+    const auto function = m_functions.find(node.name());
+    if (function == m_functions.end())
+    {
+        unsupported_runtime_node("FunctionCallNode");
+    }
+    m_result = call_function(*function->second, node.args());
+}
+
+void ExpressionInterpreter::visit(const ast::HeadingBlockNode &heading_block_node)
+{
+    unsupported_runtime_node("HeadingBlockNode");
+}
+
+void ExpressionInterpreter::visit(const ast::IdentifierNode &node)
+{
+    m_result = m_state.value(node.name());
+}
+
+void ExpressionInterpreter::visit(const ast::IfStatementNode &node)
+{
+    if (is_truthy(interpret(node.condition())))
+    {
+        if (node.has_then_block())
+        {
+            m_result = interpret_block(node.then_block());
+        }
+        return;
+    }
+    if (node.has_else_block())
+    {
+        m_result = interpret_block(node.else_block());
+    }
+}
+
+void ExpressionInterpreter::visit(const ast::IndexNode &node)
+{
+    m_result = array_lvalue(node).get();
+}
+
+void ExpressionInterpreter::visit(const ast::LiteralNode &node)
+{
+    const ast::LiteralNode::ValueType value{node.value()};
+    switch (value.index())
+    {
+    case 0:
+        m_result = Value{std::get<int>(value)};
+        return;
+    case 1:
+        m_result = Value{std::get<double>(value)};
+        return;
+    case 2:
+        m_result = Value{std::get<Complex>(value)};
+        return;
+    case 3:
+        m_result = Value{std::get<bool>(value)};
+        return;
+    case 4:
+        m_result = Value{std::get<std::string>(value)};
+        return;
+    case 5:
+    {
+        const ast::LiteralNode::Color color{std::get<ast::LiteralNode::Color>(value)};
+        m_result = Value{ColorValue{color.red, color.green, color.blue, color.alpha}};
+        return;
+    }
+    default:
+        throw std::runtime_error("unknown literal variant index");
+    }
+}
+
+void ExpressionInterpreter::visit(const ast::MemberAccessNode &node)
+{
+    if (const auto result = class_constant_value(node))
+    {
+        m_result = *result;
+        return;
+    }
+    m_result = member_lvalue(node).get();
+}
+
+void ExpressionInterpreter::visit(const ast::NewNode &node)
+{
+    if (node.type() == "Image")
+    {
+        check_arity("Image", node.args().size(), 0U);
+        m_result = make_image_value(ImageValue{});
+        return;
+    }
+    if (!node.type().empty() && node.type().front() == '@')
+    {
+        m_result = m_state.parameter_value(node.type());
+        if (m_result.kind() == ValueKind::PLUGIN)
+        {
+            const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
+            if (!plugin)
+            {
+                throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
+            }
+            m_result = construct_object(*plugin, node.args());
+            return;
+        }
+        if (m_result.kind() == ValueKind::EMPTY)
+        {
+            m_result = default_value(ValueKind::IMAGE);
+        }
+        else if (m_result.kind() == ValueKind::STRING)
+        {
+            throw std::runtime_error("missing plug-in binding: " + node.type().substr(1));
+        }
+        return;
+    }
+    if (m_state.has_parameter_value(node.type()))
+    {
+        m_result = m_state.parameter_value(node.type());
+        if (m_result.kind() == ValueKind::PLUGIN)
+        {
+            const Value::PluginPtr plugin{std::get<Value::PluginPtr>(m_result.storage())};
+            if (!plugin)
+            {
+                throw std::runtime_error("missing plug-in binding: " + node.type());
+            }
+            m_result = construct_object(*plugin, node.args());
+            return;
+        }
+        if (m_result.kind() == ValueKind::EMPTY)
+        {
+            m_result = default_value(ValueKind::IMAGE);
+        }
+        else if (m_result.kind() == ValueKind::STRING)
+        {
+            throw std::runtime_error("missing plug-in binding: " + node.type());
+        }
+        return;
+    }
+    if (const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, node.type())})
+    {
+        m_result = construct_object(*klass, node.args());
+        return;
+    }
+    unsupported_runtime_node("NewNode");
+}
+
+void ExpressionInterpreter::visit(const ast::ParameterRefNode &node)
+{
+    m_result = m_state.parameter_value(node.name());
+}
+
+void ExpressionInterpreter::visit(const ast::RepeatUntilNode &node)
+{
+    std::size_t iterations{};
+    do
+    {
+        check_loop_iterations(++iterations);
+        m_result = interpret_block(node.body());
+        if (m_returning)
+        {
+            return;
+        }
+    } while (!is_truthy(interpret(node.condition())));
+}
+
+void ExpressionInterpreter::visit(const ast::ReturnNode &node)
+{
+    m_result = node.expression() ? interpret(node.expression()) : Value{};
+    m_returning = true;
+}
+
+void ExpressionInterpreter::visit(const ast::SettingNode &setting_node)
+{
+    unsupported_runtime_node("SettingNode");
+}
+
+void ExpressionInterpreter::visit(const ast::StatementSeqNode &node)
+{
+    m_result = {};
+    for (const ast::Expr &statement : node.statements())
+    {
+        m_result = interpret(statement);
+        if (m_returning)
+        {
+            return;
+        }
+    }
+}
+
+void ExpressionInterpreter::visit(const ast::UnaryOpNode &node)
+{
+    const Value value{interpret(node.operand())};
+    switch (node.op())
+    {
+    case '+':
+        m_result = value;
+        return;
+    case '-':
+        m_result = numeric_binary(Value{0}, value, "-");
+        return;
+    case '!':
+        m_result = Value{!is_truthy(value)};
+        return;
+    case '|':
+    {
+        const Complex complex{complex_value(value)};
+        m_result = Value{complex.re * complex.re + complex.im * complex.im};
+        return;
+    }
+    default:
+        throw std::runtime_error("invalid unary operator");
+    }
+}
+
+void ExpressionInterpreter::visit(const ast::WhileNode &node)
+{
+    std::size_t iterations{};
+    while (is_truthy(interpret(node.condition())))
+    {
+        check_loop_iterations(++iterations);
+        m_result = interpret_block(node.body());
+        if (m_returning)
+        {
+            return;
+        }
+    }
+}
+
+Value ExpressionInterpreter::make_static_array(const ast::DeclarationNode &node)
+{
+    ArrayValue array;
+    array.element_kind = value_kind_for_type(node.type());
+    array.dimensions.reserve(node.dimensions().size());
+    for (const ast::Expr &dimension : node.dimensions())
+    {
+        const Value value{convert_value(interpret(dimension), ValueKind::INT)};
+        const int size{std::get<int>(value.storage())};
+        if (size < 0)
+        {
+            throw std::runtime_error("invalid array dimension");
+        }
+        array.dimensions.push_back(size);
+    }
+    const int count{std::accumulate(
+        array.dimensions.begin(), array.dimensions.end(), 1, [](int left, int right) { return left * right; })};
+    array.elements.assign(static_cast<std::size_t>(count), default_value(array.element_kind));
+    return make_array_value(std::move(array));
+}
+
+Value ExpressionInterpreter::make_dynamic_array(const ast::DeclarationNode &node)
+{
+    ArrayValue array;
+    array.element_kind = value_kind_for_type(node.type());
+    array.dynamic = true;
+    array.dimensions = {0};
+    return make_array_value(std::move(array));
+}
+
+Value ExpressionInterpreter::call_set_length(const std::vector<ast::Expr> &args)
+{
+    if (args.size() != 2U)
+    {
+        throw std::runtime_error("invalid call arity: setLength");
+    }
+    const RuntimeLValue value{lvalue(args.front())};
+    Value array_value{value.get()};
+    if (array_value.kind() != ValueKind::ARRAY)
+    {
+        throw std::runtime_error("invalid dynamic array argument: setLength");
+    }
+    const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+    if (!array || !array->dynamic)
+    {
+        throw std::runtime_error("invalid dynamic array argument: setLength");
+    }
+    const int size{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+    if (size < 0)
+    {
+        throw std::runtime_error("invalid array length");
+    }
+    array->dimensions = {size};
+    array->elements.resize(static_cast<std::size_t>(size), default_value(array->element_kind));
+    return {};
+}
+
+Value ExpressionInterpreter::call_length(const std::vector<ast::Expr> &args)
+{
+    if (args.size() != 1U)
+    {
+        throw std::runtime_error("invalid call arity: length");
+    }
+    const Value array_value{interpret(args.front())};
+    if (array_value.kind() != ValueKind::ARRAY)
+    {
+        throw std::runtime_error("invalid dynamic array argument: length");
+    }
+    const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+    if (!array || !array->dynamic)
+    {
+        throw std::runtime_error("invalid dynamic array argument: length");
+    }
+    return Value{static_cast<int>(array->elements.size())};
+}
+
+std::optional<Value> ExpressionInterpreter::call_builtin(const std::string &name, const std::vector<ast::Expr> &args)
+{
+    if (name == "setLength")
+    {
+        return call_set_length(args);
+    }
+    if (name == "length")
+    {
+        return call_length(args);
+    }
+    if (name == "print")
+    {
+        std::ostringstream out;
+        for (const ast::Expr &arg : args)
+        {
+            out << format_value(interpret(arg));
+        }
+        m_state.add_message(out.str());
+        return Value{};
+    }
+    if (name == "rgb" || name == "hsl")
+    {
+        check_arity(name, args.size(), 3U);
+        const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
+        const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
+        const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
+        return Value{name == "rgb" ? ColorValue{first, second, third, 1.0} : hsl_to_color(first, second, third, 1.0)};
+    }
+    if (name == "rgba" || name == "hsla")
+    {
+        check_arity(name, args.size(), 4U);
+        const double first{real_part(convert_value(interpret(args[0]), ValueKind::FLOAT))};
+        const double second{real_part(convert_value(interpret(args[1]), ValueKind::FLOAT))};
+        const double third{real_part(convert_value(interpret(args[2]), ValueKind::FLOAT))};
+        const double fourth{real_part(convert_value(interpret(args[3]), ValueKind::FLOAT))};
+        return Value{
+            name == "rgba" ? ColorValue{first, second, third, fourth} : hsl_to_color(first, second, third, fourth)};
+    }
+    if (name == "red" || name == "green" || name == "blue" || name == "alpha" || name == "hue" || name == "sat" ||
+        name == "lum")
+    {
+        check_arity(name, args.size(), 1U);
+        const ColorValue color{color_value(interpret(args.front()))};
+        if (name == "red")
+        {
+            return Value{color.red};
+        }
+        if (name == "green")
+        {
+            return Value{color.green};
+        }
+        if (name == "blue")
+        {
+            return Value{color.blue};
+        }
+        if (name == "alpha")
+        {
+            return Value{color.alpha};
+        }
+        const HslValue hsl{color_to_hsl(color)};
+        if (name == "hue")
+        {
+            return Value{hsl.hue};
+        }
+        if (name == "sat")
+        {
+            return Value{hsl.saturation};
+        }
+        return Value{hsl.luminance};
+    }
+    if (name == "random")
+    {
+        check_arity(name, args.size(), 1U);
+        return Value{random_seed(std::get<int>(convert_value(interpret(args.front()), ValueKind::INT).storage()))};
+    }
+    if (name == "atan2")
+    {
+        check_arity(name, args.size(), 1U);
+        const Complex value{complex_value(interpret(args.front()))};
+        return Value{std::atan2(value.im, value.re)};
+    }
+    if (name == "isNaN" || name == "isInf")
+    {
+        check_arity(name, args.size(), 1U);
+        const double value{real_part(convert_value(interpret(args.front()), ValueKind::FLOAT))};
+        return Value{name == "isNaN" ? std::isnan(value) : std::isinf(value)};
+    }
+    if (lookup_complex(name) != nullptr || lookup_real(name) != nullptr)
+    {
+        check_arity(name, args.size(), 1U);
+        return Value{evaluate(name, complex_value(interpret(args.front())))};
+    }
+    return std::nullopt;
+}
+
+Value ExpressionInterpreter::call_parameter_function(std::string_view name, const std::vector<ast::Expr> &args)
+{
+    const Value target{m_state.parameter_value(name)};
+    if (target.kind() != ValueKind::STRING)
+    {
+        throw std::runtime_error("invalid function parameter: " + std::string{name});
+    }
+    const std::string &target_name{std::get<std::string>(target.storage())};
+    if (const std::optional<Value> builtin{call_builtin(target_name, args)})
+    {
+        return *builtin;
+    }
+    const auto function = m_functions.find(target_name);
+    if (function == m_functions.end())
+    {
+        throw std::runtime_error("invalid function parameter target: " + target_name);
+    }
+    return call_function(*function->second, args);
+}
+
+std::optional<Value> ExpressionInterpreter::call_member(const ast::FunctionCallNode &node)
+{
+    Value target_value{interpret(node.target())};
+    if (target_value.kind() == ValueKind::PLUGIN)
+    {
+        return call_object_method(target_value, node);
+    }
+    if (target_value.kind() != ValueKind::IMAGE)
+    {
+        return std::nullopt;
+    }
+    const std::string &name{node.name()};
+    const std::vector<ast::Expr> &args{node.args()};
+    Value::ImagePtr image{image_value(target_value)};
+    if (name == "assign")
+    {
+        check_arity(name, args.size(), 1U);
+        const Value source{interpret(args.front())};
+        RuntimeLValue target{lvalue(node.target())};
+        target.set(source.kind() == ValueKind::EMPTY ? default_value(ValueKind::IMAGE) : source);
+        return Value{};
+    }
+    if (name == "getEmpty")
+    {
+        check_arity(name, args.size(), 0U);
+        return Value{!image || image->empty};
+    }
+    if (name == "getWidth")
+    {
+        check_arity(name, args.size(), 0U);
+        return Value{image && !image->empty ? image->width : 0};
+    }
+    if (name == "getHeight")
+    {
+        check_arity(name, args.size(), 0U);
+        return Value{image && !image->empty ? image->height : 0};
+    }
+    if (name == "getPixel")
+    {
+        check_arity(name, args.size(), 2U);
+        const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+        const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+        return Value{image ? image_pixel(*image, x, y) : transparent_color()};
+    }
+    if (name == "setPixel")
+    {
+        check_arity(name, args.size(), 3U);
+        const int x{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+        const int y{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+        const ColorValue color{color_value(interpret(args[2]))};
+        if (image && !image->empty && x >= 0 && y >= 0 && x < image->width && y < image->height)
+        {
+            image->pixels[image_pixel_index(*image, x, y)] = color;
+        }
+        return Value{};
+    }
+    if (name == "resize")
+    {
+        check_arity(name, args.size(), 2U);
+        const int width{std::get<int>(convert_value(interpret(args[0]), ValueKind::INT).storage())};
+        const int height{std::get<int>(convert_value(interpret(args[1]), ValueKind::INT).storage())};
+        resize_image(*image, width, height);
+        return Value{};
+    }
+    if (name == "getColor")
+    {
+        check_arity(name, args.size(), 1U);
+        const Complex point{complex_value(interpret(args.front()))};
+        if (!image || image->empty)
+        {
+            return Value{transparent_color()};
+        }
+        const int x{static_cast<int>(((point.re + 1.0) / 2.0) * image->width)};
+        const int y{static_cast<int>(((1.0 - point.im) / 2.0) * image->height)};
+        return Value{image_pixel(*image, x, y)};
+    }
+    return std::nullopt;
+}
+
+std::optional<Value> ExpressionInterpreter::call_object_method(
+    const Value &target_value, const ast::FunctionCallNode &node)
+{
+    const Value::PluginPtr object{std::get<Value::PluginPtr>(target_value.storage())};
+    if (!object || !object->object_initialized)
+    {
+        throw std::runtime_error("null object reference");
+    }
+    const ast::FunctionDeclNode *method{};
+    if (object->ast)
+    {
+        method = find_class_method(*object->ast, node.name());
+    }
+    std::vector<std::string> seen;
+    std::string base{object->base_class};
+    while (method == nullptr && !base.empty())
+    {
+        if (std::find_if(seen.begin(), seen.end(),
+                [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+        {
+            break;
+        }
+        seen.push_back(base);
+        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
+        if (klass == nullptr)
+        {
+            break;
+        }
+        if (klass->ast)
+        {
+            method = find_class_method(*klass->ast, node.name());
+        }
+        base = klass->base_class;
+    }
+    if (method == nullptr)
+    {
+        const ast::FunctionDeclNode *static_method{find_static_method(*object, node.name())};
+        if (static_method == nullptr)
+        {
+            return std::nullopt;
+        }
+        return call_function(*static_method, node.args());
+    }
+    return call_method(target_value, *method, node.args());
+}
+
+const ast::FunctionDeclNode *ExpressionInterpreter::find_static_method(
+    const PluginValue &object, std::string_view name) const
+{
+    const ast::FunctionDeclNode *method{};
+    if (object.ast)
+    {
+        method = find_static_class_method(*object.ast, name);
+    }
+    std::vector<std::string> seen;
+    std::string base{object.base_class};
+    while (method == nullptr && !base.empty())
+    {
+        if (std::find_if(seen.begin(), seen.end(),
+                [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+        {
+            break;
+        }
+        seen.push_back(base);
+        const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, base)};
+        if (klass == nullptr)
+        {
+            break;
+        }
+        if (klass->ast)
+        {
+            method = find_static_class_method(*klass->ast, name);
+        }
+        base = klass->base_class;
+    }
+    return method;
+}
+
+std::optional<Value> ExpressionInterpreter::call_static_member(const ast::FunctionCallNode &node)
+{
+    const std::string *class_name{class_name_from_identifier(node.target())};
+    if (class_name == nullptr)
+    {
+        return std::nullopt;
+    }
+    const ast::FunctionDeclNode *method{find_static_method(*class_name, node.name())};
+    if (method == nullptr)
+    {
+        return std::nullopt;
+    }
+    return call_function(*method, node.args());
+}
+
+const ast::FunctionDeclNode *ExpressionInterpreter::find_static_method(
+    std::string_view class_name, std::string_view name) const
+{
+    const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
+    if (klass == nullptr)
+    {
+        return nullptr;
+    }
+    const ast::FunctionDeclNode *method{};
+    if (klass->ast)
+    {
+        method = find_static_class_method(*klass->ast, name);
+    }
+    std::vector<std::string> seen;
+    std::string base{klass->base_class};
+    while (method == nullptr && !base.empty())
+    {
+        if (std::find_if(seen.begin(), seen.end(),
+                [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+        {
+            break;
+        }
+        seen.push_back(base);
+        klass = find_retained_class_by_name(m_files.retained_classes, base);
+        if (klass == nullptr)
+        {
+            break;
+        }
+        if (klass->ast)
+        {
+            method = find_static_class_method(*klass->ast, name);
+        }
+        base = klass->base_class;
+    }
+    return method;
+}
+
+std::optional<Value> ExpressionInterpreter::class_constant_value(const ast::MemberAccessNode &node)
+{
+    const std::string *class_name{class_name_from_identifier(node.target())};
+    if (class_name == nullptr)
+    {
+        return std::nullopt;
+    }
+    const ast::DeclarationNode *declaration{find_class_declaration(*class_name, node.member())};
+    if (declaration == nullptr)
+    {
+        return std::nullopt;
+    }
+    if (declaration->is_array())
+    {
+        return declaration->is_dynamic_array() ? make_dynamic_array(*declaration) : make_static_array(*declaration);
+    }
+    if (const std::optional<ValueKind> kind{parameter_value_kind(declaration->type())})
+    {
+        return declaration->initializer() ? convert_value(interpret(declaration->initializer()), *kind)
+                                          : default_value(*kind);
+    }
+    return declaration->initializer() ? interpret(declaration->initializer())
+                                      : make_plugin_value(PluginValue{{}, std::string{declaration->type()}});
+}
+
+Value ExpressionInterpreter::construct_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
+{
+    PluginValue plugin;
+    plugin.filename = klass.reference.filename;
+    plugin.class_name = klass.reference.class_name;
+    plugin.base_class = klass.base_class;
+    plugin.ast = klass.ast;
+    return construct_object(plugin, args);
+}
+
+Value ExpressionInterpreter::construct_object(const PluginValue &plugin, const std::vector<ast::Expr> &args)
+{
+    Value object{make_object_value(plugin)};
+    const Value::PluginPtr object_plugin{std::get<Value::PluginPtr>(object.storage())};
+    const ast::FunctionDeclNode *constructor{};
+    if (object_plugin && object_plugin->ast)
+    {
+        constructor = find_class_constructor(*object_plugin->ast, object_plugin->class_name);
+    }
+    if (constructor == nullptr)
+    {
+        check_arity(object_plugin ? object_plugin->class_name : std::string{"constructor"}, args.size(), 0U);
+        return object;
+    }
+    call_method(object, *constructor, args);
+    return object;
+}
+
+Value ExpressionInterpreter::cast_object(const RetainedFormulaClass &klass, const std::vector<ast::Expr> &args)
+{
+    check_arity(klass.reference.class_name, args.size(), 1U);
+    const Value value{interpret(args.front())};
+    if (value.kind() != ValueKind::PLUGIN)
+    {
+        return {};
+    }
+    const Value::PluginPtr plugin{std::get<Value::PluginPtr>(value.storage())};
+    if (!plugin || !plugin->object_initialized)
+    {
+        return {};
+    }
+    if (!runtime_class_matches_parameter_type(m_files.retained_classes, plugin->class_name, klass.reference.class_name))
+    {
+        return {};
+    }
+    return value;
+}
+
+const ast::DeclarationNode *ExpressionInterpreter::find_class_declaration(
+    std::string_view class_name, std::string_view name) const
+{
+    const RetainedFormulaClass *klass{find_retained_class_by_name(m_files.retained_classes, class_name)};
+    if (klass == nullptr)
+    {
+        return nullptr;
+    }
+    const ast::DeclarationNode *declaration{};
+    if (klass->ast)
+    {
+        declaration = find_class_declaration_in_ast(*klass->ast, name);
+    }
+    std::vector<std::string> seen;
+    std::string base{klass->base_class};
+    while (declaration == nullptr && !base.empty())
+    {
+        if (std::find_if(seen.begin(), seen.end(),
+                [&base](const std::string &item) { return same_identifier(item, base); }) != seen.end())
+        {
+            break;
+        }
+        seen.push_back(base);
+        klass = find_retained_class_by_name(m_files.retained_classes, base);
+        if (klass == nullptr)
+        {
+            break;
+        }
+        if (klass->ast)
+        {
+            declaration = find_class_declaration_in_ast(*klass->ast, name);
+        }
+        base = klass->base_class;
+    }
+    return declaration;
+}
+
+RuntimeLValue ExpressionInterpreter::array_lvalue(const ast::IndexNode &node)
+{
+    const Value array_value{interpret(node.target())};
+    if (array_value.kind() != ValueKind::ARRAY)
+    {
+        throw std::runtime_error("expected array value");
+    }
+    const Value::ArrayPtr array{std::get<Value::ArrayPtr>(array_value.storage())};
+    if (!array)
+    {
+        throw std::runtime_error("expected array value");
+    }
+    if (node.indices().size() != array->dimensions.size())
+    {
+        throw std::runtime_error("invalid array index count");
+    }
+    std::size_t flat{};
+    for (std::size_t i = 0; i < node.indices().size(); ++i)
+    {
+        const Value value{convert_value(interpret(node.indices()[i]), ValueKind::INT)};
+        const int index{std::get<int>(value.storage())};
+        if (index < 0 || index >= array->dimensions[i])
+        {
+            throw std::runtime_error("array index out of range");
+        }
+        flat = flat * static_cast<std::size_t>(array->dimensions[i]) + static_cast<std::size_t>(index);
+    }
+    return RuntimeLValue::array_element(array, flat);
+}
+
+Value ExpressionInterpreter::call_function(const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+{
+    if (args.size() != function.args().size())
+    {
+        throw std::runtime_error("invalid call arity: " + function.name());
+    }
+    const bool caller_returning{m_returning};
+    const Value caller_result{m_result};
+    bool frame_active{true};
+    m_returning = false;
+    m_state.push_function_frame();
+    try
+    {
+        bind_function_arguments(function, args);
+        const Value body_result{interpret(function.body())};
+        Value result{m_returning ? m_result : body_result};
+        m_state.pop_function_frame();
+        frame_active = false;
+        if (!m_returning && !is_void_return(function.return_type()))
+        {
+            throw std::runtime_error("missing return: " + function.name());
+        }
+        if (!is_void_return(function.return_type()))
+        {
+            result = convert_value(result, value_kind_for_type(function.return_type()));
+        }
+        else
+        {
+            result = {};
+        }
+        m_returning = caller_returning;
+        m_result = caller_returning ? caller_result : result;
+        return result;
+    }
+    catch (...)
+    {
+        if (frame_active)
+        {
+            m_state.pop_function_frame();
+        }
+        m_returning = caller_returning;
+        m_result = caller_result;
+        throw;
+    }
+}
+
+Value ExpressionInterpreter::call_method(
+    const Value &object, const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+{
+    if (args.size() != function.args().size())
+    {
+        throw std::runtime_error("invalid call arity: " + function.name());
+    }
+    const bool caller_returning{m_returning};
+    const Value caller_result{m_result};
+    bool frame_active{true};
+    m_returning = false;
+    m_state.push_function_frame();
+    try
+    {
+        m_state.declare_local_value("this", object);
+        bind_function_arguments(function, args);
+        const Value body_result{interpret(function.body())};
+        Value result{m_returning ? m_result : body_result};
+        m_state.pop_function_frame();
+        frame_active = false;
+        if (!m_returning && !is_void_return(function.return_type()))
+        {
+            throw std::runtime_error("missing return: " + function.name());
+        }
+        if (!is_void_return(function.return_type()))
+        {
+            result = convert_value(result, value_kind_for_type(function.return_type()));
+        }
+        else
+        {
+            result = {};
+        }
+        m_returning = caller_returning;
+        m_result = caller_returning ? caller_result : result;
+        return result;
+    }
+    catch (...)
+    {
+        if (frame_active)
+        {
+            m_state.pop_function_frame();
+        }
+        m_returning = caller_returning;
+        m_result = caller_result;
+        throw;
+    }
+}
+
+void ExpressionInterpreter::bind_function_arguments(
+    const ast::FunctionDeclNode &function, const std::vector<ast::Expr> &args)
+{
+    for (std::size_t i = 0; i < args.size(); ++i)
+    {
+        const ast::FunctionArgument &arg{function.args()[i]};
+        const ValueKind kind{value_kind_for_type(arg.type)};
+        if (arg.is_by_ref)
+        {
+            RuntimeLValue value{lvalue(args[i])};
+            m_state.bind_local_reference(arg.name, arg.is_const ? value.read_only() : value);
+        }
+        else
+        {
+            m_state.declare_local_value(arg.name, convert_value(interpret(args[i]), kind), !arg.is_const);
+        }
+    }
+}
+
+Value ExpressionInterpreter::interpret_block(const ast::Expr &node)
+{
+    m_state.push_local_scope();
+    try
+    {
+        Value result{interpret(node)};
+        m_state.pop_local_scope();
+        return result;
+    }
+    catch (...)
+    {
+        m_state.pop_local_scope();
+        throw;
+    }
+}
+
+void ExpressionInterpreter::check_loop_iterations(std::size_t iterations) const
+{
+    if (iterations > m_max_loop_iterations)
+    {
+        throw std::runtime_error("loop iteration limit exceeded");
+    }
+}
+
+RuntimeLValue ExpressionInterpreter::lvalue(const ast::Expr &node)
+{
+    if (const auto *identifier = dynamic_cast<const ast::IdentifierNode *>(node.get()); identifier)
+    {
+        return m_state.lvalue(identifier->name());
+    }
+    if (const auto *predefined = dynamic_cast<const ast::ConstantRefNode *>(node.get()); predefined)
+    {
+        return m_state.predefined_lvalue(predefined->name());
+    }
+    if (const auto *parameter = dynamic_cast<const ast::ParameterRefNode *>(node.get()); parameter)
+    {
+        return m_state.parameter_lvalue(parameter->name());
+    }
+    if (const auto *index = dynamic_cast<const ast::IndexNode *>(node.get()); index)
+    {
+        return array_lvalue(*index);
+    }
+    if (const auto *member = dynamic_cast<const ast::MemberAccessNode *>(node.get()); member)
+    {
+        return member_lvalue(*member);
+    }
+    throw std::runtime_error("invalid assignment target");
+}
+
+RuntimeLValue ExpressionInterpreter::member_lvalue(const ast::MemberAccessNode &node)
+{
+    const Value target{interpret(node.target())};
+    if (target.kind() != ValueKind::PLUGIN)
+    {
+        throw std::runtime_error("expected object value");
+    }
+    const Value::PluginPtr object{std::get<Value::PluginPtr>(target.storage())};
+    if (!object || !object->object_initialized)
+    {
+        throw std::runtime_error("null object reference");
+    }
+    const std::string member{node.member()};
+    return RuntimeLValue{[object, member]()
+        {
+            const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
+                [&member](const auto &field) { return field.first == member; })};
+            if (found == object->object_fields.end())
+            {
+                throw std::runtime_error("unknown object field: " + member);
+            }
+            return found->second;
+        },
+        [object, member](Value value)
+        {
+            const auto found{std::find_if(object->object_fields.begin(), object->object_fields.end(),
+                [&member](const auto &field) { return field.first == member; })};
+            if (found == object->object_fields.end())
+            {
+                throw std::runtime_error("unknown object field: " + member);
+            }
+            found->second = std::move(value);
+        },
+        true};
+}
 
 class ParameterDefaultCollector : public ast::NullVisitor
 {
