@@ -123,14 +123,11 @@ Do not add diagnostics in the first pass unless an existing caller requires
 them.
 
 ## Implementation Slices
-1. Update `docs/extended-parameters.md`, `docs/l-system-parser.md`, and any
-   parser docs that still describe downstream parsers owning comment or
-   continuation handling.
-2. Standardize entry parser APIs so parameter, gradient, L-system, and future
+1. Standardize entry parser APIs so parameter, gradient, L-system, and future
     entry-based parsers accept `const FileEntry &` as their public input.
     Keep raw string parsing only for formula snippets, tests, and
     parser-internal helpers.
-3. Run corpus-oriented tests and `cmake --workflow rt-default`.
+2. Run corpus-oriented tests and `cmake --workflow rt-default`.
 
 ## Non-Goals
 - Do not normalize line endings.

@@ -39,7 +39,8 @@ Rules from `id.txt`:
 - The rule left side is a single character.
 - Multiple rules for the same character are concatenated in source order.
 - Rule left sides may be any character except space, tab, or `}`.
-- Text after `;` on a line is a comment.
+- Text after `;` on a line is a comment; `FileEntry` removes it before
+  L-system parsing.
 - Drawing commands and other command-string characters are not interpreted by
   the parser.
 - Other characters are legal in command strings and are ignored by the
@@ -118,7 +119,7 @@ prepared `FileEntry`.
    documentation uses lowercase prose and uppercase sample spelling.
 8. Parse `angle n`:
    - exactly one integer value is required after `angle`;
-   - trailing non-comment text after the integer is an error;
+   - trailing text after the integer is an error;
    - values must satisfy `2 < n < 50`;
    - a second `angle` line is diagnosed and ignored.
 9. Parse `axiom string`:
@@ -131,8 +132,7 @@ prepared `FileEntry`.
     - the left side after trimming must be exactly one character;
     - space, tab, and `}` are invalid rule symbols;
     - reserved symbols are diagnosed and ignored;
-    - the right side is preserved exactly after the `=`, except that comments
-      have already been removed;
+    - the right side is preserved exactly after the `=`;
     - empty replacement strings are valid and mean delete the symbol.
 11. Any nonblank line that is neither `angle`, `axiom`, nor a rule is an
     `EXPECTED_STATEMENT` diagnostic.
@@ -163,7 +163,7 @@ prepared `FileEntry`.
 4. Implement rule parsing, repeated-rule concatenation, invalid-symbol
    diagnostics, and reserved-symbol diagnostics.
 5. Add focused parser tests for the documented `Dragon` sample, empty
-   replacement rules, repeated rule concatenation, comments, line-length
+   replacement rules, repeated rule concatenation, prepared bodies, line-length
    diagnostics, invalid angles, duplicate angle/axiom lines, invalid rule
    symbols, and reserved rule symbols.
 6. Add a small corpus fixture if an `id.l` file is added to the repository.

@@ -43,8 +43,7 @@ entry_name  ::= text_until_lbrace_trimmed
 entry_body  ::= compressed_body
               | parameter_body
               | raw_comment_body
-space       ::= whitespace | comment
-comment     ::= ";" text_to_end_of_line
+space       ::= whitespace
 ```
 
 The parameter parser does not scan files or classify top-level entries.
@@ -68,19 +67,15 @@ The client selects the body dialect by calling
 `parse_basic_parameters` or `parse_extended_parameters`. The parser
 never guesses.
 
-Body parsing is line-oriented string processing:
+The `FileEntry` scanner prepares entry bodies before the parameter parser
+sees them: comments are removed, strict line continuations are joined, and
+non-continued line endings are preserved. Body parsing is then line-oriented
+string processing:
 
 1. Split the body into physical input lines.
-2. Strip comments from each line. A `;` starts a comment except inside
-   a quoted string.
-3. Apply line continuation. A line ending in `\` is joined with the next
-   physical line; the `\`, newline, and leading whitespace on the next
-   physical line are removed. Repeat until no processed line ends with a
-   continuation. UF docs show long string values split this way; raw
-   newlines inside quoted values are not documented as valid.
-4. In the extended dialect, a line containing only `name:` starts a
+2. In the extended dialect, a line containing only `name:` starts a
    section.
-5. Otherwise, a non-blank line is a whitespace-separated list of
+3. Otherwise, a non-blank line is a whitespace-separated list of
    `name=value` pairs. Whitespace inside a quoted string is part of the
    value and is not a pair boundary.
 
@@ -156,9 +151,9 @@ well enough for the parser to impose types. The client interprets
 strings by context, for example treating `title` as a string and parsing
 `width` as a number.
 
-String values can span physical lines only through the normal UF
-backslash line-continuation rule. The continuation pass runs before
-quoted-value tokenization, so a continued string becomes one logical
+String values can span physical lines only through the `FileEntry`
+backslash line-continuation rule. The `FileEntry` preparation pass runs
+before quoted-value tokenization, so a continued string becomes one logical
 line. A raw line ending inside quotes should be rejected rather than
 treated as part of the string.
 
@@ -345,8 +340,8 @@ These bodies do not follow the parameter grammar. The client recognizes
 the entry name and does not pass the body to the parameter parser.
 
 ## Compressed Extended Bodies
-A body that begins with `::` after optional comments and whitespace is
-compressed. Its payload is wrapped UF base64 text.
+A body that begins with `::` after optional whitespace is compressed. Its
+payload is wrapped UF base64 text.
 
 Basic parameter bodies are never compressed. Extended parameter bodies
 may be compressed. When a compressed body is passed to the parser, the
@@ -362,10 +357,9 @@ elsewhere before invoking the parameter parser.
 
 Decode compressed bodies as follows:
 
-1. Skip comments and blank lines before `::`, treating comments as
-   whitespace.
+1. Skip blank lines before `::`.
 2. The first data line must start with `::`; remove that prefix.
-3. Trim each payload line, skipping comments and blank lines. Payload
+3. Trim each payload line and skip blank lines. Payload
    line length is not semantic; concatenate the trimmed payload lines
    before decoding.
 4. Decode with the normal base64 alphabet, but UF packs bits in little
@@ -482,9 +476,8 @@ section) and retry paring the FileEntry as a basic parameter set.
 - Parse `}NextEntry {` at the `FileEntry` layer without losing either
   entry.
 - Preserve repeated gradient, opacity, and alpha assignments in order.
-- Strip comments outside quoted strings, preserving semicolons inside
-  quoted strings.
-- Join continued physical lines repeatedly before parsing assignments.
+- Verify `FileEntry` prepares comments and continuations before the
+  parameter parser sees the body.
 - Reject raw newlines inside quoted values; accept quoted values split
   with backslash continuation.
 - Split assignment lists on whitespace except inside quoted strings.
