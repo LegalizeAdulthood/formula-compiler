@@ -8,6 +8,7 @@
 #include <istream>
 #include <iterator>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 namespace formula
@@ -281,11 +282,16 @@ private:
 
 } // namespace
 
+std::vector<FileEntry> load_file_entries(std::string_view text, std::string filename)
+{
+    Scanner scanner{std::string{text}, std::move(filename)};
+    return scanner.entries();
+}
+
 std::vector<FileEntry> load_file_entries(std::istream &in, std::string filename)
 {
     std::string text{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
-    Scanner scanner{std::move(text), std::move(filename)};
-    return scanner.entries();
+    return load_file_entries(text, std::move(filename));
 }
 
 } // namespace formula

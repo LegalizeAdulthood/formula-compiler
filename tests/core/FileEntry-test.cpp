@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 
 #include <sstream>
+#include <string>
+#include <string_view>
 
 using namespace formula;
 
@@ -25,6 +27,20 @@ TEST(TestFileEntry, parsesAdjacentEntries)
     EXPECT_EQ("Next Entry", entries[1].name);
     EXPECT_EQ("XAXIS", entries[1].paren_value);
     EXPECT_EQ("float=y", entries[1].bracket_value);
+    EXPECT_EQ(" b=2 ", entries[1].body);
+}
+
+TEST(TestFileEntry, parsesEntriesFromStringView)
+{
+    const std::string input{"One { a=1 }Two { b=2 }"};
+
+    const std::vector<FileEntry> entries{load_file_entries(std::string_view{input}, "test.frm")};
+
+    ASSERT_EQ(2U, entries.size());
+    EXPECT_EQ("test.frm", entries[0].source_range.begin.filename);
+    EXPECT_EQ("One", entries[0].name);
+    EXPECT_EQ(" a=1 ", entries[0].body);
+    EXPECT_EQ("Two", entries[1].name);
     EXPECT_EQ(" b=2 ", entries[1].body);
 }
 

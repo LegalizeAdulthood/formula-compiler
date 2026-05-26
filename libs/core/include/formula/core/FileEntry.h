@@ -8,6 +8,7 @@
 
 #include <iosfwd>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace formula
@@ -36,6 +37,7 @@ struct FileEntry
     SourceRange body_range;
 };
 
+std::vector<FileEntry> load_file_entries(std::string_view text, std::string filename = {});
 std::vector<FileEntry> load_file_entries(std::istream &in, std::string filename = {});
 
 } // namespace formula
