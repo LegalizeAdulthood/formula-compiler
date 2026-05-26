@@ -49,7 +49,6 @@ misc_group_sources("Docs" FILES
     "docs/basic-compiler.md"
     "docs/basic-formula.txt"
     "docs/basic-interpreter.md"
-    "docs/gradient-grammar.txt"
     "docs/basic-parser.md"
     "docs/compiler-directives.md"
     "docs/extended-compiler.md"
@@ -61,8 +60,10 @@ misc_group_sources("Docs" FILES
     "docs/extended-semantics.md"
     "docs/file-entry.md"
     "docs/glsl-emitter.md"
+    "docs/gradient-grammar.txt"
     "docs/id.txt"
     "docs/l-system-parser.md"
+    "docs/section-parser.md"
     "docs/semantic-analyzer.md"
     "docs/todo.md")
 misc_group_sources("VcPkg" FILES
