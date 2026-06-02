@@ -1,0 +1,42 @@
+Layers
+
+  ----------------------------------------------------------------------------------
+  Note: You need Ultra Fractal Creative Edition or Extended Edition to use layers.
+  ----------------------------------------------------------------------------------
+
+One of Ultra Fractal's key features is the ability to use multiple
+layers. Each layer contains a separate fractal image. By using multiple
+layers, you can achieve many special and wonderful effects that are not
+possible with single-layer images.
+
+Layers are managed in the Layers tab of the Fractal Properties tool
+window:
+
+[]
+
+The layers list shows all layers of the active fractal window, complete
+with previews. It also selects the active layer. The active layer is
+edited by the Layer Properties tool window and the gradient editor.
+
+- The Add button duplicates the active layer or group. Hold down the Add
+  button to open a menu with more options and layer presets. See
+  Presets.
+- The New Group button adds a new layer group to the layers list. See
+  Layer groups.
+- The Delete button deletes the currently selected layers.
+- The Merge Mode input box selects the merge mode of the selected
+  layers.
+- The Opacity slider changes the opacity of the selected layers.
+- The Visible, Editable and Transparent icons before each layer toggle
+  the visibility, editability, and transparency of the layer. See
+  Working with layers.
+- The Use as Mask button turns a layer into a mask and back. The Show
+  Mask Only button makes it easier to edit a mask. See Masks.
+
+Next: How layers are merged
+
+See Also
+Tutorial: Working with layers
+Keyboard shortcuts for the Fractal Properties tool window
+Layer groups
+Animating layers

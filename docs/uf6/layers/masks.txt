@@ -1,0 +1,52 @@
+Masks
+
+If you create transparent areas in a layer using a transparent gradient,
+the shape of the transparent areas is controlled by the selected
+coloring algorithms. Certain colors in the gradient are transparent, so
+those colors will become transparent in the layer, too. This means that
+you cannot use this method to create arbitrarily shaped transparent
+areas.
+
+If you use transformations instead and set the opacity of the solid
+color to less than 255, you can create arbitrarily shaped transparent
+areas in the layer. You do need a transformation that will output the
+area you need, but you could write it yourself. Still, a limitation of
+this technique is that pixels are either set to the solid color
+(transparent), or they are colored according to the gradient and the
+selected coloring algorithms. You can only create sharp edges, not
+smooth transitions.
+
+Masks overcome these problems. A mask is an invisible layer that is
+attached to the layer that needs transparent areas. The mask contains
+transparent areas, that are created with an ordinary transparent
+gradient. Since the mask is invisible, these transparent areas are
+invisible as well.
+
+Instead, the layer owning the mask "borrows" the transparent areas of
+the mask. The shape of these areas is defined by the selected fractal
+formula, the selected coloring algorithms, and the gradient of the mask.
+The shape is independent from the layer owning the mask.
+
++-------------+-------------+-------------+-------------+-------------+
+| []          | []          | []          | []          | []          |
++-------------+-------------+-------------+-------------+-------------+
+| []          |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| Layer that  |             | Mask with   |             | Layer with  |
+| needs       |             | transparent |             | the mask    |
+| transparent |             | areas       |             | applied     |
+| areas       |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+
+As you can see, the layer uses the transparent areas of the mask. The
+colors in the mask layer are ignored.
+
+Layers can have multiple masks to add differently shaped transparent
+areas. If the layer contains transparent areas itself (for example
+created with a transparent gradient), these are also taken into account.
+
+Next: Working with masks
+
+See Also
+Tutorial: Masking
+Layers

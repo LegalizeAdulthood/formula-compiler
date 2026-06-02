@@ -1,0 +1,44 @@
+Working with masks
+
+Masks are managed in the Layers tab of the Fractal Properties tool
+window.
+
+  ---- --- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       To duplicate the active layer as a mask, hold down the Add button and click Duplicate as Mask in the menu that appears.
+  []       To delete a mask, select it and click the Delete button.
+  []       To turn an existing layer into a mask, click the Use as Mask button. The layer will become a mask, attached to the layer directly above it.
+  []       Click the Show Mask Only button to disable the layer owning the mask. Instead, the transparent areas in the mask will be shown. White areas are opaque, black areas are transparent. This makes it easier to edit the mask.
+  ---- --- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Usually, the mask will be entirely white because its gradient is not yet
+transparent. The first thing to do is to open the gradient editor. Note
+that only the opacity view of the editor is enabled, since the colors in
+the gradient do not matter for a mask. Add a few extra control points to
+the gradient so it will start to show some transparency (darker
+regions).
+
+By toggling the Show Mask Only button, you can alternatively work on the
+mask and judge the effects that it has on the layer that owns it. The
+mask can be edited like any layer. For example, you can zoom in on it,
+select another coloring algorithm, and so on.
+
+Notes
+
+- You can duplicate a mask layer like any other layer by clicking the
+  Add button.
+- Layer groups can also have a mask. Just drag an existing mask layer
+  onto the layer group, or position the layer to use as a mask just
+  below the group (but not in it) and click the Use as Mask button.
+- Masks can be moved to other layers or layer groups simply by dragging
+  them onto the desired layer or layer group.
+- A layer or layer group can have more than one mask. In this case, the
+  transparent areas in the masks are combined, so each additional mask
+  makes the layer more transparent.
+
+Next: Layer groups
+
+See Also
+Tutorial: Masking
+Masks
+Working with layers
+Layers

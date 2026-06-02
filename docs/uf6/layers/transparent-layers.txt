@@ -1,0 +1,46 @@
+Transparent layers
+
+To make a layer transparent, you can use the Opacity and Merge mode
+settings, but these work on the entire layer. You can also make only
+certain parts of a layer transparent, which gives you more artistic
+control.
+
+The easiest way to create transparent areas in a layer is to use a
+transparent gradient. The transparent parts of the gradient will create
+transparent areas in the layer. If you make all the other layers
+invisible, a pattern of blocks will show the transparent areas.
+
+[]
+
+Another way of creating transparent areas is to use the Solid Color
+setting of transformations and coloring algorithms. Solid colors with an
+opacity value of less than 255 create transparent areas. Many
+transformations, such as Clipping in Standard.uxf, use this to create
+masking effects.
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | The Transparent icon  |
+|                       |                       | before the layer      |
+|                       |                       | toggles transparent   |
+|                       |                       | areas on and off. Use |
+|                       |                       | it to quickly verify  |
+|                       |                       | the transparent areas |
+|                       |                       | and to see what       |
+|                       |                       | difference they make  |
+|                       |                       | to the final image.   |
+|                       |                       | By default,           |
+|                       |                       | transparency is off,  |
+|                       |                       | but it is             |
+|                       |                       | automatically turned  |
+|                       |                       | on when you make      |
+|                       |                       | changes to            |
+|                       |                       | transparent areas in  |
+|                       |                       | the layer.            |
++-----------------------+-----------------------+-----------------------+
+
+Next: Masks
+
+See Also
+Tutorial: Working with layers
+How layers are merged
+Layers

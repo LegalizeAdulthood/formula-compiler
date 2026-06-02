@@ -1,0 +1,38 @@
+How layers are merged
+
+Within a multi-layered fractal, Ultra Fractal merges the different
+layers to create the resulting image. This image appears in the fractal
+window. The layers are merged by superimposing them.
+
+Ultra Fractal starts with the bottom layer and places the second layer
+on top of it. The third layer (if any) is in turn placed on top of the
+result, and so on. If a layer is completely opaque, the layers below it
+will be hidden. If a layer is completely transparent, it will not be
+visible.
+
+Most layers will be more or less transparent, so they are visible while
+still allowing the lower layers to shine through. There are four ways to
+make layers transparent:
+
+- Reduce the opacity of the layer. By default, the opacity is set to
+  100%, making the layer fully opaque. Move the opacity slider to the
+  left to make the active layer more transparent.
+- Change the merge mode of the layer. By default, the merge mode is set
+  to Normal. The other merge modes create special effects that allow
+  lower layers to be partially visible even if the opacity of the layer
+  is set to 100%. See Merge modes.
+- Make only parts of the layer transparent. The previous two options
+  affect the entire layer. You can, however, also change the opacity of
+  only certain areas in the layer. See Transparent layers.
+- Add a mask to the layer. The mask allows even more control over which
+  areas of the layer will be transparent. See Masks.
+
+Of course, you can freely mix these options. It is common, for example,
+to use a merge mode like Hard Light and set the opacity to less than
+100%.
+
+Next: Working with layers
+
+See Also
+Layers
+Tutorial: Working with layers

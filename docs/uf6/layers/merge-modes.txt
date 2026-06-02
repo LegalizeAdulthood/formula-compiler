@@ -1,0 +1,41 @@
+Merge modes
+
+The Merge mode drop-down box at the top of the Layers tab of the Fractal
+Properties tool window selects the merge mode of the selected layers.
+The merge mode defines how a layer is combined with the underlying
+layers to create the final image. The table below lists all merge modes
+and what they do.
+
+The best way to learn how to use the different merge modes is to
+experiment. Also try to use various settings of the Opacity slider and
+see how it controls the intensity of the merging effects.
+
+Next: Transparent layers
+
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Merge mode     Description
+  Pass Through   This mode is only available for layer groups. The layers in the group will be merged as if they were outside the group.
+  Normal         Directly returns colors from the layer. Use this if you don't want any special effects.
+  Multiply       Multiplies the layer with the underlying layers. The result is always a darker color, thus darkening the underlying layers.
+  Screen         Multiplies the inverse of the layer with the inverse of the underlying layers, and inverts that again. The result is always a lighter color, thus brightening the underlying layers. Screen is the inverse of Multiply.
+  Overlay        Multiplies or screens the colors, depending on the color in the underlying layers. Creates color blending effects between the layer and the underlying layers.
+  Hard Light     Multiplies or screens the colors, depending on the color in the layer. Emphasizes the dark and light regions in the layer, while the areas with medium brightness become transparent. Useful if the layer contains shadows or embossing effects.
+  Soft Light     Darkens or lightens the colors, depending on the color in the layer. Creates an effect similar to Hard Light, but with less emphasis on the dark and light areas in the layer.
+  Darken         Returns the darkest of the color in the layer and the color in the underlying layers.
+  Lighten        Returns the lightest of the color in the layer and the color in the underlying layers.
+  Difference     Returns the difference between the layer and the underlying layers. Often creates unusual and unexpected color transitions.
+  Hue            Returns the hue of the layer, and the saturation and luminance of the underlying layers. Colors the underlying layers with the hue of the layer.
+  Saturation     Returns the saturation of the layer, and the hue and luminance of the underlying layers. Changes the saturation of the underlying layers depending on the layer.
+  Color          Returns the hue and saturation of the layer, and the luminance of the underlying layers. Colors the underlying layers with the layer. The underlying layers control the brightness of the resulting image.
+  Luminance      Returns the luminance of the layer, and the hue and saturation of the underlying layers. The layer controls the brightness of the underlying layers. Luminance is the inverse of Color.
+  Addition       Directly adds the layer to the underlying layers, limiting the resulting colors at white (255, 255, 255).
+  Subtraction    Directly subtracts the layer from the underlying layers, limiting the resulting colors at black (0, 0, 0). Difference is similar, but returns the absolute value after subtracting.
+  HSL Addition   Adds the layer to the underlying layers using the HSL color model. Creates unusual effects.
+  Red            Returns the red part of the layer, and the green and blue parts of the underlying layers.
+  Green          Returns the green part of the layer, and the red and blue parts of the underlying layers.
+  Blue           Returns the blue part of the layer, and the red and green parts of the underlying layers.
+  -------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+See Also
+How layers are merged
+Layers

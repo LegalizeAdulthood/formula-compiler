@@ -1,0 +1,80 @@
+Working with layers
+
+Layers are managed in the Layers tab of the Fractal Properties tool
+window.
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | Click the Add button  |
+|                       |                       | to add a new layer,   |
+|                       |                       | duplicating the       |
+|                       |                       | active layer.         |
+|                       |                       | Hold down the Add     |
+|                       |                       | button to open a menu |
+|                       |                       | with layer presets.   |
+|                       |                       | See Presets.          |
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | Click the Delete      |
+|                       |                       | button to delete the  |
+|                       |                       | currently selected    |
+|                       |                       | layers.               |
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | Click the New Group   |
+|                       |                       | button to create a    |
+|                       |                       | new layer group. See  |
+|                       |                       | Layer groups.         |
++-----------------------+-----------------------+-----------------------+
+
+Most commands and tool windows (such as the Layer Properties tool
+window) work on the currently selected layers. So, by selecting layers
+in the layers list, you change what is being edited by these other tool
+windows.
+
+- To select a layer, simply click it in the layers list.
+- To select multiple layers, hold down the Ctrl key and click the layers
+  you want to add to the selection. Ctrl-click a selected layer to
+  deselect it again.
+- To select a range of layers, click the first layer. Then, hold down
+  the Shift key and click the last layer.
+- The Merge mode drop-down box selects the merge mode of the selected
+  layers. The merge mode determines how the layer is combined with the
+  layers below it.
+- The Opacity slider adjusts the opacity of the selected layers. Move it
+  to the left to make the layer less visible (more transparent). Move it
+  to the right to make it more opaque.
+- To rename the active layer, click it again or press F2 (like in
+  Windows Explorer).
+- To move layers around in the list, drag the selected layers up or
+  down. Of course, this affects the way the layers are composited.
+
+To the left of each layer is a row of icons. These icons toggle various
+properties.
+
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       The Visible icon toggles the visibility of the layer. Use it to temporarily hide a layer, so you can more clearly see the other layers.
+  []       The Editable icon selects whether a layer is editable. Only editable layers are affected by zooming operations. By default, all layers are editable, so if you want to zoom in on only one layer, you should clear this icon on the other layers first.
+  []       The Transparent icon selects whether transparent areas in a layer are visible. See Transparent layers.
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Notes
+
+- By holding down the Shift key while clicking on the Visible, Editable,
+  or Transparent icons, you toggle all other layers instead. If you want
+  to see just one layer, for example, Shift-click its Visible icon and
+  all other layers will be turned off. Shift-click it again to show all
+  layers.
+- If a layer is not editable, its properties can still be changed with
+  the Layer Properties tool window. The Editable icon only affects
+  zooming operations.
+- To copy the selected layers to another fractal window, drag them from
+  the list of layers to the other fractal window.
+- Right-click in the list of layers to open a menu with frequently used
+  commands. This menu also contains Copy and Paste commands that are
+  another way of copying layers to other fractal windows.
+
+Next: Merge modes
+
+See Also
+Tutorial: Working with layers
+Working with masks
+Keyboard shortcuts for the Fractal Properties tool window
+Animating layers
