@@ -1,0 +1,200 @@
+Creating animations
+
+Creating an animation from a normal fractal is easy, but perhaps
+different than in other fractal programs. These steps show how to create
+a simple zoom movie.
+
++-------------+-------------+-------------+-------------+------------------+
+| []          |             | 1.          |             | Click New on the |
+|             |             |             |             | File menu, and   |
+|             |             |             |             | then click       |
+|             |             |             |             | Fractal to open  |
+|             |             |             |             | the formula      |
+|             |             |             |             | browser. Select  |
+|             |             |             |             | Mandelbrot in    |
+|             |             |             |             | Standard.ufm,    |
+|             |             |             |             | and then click   |
+|             |             |             |             | Open. This       |
+|             |             |             |             | creates a new    |
+|             |             |             |             | default          |
+|             |             |             |             | Mandelbrot       |
+|             |             |             |             | fractal.         |
+|             |             |             |             |                  |
+|             |             |             |             | (Note: Skip this |
+|             |             |             |             | step if you      |
+|             |             |             |             | already have a   |
+|             |             |             |             | fractal window   |
+|             |             |             |             | open that you    |
+|             |             |             |             | would like to    |
+|             |             |             |             | turn into an     |
+|             |             |             |             | animation.)      |
++-------------+-------------+-------------+-------------+------------------+
+|             |             | 2.          |             | Move the time    |
+|             |             |             |             | slider at the    |
+|             |             |             |             | bottom to the    |
+|             |             |             |             | far right. This  |
+|             |             |             |             | sets the current |
+|             |             |             |             | frame to 100.    |
+|             |             |             |             | (If you cannot   |
+|             |             |             |             | see the time     |
+|             |             |             |             | slider, click    |
+|             |             |             |             | Show Animation   |
+|             |             |             |             | Bar on the View  |
+|             |             |             |             | menu to reveal   |
+|             |             |             |             | it.)             |
++-------------+-------------+-------------+-------------+------------------+
+| []          |             | 3.          |             | Click the        |
+|             |             |             |             | Animate button   |
+|             |             |             |             | on the animation |
+|             |             |             |             | bar to turn      |
+|             |             |             |             | Animate mode on. |
+|             |             |             |             | In Animate mode, |
+|             |             |             |             | changes you make |
+|             |             |             |             | to the fractal   |
+|             |             |             |             | are applied to   |
+|             |             |             |             | the current      |
+|             |             |             |             | frame only. This |
+|             |             |             |             | is necessary     |
+|             |             |             |             | because we want  |
+|             |             |             |             | to keep frame 1  |
+|             |             |             |             | as it is, and    |
+|             |             |             |             | change frame 100 |
+|             |             |             |             | to something     |
+|             |             |             |             | else.            |
+|             |             |             |             |                  |
+|             |             |             |             | Note that the    |
+|             |             |             |             | fractal window   |
+|             |             |             |             | now shows red    |
+|             |             |             |             | animation        |
+|             |             |             |             | indicator marks  |
+|             |             |             |             | in its corners,  |
+|             |             |             |             | and              |
+|             |             |             |             | "(Animating)" in |
+|             |             |             |             | the title bar.   |
+|             |             |             |             | This shows that  |
+|             |             |             |             | Animate mode is  |
+|             |             |             |             | on.              |
++-------------+-------------+-------------+-------------+------------------+
+|             |             | 4.          |             | Shift-click      |
+|             |             |             |             | inside the       |
+|             |             |             |             | fractal window,  |
+|             |             |             |             | hold the mouse   |
+|             |             |             |             | button down, and |
+|             |             |             |             | drag upwards to  |
+|             |             |             |             | zoom in. Release |
+|             |             |             |             | the mouse button |
+|             |             |             |             | when you are     |
+|             |             |             |             | satisfied with   |
+|             |             |             |             | the result. (See |
+|             |             |             |             | Normal mode for  |
+|             |             |             |             | more information |
+|             |             |             |             | about zooming.)  |
++-------------+-------------+-------------+-------------+------------------+
+|             |             | 5.          |             | Congratulations! |
+|             |             |             |             | You have just    |
+|             |             |             |             | made your first  |
+|             |             |             |             | zoom movie. Drag |
+|             |             |             |             | the time slider  |
+|             |             |             |             | to the left and  |
+|             |             |             |             | right to see a   |
+|             |             |             |             | real-time        |
+|             |             |             |             | preview.         |
+|             |             |             |             |                  |
+|             |             |             |             | Note that above  |
+|             |             |             |             | the time slider, |
+|             |             |             |             | two key icons    |
+|             |             |             |             | have appeared,   |
+|             |             |             |             | one at frame 1,  |
+|             |             |             |             | and one at frame |
+|             |             |             |             | 100. This shows  |
+|             |             |             |             | that keys have   |
+|             |             |             |             | been recorded at |
+|             |             |             |             | those frames.    |
++-------------+-------------+-------------+-------------+------------------+
+|             |             | 6.          |             | To make the      |
+|             |             |             |             | movie more       |
+|             |             |             |             | interesting, let |
+|             |             |             |             | us add a rotate  |
+|             |             |             |             | effect. Move the |
+|             |             |             |             | time slider to   |
+|             |             |             |             | frame 50, and    |
+|             |             |             |             | ensure that      |
+|             |             |             |             | Animate mode is  |
+|             |             |             |             | still on.        |
++-------------+-------------+-------------+-------------+------------------+
+|             |             | 7.          |             | Enter 90 in the  |
+|             |             |             |             | Rotation Angle   |
+|             |             |             |             | input box on the |
+|             |             |             |             | Location tab of  |
+|             |             |             |             | the Layer        |
+|             |             |             |             | Properties tool  |
+|             |             |             |             | window. This     |
+|             |             |             |             | will rotate the  |
+|             |             |             |             | fractal 90 degrees      |
+|             |             |             |             | clockwise at     |
+|             |             |             |             | frame 50.        |
++-------------+-------------+-------------+-------------+------------------+
+| []          |             | 8.          |             | Click the        |
+|             |             |             |             | Animate button   |
+|             |             |             |             | again to turn    |
+|             |             |             |             | off Animate      |
+|             |             |             |             | mode, because we |
+|             |             |             |             | are done         |
+|             |             |             |             | recording this   |
+|             |             |             |             | animation for    |
+|             |             |             |             | now. It is a     |
+|             |             |             |             | good habit to    |
+|             |             |             |             | leave Animate    |
+|             |             |             |             | mode off         |
+|             |             |             |             | normally to      |
+|             |             |             |             | avoid unintended |
+|             |             |             |             | changes to your  |
+|             |             |             |             | animations.      |
++-------------+-------------+-------------+-------------+------------------+
+| []          |             | 9.          |             | Click the Play   |
+|             |             |             |             | button on the    |
+|             |             |             |             | Animation bar to |
+|             |             |             |             | start playing a  |
+|             |             |             |             | preview of the   |
+|             |             |             |             | animation, or    |
+|             |             |             |             | drag the time    |
+|             |             |             |             | slider back and  |
+|             |             |             |             | forth.           |
+|             |             |             |             |                  |
+|             |             |             |             | Observe that the |
+|             |             |             |             | animation starts |
+|             |             |             |             | unrotated,       |
+|             |             |             |             | rotates to 90 degrees   |
+|             |             |             |             | at frame 50, and |
+|             |             |             |             | then rotates     |
+|             |             |             |             | back to normal   |
+|             |             |             |             | at frame 100,    |
+|             |             |             |             | while zooming in |
+|             |             |             |             | all the time.    |
+|             |             |             |             | The frames where |
+|             |             |             |             | we did not       |
+|             |             |             |             | explicitly set   |
+|             |             |             |             | new values are   |
+|             |             |             |             | interpolated to  |
+|             |             |             |             | create a smooth  |
+|             |             |             |             | animation.       |
++-------------+-------------+-------------+-------------+------------------+
+
+Notes
+
+- In Ultra Fractal, there is no fundamental difference between
+  animations and still (normal) fractals. A still fractal is simply a
+  fractal without any animation keys. If you only want to create still
+  fractals, just hide the animation bar and ignore the Animation menu.
+- As you can see, the fractal does not interpolate from one set of
+  parameters to another, like in some other fractal programs. Instead,
+  every parameter and setting has its own set of keys and interpolates
+  between them independently. This makes creating and editing animations
+  much easier and enables you to create more complex animations.
+- To create a movie clip of your animation, render it to disk.
+
+Next: Animation keys
+
+See Also
+Tutorial: Working with animations
+Animation

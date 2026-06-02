@@ -1,0 +1,44 @@
+Animation keys
+
+While you are creating animations, you are actually creating animation
+keys for the parameters that are animated. The animation keys define how
+the values of those parameters change over time.
+
+Each parameter that can be animated has its own list of animation keys,
+which is initially empty. In this case, the parameter just has a static
+value that is the same for the entire frame range, and it is not
+animated.
+
+When you first change a parameter while Animate mode is on, Ultra
+Fractal inserts a new key for that parameter at frame 1 with its old
+value. Then, it inserts a second key at the current frame with the new
+value.
+
+[]
+
+The time slider shows the keys as blue and yellow dots. Keys are
+displayed as yellow dots if they are located at the current frame. In
+this example, if you now move the time slider from frame 1 to frame 50,
+the parameter animates from its old value to the new value.
+
+Notes
+
+- The key at frame 1 with the old value is only inserted when the
+  parameter does not yet have any keys. If the parameter already has one
+  or more keys, Ultra Fractal only inserts a key at the current frame.
+- If Animate mode is on, and you change a parameter that already has a
+  key at the current frame, Ultra Fractal adjusts the value of that key
+  instead of inserting a new key.
+- Use the Timeline tool window to edit and delete keys. You can also
+  delete the key at the current frame from the right-click menu of an
+  animated parameter. See Editing animations.
+- Internally, a key stores its position as a time value, not as a frame
+  number. This makes it possible to scale animations without introducing
+  round-off errors. See Time settings.
+
+Next: Animate mode
+
+See Also
+Tutorial: Working with animations
+Editing animations
+Animation

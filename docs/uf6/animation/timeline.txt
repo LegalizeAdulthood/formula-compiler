@@ -1,0 +1,73 @@
+Timeline
+
+The Timeline tool window provides the most versatile way of editing your
+animations. It shows a tree view of all parameters in the fractal,
+grouped by layer and category, with an overview of their animation keys.
+
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------
+  []       To open the Timeline tool window, click the Timeline button on the animation bar, or click Timeline on the Animation menu.
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------
+
+[]
+
+- The tree view on the left displays all layers of the active fractal
+  window. Within each layer, the parameters are grouped by categories
+  that correspond to the tabs of the Layer Properties tool window,
+  combined with layer settings and the gradient.
+- The time view on the right displays the animated range and animation
+  keys for all categories and parameters. The animated range of a
+  category contains the animation keys of all parameters within the
+  category.
+- The selection properties at the bottom enable you to edit the current
+  selection. For animated ranges, you can change the begin and end
+  frames, which scales the range. For animation keys, you can change the
+  value of the key and its frame. You can also select how Ultra Fractal
+  interpolates around the key with various interpolation options. See
+  Interpolation.
+
+It is easy to discover which parts of a fractal are animated by looking
+at the animated ranges for different categories. To move a complete
+animated range, grab it in the middle and drag it to the left or to the
+right. To resize an animated range, drag the resize gribs at the left or
+right ends. This powerful way to edit animations adjusts all animated
+keys within the category that corresponds with the animated range.
+
+You can also click on a single animation key and move it, or adjust its
+value with the selection properties panel at the bottom. To select
+multiple keys or ranges, hold down Ctrl (Windows) or Cmd (Mac) while you
+click. Hold down Shift to select a consecutive area of keys or ranges.
+This enables you to move or resize multiple items at once.
+
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------------------
+  []       To insert a new key, click the Insert button and then click in the time view where you want to create a new key.
+  []       To delete the currently selected key or animated range, click the Delete button.
+  []       Click the Zoom In button to enlarge the area with frames at the center of the time view, so you can work more accurately.
+  []       Click the Zoom Out button to be able to see more frames at the same time.
+  []       To scale the time view such that all frames of the animation will just fit in the currently visible area, click the Reset View button.
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------------------
+
+Notes
+
+- To quickly insert or delete keys, hold down Ctrl (Windows) or Cmd
+  (Mac) and click in the time view where you want to create a new key,
+  or on the key that you want to delete.
+- To copy a key or an entire animated range, right-click in the time
+  view on the key or range you want to copy, and click Copy. If you
+  clicked on a key, only the key's value is copied; otherwise the entire
+  animated range that you clicked is copied, including all keys.
+- To paste a key or animated range, right-click in the time view where
+  you want to paste it, and click Paste. When pasting a single key, the
+  new value replaces the existing key value at the position where you
+  clicked. A new key is inserted at the clicked frame if needed. When
+  pasting an animated range, the pasted range replaces all existing keys
+  for the parameter.
+- Right-click in the time view for a menu with other frequently used
+  commands.
+
+Next: Interpolation
+
+See Also
+Tutorial: Working with animations
+Time settings
+Editing animations
+Animation

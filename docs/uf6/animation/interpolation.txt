@@ -1,0 +1,39 @@
+Interpolation
+
+To create smooth animations, Ultra Fractal automatically interpolates
+between the animation keys that you have recorded. By default, a smooth
+interpolation method is used that damps sudden changes and creates
+smooth ease-in and ease-out effects around each key. However, you can
+select different interpolation methods for each animation key using the
+Timeline tool window.
+
+There are three interpolation methods available:
+
+[]
+
+To adjust interpolation methods for an animation key, select the key in
+the Timeline tool window. The properties panel at the bottom now shows
+the frame, the value, and the current interpolation settings for the
+key.
+
+[]
+
+You can set the interpolation method for both the curve to the left and
+the curve to the right of the key. In some cases, this will also change
+the interpolation settings for adjacent keys. For example, if you set
+the interpolation method for the curve to the right of the current key
+to No, the interpolation method for the curve to the left of the next
+key will also be set to No.
+
+  ---- --- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       Sets No interpolation. The value of the parameter will remain the same until it suddenly jumps to the value of the next key.
+  []       Sets Linear interpolation. The value of the parameter will linearly change from one key to the next. This can result in noticeable changes in the speed at which the parameter changes around animation keys. If you want to create seamlessly looping animations with rotation, for example, you need to use linear interpolation to keep the rotation speed constant.
+  []       Sets Smooth interpolation. The value of the parameter will gradually change from one key to the next, slowing down and speeding up where needed to avoid sudden changes in the speed at which the parameter is changed. This is the default interpolation method.
+  ---- --- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Next: Exponential interpolation
+
+See Also
+Tutorial: Working with animations
+Timeline
+Animation

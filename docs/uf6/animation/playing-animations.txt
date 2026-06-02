@@ -1,0 +1,35 @@
+Playing animations
+
+While you are working with an animation, you will often want to see a
+quick live preview. You can drag the time slider back and forth to
+slowly preview a part of the animation in the fractal window. If the
+fractal is not too slow to calculate, you can also play a real-time
+preview in the fractal window.
+
+  ---- --- --------------------------------------------------------------------------------------------------------------------------------------
+  []       Click the Play button in the animation bar to start or stop playing a preview of the animation, or click Play on the Animation menu.
+  ---- --- --------------------------------------------------------------------------------------------------------------------------------------
+
+While playing the preview for an animation with multiple layers, Ultra
+Fractal gives some layers more priority than others. The active layer is
+calculated with the highest priority, and then the other visible layers
+are calculated from top to bottom, with the editable layers first. To
+speed up the preview, you can temporarily hide one or more layers.
+
+  ---- --- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       The preview is always played at a constant frame rate, independent of the frame rate of the animation. Open the Preferences dialog and then click the Fractal tab to change the Animation preview speed. Higher values give smoother animation, but allow less time per frame, so individual frames will show less detail. The best value depends on the speed of your computer and the complexity of the animations.
+  ---- --- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Notes
+
+- Playback will not work well if the drawing method of a layer is set to
+  One-pass linear. Use Guessing or Multi-pass Linear instead.
+- To create a final movie clip of your animation, or to create a quick
+  preview movie, render it to disk.
+
+Next: Animating locations
+
+See Also
+Tutorial: Working with animations
+Rendering animations
+Animation

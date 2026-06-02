@@ -1,0 +1,66 @@
+Time settings
+
+Each fractal starts with 100 frames and a frame rate of 30 frames per
+second, but you can of course easily change the length and the frame
+rate of the animation.
+
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []       Click the Time Settings button on the animation bar, or click Time Settings in the Animation menu. This opens the Time Settings dialog where you can extend, reduce, or scale the animation.
+  ---- --- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+The Time Settings dialog enables you to enter new values for the number
+of frames and the current frame rate (in frames per second). The total
+time for the animation is also shown and updated as you type, according
+to the following formula:
+
+Time (seconds) = Frames / Frame Rate (fps)
+
+Before you enter a new frame rate, review the Lock frames and Lock time
+radio buttons. If Lock frames is checked, the number of frames will not
+be changed, so the total time of the animation will change according to
+the new frame rate. Otherwise, the number of frames will be adjusted as
+you type in order to preserve the duration of the animation.
+
+With the radio buttons in the Existing keys group, you can globally
+scale the existing animation keys according to the new length in frames.
+
+- If Scale to new length is checked, the animation keys will be scaled
+  such that their relative positions in the animation do not change. For
+  example, if you have keys at frame 1 and 50 and the number of frames
+  changes from 100 to 200, the keys will end up at frame 1 and 99, so
+  they stilll occupy the same part of the animation.
+- If Keep at first frame is checked, the frame number of the animation
+  keys will stay the same. If the number of frames is increased, this
+  will leave the new part of the animation empty so you can add new
+  animation keys at the end. If the number of frames is decreased, the
+  last part of the animation will be chopped off (but not deleted; you
+  can still work with it in the Timeline tool window).
+- If Keep at last frame is checked, the frame number of the animation
+  keys will be adjusted to keep the distance to the end of the animation
+  the same. If the number of frames is increased, this will move the
+  existing keys to the end, so you can add new keys at the beginning. If
+  the number of frames is decreased, the first part of the animation
+  will be chopped off (but not deleted; you can still work with it in
+  the Timeline tool window).
+
+Notes
+
+- Because the position of an animation key is internally stored as a
+  precise time value, you can scale an animation more than once without
+  introducing round-off errors. For example, if you reduce an animation
+  with 100 frames to 10 frames with Scale to new length checked, a key
+  at frame 25 will end up at frame 3. If you now scale the animation
+  back to 100 frames, the key will be back at frame 25.
+- For more information on individual controls in the Time Settings
+  dialog, click the [] button in the title bar, and then click a
+  control.
+- You can change the default fractal to have a different length and
+  frame rate. See Default fractal.
+
+Next: Editing animations
+
+See Also
+Tutorial: Working with animations
+Creating animations
+Animation keys
+Animation

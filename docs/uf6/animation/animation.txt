@@ -1,0 +1,37 @@
+Animation
+
+  ------------------------------------------------------------------------
+  Note: You need Ultra Fractal Extended Edition to work with animations.
+  ------------------------------------------------------------------------
+
+Any fractal in Ultra Fractal can easily be turned into an animation. You
+can animate all parameters of the fractal at will and see the result
+immediately in the fractal window. Finally, render the animation to
+watch it as a movie clip.
+
+[]
+
+Creating and editing animations is done with various tools:
+
+- The animation bar contains the time slider and vital animation
+  controls that enable you to create, edit, and play back animations.
+  See Animation bar.
+- With the time slider, you set the current frame. The fractal window
+  always displays the image for the current frame.
+- The red animation indicators are shown if the fractal is currently in
+  Animate mode. In Animate mode, changes that you make to the fractal
+  are only applied to the current frame. If Animate mode is off (the
+  default), your changes are applied to the entire range of frames.
+- The key icons show at which frames and for which parameters keys have
+  been recorded. See Animation keys.
+- The Timeline tool window provides an in-depth view of all animated
+  settings and parameters and can be used to edit and tweak your
+  animations. See Timeline.
+
+The following topics will explain how these tools work, and how to use
+them effectively.
+
+Next: Creating animations
+
+See Also
+Tutorial: Working with animations

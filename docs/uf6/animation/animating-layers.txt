@@ -1,0 +1,52 @@
+Animating layers
+
+Animating the opacity and blending of layers is the way in Ultra Fractal
+to animate blends between different fractals, gradients, color
+combinations, and so on.
+
+[]
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | To animate layer      |
+|                       |                       | blending, first set   |
+|                       |                       | Animate mode to on    |
+|                       |                       | and move the time     |
+|                       |                       | slider to the frame   |
+|                       |                       | where you want to     |
+|                       |                       | create new animation  |
+|                       |                       | keys, as described in |
+|                       |                       | Creating animations.  |
+|                       |                       |                       |
+|                       |                       | Now simply drag the   |
+|                       |                       | opacity slider to a   |
+|                       |                       | new value, or set a   |
+|                       |                       | new merge mode.       |
++-----------------------+-----------------------+-----------------------+
+
+As with any parameter, a blue dot next to the Merge Mode input box or
+the opacity slider means that it is animated. It turns into a yellow
+marker if there is an animation key at the current frame. In this case,
+editing the parameter while Animate mode is on will change the value of
+the key at the current frame instead of inserting a new key.
+
+Notes
+
+- If you animate the merge mode, it will not be interpolated between
+  animation keys, which gives sudden changes. For smooth transitions,
+  create two identical layers, one with the first merge mode, and one
+  with the second, and animate the opacity of both layers to create a
+  smooth transition between the two.
+- You cannot animate the visibility or the insertion or deletion of a
+  layer. Instead, animate the opacity to 0% so the layer appears to be
+  hidden.
+- You also cannot animate a layer from or to a mask layer. Instead,
+  animate the opacity part of the gradient of the mask layer to be 100%
+  opaque (white) so the mask has no effect.
+
+Next: Time settings
+
+See Also
+Tutorial: Working with animations
+Animating parameters
+Layers
+Animation

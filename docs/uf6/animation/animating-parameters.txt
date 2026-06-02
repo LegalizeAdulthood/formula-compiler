@@ -1,0 +1,80 @@
+Animating parameters
+
+You can animate almost anything in Ultra Fractal, including all formula
+parameters and settings such as Maximum Iterations and Color Density.
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | To animate a          |
+|                       |                       | parameter, first set  |
+|                       |                       | Animate mode to on    |
+|                       |                       | and move the time     |
+|                       |                       | slider to the frame   |
+|                       |                       | where you want to     |
+|                       |                       | create a new          |
+|                       |                       | animation key, as     |
+|                       |                       | described in Creating |
+|                       |                       | animations.           |
+|                       |                       |                       |
+|                       |                       | Parameters that can   |
+|                       |                       | be animated will      |
+|                       |                       | display a red         |
+|                       |                       | animation indicator   |
+|                       |                       | next to them while    |
+|                       |                       | Animate mode is on.   |
+|                       |                       | Simply type a new     |
+|                       |                       | value or use the      |
+|                       |                       | Explore feature to    |
+|                       |                       | change the parameter. |
++-----------------------+-----------------------+-----------------------+
+
+[]
+
+A blue dot next to a parameter means that it is animated (i.e. has one
+or more animation keys). If the blue dot turns into a yellow marker,
+this means that the parameter contains an animation key at the current
+frame. In this case, editing the parameter while Animate mode is on will
+change the value of the key at the current frame instead of inserting a
+new key.
+
+If Animate mode is off, editing an animated parameter will adjust the
+values of all its animation keys. For example, if a parameter animates
+from the value 1 at frame 1 to 4 at frame 100, and the current frame is
+1 and you change the value to 2, the value at frame 100 will change to
+5. Floating-point parameters with exponential interpolation, such as
+Magnification and Color Density, are scaled instead of translated.
+
+Complex, floating-point, and integer parameters will be interpolated
+smoothly between animation keys. You can also animate enumerated and
+boolean parameters, but they will not be interpolated.
+
+Right-click a parameter for a menu with options to insert a new key at
+the current frame or to remove the existing key, and to jump to the
+previous and next key for that parameter. See Editing animations.
+
++-----------------------------------+-----------------------------------+
+| []                                | Inserting a key manually is       |
+|                                   | useful if you want to animate a   |
+|                                   | parameter from frame 20 to frame  |
+|                                   | 30, for example. If you just move |
+|                                   | the time slider to frame 30 and   |
+|                                   | change the parameter, the         |
+|                                   | parameter will be animated from   |
+|                                   | frame 1 to frame 30, which is not |
+|                                   | what you want.                    |
+|                                   |                                   |
+|                                   | Instead, first move the time      |
+|                                   | slider to frame 20 and insert a   |
+|                                   | key there (which does not change  |
+|                                   | the value of the parameter). Then |
+|                                   | move to frame 30, turn Animate    |
+|                                   | mode on, and edit the parameter   |
+|                                   | to animate it.                    |
++-----------------------------------+-----------------------------------+
+
+Next: Animating gradients
+
+See Also
+Tutorial: Working with animations
+Animating locations
+Timeline
+Animation

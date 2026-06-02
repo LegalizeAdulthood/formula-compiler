@@ -1,0 +1,149 @@
+Animating gradients
+
+Of course, you can also animate gradients in Ultra Fractal to create
+color cycling movies or subtle color change effects during your
+animations.
+
+[]
+
+The gradient editor contains a small bar just above the rotation slider
+that shows whether or not the control points above it are animated. When
+Animate mode is on, this bar shows red animation indicators below each
+control point to illustrate that it can be animated.
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | To animate a control  |
+|                       |                       | point, first set      |
+|                       |                       | Animate mode to on    |
+|                       |                       | and move the time     |
+|                       |                       | slider to the frame   |
+|                       |                       | where you want to     |
+|                       |                       | create a new          |
+|                       |                       | animation key, as     |
+|                       |                       | described in Creating |
+|                       |                       | animations.           |
+|                       |                       |                       |
+|                       |                       | Now simply drag the   |
+|                       |                       | control point around. |
+|                       |                       | This will record keys |
+|                       |                       | for both the color    |
+|                       |                       | and the position of   |
+|                       |                       | the control point.    |
+|                       |                       | You can also type new |
+|                       |                       | values in the input   |
+|                       |                       | boxes in the gradient |
+|                       |                       | editor. See also      |
+|                       |                       | Editing gradients.    |
++-----------------------+-----------------------+-----------------------+
+
+As with parameters, a blue dot below a control point means that a
+control point is animated. It turns into a yellow marker if the control
+point has an animation key at the current frame. In this case, dragging
+the control point while Animate mode is on will change the value of the
+keys at the current frame instead of inserting new keys.
+
+If Animate mode is off, dragging an animated control point will
+transform the values of all its animation keys. For example, if a
+control point animates from position 0 at frame 1 to 50 at frame 100,
+and the current frame is 1 and you drag it to position 20, its position
+at frame 100 will change to 70.
+
+The following gradient adjustment options record keys when Animate mode
+is on and can be used to create animated gradients: Randomize Custom (if
+Randomize control points is not checked), Adjust Colors, Reverse, and
+Invert.
+
+The Randomize, Randomize Bright, and Randomize Misty options clear all
+control points and then generate a new gradient, so they cannot animate
+the existing control points.
+
+The Copy and Paste commands work differently depending on whether or not
+Animate mode is on:
+
++-------------+-------------+-------------+-------------+--------------+
+|             |             | Animate     |             | Animate mode |
+|             |             | mode on     |             | off          |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Copies the  |             | Copies the   |
+|             |             | control     |             | control      |
+|             |             | points at   |             | points for   |
+|             |             | the current |             | the entire   |
+|             |             | frame to    |             | frame range  |
+|             |             | the         |             | to the       |
+|             |             | Clipboard,  |             | Clipboard,   |
+|             |             | without any |             | including    |
+|             |             | animation   |             | all          |
+|             |             | keys.       |             | animation    |
+|             |             |             |             | keys.        |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Pastes the  |             | Pastes the   |
+|             |             | control     |             | control      |
+|             |             | points from |             | points from  |
+|             |             | the         |             | the          |
+|             |             | Clipboard   |             | Clipboard    |
+|             |             | into the    |             | into the     |
+|             |             | gradient,   |             | gradient,    |
+|             |             | inserting   |             | overwriting  |
+|             |             | animation   |             | any          |
+|             |             | keys as     |             | animation    |
+|             |             | necessary.  |             | keys.        |
+|             |             |             |             |              |
+|             |             | If the      |             | If the       |
+|             |             | number of   |             | gradient on  |
+|             |             | control     |             | the          |
+|             |             | points on   |             | Clipboard    |
+|             |             | the         |             | has no       |
+|             |             | Clipboard   |             | animation    |
+|             |             | is equal to |             | keys (copied |
+|             |             | the number  |             | with Animate |
+|             |             | of control  |             | mode on, or  |
+|             |             | points in   |             | from a       |
+|             |             | the         |             | non-animated |
+|             |             | gradient,   |             | gradient),   |
+|             |             | this will   |             | any          |
+|             |             | animate the |             | animation    |
+|             |             | control     |             | keys in the  |
+|             |             | points in   |             | gradient     |
+|             |             | the         |             | will be      |
+|             |             | gradient.   |             | removed.     |
+|             |             |             |             |              |
+|             |             | You must    |             |              |
+|             |             | turn off    |             |              |
+|             |             | Animate     |             |              |
+|             |             | mode before |             |              |
+|             |             | pasting     |             |              |
+|             |             | gradients   |             |              |
+|             |             | with        |             |              |
+|             |             | animation   |             |              |
+|             |             | keys        |             |              |
+|             |             | (copied     |             |              |
+|             |             | when        |             |              |
+|             |             | Animate     |             |              |
+|             |             | mode is     |             |              |
+|             |             | off).       |             |              |
++-------------+-------------+-------------+-------------+--------------+
+
+Notes
+
+- You can create color cycling animations simply by changing the
+  Rotation setting or dragging the rotation slider while Animate mode is
+  on.
+- The individual input boxes in the gradient editor do not show
+  animation indicators. Refer to the animation indicators in the
+  horizontal bar below the control points instead.
+- You cannot directly insert or delete animation keys in the gradient
+  editor. Use the Timeline tool window instead.
+- Because each control point is animated separately, you cannot create
+  an animation from one arbitrary gradient to another, and you cannot
+  animate the insertion or deletion of a control point. To blend from
+  one arbitrary gradient to another, duplicate the current layer, change
+  the gradient on the new layer, and animate the opacity of the layer so
+  it fades in to replace the original gradient.
+
+Next: Animating layers
+
+See Also
+Tutorial: Working with animations
+Animating parameters
+Gradients
+Animation

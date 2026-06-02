@@ -1,0 +1,125 @@
+Animating locations
+
+Although you can do much more with animation in Ultra Fractal, the most
+obvious thing to animate is the location of the fractal to create zoom
+movies. The location is controlled by five parameters on the Location
+tab of the Layer Properties tool window: Center, Magnification, Rotation
+Angle, Stretch, and Skew Angle.
+
++-----------------------+-----------------------+-----------------------+
+| []                    |                       | To animate the        |
+|                       |                       | location, first set   |
+|                       |                       | Animate mode to on    |
+|                       |                       | and move the time     |
+|                       |                       | slider to the frame   |
+|                       |                       | where you want to     |
+|                       |                       | create animation      |
+|                       |                       | keys, as described in |
+|                       |                       | Creating animations.  |
+|                       |                       |                       |
+|                       |                       | Use the same zooming, |
+|                       |                       | panning, and rotation |
+|                       |                       | features that you     |
+|                       |                       | would normally use    |
+|                       |                       | (see Normal mode and  |
+|                       |                       | Select mode). They    |
+|                       |                       | work the same as when |
+|                       |                       | Animate mode is off,  |
+|                       |                       | except that only the  |
+|                       |                       | current frame is      |
+|                       |                       | modified, instead of  |
+|                       |                       | the entire range of   |
+|                       |                       | frames.               |
++-----------------------+-----------------------+-----------------------+
+
+If you use Select mode, Ultra Fractal always inserts keys at the current
+frame for all five location parameters, even when the value of the
+parameter has not been changed. For example, if you just zoom in without
+stretching or skewing, keys for Stretch and Skew will also be inserted
+although their values have stayed the same. If you do not want this, use
+Normal mode instead.
+
+Of course, you can also animate the location by changing one of the
+location parameters directly while Animate mode is on. You can also edit
+the corner coordinate parameters in the lower half of the Location tab,
+but this just indirectly changes the normal parameters in the upper
+half.
+
+Always make sure whether Animate mode is on or off. If you zoom in while
+Animate mode is off, this will transform the entire animation, which
+usually is not what you want.
+
+The behavior of the Copy, Paste, and Reset buttons in the Location tab
+behave depends on whether or not Animate mode is on, providing flexible
+ways to copy and clear animation keys. See also Editing animations.
+
++-------------+-------------+-------------+-------------+--------------+
+|             |             | Animate     |             | Animate mode |
+|             |             | mode on     |             | off          |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Copies the  |             | Copies the   |
+|             |             | location at |             | location for |
+|             |             | the current |             | the entire   |
+|             |             | frame to    |             | frame range  |
+|             |             | the         |             | to the       |
+|             |             | Clipboard,  |             | Clipboard,   |
+|             |             | without any |             | including    |
+|             |             | animation   |             | all          |
+|             |             | keys.       |             | animation    |
+|             |             |             |             | keys.        |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Sets the    |             | Sets the     |
+|             |             | current     |             | current      |
+|             |             | location to |             | location to  |
+|             |             | the         |             | the location |
+|             |             | location on |             | on the       |
+|             |             | the         |             | Clipboard,   |
+|             |             | Clipboard,  |             | overwriting  |
+|             |             | inserting   |             | any          |
+|             |             | animation   |             | animation    |
+|             |             | keys when   |             | keys.        |
+|             |             | necessary,  |             |              |
+|             |             | just as if  |             | If the       |
+|             |             | you entered |             | location on  |
+|             |             | those       |             | the          |
+|             |             | values      |             | Clipboard    |
+|             |             | manually.   |             | has no       |
+|             |             |             |             | animation    |
+|             |             | You must    |             | keys (copied |
+|             |             | turn off    |             | with Animate |
+|             |             | Animate     |             | mode on, or  |
+|             |             | mode before |             | from a       |
+|             |             | pasting     |             | non-animated |
+|             |             | locations   |             | fractal),    |
+|             |             | with        |             | any          |
+|             |             | animation   |             | animation    |
+|             |             | keys        |             | keys in the  |
+|             |             | (copied     |             | current      |
+|             |             | when        |             | location     |
+|             |             | Animate     |             | will be      |
+|             |             | mode is     |             | removed.     |
+|             |             | off).       |             |              |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Resets the  |             | Clears all   |
+|             |             | location at |             | animation    |
+|             |             | the current |             | keys and     |
+|             |             | frame to    |             | resets the   |
+|             |             | the default |             | location to  |
+|             |             | location    |             | the default  |
+|             |             | for the     |             | location for |
+|             |             | current     |             | the current  |
+|             |             | fractal     |             | fractal      |
+|             |             | formula,    |             | formula.     |
+|             |             | inserting   |             |              |
+|             |             | animation   |             |              |
+|             |             | keys when   |             |              |
+|             |             | necessary.  |             |              |
++-------------+-------------+-------------+-------------+--------------+
+
+Next: Animating parameters
+
+See Also
+Tutorial: Working with animations
+Animate mode
+Timeline
+Animation

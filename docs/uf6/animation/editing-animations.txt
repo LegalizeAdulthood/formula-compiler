@@ -1,0 +1,84 @@
+Editing animations
+
+Ultra Fractal provides various ways to edit and change your animations
+after you have initially created them. Often you will use the Timeline
+tool window, which also reveals the structure of your animation. But you
+can also directly work with animation keys by right-clicking on animated
+parameters, which opens a menu with animation-related commands. This can
+be useful for small changes.
+
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------
+  []       To insert a new key at the current frame, right-click a parameter and click Insert Key.
+  []       To delete a key at the current frame, right-click a parameter and click Delete Key. Use the Timeline tool window to delete multiple keys at once.
+           To jump to the first key before the current frame, right-click a parameter and click Previous Key.
+           To jump to the first key after the current frame, right-click a parameter and click Next Key.
+  ---- --- ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+Note that the Previous Key and Next Key commands in the right-click menu
+for a parameter jump to the previous and next keys for that parameter
+only. To jump to the previous and next keys in the entire animation, use
+the global commands in the animation bar or on the Animation menu
+instead.
+
+A powerful way to make global changes to an animation is to copy and
+paste parts of it, using the Copy and Paste commands found everywhere in
+Ultra Fractal. You can copy locations, transformations, formulas,
+coloring settings, gradients, layers, and even entire fractals. The
+behavior of the Copy and Paste commands depends on whether or not
+Animate mode is on.
+
++-------------+-------------+-------------+-------------+--------------+
+|             |             | Animate     |             | Animate mode |
+|             |             | mode on     |             | off          |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Copies the  |             | Copies the   |
+|             |             | settings at |             | settings for |
+|             |             | the current |             | the entire   |
+|             |             | frame to    |             | frame range  |
+|             |             | the         |             | to the       |
+|             |             | Clipboard,  |             | Clipboard,   |
+|             |             | without any |             | including    |
+|             |             | animation   |             | all          |
+|             |             | keys.       |             | animation    |
+|             |             |             |             | keys.        |
++-------------+-------------+-------------+-------------+--------------+
+| []          |             | Copies      |             | Copies       |
+|             |             | settings    |             | settings     |
+|             |             | from the    |             | from the     |
+|             |             | Clipboard,  |             | Clipboard,   |
+|             |             | inserting   |             | overwriting  |
+|             |             | animation   |             | any          |
+|             |             | keys when   |             | animation    |
+|             |             | necessary,  |             | keys.        |
+|             |             | just as if  |             |              |
+|             |             | you entered |             | If the       |
+|             |             | all values  |             | settings on  |
+|             |             | manually.   |             | the          |
+|             |             |             |             | Clipboard    |
+|             |             | You must    |             | have no      |
+|             |             | turn off    |             | animation    |
+|             |             | Animate     |             | keys (copied |
+|             |             | mode before |             | with Animate |
+|             |             | pasting     |             | mode on, or  |
+|             |             | settings    |             | from a       |
+|             |             | with        |             | non-animated |
+|             |             | animation   |             | fractal),    |
+|             |             | keys        |             | any existing |
+|             |             | (copied     |             | animation    |
+|             |             | when        |             | keys will be |
+|             |             | Animate     |             | removed.     |
+|             |             | mode is     |             |              |
+|             |             | off).       |             |              |
++-------------+-------------+-------------+-------------+--------------+
+
+Remember: if Animate mode is on, your actions only affect the current
+frame; if Animate mode is off, your actions are applied to the entire
+fractal.
+
+Next: Timeline
+
+See Also
+Tutorial: Working with animations
+Animation keys
+Time settings
+Animation

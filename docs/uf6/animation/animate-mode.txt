@@ -1,0 +1,45 @@
+Animate mode
+
+The Animate mode toggle controls what happens when you make changes to a
+fractal.
+
+  ---- --- -------------------------------------------------------------------------------------------------------------------------------------
+  []       Set Animate mode on or off using the Animate button in the animation bar, the Animate command on the Animation menu, or the F3 key.
+  ---- --- -------------------------------------------------------------------------------------------------------------------------------------
+
+By default, Animate mode is off. In this case, changes that you make to
+the fractal, such as zooming in or adjusting a parameter, are applied to
+the entire range of frames. Changes never result in new animation keys;
+they only adjust the existing keys or the static value of non-animated
+parameters.
+
+If Animate mode is on, changes that you make are applied to the current
+frame only. Ultra Fractal creates or adjusts keys at the current frame
+to accomodate your changes. This is the primary way to animate
+parameters and therefore create animations.
+
+While Animate mode is on, the corners of the fractal window are marked
+with red animation indicators, and "(Animating)" is displayed in the
+title bar. Also, a small red animation indicator is shown next to each
+parameter that can be animated. The indicator reminds you that keys will
+be created or updated when you change that parameter.
+
+[]
+
+If Animate mode is off, and you change a parameter that already has one
+or more keys, the values for all keys are adjusted. For example, if you
+zoom in, the entire animation will be zoomed in; if you apply a
+rotation, the entire animation will be rotated. This is very useful if
+you want to do global adjustments. In practice, you will usually switch
+Animate mode on and off while working with an animation to achieve the
+effects that you are after in an efficient way.
+
+  ---- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  []   To adjust the values for all keys when Animate mode is off, Ultra Fractal calculates the difference between the new value and the old value, and adds that to the values for all keys. For floating-point parameters with exponential interpolation, however, Ultra Fractal divides the new value by the old value and multiplies the values for all keys by the result.
+  ---- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Next: Animation bar
+
+See Also
+Tutorial: Working with animations
+Animation

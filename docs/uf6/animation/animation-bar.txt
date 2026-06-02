@@ -1,0 +1,39 @@
+Animation bar
+
+The animation bar at the bottom of the fractal window contains the time
+slider and provides quick access to controls that you often use while
+working with animations. If the animation bar is not visible, click Show
+Animation Bar on the View menu.
+
+[]
+
+- The time slider sets the current frame. You can also enter the current
+  frame directly in the input box to the right of the time slider. To
+  the right of that input box, the time between the first frame of the
+  animation and the current frame is shown, in hours, minutes, seconds,
+  and 1/100 seconds.
+- Above the time slider, blue and yellow key icons indicate where keys
+  have been inserted. A key icon turns yellow when it is at the current
+  frame. Click on a key icon to jump to that key's frame.
+- The Animate button turns Animate mode on or off.
+- The Previous Key and Next Key buttons jump to the first key before or
+  after the current frame.
+- The Play button starts or stops real-time playback of the animation.
+- The Time Settings button opens the Time Settings dialog where you can
+  scale the animation and adjust its length.
+- The Timeline button activates the Timeline tool window where you can
+  edit and delete animation keys, and adjust interpolation curves.
+
+Notes
+
+- Although the position of keys are shown above the time slider, you
+  cannot directly edit keys from there. Use the Timeline tool window
+  instead.
+- Most commands are also available on the Animation menu with keyboard
+  shortcuts.
+
+Next: Playing animations
+
+See Also
+Tutorial: Working with animations
+Animation
