@@ -10,24 +10,20 @@ on:
   pull_request:
     branches: [ "master" ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         # boost-parser build fails on macos-latest
         # os: [ ubuntu-latest, windows-latest, macos-latest ]
         os: [ ubuntu-latest, windows-latest ]
-        include:
-          #- os: macos-latest
-          #  nuget: mono `./vcpkg/vcpkg fetch nuget | tail -n 1`
-          - os: ubuntu-latest
-            nuget: mono `./vcpkg/vcpkg fetch nuget | tail -n 1`
-          - os: windows-latest
-            nuget: nuget
 
     runs-on: ${{matrix.os}}
-    env: 
-      FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json
 
     steps:
     - name: Checkout
@@ -35,41 +31,29 @@ jobs:
       with:
         submodules: true
 
+    - name: Setup vcpkg package cache
+      id: vc
+      uses: LegalizeAdulthood/vcpkg-github-cache@78a5438beedebc9fae6efb7bb8e3cc291d4d3f14
+      with:
+        token: ${{github.token}}
+        bootstrap: "true"
+        install-nuget: "true"
+        debug: "false"
+        trace: "false"
+
     - name: Install Prerequisites Linux
       if: ${{matrix.os == 'ubuntu-latest'}}
       shell: bash
       run: |
-        ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh
         echo "man-db man-db/auto-update boolean false" | sudo debconf-set-selections
         sudo dpkg-reconfigure man-db
         sudo apt-get update
         sudo apt-get install -y \
-          mono-complete \
           libxinerama-dev \
           libxcursor-dev \
           xorg-dev \
           libglu1-mesa-dev \
           pkg-config
-
-    - name: Install Prerequisites macOS
-      if: ${{matrix.os == 'macos-latest'}}
-      shell: bash
-      run: |
-        ${{github.workspace}}/vcpkg/bootstrap-vcpkg.sh
-
-    - name: Add NuGet sources
-      shell: bash
-      run: |
-        ${{matrix.nuget}} \
-          sources add \
-          -Source "${{env.FEED_URL}}" \
-          -StorePasswordInClearText \
-          -Name GitHubPackages \
-          -UserName "${{github.repository_owner}}" \
-          -Password "${{secrets.GH_PACKAGES_TOKEN}}"
-        ${{matrix.nuget}} \
-          setapikey "${{secrets.GH_PACKAGES_TOKEN}}" \
-          -Source "${{env.FEED_URL}}"
 
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # v2.0.2
@@ -77,8 +61,22 @@ jobs:
         cmake-version: '3.31'
 
     - name: Run Workflow
-      env: 
-        VCPKG_BINARY_SOURCES: "clear;nuget,${{env.FEED_URL}},readwrite"
+      shell: pwsh
       run: |
         cmake --version
-        cmake --workflow --preset default
+        cmake --workflow --preset default 2>&1 |
+          Tee-Object -FilePath build.log
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
+
+    - name: Analyze vcpkg package cache
+      if: always()
+      uses: LegalizeAdulthood/vcpkg-github-cache/analyze@78a5438beedebc9fae6efb7bb8e3cc291d4d3f14
+      with:
+        token: ${{github.token}}
+        build-log: build.log
+        artifact-name: vcpkg-cache-diagnostics-${{github.job}}-${{matrix.os}}
+        fail-on: "never"
+        debug: "false"
+        trace: "false"
